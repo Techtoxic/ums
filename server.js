@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -581,10 +582,13 @@ app.get('/src/components/registrar/AdmissionLetter.html', (req, res) => {
 
 
 // MongoDB Connection
-const MONGODB_URI = 'mongodb://localhost:27017/ums';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/ums';
+console.log('🔍 Attempting to connect to:', MONGODB_URI.includes('localhost') ? 'LOCAL MongoDB' : 'ATLAS MongoDB Cloud');
+console.log('🔍 Database URL starts with:', MONGODB_URI.substring(0, 30) + '...');
 mongoose.connect(MONGODB_URI)
     .then(async () => {
-        console.log('Connected to MongoDB');
+        console.log('✅ Connected to MongoDB successfully!');
+        console.log('🌐 Database type:', MONGODB_URI.includes('localhost') ? 'LOCAL DATABASE' : 'ATLAS CLOUD DATABASE');
 
         // Initialize programs
         await initializePrograms();
