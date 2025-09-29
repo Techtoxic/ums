@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EDTTI Trainer Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.0.0/fonts/remixicon.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#7A0C0C',
+                        secondary: '#8B2A2A',
+                        success: '#10b981',
+                        warning: '#f59e0b',
+                        danger: '#ef4444',
+                        gray: {
+                            50: '#f9fafb',
+                            100: '#f3f4f6',
+                            200: '#e5e7eb',
+                            300: '#d1d5db',
+                            400: '#9ca3af',
+                            500: '#6b7280',
+                            600: '#4b5563',
+                            700: '#374151',
+                            800: '#1f2937',
+                            900: '#111827'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-in-out',
+                        'slide-up': 'slideUp 0.3s ease-out',
+                        'bounce-gentle': 'bounceGentle 2s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' }
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(100%)' },
+                            '100%': { transform: 'translateY(0)' }
+                        },
+                        bounceGentle: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-5px)' }
+                        }
+                    }
+                }
+            },
+            darkMode: 'class'
+        }
+    </script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #7A0C0C 0%, #8B2A2A 100%);
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        .progress-ring {
+            transition: stroke-dasharray 0.35s;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+
+        .sidebar-collapsed {
+            width: 4rem !important;
+        }
+
+        .sidebar-collapsed .sidebar-text {
+            display: none !important;
+        }
+
+        .sidebar-collapsed .sidebar-title {
+            display: none !important;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.mobile-open {
+                transform: translateX(0);
+            }
+        }
+
+        .content-blur {
+            filter: blur(2px);
+            transition: filter 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 font-sans transition-colors duration-300">
+    <!-- Mobile Menu Overlay -->
+    <div id="mobileOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden md:hidden"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar fixed left-0 top-0 h-full w-64 bg-white dark:bg-gray-800 shadow-xl z-50 transition-all duration-300 ease-in-out border-r border-gray-200 dark:border-gray-700">
+        <!-- Logo Section -->
+        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 gradient-bg rounded-xl flex items-center justify-center">
+                        <i class="ri-graduation-cap-line text-white text-xl"></i>
+                    </div>
+                    <div class="sidebar-title">
+                        <h1 class="text-lg font-bold text-gray-900 dark:text-white">EDTTI</h1>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Trainer Portal</p>
+                    </div>
+                </div>
+                <button id="sidebarToggle" class="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                    <i class="ri-menu-fold-line text-gray-600 dark:text-gray-300"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="p-4 space-y-2">
+            <a href="#" onclick="showSection('dashboard')" id="nav-dashboard" class="nav-item flex items-center space-x-3 p-3 rounded-xl bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-light transition-all duration-200">
+                <i class="ri-dashboard-3-line text-lg"></i>
+                <span class="sidebar-text font-medium">Dashboard</span>
+            </a>
+            
+            <a href="#" onclick="showSection('assignments')" id="nav-assignments" class="nav-item flex items-center space-x-3 p-3 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-all duration-200">
+                <i class="ri-task-line text-lg"></i>
+                <span class="sidebar-text font-medium">My Assignments</span>
+            </a>
+            
+            <a href="#" onclick="showSection('students')" id="nav-students" class="nav-item flex items-center space-x-3 p-3 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-all duration-200">
+                <i class="ri-group-line text-lg"></i>
+                <span class="sidebar-text font-medium">My Students</span>
+            </a>
+            
+            <a href="#" onclick="showSection('tools-of-trade')" id="nav-tools-of-trade" class="nav-item flex items-center space-x-3 p-3 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-all duration-200">
+                <i class="ri-tools-line text-lg"></i>
+                <span class="sidebar-text font-medium">Tools of Trade</span>
+            </a>
+            
+            <a href="#" onclick="showSection('notifications')" id="nav-notifications" class="nav-item flex items-center space-x-3 p-3 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-all duration-200 relative">
+                <i class="ri-notification-3-line text-lg"></i>
+                <span class="sidebar-text font-medium">Notifications</span>
+                <span id="notification-badge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">0</span>
+            </a>
+            
+            <a href="#" onclick="showSection('profile')" id="nav-profile" class="nav-item flex items-center space-x-3 p-3 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-all duration-200">
+                <i class="ri-user-settings-line text-lg"></i>
+                <span class="sidebar-text font-medium">Profile</span>
+            </a>
+        </nav>
+
+        <!-- User Profile Section -->
+        <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 dark:border-gray-700">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
+                    <i class="ri-user-line text-white"></i>
+                </div>
+                <div class="sidebar-title flex-1 min-w-0">
+                    <p class="text-sm font-medium text-gray-900 dark:text-white truncate" id="sidebarTrainerName">Loading...</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 truncate" id="sidebarDepartment">Loading...</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main id="mainContent" class="md:ml-64 transition-all duration-300 ease-in-out">
+        <!-- Header -->
+        <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30">
+            <div class="flex items-center justify-between px-4 py-3">
+                <div class="flex items-center gap-4">
+                    <button id="mobileMenuToggle" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg md:hidden">
+                        <i class="ri-menu-line text-xl text-gray-600 dark:text-gray-300"></i>
+                    </button>
+                    <button id="desktopSidebarToggle" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg hidden md:block">
+                        <i class="ri-menu-fold-line text-xl text-gray-600 dark:text-gray-300"></i>
+                    </button>
+                    <h2 id="pageTitle" class="text-xl font-semibold text-gray-800 dark:text-white">Dashboard</h2>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="hidden sm:flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                        <i class="ri-time-line"></i>
+                        <span id="currentTime">Loading...</span>
+                    </div>
+                    <button id="themeToggle" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                        <i class="ri-moon-line text-gray-600 dark:text-gray-300 dark:hidden"></i>
+                        <i class="ri-sun-line text-gray-300 hidden dark:block"></i>
+                    </button>
+                    <button onclick="logout()" class="px-3 py-1.5 bg-danger text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium">
+                        <i class="ri-logout-circle-r-line text-sm mr-1 sm:mr-2"></i>
+                        <span class="hidden sm:inline">Logout</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Content Area -->
+        <div class="p-4 md:p-6 space-y-6">
+            <!-- Dashboard Section -->
+            <section id="section-dashboard" class="content-section">
+            <!-- Welcome Card -->
+            <div class="mb-8 gradient-bg rounded-2xl p-8 text-white relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -translate-y-16 translate-x-16"></div>
+                <div class="absolute bottom-0 left-0 w-24 h-24 bg-white opacity-10 rounded-full translate-y-12 -translate-x-12"></div>
+                <div class="relative z-10">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-3xl font-bold mb-2">Welcome back!</h2>
+                            <p class="text-white/80 text-lg" id="welcomeTrainerName">Loading...</p>
+                            <p class="text-white/60 text-sm mt-1" id="welcomeDepartment">Loading...</p>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-4xl font-bold" id="welcomeUnitsCount">0</div>
+                            <div class="text-white/80 text-sm">Units Assigned</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 card-hover">
+                    <div class="flex items-center">
+                        <div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
+                            <i class="ri-task-line text-blue-600 dark:text-blue-400 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Active Assignments</p>
+                            <p class="text-2xl font-bold text-gray-900 dark:text-white" id="statsAssignments">0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 card-hover">
+                    <div class="flex items-center">
+                        <div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-xl">
+                            <i class="ri-group-line text-green-600 dark:text-green-400 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600 dark:text-gray-400">My Students</p>
+                            <p class="text-2xl font-bold text-gray-900 dark:text-white" id="statsStudents">0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 card-hover">
+                    <div class="flex items-center">
+                        <div class="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-xl">
+                            <i class="ri-book-open-line text-purple-600 dark:text-purple-400 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Courses</p>
+                            <p class="text-2xl font-bold text-gray-900 dark:text-white" id="statsCourses">0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 card-hover">
+                    <div class="flex items-center">
+                        <div class="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-xl">
+                            <i class="ri-building-line text-orange-600 dark:text-orange-400 text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Department</p>
+                            <p class="text-lg font-bold text-gray-900 dark:text-white" id="statsDepartment">-</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 card-hover">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h3>
+                    <div class="space-y-3">
+                        <button onclick="showSection('assignments')" class="w-full flex items-center space-x-3 p-3 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded-lg transition-colors text-left">
+                            <i class="ri-task-line text-blue-600 dark:text-blue-400"></i>
+                            <span class="text-blue-700 dark:text-blue-300 font-medium">View My Assignments</span>
+                        </button>
+                        <button onclick="showSection('students')" class="w-full flex items-center space-x-3 p-3 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/40 rounded-lg transition-colors text-left">
+                            <i class="ri-group-line text-green-600 dark:text-green-400"></i>
+                            <span class="text-green-700 dark:text-green-300 font-medium">View My Students</span>
+                        </button>
+                        <button onclick="showSection('profile')" class="w-full flex items-center space-x-3 p-3 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/40 rounded-lg transition-colors text-left">
+                            <i class="ri-user-settings-line text-purple-600 dark:text-purple-400"></i>
+                            <span class="text-purple-700 dark:text-purple-300 font-medium">Update Profile</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 card-hover">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Recent Activity</h3>
+                    <div class="space-y-3">
+                        <div class="flex items-center space-x-3 p-2 rounded-lg">
+                            <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                            <span class="text-sm text-gray-600 dark:text-gray-400">Assignments loaded successfully</span>
+                        </div>
+                        <div class="flex items-center space-x-3 p-2 rounded-lg">
+                            <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
+                            <span class="text-sm text-gray-600 dark:text-gray-400">Dashboard initialized</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 card-hover">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">System Status</h3>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-gray-600 dark:text-gray-400">Connection</span>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                                <span class="text-sm text-green-600 dark:text-green-400">Online</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-gray-600 dark:text-gray-400">Last Sync</span>
+                            <span class="text-sm text-gray-600 dark:text-gray-400" id="lastSync">Just now</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+            <!-- Assignments Section -->
+            <section id="section-assignments" class="content-section hidden">
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">My Unit Assignments</h2>
+                        <div class="flex items-center space-x-4">
+                            <select id="assignmentFilter" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+                                <option value="">All Units</option>
+                                <option value="current">Current Semester</option>
+                                <option value="upcoming">Upcoming Semester</option>
+                            </select>
+                            <button onclick="refreshAssignments()" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors text-sm font-medium">
+                                <i class="ri-refresh-line mr-2"></i>Refresh
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-6">
+                    <!-- Loading State -->
+                    <div id="loadingState" class="text-center py-12 hidden">
+                        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                        <p class="mt-2 text-gray-600 dark:text-gray-400">Loading assignments...</p>
+                    </div>
+
+                    <!-- Assignments Grid -->
+                    <div id="assignmentsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 hidden">
+                        <!-- Assignment cards will be populated here -->
+                    </div>
+
+                    <!-- Empty State -->
+                    <div id="emptyState" class="text-center py-12 hidden">
+                        <div class="text-gray-400 dark:text-gray-500 text-6xl mb-4">
+                            <i class="ri-task-line"></i>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-600 dark:text-gray-400 mb-2">No Assignments Yet</h3>
+                        <p class="text-gray-500 dark:text-gray-500">Your HOD will assign units to you when available.</p>
+                    </div>
+
+                    <!-- Error State -->
+                    <div id="errorState" class="text-center py-12 hidden">
+                        <div class="text-red-400 text-6xl mb-4">
+                            <i class="ri-error-warning-line"></i>
+                        </div>
+                        <h3 class="text-lg font-medium text-red-600 dark:text-red-400 mb-2">Error Loading Assignments</h3>
+                        <p class="text-red-500 dark:text-red-400 mb-4" id="errorMessage">Something went wrong while loading your assignments.</p>
+                        <button onclick="refreshAssignments()" class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors text-sm font-medium">
+                            <i class="ri-refresh-line mr-2"></i>Try Again
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+            <!-- Students Section -->
+            <section id="section-students" class="content-section hidden">
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">My Students</h2>
+                        <div class="flex items-center space-x-4">
+                            <select id="studentsFilter" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+                                <option value="">All Students</option>
+                                <option value="year1">Year 1</option>
+                                <option value="year2">Year 2</option>
+                                <option value="year3">Year 3</option>
+                            </select>
+                            <button onclick="refreshStudents()" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors text-sm font-medium">
+                                <i class="ri-refresh-line mr-2"></i>Refresh
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-6">
+                    <!-- Students Grid -->
+                    <div id="studentsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Students will be populated here -->
+                    </div>
+
+                    <!-- Students Empty State -->
+                    <div id="studentsEmptyState" class="text-center py-12 hidden">
+                        <div class="text-gray-400 dark:text-gray-500 text-6xl mb-4">
+                            <i class="ri-group-line"></i>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-600 dark:text-gray-400 mb-2">No Students Found</h3>
+                        <p class="text-gray-500 dark:text-gray-500">Students will appear here when units are assigned.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+            <!-- Tools of Trade Section -->
+            <section id="section-tools-of-trade" class="content-section hidden">
+                <div class="space-y-6">
+                    <!-- Tools of Trade Header -->
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+                                <div>
+                                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Tools of Trade</h2>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Upload and manage your teaching materials</p>
+                                </div>
+                                <div class="flex items-center space-x-3">
+                                    <select id="toolsFilter" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+                                        <option value="">All Tools</option>
+                                        <option value="course_outline">Course Outline</option>
+                                        <option value="learning_plan">Learning Plan</option>
+                                        <option value="record_of_work">Record of Work</option>
+                                        <option value="session_plan">Session Plan</option>
+                                        <option value="exam">Exam</option>
+                                    </select>
+                                    <button onclick="refreshTools()" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors text-sm font-medium">
+                                        <i class="ri-refresh-line mr-2"></i>Refresh
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-6">
+                            <!-- Upload Section -->
+                            <div class="mb-8">
+                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Upload Tools of Trade</h3>
+                                
+                                <!-- Unit Selection -->
+                                <div class="mb-6">
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Unit</label>
+                                    <select id="unitSelect" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                        <option value="">Choose a unit to upload tools for...</option>
+                                    </select>
+                                </div>
+
+                                <!-- Tool Type Selection -->
+                                <div class="mb-6">
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tool Type</label>
+                                    <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                                        <button onclick="selectToolType('course_outline')" class="tool-type-btn p-4 border-2 border-gray-200 dark:border-gray-600 rounded-lg hover:border-primary hover:bg-primary/5 transition-all text-center">
+                                            <i class="ri-file-text-line text-2xl text-gray-400 mb-2"></i>
+                                            <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Course Outline</p>
+                                        </button>
+                                        <button onclick="selectToolType('learning_plan')" class="tool-type-btn p-4 border-2 border-gray-200 dark:border-gray-600 rounded-lg hover:border-primary hover:bg-primary/5 transition-all text-center">
+                                            <i class="ri-book-open-line text-2xl text-gray-400 mb-2"></i>
+                                            <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Learning Plan</p>
+                                        </button>
+                                        <button onclick="selectToolType('record_of_work')" class="tool-type-btn p-4 border-2 border-gray-200 dark:border-gray-600 rounded-lg hover:border-primary hover:bg-primary/5 transition-all text-center">
+                                            <i class="ri-clipboard-line text-2xl text-gray-400 mb-2"></i>
+                                            <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Record of Work</p>
+                                        </button>
+                                        <button onclick="selectToolType('session_plan')" class="tool-type-btn p-4 border-2 border-gray-200 dark:border-gray-600 rounded-lg hover:border-primary hover:bg-primary/5 transition-all text-center">
+                                            <i class="ri-calendar-line text-2xl text-gray-400 mb-2"></i>
+                                            <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Session Plan</p>
+                                        </button>
+                                        <button onclick="selectToolType('exam')" class="tool-type-btn p-4 border-2 border-gray-200 dark:border-gray-600 rounded-lg hover:border-primary hover:bg-primary/5 transition-all text-center">
+                                            <i class="ri-file-list-3-line text-2xl text-gray-400 mb-2"></i>
+                                            <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Exam</p>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- File Upload Area -->
+                                <div id="uploadArea" class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center hover:border-primary hover:bg-primary/5 transition-all cursor-pointer" onclick="document.getElementById('fileInput').click()">
+                                    <i class="ri-upload-cloud-2-line text-4xl text-gray-400 mb-4"></i>
+                                    <p class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">Click to upload or drag and drop</p>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">PDF, DOC, or DOCX files only (Max 1MB)</p>
+                                    <input type="file" id="fileInput" class="hidden" accept=".pdf,.doc,.docx" onchange="handleFileSelect(event)">
+                                </div>
+
+                                <!-- Selected File Info -->
+                                <div id="selectedFileInfo" class="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hidden">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center space-x-3">
+                                            <i class="ri-file-line text-2xl text-primary"></i>
+                                            <div>
+                                                <p class="font-medium text-gray-900 dark:text-white" id="selectedFileName">-</p>
+                                                <p class="text-sm text-gray-500 dark:text-gray-400" id="selectedFileSize">-</p>
+                                            </div>
+                                        </div>
+                                        <button onclick="clearFileSelection()" class="text-red-500 hover:text-red-700">
+                                            <i class="ri-close-line text-xl"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Upload Buttons -->
+                                <div class="mt-6 flex justify-between">
+                                    <button onclick="showBulkUploadModal()" class="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors">
+                                        <i class="ri-upload-2-line mr-2"></i>Bulk Upload
+                                    </button>
+                                    <button id="uploadBtn" onclick="uploadTool()" disabled class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                        <i class="ri-upload-line mr-2"></i>Upload Tool
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Submitted Tools -->
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Submitted Tools</h3>
+                                
+                                <!-- Loading State -->
+                                <div id="toolsLoadingState" class="text-center py-8 hidden">
+                                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                                    <p class="mt-2 text-gray-600 dark:text-gray-400">Loading tools...</p>
+                                </div>
+
+                                <!-- Tools Grid -->
+                                <div id="toolsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    <!-- Tools will be populated here -->
+                                </div>
+
+                                <!-- Empty State -->
+                                <div id="toolsEmptyState" class="text-center py-12 hidden">
+                                    <div class="text-gray-400 dark:text-gray-500 text-6xl mb-4">
+                                        <i class="ri-tools-line"></i>
+                                    </div>
+                                    <h3 class="text-lg font-medium text-gray-600 dark:text-gray-400 mb-2">No Tools Submitted</h3>
+                                    <p class="text-gray-500 dark:text-gray-500">Upload your first tool of trade to get started.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Profile Section -->
+            <!-- Notifications Section -->
+            <section id="section-notifications" class="content-section hidden">
+                <div class="space-y-6">
+                    <!-- Notifications Header -->
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+                                <div>
+                                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Notifications</h2>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Stay updated with your latest requests and updates</p>
+                                </div>
+                                <div class="flex items-center space-x-3">
+                                    <button onclick="markAllAsRead()" class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors text-sm font-medium">
+                                        <i class="ri-check-double-line mr-2"></i>Mark All as Read
+                                    </button>
+                                    <button onclick="refreshNotifications()" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors text-sm font-medium">
+                                        <i class="ri-refresh-line mr-2"></i>Refresh
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-6">
+                            <!-- Loading State -->
+                            <div id="notificationsLoadingState" class="text-center py-8 hidden">
+                                <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                                <p class="mt-2 text-gray-600 dark:text-gray-400">Loading notifications...</p>
+                            </div>
+
+                            <!-- Notifications List -->
+                            <div id="notificationsList" class="space-y-4">
+                                <!-- Notifications will be populated here -->
+                            </div>
+
+                            <!-- Empty State -->
+                            <div id="notificationsEmptyState" class="text-center py-12 hidden">
+                                <div class="text-gray-400 dark:text-gray-500 text-6xl mb-4">
+                                    <i class="ri-notification-off-line"></i>
+                                </div>
+                                <h3 class="text-lg font-medium text-gray-600 dark:text-gray-400 mb-2">No Notifications</h3>
+                                <p class="text-gray-500 dark:text-gray-500">You're all caught up! No new notifications.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="section-profile" class="content-section hidden">
+            <div class="max-w-4xl mx-auto">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Profile Settings</h2>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Update your personal information and contact details</p>
+                    </div>
+
+                    <div class="p-6">
+                        <form id="profileForm" class="space-y-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label for="profileName" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Full Name</label>
+                                    <input type="text" id="profileName" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white" readonly>
+                                </div>
+                                
+                                <div>
+                                    <label for="profileDepartment" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Department</label>
+                                    <input type="text" id="profileDepartment" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white" readonly>
+                                </div>
+                                
+                                <div>
+                                    <label for="profileEmail" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email Address</label>
+                                    <input type="email" id="profileEmail" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                </div>
+                                
+                                <div>
+                                    <label for="profilePhone" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Phone Number</label>
+                                    <input type="tel" id="profilePhone" placeholder="Enter your phone number" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                </div>
+                            </div>
+
+                            <div class="flex justify-end space-x-4">
+                                <button type="button" onclick="resetProfileForm()" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm font-medium">
+                                    Reset
+                                </button>
+                                <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors text-sm font-medium">
+                                    <i class="ri-save-line mr-2"></i>Update Profile
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="fixed top-4 right-4 space-y-2 z-50"></div>
+
+    <!-- Bulk Upload Modal -->
+    <div id="bulkUploadModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-xl max-w-4xl w-full p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-white">Bulk Upload Tools of Trade</h3>
+                <button onclick="closeBulkUploadModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                    <i class="ri-close-line text-2xl"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-6">
+                <!-- Tool Type Selection -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Select Tool Type for Bulk Upload</label>
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                        <button onclick="selectBulkToolType('course_outline')" class="bulk-tool-type-btn p-4 border-2 border-gray-200 dark:border-gray-600 rounded-lg hover:border-primary hover:bg-primary/5 transition-all text-center">
+                            <i class="ri-file-text-line text-2xl text-gray-400 mb-2"></i>
+                            <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Course Outline</p>
+                        </button>
+                        <button onclick="selectBulkToolType('learning_plan')" class="bulk-tool-type-btn p-4 border-2 border-gray-200 dark:border-gray-600 rounded-lg hover:border-primary hover:bg-primary/5 transition-all text-center">
+                            <i class="ri-book-open-line text-2xl text-gray-400 mb-2"></i>
+                            <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Learning Plan</p>
+                        </button>
+                        <button onclick="selectBulkToolType('record_of_work')" class="bulk-tool-type-btn p-4 border-2 border-gray-200 dark:border-gray-600 rounded-lg hover:border-primary hover:bg-primary/5 transition-all text-center">
+                            <i class="ri-clipboard-line text-2xl text-gray-400 mb-2"></i>
+                            <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Record of Work</p>
+                        </button>
+                        <button onclick="selectBulkToolType('session_plan')" class="bulk-tool-type-btn p-4 border-2 border-gray-200 dark:border-gray-600 rounded-lg hover:border-primary hover:bg-primary/5 transition-all text-center">
+                            <i class="ri-calendar-line text-2xl text-gray-400 mb-2"></i>
+                            <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Session Plan</p>
+                        </button>
+                        <button onclick="selectBulkToolType('exam')" class="bulk-tool-type-btn p-4 border-2 border-gray-200 dark:border-gray-600 rounded-lg hover:border-primary hover:bg-primary/5 transition-all text-center">
+                            <i class="ri-file-list-3-line text-2xl text-gray-400 mb-2"></i>
+                            <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Exam</p>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- File Upload Area -->
+                <div id="bulkUploadArea" class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center hover:border-primary hover:bg-primary/5 transition-all cursor-pointer" onclick="document.getElementById('bulkFileInput').click()">
+                    <i class="ri-upload-cloud-2-line text-4xl text-gray-400 mb-4"></i>
+                    <p class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">Click to upload multiple files or drag and drop</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">PDF, DOC, or DOCX files only (Max 1MB each)</p>
+                    <input type="file" id="bulkFileInput" class="hidden" accept=".pdf,.doc,.docx" multiple onchange="handleBulkFileSelect(event)">
+                </div>
+
+                <!-- Selected Files List -->
+                <div id="bulkFilesList" class="hidden">
+                    <h4 class="text-lg font-medium text-gray-900 dark:text-white mb-3">Selected Files</h4>
+                    <div id="bulkFilesContainer" class="space-y-2 max-h-60 overflow-y-auto">
+                        <!-- Files will be listed here -->
+                    </div>
+                </div>
+
+                <!-- Upload Progress -->
+                <div id="bulkUploadProgress" class="hidden">
+                    <div class="bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-2">
+                        <div id="bulkProgressBar" class="bg-primary h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                    <p id="bulkProgressText" class="text-sm text-gray-600 dark:text-gray-400">Uploading files...</p>
+                </div>
+            </div>
+
+            <div class="flex justify-end space-x-3 mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                <button onclick="closeBulkUploadModal()" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    Cancel
+                </button>
+                <button id="bulkUploadBtn" onclick="uploadBulkTools()" disabled class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i class="ri-upload-2-line mr-2"></i>Upload All Files
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Phone Update Modal -->
+    <div id="phoneUpdateModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-xl max-w-md w-full p-6">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="ri-phone-line text-primary text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Update Contact Information</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400">Help us keep your contact information up to date</p>
+            </div>
+            
+            <form id="phoneUpdateForm" class="space-y-4">
+                <div>
+                    <label for="modalPhone" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Phone Number (Optional)</label>
+                    <input type="tel" id="modalPhone" placeholder="Enter your phone number" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                </div>
+                
+                <div>
+                    <label for="modalEmail" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email Address (Optional)</label>
+                    <input type="email" id="modalEmail" placeholder="Update your email address" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                </div>
+                
+                <div class="flex space-x-3 pt-4">
+                    <button type="button" onclick="closePhoneModal()" class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm font-medium">
+                        Skip for now
+                    </button>
+                    <button type="submit" class="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors text-sm font-medium">
+                        Update
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/trainer/trainerDashboard.js"></script>
+</body>
+</html>

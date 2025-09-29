@@ -1,0 +1,2666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrar Dashboard - University Management System</title>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2563eb',
+                        secondary: '#1d4ed8',
+                        success: '#22c55e',
+                        warning: '#f59e0b',
+                        danger: '#ef4444',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @media (max-width: 1024px) {
+            .sidebar.active {
+                display: block !important;
+            }
+        }
+        
+        /* Custom scrollbar styling */
+        .scrollbar-thin {
+            scrollbar-width: thin;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background-color: #d1d5db;
+            border-radius: 3px;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+            background-color: #9ca3af;
+        }
+        
+        .dark .scrollbar-thin::-webkit-scrollbar-thumb {
+            background-color: #4b5563;
+        }
+        
+        .dark .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+            background-color: #6b7280;
+        }
+        
+        body.menu-open::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 30;
+        }
+
+        /* Sidebar positioning and styling */
+        #sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            z-index: 40;
+            overflow-y: auto;
+        }
+
+        /* Main content positioning */
+        main {
+            margin-left: 256px; /* 64 * 4 = 256px (w-64) */
+            width: calc(100% - 256px);
+            max-width: calc(100vw - 256px);
+        }
+
+        @media (max-width: 1024px) {
+            #sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            
+            #sidebar.active {
+                transform: translateX(0);
+            }
+            
+            main {
+                margin-left: 0;
+                width: 100%;
+                max-width: 100vw;
+            }
+        }
+
+        /* Mobile Navigation Menu */
+        #mobileNav {
+            display: none;
+        }
+
+        #mobileNav.active {
+            display: block;
+        }
+
+        /* Ensure proper layering and no overlapping */
+        .content-section {
+            background: transparent;
+        }
+
+        /* Sidebar navigation styling */
+        .nav-item {
+            transition: all 0.2s ease;
+        }
+
+        .nav-item:hover {
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+
+        .nav-item.active {
+            background-color: rgba(59, 130, 246, 0.1);
+            color: #3b82f6;
+        }
+    </style>
+    <!-- Export Modal -->
+    <div id="export-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md transform transition-all duration-300 scale-95">
+            <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Export Students</h3>
+                    <button onclick="closeExportModal()" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                        <i class="ri-close-line text-xl text-gray-600 dark:text-gray-300"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-6">
+                <form id="export-form" onsubmit="handleExport(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Export Type</label>
+                        <select id="export-type" onchange="toggleExportFilters()" class="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                            <option value="all">All Students</option>
+                            <option value="department">By Department Only</option>
+                            <option value="year">By Year Only</option>
+                            <option value="intake">By Intake Only</option>
+                            <option value="department_year">Department + Year</option>
+                            <option value="department_intake">Department + Intake</option>
+                            <option value="year_intake">Year + Intake</option>
+                            <option value="department_year_intake">Department + Year + Intake</option>
+                            <option value="admission-type">By Admission Type</option>
+                            <option value="custom">Custom Filters</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Always show all filter options for custom filtering -->
+                    <div class="space-y-4" id="filter-options">
+                        <div id="department-filter" class="hidden">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Department</label>
+                            <select id="export-department" class="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                                <option value="">All Departments</option>
+                                <option value="applied_science">Applied Science Department</option>
+                                <option value="agriculture">Agriculture Department</option>
+                                <option value="building_civil">Building and Civil Department</option>
+                                <option value="electromechanical">Electromechanical Department</option>
+                                <option value="hospitality">Hospitality Department</option>
+                                <option value="business_liberal">Business and Liberal Studies</option>
+                                <option value="computing_informatics">Computing and Informatics</option>
+                            </select>
+                        </div>
+                        
+                        <div id="year-filter" class="hidden">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Year of Study</label>
+                            <select id="export-year" class="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                                <option value="">All Years</option>
+                                <option value="1">Year 1</option>
+                                <option value="2">Year 2</option>
+                            </select>
+                        </div>
+                        
+                        <div id="intake-filter" class="hidden">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Intake</label>
+                            <select id="export-intake" class="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                                <option value="">All Intakes</option>
+                                <option value="january">January</option>
+                                <option value="september">September</option>
+                            </select>
+                        </div>
+                        
+                        <div id="intake-year-filter" class="hidden">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Intake Year</label>
+                            <select id="export-intake-year" class="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                                <option value="">All Years</option>
+                                <option value="2024">2024</option>
+                                <option value="2025">2025</option>
+                                <option value="2026">2026</option>
+                            </select>
+                        </div>
+                        
+                        <div id="admission-type-filter" class="hidden">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Admission Type</label>
+                            <select id="export-admission-type" class="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                                <option value="">All Types</option>
+                                <option value="walk-in">Walk-in</option>
+                                <option value="KUCCPS">KUCCPS</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Export Format</label>
+                        <select id="export-format" class="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                            <option value="csv">CSV</option>
+                            <option value="json">JSON</option>
+                            <option value="pdf">PDF</option>
+                        </select>
+                    </div>
+                    
+                    <div class="flex gap-3 pt-4">
+                        <button type="button" onclick="closeExportModal()" class="flex-1 px-4 py-2 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" class="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors">
+                            Export
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="fixed bottom-4 right-4 z-50"></div>
+    
+    <!-- Include jsPDF for PDF export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    
+    <!-- Include Export Utilities -->
+    <script src="exportUtils.js"></script>
+    
+    <script>
+        // Function to fetch and display students
+        async function fetchAndDisplayStudents() {
+            try {
+                const response = await fetch('http://localhost:5502/api/students');
+                if (!response.ok) {
+                    let errorMessage = 'Failed to fetch students';
+                    try {
+                        const errorData = await response.json();
+                        errorMessage = errorData.message || errorMessage;
+                    } catch (e) {
+                        errorMessage += ` (Status: ${response.status})`;
+                    }
+                    throw new Error(errorMessage);
+                }
+                const students = await response.json();
+                if (!Array.isArray(students) || !students.length) {
+                    throw new Error('No students found or invalid data format');
+                }
+                displayStudents(students);
+            } catch (error) {
+                console.error('Error fetching students:', error);
+                showToast(error.message, 'error');
+            }
+        }
+
+        // Department mapping object
+        const departmentMapping = {
+            applied_science: 'Applied Science Department',
+            agriculture: 'Agriculture Department',
+            building_civil: 'Building and Civil Department',
+            electromechanical: 'Electromechanical Department',
+            hospitality: 'Hospitality Department',
+            business_liberal: 'Business and Liberal Studies',
+            computing_informatics: 'Computing and Informatics'
+        };
+
+        // Global pagination state for students
+        let studentsState = {
+            currentPage: 1,
+            itemsPerPage: 6,
+            totalStudents: 0,
+            allStudents: [],
+            filteredStudents: []
+        };
+
+        // Function to display students in the table with pagination
+        function displayStudents(students) {
+            // Update global state
+            studentsState.allStudents = students;
+            studentsState.filteredStudents = students;
+            studentsState.totalStudents = students.length;
+            studentsState.currentPage = 1; // Reset to first page
+            
+            renderStudentsPage();
+        }
+
+        // Render current page of students
+        function renderStudentsPage() {
+            const tbody = document.querySelector('table tbody');
+            tbody.innerHTML = '';
+            
+            const { currentPage, itemsPerPage, filteredStudents } = studentsState;
+            const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const currentStudents = filteredStudents.slice(startIndex, endIndex);
+            
+            // Create table rows for current page
+            currentStudents.forEach(student => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-gray-50 dark:hover:bg-gray-700';
+                
+                // Get department from course configuration
+                const courseInfo = courseConfig[student.course] || {};
+                const departmentName = departmentMapping[courseInfo.department] || 'Not Assigned';
+                
+                // Convert course name to display format
+                const departmentDisplay = departmentMapping[student.department] || 'Not Assigned';
+
+                tr.innerHTML = `
+                    <td class="px-3 py-4 text-sm">${student.admissionNumber || ''}</td>
+                    <td class="px-3 py-4 text-sm">${student.name || ''}</td>
+                    <td class="px-3 py-4 text-sm">${departmentDisplay}</td>
+                    <td class="px-3 py-4 text-sm">${student.year || ''}</td>
+                    <td class="px-3 py-4 text-sm">
+                        <span class="px-2 py-1 text-xs font-medium ${student.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'} rounded-full">
+                            ${student.status || 'Active'}
+                        </span>
+                    </td>
+                    <td class="px-3 py-4 text-sm space-x-2">
+                        <button onclick="viewStudent('${student._id}')" class="text-primary hover:text-secondary">View</button>
+                        <button onclick="editStudent('${student._id}')" class="text-primary hover:text-secondary">Edit</button>
+                    </td>
+                `;
+                
+                tbody.appendChild(tr);
+            });
+
+            // Update pagination controls
+            updatePaginationControls();
+        }
+
+        // Update pagination controls
+        function updatePaginationControls() {
+            const { currentPage, itemsPerPage, filteredStudents } = studentsState;
+            const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = Math.min(startIndex + itemsPerPage, filteredStudents.length);
+
+            // Update pagination info
+            const paginationInfo = document.getElementById('pagination-info');
+            if (paginationInfo) {
+                if (filteredStudents.length === 0) {
+                    paginationInfo.textContent = 'No students found';
+                } else {
+                    paginationInfo.textContent = `Showing ${startIndex + 1}-${endIndex} of ${filteredStudents.length} students`;
+                }
+            }
+
+            // Update previous button
+            const prevBtn = document.getElementById('prev-page-btn');
+            if (prevBtn) {
+                prevBtn.disabled = currentPage <= 1;
+            }
+
+            // Update next button
+            const nextBtn = document.getElementById('next-page-btn');
+            if (nextBtn) {
+                nextBtn.disabled = currentPage >= totalPages;
+            }
+
+            // Update page numbers
+            const pageNumbersContainer = document.getElementById('page-numbers');
+            if (pageNumbersContainer && totalPages > 1) {
+                let pageButtonsHTML = '';
+                
+                // Calculate which page numbers to show
+                const maxButtons = 5;
+                let startPage, endPage;
+                
+                if (totalPages <= maxButtons) {
+                    startPage = 1;
+                    endPage = totalPages;
+                } else if (currentPage <= 3) {
+                    startPage = 1;
+                    endPage = maxButtons;
+                } else if (currentPage >= totalPages - 2) {
+                    startPage = totalPages - maxButtons + 1;
+                    endPage = totalPages;
+                } else {
+                    startPage = currentPage - 2;
+                    endPage = currentPage + 2;
+                }
+
+                for (let i = startPage; i <= endPage; i++) {
+                    const isActive = i === currentPage;
+                    pageButtonsHTML += `
+                        <button 
+                            onclick="navigateStudentsPage(${i})" 
+                            class="w-8 h-8 text-sm font-medium rounded-lg transition-colors ${
+                                isActive 
+                                    ? 'bg-primary text-white' 
+                                    : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700'
+                            }"
+                        >
+                            ${i}
+                        </button>
+                    `;
+                }
+                
+                pageNumbersContainer.innerHTML = pageButtonsHTML;
+            } else if (pageNumbersContainer) {
+                pageNumbersContainer.innerHTML = '';
+            }
+
+            // Show/hide pagination container
+            const paginationContainer = document.getElementById('pagination-container');
+            if (paginationContainer) {
+                paginationContainer.style.display = totalPages > 1 ? 'flex' : 'none';
+            }
+        }
+
+        // Navigate students pagination
+        function navigateStudentsPage(direction) {
+            const { currentPage, filteredStudents, itemsPerPage } = studentsState;
+            const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
+
+            if (direction === 'prev' && currentPage > 1) {
+                studentsState.currentPage = currentPage - 1;
+            } else if (direction === 'next' && currentPage < totalPages) {
+                studentsState.currentPage = currentPage + 1;
+            } else if (typeof direction === 'number' && direction >= 1 && direction <= totalPages) {
+                studentsState.currentPage = direction;
+            }
+
+            renderStudentsPage();
+        }
+
+        // Function to handle student search with pagination
+        function handleSearch(event) {
+            const searchTerm = event.target.value.toLowerCase();
+            
+            if (searchTerm === '') {
+                // Reset to show all students
+                studentsState.filteredStudents = studentsState.allStudents;
+            } else {
+                // Filter students by search term
+                studentsState.filteredStudents = studentsState.allStudents.filter(student => {
+                    const studentText = `${student.name} ${student.admissionNumber} ${student.course} ${student.department}`.toLowerCase();
+                    return studentText.includes(searchTerm);
+                });
+            }
+            
+            // Reset to first page and re-render
+            studentsState.currentPage = 1;
+            renderStudentsPage();
+        }
+
+        // Function to handle department filter with pagination
+        function handleDepartmentFilter(event) {
+            const department = event.target.value;
+            
+            if (department === 'all') {
+                studentsState.filteredStudents = studentsState.allStudents;
+            } else {
+                studentsState.filteredStudents = studentsState.allStudents.filter(student => {
+                    return student.department === department;
+                });
+            }
+            
+            // Reset to first page and re-render
+            studentsState.currentPage = 1;
+            renderStudentsPage();
+        }
+
+        // Function to handle year filter with pagination
+        function handleYearFilter(event) {
+            const year = event.target.value;
+            
+            if (year === 'all') {
+                studentsState.filteredStudents = studentsState.allStudents;
+            } else {
+                studentsState.filteredStudents = studentsState.allStudents.filter(student => {
+                    return student.year.toString() === year;
+                });
+            }
+            
+            // Reset to first page and re-render
+            studentsState.currentPage = 1;
+            renderStudentsPage();
+        }
+
+        // Function to view student details
+        async function viewStudent(studentId) {
+            try {
+                const response = await fetch(`http://localhost:5502/api/students/${studentId}`);
+                if (!response.ok) throw new Error('Failed to fetch student details');
+                const student = await response.json();
+                
+                // Format course name properly
+                function formatCourseName(courseCode) {
+                    // Course to Program mapping for proper display names
+                    const courseToProgram = {
+                        'applied_biology_6': 'Applied Biology Level 6',
+                        'analytical_chemistry_6': 'Analytical Chemistry Level 6',
+                        'science_lab_technology_5': 'Science Lab Technology Level 5',
+                        'science_laboratory_technology_5': 'Science Lab Technology Level 5',
+                        'general_agriculture_4': 'General Agriculture Level 4',
+                        'sustainable_agriculture_5': 'Sustainable Agriculture Level 5',
+                        'agricultural_extension_6': 'Agricultural Extension Level 6',
+                        'building_technician_4': 'Building Technician Level 4',
+                        'building_technician_6': 'Building Technician Level 6',
+                        'civil_engineering_6': 'Civil Engineering Level 6',
+                        'plumbing_4': 'Plumbing Level 4',
+                        'plumbing_5': 'Plumbing Level 5',
+                        'electrical_engineering_4': 'Electrical Engineering Level 4',
+                        'electrical_engineering_5': 'Electrical Engineering Level 5',
+                        'electrical_engineering_6': 'Electrical Engineering Level 6',
+                        'automotive_engineering_5': 'Automotive Engineering Level 5',
+                        'automotive_engineering_6': 'Automotive Engineering Level 6',
+                        'food_beverage_4': 'Food and Beverage Level 4',
+                        'food_beverage_5': 'Food & Beverage Level 5',
+                        'food_beverage_6': 'Food & Beverage Level 6',
+                        'food_and_beverage_4': 'Food and Beverage Level 4',
+                        'food_and_beverage_5': 'Food & Beverage Level 5',
+                        'food_and_beverage_6': 'Food & Beverage Level 6',
+                        'fashion_design_4': 'Fashion & Design Level 4',
+                        'fashion_design_5': 'Fashion and Design Level 5',
+                        'fashion_design_6': 'Fashion and Design Level 6',
+                        'fashion_and_design_4': 'Fashion & Design Level 4',
+                        'fashion_and_design_5': 'Fashion and Design Level 5',
+                        'fashion_and_design_6': 'Fashion and Design Level 6',
+                        'hairdressing_4': 'Hairdressing Level 4',
+                        'hairdressing_5': 'Hairdressing Level 5',
+                        'hairdressing_6': 'Hairdressing Level 6',
+                        'tourism_management_5': 'Tourism Management Level 5',
+                        'tourism_management_6': 'Tourism Management Level 6',
+                        'social_work_5': 'Social Work Level 5',
+                        'social_work_6': 'Social Work Level 6',
+                        'office_administration_5': 'Office Administration Level 5',
+                        'office_administration_6': 'Office Administration Level 6',
+                        'ict_5': 'ICT Level 5',
+                        'ict_6': 'ICT Level 6',
+                        'information_science_5': 'Information Science Level 5',
+                        'information_science_6': 'Information Science Level 6'
+                    };
+                    
+                    // First try to get the proper program name from our mapping
+                    const programName = courseToProgram[courseCode];
+                    if (programName) {
+                        return programName;
+                    }
+                    
+                    // If not found in mapping, format the course code nicely
+                    if (!courseCode) return 'Unknown Course';
+                    
+                    // Replace underscores with spaces and capitalize
+                    return courseCode
+                        .split('_')
+                        .map(word => {
+                            // Handle numbers at the end (convert to "Level X")
+                            if (/^\d+$/.test(word)) {
+                                return `Level ${word}`;
+                            }
+                            // Capitalize first letter of each word
+                            return word.charAt(0).toUpperCase() + word.slice(1);
+                        })
+                        .join(' ');
+                }
+                
+                const courseName = formatCourseName(student.course);
+                
+                // Populate modal content
+                const content = document.getElementById('studentDetailsContent');
+                content.innerHTML = `
+                    <div class="space-y-3">
+                        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+                            <h4 class="font-semibold text-gray-700 dark:text-gray-300 text-sm mb-2 flex items-center">
+                                <i class="ri-user-line mr-1"></i>Personal Information
+                            </h4>
+                            <div class="space-y-1 text-sm">
+                                <div class="flex justify-between"><span class="text-gray-600 dark:text-gray-400">Name:</span> <span class="font-medium">${student.name}</span></div>
+                                <div class="flex justify-between"><span class="text-gray-600 dark:text-gray-400">ID Number:</span> <span class="font-medium">${student.idNumber}</span></div>
+                                <div class="flex justify-between"><span class="text-gray-600 dark:text-gray-400">Phone:</span> <span class="font-medium">${student.phoneNumber}</span></div>
+                                <div class="flex justify-between"><span class="text-gray-600 dark:text-gray-400">KCSE Grade:</span> <span class="font-medium">${student.kcseGrade}</span></div>
+                            </div>
+                        </div>
+                        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+                            <h4 class="font-semibold text-gray-700 dark:text-gray-300 text-sm mb-2 flex items-center">
+                                <i class="ri-graduation-cap-line mr-1"></i>Academic Information
+                            </h4>
+                            <div class="space-y-1 text-sm">
+                                <div class="flex justify-between"><span class="text-gray-600 dark:text-gray-400">Admission Number:</span> <span class="font-medium">${student.admissionNumber}</span></div>
+                                <div class="flex justify-between"><span class="text-gray-600 dark:text-gray-400">Course:</span> <span class="font-medium">${courseName}</span></div>
+                                <div class="flex justify-between"><span class="text-gray-600 dark:text-gray-400">Department:</span> <span class="font-medium">${departmentMapping[student.department] || student.department}</span></div>
+                                <div class="flex justify-between"><span class="text-gray-600 dark:text-gray-400">Year:</span> <span class="font-medium">Year ${student.year}</span></div>
+                                <div class="flex justify-between"><span class="text-gray-600 dark:text-gray-400">Registered:</span> <span class="font-medium">${new Date(student.createdAt).toLocaleDateString()}</span></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Show modal with animation
+                const modal = document.getElementById('viewStudentModal');
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                setTimeout(() => {
+                    modal.querySelector('.transform').classList.remove('scale-95');
+                    modal.querySelector('.transform').classList.add('scale-100');
+                }, 10);
+                document.body.classList.add('menu-open');
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        // Function to edit student details
+        async function editStudent(studentId) {
+            try {
+                const response = await fetch(`http://localhost:5502/api/students/${studentId}`);
+                if (!response.ok) throw new Error('Failed to fetch student details');
+                const student = await response.json();
+                
+                // Populate edit form
+                document.getElementById('editStudentId').value = student._id;
+                document.getElementById('editName').value = student.name;
+                document.getElementById('editIdNumber').value = student.idNumber;
+                document.getElementById('editPhone').value = student.phoneNumber;
+                document.getElementById('editYear').value = student.year;
+                document.getElementById('editCourse').value = Object.values(courseConfig).find(c => c.code === student.course?.split('_')[0])?.name || student.course;
+                
+                // Show modal with animation
+                const modal = document.getElementById('editStudentModal');
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                setTimeout(() => {
+                    modal.querySelector('.transform').classList.remove('scale-95');
+                    modal.querySelector('.transform').classList.add('scale-100');
+                }, 10);
+                document.body.classList.add('menu-open');
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        // Close view modal
+        function closeViewModal() {
+            const modal = document.getElementById('viewStudentModal');
+            modal.querySelector('.transform').classList.remove('scale-100');
+            modal.querySelector('.transform').classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 200);
+            document.body.classList.remove('menu-open');
+        }
+
+        // Close edit modal
+        function closeEditModal() {
+            const modal = document.getElementById('editStudentModal');
+            modal.querySelector('.transform').classList.remove('scale-100');
+            modal.querySelector('.transform').classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 200);
+            document.body.classList.remove('menu-open');
+        }
+
+        // Handle edit student form submission
+        async function handleEditStudent(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const studentId = formData.get('studentId');
+            
+            const updateData = {
+                name: formData.get('name'),
+                idNumber: formData.get('idNumber'),
+                phoneNumber: formData.get('phoneNumber'),
+                year: parseInt(formData.get('year'))
+            };
+
+            try {
+                const response = await fetch(`http://localhost:5502/api/students/${studentId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(updateData)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showToast('Student updated successfully!');
+                    closeEditModal();
+                    fetchAndDisplayStudents(); // Refresh the list
+                } else {
+                    throw new Error(data.message || 'Failed to update student');
+                }
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        // Function to load dashboard stats
+        async function loadDashboardStats() {
+            try {
+                const response = await fetch('http://localhost:5502/api/students');
+                if (!response.ok) throw new Error('Failed to fetch students');
+                const students = await response.json();
+                
+                // Total students
+                document.getElementById('totalStudents').textContent = students.length;
+                
+                // New admissions (students with S25 in admission number - this year)
+                const newAdmissions = students.filter(student => 
+                    student.admissionNumber && student.admissionNumber.includes('/S25')
+                ).length;
+                document.getElementById('newAdmissions').textContent = newAdmissions;
+                
+                // Active courses (count unique courses)
+                const uniqueCourses = new Set(students.map(student => student.course));
+                document.getElementById('activeCourses').textContent = uniqueCourses.size;
+                
+                // Load course overview
+                loadCourseOverview(students);
+                
+            } catch (error) {
+                console.error('Error loading dashboard stats:', error);
+                document.getElementById('totalStudents').textContent = '0';
+                document.getElementById('newAdmissions').textContent = '0';
+                document.getElementById('activeCourses').textContent = '0';
+            }
+        }
+
+        // Function to load course overview
+        function loadCourseOverview(students) {
+            const departmentStats = {};
+            
+            // Group students by department
+            students.forEach(student => {
+                const dept = student.department;
+                if (!departmentStats[dept]) {
+                    departmentStats[dept] = {
+                        name: departmentMapping[dept] || dept,
+                        students: 0,
+                        courses: new Set()
+                    };
+                }
+                departmentStats[dept].students++;
+                departmentStats[dept].courses.add(student.course);
+            });
+
+            const grid = document.getElementById('courseOverviewGrid');
+            grid.innerHTML = '';
+
+            Object.entries(departmentStats).forEach(([deptKey, stats]) => {
+                const courseCount = stats.courses.size;
+                const card = document.createElement('div');
+                card.className = 'bg-gray-50 dark:bg-gray-700 p-6 rounded-xl hover:shadow-md transition-shadow';
+                card.innerHTML = `
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">${stats.name}</h3>
+                    <p class="text-gray-600 dark:text-gray-400 mb-4">Various programs and levels</p>
+                    <div class="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+                        <span class="flex items-center gap-1">
+                            <i class="ri-user-line"></i>
+                            ${stats.students} Students
+                        </span>
+                        <span class="flex items-center gap-1">
+                            <i class="ri-book-line"></i>
+                            ${courseCount} Courses
+                        </span>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // Student Promotion Functions
+        let promotionStudents = [];
+
+        // Tab switching functionality
+        function switchTab(tabName) {
+            // Hide all content sections
+            const sections = document.querySelectorAll('.content-section');
+            sections.forEach(section => section.classList.add('hidden'));
+            
+            // Remove active class from all nav items
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => {
+                item.classList.remove('text-primary', 'bg-blue-50', 'dark:bg-blue-900/30');
+                item.classList.add('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-50', 'dark:hover:bg-gray-700');
+            });
+            
+            // Map tab names to section IDs
+            const sectionMap = {
+                'dashboard': 'content-dashboard',
+                'management': 'content-management',
+                'promotion': 'content-promotion'
+            };
+            
+            // Show selected section
+            const sectionId = sectionMap[tabName] || `content-${tabName}`;
+            const targetSection = document.getElementById(sectionId);
+            if (targetSection) {
+                targetSection.classList.remove('hidden');
+            }
+            
+            // Add active class to selected nav item
+            const activeNavItem = document.querySelector(`[onclick="switchTab('${tabName}')"]`);
+            if (activeNavItem) {
+                activeNavItem.classList.remove('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-50', 'dark:hover:bg-gray-700');
+                activeNavItem.classList.add('text-primary', 'bg-blue-50', 'dark:bg-blue-900/30');
+            }
+            
+            // Load data for specific tabs
+            if (tabName === 'management') {
+                fetchAndDisplayStudents();
+            } else if (tabName === 'promotion') {
+                loadPromotionStudents();
+            }
+        }
+
+        // Show promotion section (legacy function)
+        function showPromotionSection() {
+            switchTab('promotion');
+        }
+
+        // Load students for promotion
+        async function loadPromotionStudents() {
+            try {
+                console.log('Loading promotion students...');
+                const levelFilter = document.getElementById('levelFilter').value;
+                const deptFilter = document.getElementById('deptFilter').value;
+                
+                console.log('Filters:', { levelFilter, deptFilter });
+                
+                const response = await fetch('http://localhost:5502/api/students');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch students');
+                }
+                
+                const students = await response.json();
+                console.log('Fetched students:', students.length);
+                
+                // Filter students based on criteria
+                let filteredStudents = students.filter(student => {
+                    // Check if student is eligible for promotion
+                    const isEligible = isStudentEligibleForPromotion(student);
+                    
+                    // Apply level filter
+                    const levelMatch = levelFilter === 'all' || student.course.includes(`_${levelFilter}`);
+                    
+                    // Apply department filter
+                    const deptMatch = deptFilter === 'all' || student.department === deptFilter;
+                    
+                    return isEligible && levelMatch && deptMatch;
+                });
+                
+                promotionStudents = filteredStudents;
+                displayPromotionStudents(filteredStudents);
+                
+                showToast(`Loaded ${filteredStudents.length} students eligible for promotion`, 'success');
+            } catch (error) {
+                console.error('Error loading promotion students:', error);
+                showToast('Failed to load students for promotion', 'error');
+            }
+        }
+
+        // Check if student is eligible for promotion
+        function isStudentEligibleForPromotion(student) {
+            const courseCode = student.course;
+            const currentYear = student.year;
+            
+            // Extract level from course code
+            const levelMatch = courseCode.match(/_(\d+)$/);
+            if (!levelMatch) return false;
+            
+            const level = parseInt(levelMatch[1]);
+            const maxYear = level === 5 ? 2 : 3; // Level 5 = 2 years, Level 6 = 3 years
+            
+            // Student is eligible if they haven't reached max year
+            return currentYear < maxYear;
+        }
+
+        // Display students in promotion table
+        function displayPromotionStudents(students) {
+            console.log('Displaying promotion students:', students.length);
+            const tbody = document.getElementById('promotionTableBody');
+            
+            if (!tbody) {
+                console.error('promotionTableBody element not found!');
+                return;
+            }
+            
+            if (students.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="px-6 py-4 text-center text-gray-500">
+                            No students found matching the criteria
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = students.map(student => {
+                const courseCode = student.course;
+                const levelMatch = courseCode.match(/_(\d+)$/);
+                const level = levelMatch ? levelMatch[1] : 'Unknown';
+                const maxYear = level === '5' ? 2 : 3;
+                const nextYear = student.year + 1;
+                const isEligible = nextYear <= maxYear;
+                
+                return `
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <input type="checkbox" class="student-checkbox rounded border-gray-300" value="${student._id}" ${isEligible ? '' : 'disabled'}>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-10 w-10">
+                                    <div class="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                        <i class="ri-user-line text-primary"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-4">
+                                    <div class="text-sm font-medium text-gray-900 dark:text-white">${escapeHtml(student.name)}</div>
+                                    <div class="text-sm text-gray-500 dark:text-gray-400">${escapeHtml(student.admissionNumber)}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900 dark:text-white">${escapeHtml(courseCode.replace(/_/g, ' ').toUpperCase())}</div>
+                            <div class="text-sm text-gray-500 dark:text-gray-400">${escapeHtml(student.department)}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            Year ${student.year}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            Level ${level}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            Year ${maxYear}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            ${isEligible ? 
+                                `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                                    Eligible
+                                </span>` : 
+                                `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+                                    Max Year Reached
+                                </span>`
+                            }
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Toggle all students selection
+        function toggleAllStudents() {
+            const selectAll = document.getElementById('selectAll');
+            const checkboxes = document.querySelectorAll('.student-checkbox:not([disabled])');
+            
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = selectAll.checked;
+            });
+        }
+
+        // Promote all selected students
+        async function promoteAllStudents() {
+            const selectedCheckboxes = document.querySelectorAll('.student-checkbox:checked');
+            
+            if (selectedCheckboxes.length === 0) {
+                showToast('Please select students to promote', 'warning');
+                return;
+            }
+            
+            const selectedStudentIds = Array.from(selectedCheckboxes).map(cb => cb.value);
+            const studentsToPromote = promotionStudents.filter(s => selectedStudentIds.includes(s._id));
+            
+            // Show progress
+            document.getElementById('promotionProgress').classList.remove('hidden');
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            
+            let successCount = 0;
+            let errorCount = 0;
+            
+            for (let i = 0; i < studentsToPromote.length; i++) {
+                const student = studentsToPromote[i];
+                const progress = ((i + 1) / studentsToPromote.length) * 100;
+                
+                progressBar.style.width = `${progress}%`;
+                progressText.textContent = `${i + 1} of ${studentsToPromote.length} students processed`;
+                
+                try {
+                    const response = await fetch(`http://localhost:5502/api/students/${student._id}`, {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            year: student.year + 1
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        successCount++;
+                    } else {
+                        errorCount++;
+                    }
+                } catch (error) {
+                    console.error(`Error promoting student ${student.name}:`, error);
+                    errorCount++;
+                }
+                
+                // Small delay to show progress
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            
+            // Hide progress
+            document.getElementById('promotionProgress').classList.add('hidden');
+            
+            // Show results
+            if (successCount > 0) {
+                showToast(`Successfully promoted ${successCount} students`, 'success');
+            }
+            if (errorCount > 0) {
+                showToast(`${errorCount} students failed to promote`, 'error');
+            }
+            
+            // Refresh the list
+            loadPromotionStudents();
+        }
+
+        // Escape HTML function
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Load students when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchAndDisplayStudents();
+            loadDashboardStats();
+            
+            // Add event listeners for filters
+            const departmentFilter = document.getElementById('departmentFilter');
+            const yearFilter = document.getElementById('yearFilter');
+            
+            if (departmentFilter) {
+                departmentFilter.addEventListener('change', handleDepartmentFilter);
+            }
+            
+            if (yearFilter) {
+                yearFilter.addEventListener('change', handleYearFilter);
+            }
+            
+            // Add event listeners for search and filters
+            document.querySelector('input[placeholder="Search students..."]')
+                .addEventListener('input', handleSearch);
+            
+            document.getElementById('departmentFilter')
+                .addEventListener('change', handleDepartmentFilter);
+            
+            document.getElementById('yearFilter')
+                .addEventListener('change', handleYearFilter);
+        });
+
+    </script>
+    <script>
+        // Modal Functions
+        function openAdmissionModal() {
+            const modal = document.getElementById('admissionModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            modal.style.display = 'flex';
+            document.body.classList.add('menu-open');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeAdmissionModal() {
+            const modal = document.getElementById('admissionModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            modal.style.display = 'none';
+            document.body.classList.remove('menu-open');
+            document.body.style.overflow = 'auto';
+        }
+
+        // Promotion Modal Functions
+        function showPromotionModal() {
+            const modal = document.getElementById('promotionModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closePromotionModal() {
+            const modal = document.getElementById('promotionModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            modal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        // Load students for modal promotion
+        async function loadModalPromotionStudents() {
+            try {
+                console.log('Loading modal promotion students...');
+                const levelFilter = document.getElementById('modalLevelFilter').value;
+                const deptFilter = document.getElementById('modalDeptFilter').value;
+                
+                console.log('Modal Filters:', { levelFilter, deptFilter });
+                
+                const response = await fetch('http://localhost:5502/api/students');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch students');
+                }
+                
+                const students = await response.json();
+                console.log('Fetched students for modal:', students.length);
+                
+                // Filter students based on criteria
+                let filteredStudents = students.filter(student => {
+                    // Check if student is eligible for promotion
+                    const isEligible = isStudentEligibleForPromotion(student);
+                    
+                    // Apply level filter
+                    const courseCode = student.course;
+                    const levelMatch = courseCode.match(/_(\d+)$/);
+                    const level = levelMatch ? levelMatch[1] : 'Unknown';
+                    const levelMatchFilter = levelFilter === 'all' || level === levelFilter;
+                    
+                    // Apply department filter
+                    const deptMatch = deptFilter === 'all' || student.department === deptFilter;
+                    
+                    return isEligible && levelMatchFilter && deptMatch;
+                });
+                
+                console.log('Filtered students for modal:', filteredStudents.length);
+                displayModalPromotionStudents(filteredStudents);
+                
+            } catch (error) {
+                console.error('Error loading promotion students:', error);
+                showToast('Error loading students: ' + error.message, 'error');
+            }
+        }
+
+        // Display students in modal promotion table
+        function displayModalPromotionStudents(students) {
+            console.log('Displaying modal promotion students:', students.length);
+            const tbody = document.getElementById('modalPromotionTableBody');
+            
+            if (!tbody) {
+                console.error('modalPromotionTableBody element not found!');
+                return;
+            }
+            
+            if (students.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="px-6 py-4 text-center text-gray-500">
+                            No students found matching the criteria
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = students.map(student => {
+                const courseCode = student.course;
+                const levelMatch = courseCode.match(/_(\d+)$/);
+                const level = levelMatch ? levelMatch[1] : 'Unknown';
+                const maxYear = level === '5' ? 2 : 3;
+                const nextYear = student.year + 1;
+                const isEligible = nextYear <= maxYear;
+                
+                return `
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <input type="checkbox" class="student-checkbox rounded border-gray-300" value="${student._id}" ${isEligible ? '' : 'disabled'}>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-10 w-10">
+                                    <div class="h-10 w-10 rounded-full bg-primary flex items-center justify-center">
+                                        <span class="text-sm font-medium text-white">${student.name.charAt(0)}</span>
+                                    </div>
+                                </div>
+                                <div class="ml-4">
+                                    <div class="text-sm font-medium text-gray-900 dark:text-white">${student.name}</div>
+                                    <div class="text-sm text-gray-500 dark:text-gray-400">${student.admissionNumber}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            ${courseCode.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            Year ${student.year}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            Level ${level}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            ${maxYear}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            ${isEligible ? 
+                                '<span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Eligible</span>' : 
+                                '<span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">Max Year Reached</span>'
+                            }
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Promote all selected students in modal
+        async function promoteAllModalStudents() {
+            const checkboxes = document.querySelectorAll('.student-checkbox:checked');
+            if (checkboxes.length === 0) {
+                showToast('Please select students to promote', 'error');
+                return;
+            }
+
+            const studentIds = Array.from(checkboxes).map(cb => cb.value);
+            const progressDiv = document.getElementById('modalPromotionProgress');
+            const progressBar = document.getElementById('modalProgressBar');
+            const progressText = document.getElementById('modalProgressText');
+
+            progressDiv.classList.remove('hidden');
+            progressText.textContent = 'Starting promotion...';
+
+            let successCount = 0;
+            let errorCount = 0;
+
+            for (let i = 0; i < studentIds.length; i++) {
+                const studentId = studentIds[i];
+                const progress = ((i + 1) / studentIds.length) * 100;
+                progressBar.style.width = `${progress}%`;
+                progressText.textContent = `Promoting student ${i + 1} of ${studentIds.length}...`;
+
+                try {
+                    // First get the current student data
+                    const getResponse = await fetch(`http://localhost:5502/api/students/${studentId}`);
+                    if (!getResponse.ok) {
+                        throw new Error('Failed to fetch student data');
+                    }
+                    const student = await getResponse.json();
+                    
+                    // Update with the new year
+                    const response = await fetch(`http://localhost:5502/api/students/${studentId}`, {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ year: student.year + 1 })
+                    });
+
+                    if (response.ok) {
+                        successCount++;
+                    } else {
+                        errorCount++;
+                    }
+                } catch (error) {
+                    console.error('Error promoting student:', error);
+                    errorCount++;
+                }
+
+                // Small delay to show progress
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+
+            progressText.textContent = `Promotion complete! ${successCount} successful, ${errorCount} errors`;
+            
+            if (successCount > 0) {
+                showToast(`Successfully promoted ${successCount} students`, 'success');
+                // Reload students
+                loadModalPromotionStudents();
+            }
+
+            if (errorCount > 0) {
+                showToast(`${errorCount} students failed to promote`, 'error');
+            }
+        }
+
+        // Toast Notification Function
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `p-4 rounded-lg shadow-lg text-white mb-4 transform transition-all duration-300 translate-y-0 opacity-100 ${
+                type === 'success' ? 'bg-success' : 'bg-danger'
+            }`;
+            toast.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <i class="${type === 'success' ? 'ri-checkbox-circle-line' : 'ri-error-warning-line'}"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            document.getElementById('toastContainer').appendChild(toast);
+            
+            // Animate and remove toast after 3 seconds
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Course configurations with new numbering system
+        const courseConfig = {
+            // Applied Science Department
+            applied_biology_6: { code: 'AP6', department: 'applied_science', name: 'Applied Biology Level 6' },
+            analytical_chemistry_6: { code: 'AC6', department: 'applied_science', name: 'Analytical Chemistry Level 6' },
+            science_laboratory_technology_5: { code: 'SLT5', department: 'applied_science', name: 'Science Lab Technology Level 5' },
+            
+            // Agriculture Department
+            general_agriculture_4: { code: 'GA4', department: 'agriculture', name: 'General Agriculture Level 4' },
+            sustainable_agriculture_5: { code: 'SA5', department: 'agriculture', name: 'Sustainable Agriculture Level 5' },
+            agricultural_extension_6: { code: 'AE6', department: 'agriculture', name: 'Agricultural Extension Level 6' },
+            
+            // Building and Civil Department
+            building_technician_4: { code: 'BT4', department: 'building_civil', name: 'Building Technician Level 4' },
+            building_technician_6: { code: 'BT6', department: 'building_civil', name: 'Building Technician Level 6' },
+            civil_engineering_6: { code: 'CE6', department: 'building_civil', name: 'Civil Engineering Level 6' },
+            plumbing_4: { code: 'PL4', department: 'building_civil', name: 'Plumbing Level 4' },
+            plumbing_5: { code: 'PL5', department: 'building_civil', name: 'Plumbing Level 5' },
+            
+            // Electromechanical Department
+            electrical_engineering_4: { code: 'EE4', department: 'electromechanical', name: 'Electrical Engineering Level 4' },
+            electrical_engineering_5: { code: 'EE5', department: 'electromechanical', name: 'Electrical Engineering Level 5' },
+            electrical_engineering_6: { code: 'EE6', department: 'electromechanical', name: 'Electrical Engineering Level 6' },
+            automotive_engineering_5: { code: 'AM5', department: 'electromechanical', name: 'Automotive Engineering Level 5' },
+            automotive_engineering_6: { code: 'AM6', department: 'electromechanical', name: 'Automotive Engineering Level 6' },
+            
+            // Hospitality Department
+            food_and_beverage_4: { code: 'FB4', department: 'hospitality', name: 'Food and Beverage Level 4' },
+            food_and_beverage_5: { code: 'FB5', department: 'hospitality', name: 'Food & Beverage Level 5' },
+            food_and_beverage_6: { code: 'FB6', department: 'hospitality', name: 'Food & Beverage Level 6' },
+            fashion_and_design_4: { code: 'FD4', department: 'hospitality', name: 'Fashion & Design Level 4' },
+            fashion_and_design_5: { code: 'FD5', department: 'hospitality', name: 'Fashion and Design Level 5' },
+            fashion_and_design_6: { code: 'FD6', department: 'hospitality', name: 'Fashion and Design Level 6' },
+            hairdressing_4: { code: 'HD4', department: 'hospitality', name: 'Hairdressing Level 4' },
+            hairdressing_5: { code: 'HD5', department: 'hospitality', name: 'Hairdressing Level 5' },
+            hairdressing_6: { code: 'HD6', department: 'hospitality', name: 'Hairdressing Level 6' },
+            tourism_management_5: { code: 'TM5', department: 'hospitality', name: 'Tourism Management Level 5' },
+            tourism_management_6: { code: 'TM6', department: 'hospitality', name: 'Tourism Management Level 6' },
+            
+            // Business and Liberal Studies Department
+            social_work_5: { code: 'SW5', department: 'business_liberal', name: 'Social Work Level 5' },
+            social_work_6: { code: 'SW6', department: 'business_liberal', name: 'Social Work Level 6' },
+            office_administration_5: { code: 'OA5', department: 'business_liberal', name: 'Office Administration Level 5' },
+            office_administration_6: { code: 'OA6', department: 'business_liberal', name: 'Office Administration Level 6' },
+            
+            // Computing and Informatics Department
+            ict_5: { code: 'ICT5', department: 'computing_informatics', name: 'ICT Level 5' },
+            ict_6: { code: 'ICT6', department: 'computing_informatics', name: 'ICT Level 6' },
+            information_science_5: { code: 'IS5', department: 'computing_informatics', name: 'Information Science Level 5' },
+            information_science_6: { code: 'IS6', department: 'computing_informatics', name: 'Information Science Level 6' }
+        };
+
+        let currentAdmissionNumber = '';
+
+        // Handle course selection and department auto-fill
+        function handleCourseSelection() {
+            const courseSelect = document.getElementById('course');
+            const departmentSelect = document.getElementById('department');
+            const selectedCourse = courseSelect.value;
+            
+            if (selectedCourse && courseConfig[selectedCourse]) {
+                const courseInfo = courseConfig[selectedCourse];
+                departmentSelect.value = courseInfo.department;
+                generateAdmissionNumber(courseInfo);
+            } else {
+                departmentSelect.value = '';
+                currentAdmissionNumber = '';
+            }
+        }
+
+        // Update intake year based on selected intake
+        function updateIntakeYear() {
+            const intakeSelect = document.getElementById('intake-select');
+            const intakeYearInput = document.getElementById('intake-year');
+            
+            if (!intakeSelect.value) {
+                intakeYearInput.value = '';
+                return;
+            }
+            
+            const currentDate = new Date();
+            const currentYear = currentDate.getFullYear();
+            const currentMonth = currentDate.getMonth() + 1; // JavaScript months are 0-indexed
+            
+            let intakeYear = currentYear;
+            
+            if (intakeSelect.value === 'january') {
+                // January intake: if we're past January, next January is next year
+                if (currentMonth > 1) {
+                    intakeYear = currentYear + 1;
+                }
+            } else if (intakeSelect.value === 'september') {
+                // September intake: if we're past September, next September is next year
+                if (currentMonth > 9) {
+                    intakeYear = currentYear + 1;
+                }
+            }
+            
+            intakeYearInput.value = intakeYear;
+        }
+
+        // Regenerate admission number when intake changes
+        function regenerateAdmissionOnIntakeChange() {
+            const courseSelect = document.getElementById('course');
+            if (courseSelect.value) {
+                const courseInfo = courseConfig[courseSelect.value];
+                if (courseInfo) {
+                    generateAdmissionNumber(courseInfo);
+                }
+            }
+        }
+
+        // Generate dynamic intake code
+        function generateIntakeCode(intake, intakeYear) {
+            const yearSuffix = intakeYear.toString().slice(-2);
+            const intakePrefix = intake === 'january' ? 'J' : 'S';
+            return `${intakePrefix}${yearSuffix}`;
+        }
+
+        // Generate admission number based on course code with dynamic intake
+        async function generateAdmissionNumber(courseInfo) {
+            try {
+                if (!courseInfo || !courseInfo.code) {
+                    throw new Error('Invalid course information');
+                }
+
+                // Get intake information from form
+                const intakeSelect = document.getElementById('intake-select');
+                const intakeYearInput = document.getElementById('intake-year');
+                
+                if (!intakeSelect.value || !intakeYearInput.value) {
+                    throw new Error('Please select intake and intake year first');
+                }
+
+                const intake = intakeSelect.value;
+                const intakeYear = parseInt(intakeYearInput.value);
+                const intakeCode = generateIntakeCode(intake, intakeYear);
+
+                // Fetch the latest admission number for this course and intake
+                const response = await fetch(`http://localhost:5502/api/students/latest-admission/${courseInfo.code}/${intake}/${intakeYear}`);
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                if (!data) {
+                    throw new Error('Invalid response from server');
+                }
+                
+                let sequentialNumber;
+                
+                if (data.latestNumber && typeof data.latestNumber === 'string') {
+                    // Extract the sequential number from the latest admission number
+                    // Format: AC6/0001/S25 -> extract 0001
+                    const matches = data.latestNumber.match(/\/(\d{4})\//);
+                    if (matches && matches[1]) {
+                        // Increment the sequential number with validation
+                        const currentSeq = parseInt(matches[1], 10);
+                        if (isNaN(currentSeq)) {
+                            throw new Error('Invalid sequence number format');
+                        }
+                        sequentialNumber = String(currentSeq + 1).padStart(4, '0');
+                    } else {
+                        sequentialNumber = '0001';
+                    }
+                } else {
+                    // No existing admission numbers for this course and intake
+                    sequentialNumber = '0001';
+                }
+                
+                // New format: COURSECODE/SEQUENCE/INTAKECODE (e.g., AC6/0001/J26)
+                currentAdmissionNumber = `${courseInfo.code}/${sequentialNumber}/${intakeCode}`;
+                
+                // Validate the generated admission number format
+                const admissionNumberFormat = /^[A-Z]{2,4}\d?\/\d{4}\/[JS]\d{2}$/;
+                if (!admissionNumberFormat.test(currentAdmissionNumber)) {
+                    throw new Error('Generated admission number has invalid format');
+                }
+                
+                // Update the admission number display field
+                const admissionNumberField = document.getElementById('admissionNumber');
+                if (!admissionNumberField) {
+                    throw new Error('Admission number field not found');
+                }
+                admissionNumberField.value = currentAdmissionNumber;
+            } catch (error) {
+                console.error('Error in admission number generation:', error);
+                showToast(`Error: ${error.message}`, 'error');
+                currentAdmissionNumber = ''; // Reset on error
+            }
+        }
+
+        // Handle Student Admission
+        async function handleAdmission(event) {
+            event.preventDefault();
+            if (!currentAdmissionNumber) {
+                showToast('Please select a course first', 'error');
+                return;
+            }
+
+            const formData = new FormData(event.target);
+            const courseInfo = courseConfig[formData.get('course')];
+            const yearValue = formData.get('year');
+            const intakeValue = formData.get('intake');
+            const intakeYearValue = formData.get('intakeYear');
+            
+            const studentData = {
+                name: formData.get('name'),
+                idNumber: formData.get('idNumber'),
+                kcseGrade: formData.get('kcseGrade'),
+                admissionNumber: currentAdmissionNumber,
+                course: formData.get('course'),
+                department: courseInfo ? courseInfo.department : '',
+                year: yearValue ? parseInt(yearValue) : 1,
+                intake: intakeValue || 'september',
+                intakeYear: intakeYearValue ? parseInt(intakeYearValue) : new Date().getFullYear(),
+                phoneNumber: formData.get('phonenumber'),
+                admissionType: formData.get('admissionType'),
+                role: 'student'
+            };
+
+            console.log('Student data to submit:', studentData);
+
+            try {
+                const response = await fetch('http://localhost:5502/api/students/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(studentData)
+                });
+
+                const data = await response.json();
+                console.log('Registration response:', data); // Debug log
+
+                if (response.ok) {
+                    showToast(data.message || 'Student registered successfully!');
+                    event.target.reset();
+                    closeAdmissionModal();
+                    
+                    // Show admission letter if data is available
+                    console.log('Checking admission letter data:', data.showAdmissionLetter, data.admissionLetter); // Debug log
+                    if (data.showAdmissionLetter && data.admissionLetter) {
+                        console.log('Showing admission letter modal...'); // Debug log
+                        // Show admission letter modal directly
+                        showAdmissionLetter(data.admissionLetter);
+                    } else {
+                        console.log('No admission letter data found'); // Debug log
+                    }
+                    
+                    // Refresh the student list and stats
+                    fetchAndDisplayStudents();
+                    loadDashboardStats();
+                } else {
+                    throw new Error(data.message || 'Failed to register student');
+                }
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        // Function to load and show admission letter modal
+        async function loadAdmissionLetterModal(studentData) {
+            console.log('loadAdmissionLetterModal called with:', studentData); // Debug log
+            try {
+                // Create modal container if it doesn't exist
+                let modalContainer = document.getElementById('admissionLetterContainer');
+                if (!modalContainer) {
+                    modalContainer = document.createElement('div');
+                    modalContainer.id = 'admissionLetterContainer';
+                    document.body.appendChild(modalContainer);
+                    console.log('Created modal container'); // Debug log
+                }
+
+                // Load admission letter HTML
+                console.log('Fetching admission letter HTML...'); // Debug log
+                const response = await fetch('/src/components/registrar/AdmissionLetter.html');
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to load admission letter: ${response.status}`);
+                }
+                
+                const letterHTML = await response.text();
+                console.log('Loaded admission letter HTML, length:', letterHTML.length); // Debug log
+                modalContainer.innerHTML = letterHTML;
+
+                // Wait for DOM to update, then show the letter
+                setTimeout(() => {
+                    console.log('Checking for showAdmissionLetter function...'); // Debug log
+                    if (window.showAdmissionLetter) {
+                        console.log('Calling showAdmissionLetter with:', studentData); // Debug log
+                        window.showAdmissionLetter(studentData);
+                    } else {
+                        console.error('showAdmissionLetter function not found!'); // Debug log
+                    }
+                }, 100);
+
+            } catch (error) {
+                console.error('Error loading admission letter:', error);
+                showToast('Error loading admission letter: ' + error.message, 'error');
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-50 dark:bg-gray-900 text-slate-800 dark:text-white overflow-x-hidden">
+
+    <div class="min-h-screen">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="w-64 bg-white dark:bg-gray-800 border-r border-slate-200 dark:border-gray-700 p-4 transition-all duration-300 flex-shrink-0 shadow-lg">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center gap-2 text-lg font-semibold text-primary">
+                    <i class="ri-admin-line"></i>
+                    <span id="sidebar-title">Registrar Portal</span>
+                </div>
+                <button id="toggleSidebar" class="p-1 hover:bg-slate-100 rounded">
+                    <i class="ri-menu-fold-line text-xl text-slate-600"></i>
+                </button>
+            </div>
+            
+            <!-- Auth Buttons -->
+            <div class="mb-4">
+                <div class="flex gap-2">
+                    <button id="loginBtn" class="flex-1 px-2 py-1 text-xs bg-success text-white rounded hover:bg-green-600 transition-colors">
+                        <i class="ri-login-box-line mr-1"></i>Login
+                    </button>
+                    <button id="logoutBtn" class="flex-1 px-2 py-1 text-xs bg-danger text-white rounded hover:bg-red-600 transition-colors">
+                        <i class="ri-logout-box-line mr-1"></i>Logout
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Dark Mode Toggle -->
+            <div class="mb-6">
+                <button onclick="toggleDarkMode()" class="w-full flex items-center gap-2 px-3 py-2 text-sm bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">
+                    <i class="ri-moon-line"></i>
+                    <span>Dark Mode</span>
+                </button>
+            </div>
+            
+            <div class="p-2">
+                <nav class="space-y-1">
+                    <a href="#" onclick="switchTab('dashboard')" class="flex items-center gap-3 px-4 py-3 text-primary bg-blue-50 dark:bg-blue-900/30 rounded-lg nav-item active">
+                        <i class="ri-dashboard-line text-xl"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="#" onclick="switchTab('dashboard')" class="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg nav-item">
+                        <i class="ri-user-add-line text-xl"></i>
+                        <span>Student Admission</span>
+                    </a>
+                    <a href="#" onclick="switchTab('management')" class="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg nav-item">
+                        <i class="ri-group-line text-xl"></i>
+                        <span>Student Management</span>
+                    </a>
+                    <a href="#" onclick="switchTab('promotion')" class="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg nav-item">
+                        <i class="ri-arrow-up-line text-xl"></i>
+                        <span>Student Promotion</span>
+                    </a>
+                    <a href="#" onclick="switchTab('dashboard')" class="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg nav-item">
+                        <i class="ri-book-open-line text-xl"></i>
+                        <span>Course Management</span>
+                    </a>
+
+                    <a href="#" onclick="switchTab('dashboard')" class="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg nav-item">
+                        <i class="ri-file-list-3-line text-xl"></i>
+                        <span>Enrollment</span>
+                    </a>
+                    <a href="#" onclick="switchTab('dashboard')" class="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg nav-item">
+                        <i class="ri-graduation-cap-line text-xl"></i>
+                        <span>Graduation</span>
+                    </a>
+                    <div class="my-4 border-t border-gray-200 dark:border-gray-700"></div>
+                    <a href="#" onclick="switchTab('dashboard')" class="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg nav-item">
+                        <i class="ri-team-line text-xl"></i>
+                        <span>Faculty Management</span>
+                    </a>
+                    <a href="#" onclick="switchTab('dashboard')" class="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg nav-item">
+                        <i class="ri-building-line text-xl"></i>
+                        <span>Department Management</span>
+                    </a>
+                    <a href="#" onclick="switchTab('dashboard')" class="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg nav-item">
+                        <i class="ri-file-chart-line text-xl"></i>
+                        <span>Reports & Analytics</span>
+                    </a>
+                </nav>
+            </div>
+
+        </aside>
+
+        <!-- Main Content -->
+        <main class="p-4 overflow-x-auto bg-slate-50 dark:bg-gray-900 min-h-screen">
+            <!-- Mobile Menu Button -->
+            <button id="mobileMenuBtn" class="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+                <i class="ri-menu-line text-xl"></i>
+            </button>
+            
+            <!-- Dashboard Section -->
+            <div id="content-dashboard" class="content-section">
+            <!-- Header -->
+            <div class="flex justify-between items-center mb-4">
+                <div>
+                    <h1 class="text-2xl font-semibold mb-1">Registrar Dashboard</h1>
+                    <p class="text-slate-500 text-sm">Academic Year 2024/2025 | <strong>Admin User</strong></p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="openAdmissionModal()" class="flex items-center gap-1 px-3 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors text-sm">
+                        <i class="ri-user-add-line"></i>
+                        <span>Add Student</span>
+                    </button>
+                    <button onclick="showPromotionModal()" class="flex items-center gap-1 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm">
+                        <i class="ri-arrow-up-line"></i>
+                        <span>Promote Students</span>
+                    </button>
+                    <button id="export-students-btn" onclick="showExportModal()" class="flex items-center gap-1 px-3 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors text-sm">
+                        <i class="ri-download-line"></i>
+                        <span>Export</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Dashboard Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div class="bg-white rounded-lg shadow-sm p-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-slate-500 text-sm">Total Students</p>
+                            <p class="text-2xl font-bold text-slate-800" id="totalStudents">0</p>
+                        </div>
+                        <div class="bg-blue-100 p-3 rounded-lg">
+                            <i class="ri-group-line text-xl text-blue-600"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow-sm p-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-slate-500 text-sm">New Admissions</p>
+                            <p class="text-2xl font-bold text-slate-800" id="newAdmissions">0</p>
+                        </div>
+                        <div class="bg-green-100 p-3 rounded-lg">
+                            <i class="ri-user-add-line text-xl text-green-600"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow-sm p-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-slate-500 text-sm">Active Courses</p>
+                            <p class="text-2xl font-bold text-slate-800" id="activeCourses">0</p>
+                        </div>
+                        <div class="bg-yellow-100 p-3 rounded-lg">
+                            <i class="ri-book-line text-xl text-yellow-600"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow-sm p-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-slate-500 text-sm">Departments</p>
+                            <p class="text-2xl font-bold text-slate-800">7</p>
+                        </div>
+                        <div class="bg-purple-100 p-3 rounded-lg">
+                            <i class="ri-building-line text-xl text-purple-600"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            </div>
+
+            <!-- Student Management Section -->
+            <div id="content-management" class="content-section hidden">
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-8">
+                <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-6">Student Management</h2>
+                <div class="flex flex-wrap gap-4 mb-6">
+                    <button onclick="openAdmissionModal()" class="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-secondary text-white rounded-lg transition-colors">
+                        <i class="ri-user-add-line"></i>
+                        <span>New Admission</span>
+                    </button>
+
+                    <!-- Student Admission Modal -->
+                    <div id="admissionModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-[9999]">
+                        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg w-full max-w-lg mx-4">
+                            <div class="p-6">
+                                <div class="flex justify-between items-center mb-6">
+                                    <h3 class="text-xl font-bold text-gray-800 dark:text-white">New Student Admission</h3>
+                                    <button onclick="closeAdmissionModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                                        <i class="ri-close-line text-2xl"></i>
+                                    </button>
+                                </div>
+                                <form id="admissionForm" onsubmit="handleAdmission(event)" class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name</label>
+                                        <input type="text" name="name" required class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ID/Birth Certificate Number</label>
+                                        <input type="text" name="idNumber" required class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">KCSE Grade</label>
+                                        <select name="kcseGrade" required class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                                            <option value="">Select Grade</option>
+                                            <option value="A">A</option>
+                                            <option value="A-">A-</option>
+                                            <option value="B+">B+</option>
+                                            <option value="B">B</option>
+                                            <option value="B-">B-</option>
+                                            <option value="C+">C+</option>
+                                            <option value="C">C</option>
+                                            <option value="C-">C-</option>
+                                            <option value="D+">D+</option>
+                                            <option value="D">D</option>
+                                            <option value="D-">D-</option>
+                                            <option value="E">E</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone Number</label>
+                        <input type="tel" name="phonenumber" required pattern="[0-9]{10}" placeholder="Enter 10-digit phone number" class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Admission Type</label>
+                        <select name="admissionType" required class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                            <option value="">Select Admission Type</option>
+                            <option value="walk-in">Walk-in</option>
+                            <option value="KUCCPS">KUCCPS</option>
+                        </select>
+                    </div>
+                                                        <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Year of Study</label>
+                                        <select name="year" class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white" required>
+                                            <option value="1" selected>Year 1</option>
+                                            <option value="2">Year 2</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Intake</label>
+                                        <select name="intake" id="intake-select" class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white" required onchange="updateIntakeYear(); regenerateAdmissionOnIntakeChange()">
+                                            <option value="">Select Intake</option>
+                                            <option value="january">January</option>
+                                            <option value="september">September</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Intake Year</label>
+                                        <input type="number" name="intakeYear" id="intake-year" class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white" readonly required>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Department</label>
+                                        <select name="department" id="department" required class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white" disabled>
+                                            <option value="">Department will be auto-selected</option>
+                                            <option value="applied_science">Applied Science Department</option>
+                                            <option value="agriculture">Agriculture Department</option>
+                                            <option value="building_civil">Building and Civil Department</option>
+                                            <option value="electromechanical">Electromechanical Department</option>
+                                            <option value="hospitality">Hospitality Department</option>
+                                            <option value="business_liberal">Business and Liberal Studies</option>
+                                            <option value="computing_informatics">Computing and Informatics</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Course</label>
+                                        <select name="course" id="course" required onchange="handleCourseSelection()" class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                                            <option value="">Select Course</option>
+                                            <optgroup label="Applied Science Department">
+                                                <option value="applied_biology_6">Applied Biology Level 6 (AP6)</option>
+                                                <option value="analytical_chemistry_6">Analytical Chemistry Level 6 (AC6)</option>
+                                                <option value="science_laboratory_technology_5">Science Lab Technology Level 5 (SLT5)</option>
+                                            </optgroup>
+                                            <optgroup label="Agriculture Department">
+                                                <option value="general_agriculture_4">General Agriculture Level 4 (GA4)</option>
+                                                <option value="sustainable_agriculture_5">Sustainable Agriculture Level 5 (SA5)</option>
+                                                <option value="agricultural_extension_6">Agricultural Extension Level 6 (AE6)</option>
+                                            </optgroup>
+                                            <optgroup label="Building and Civil Department">
+                                                <option value="building_technician_4">Building Technician Level 4 (BT4)</option>
+                                                <option value="building_technician_6">Building Technician Level 6 (BT6)</option>
+                                                <option value="civil_engineering_6">Civil Engineering Level 6 (CE6)</option>
+                                                <option value="plumbing_4">Plumbing Level 4 (PL4)</option>
+                                                <option value="plumbing_5">Plumbing Level 5 (PL5)</option>
+                                            </optgroup>
+                                            <optgroup label="Electromechanical Department">
+                                                <option value="electrical_engineering_4">Electrical Engineering Level 4 (EE4)</option>
+                                                <option value="electrical_engineering_5">Electrical Engineering Level 5 (EE5)</option>
+                                                <option value="electrical_engineering_6">Electrical Engineering Level 6 (EE6)</option>
+                                                <option value="automotive_engineering_5">Automotive Engineering Level 5 (AM5)</option>
+                                                <option value="automotive_engineering_6">Automotive Engineering Level 6 (AM6)</option>
+                                            </optgroup>
+                                            <optgroup label="Hospitality Department">
+                                                <option value="food_and_beverage_4">Food and Beverage Level 4 (FB4)</option>
+                                                <option value="food_and_beverage_5">Food & Beverage Level 5 (FB5)</option>
+                                                <option value="food_and_beverage_6">Food & Beverage Level 6 (FB6)</option>
+                                                <option value="fashion_and_design_4">Fashion & Design Level 4 (FD4)</option>
+                                                <option value="fashion_and_design_5">Fashion and Design Level 5 (FD5)</option>
+                                                <option value="fashion_and_design_6">Fashion and Design Level 6 (FD6)</option>
+                                                <option value="hairdressing_4">Hairdressing Level 4 (HD4)</option>
+                                                <option value="hairdressing_5">Hairdressing Level 5 (HD5)</option>
+                                                <option value="hairdressing_6">Hairdressing Level 6 (HD6)</option>
+                                                <option value="tourism_management_5">Tourism Management Level 5 (TM5)</option>
+                                                <option value="tourism_management_6">Tourism Management Level 6 (TM6)</option>
+                                            </optgroup>
+                                            <optgroup label="Business and Liberal Studies">
+                                                <option value="social_work_5">Social Work Level 5 (SW5)</option>
+                                                <option value="social_work_6">Social Work Level 6 (SW6)</option>
+                                                <option value="office_administration_5">Office Administration Level 5 (OA5)</option>
+                                                <option value="office_administration_6">Office Administration Level 6 (OA6)</option>
+                                            </optgroup>
+                                            <optgroup label="Computing and Informatics">
+                                                <option value="ict_5">ICT Level 5 (ICT5)</option>
+                                                <option value="ict_6">ICT Level 6 (ICT6)</option>
+                                                <option value="information_science_5">Information Science Level 5 (IS5)</option>
+                                                <option value="information_science_6">Information Science Level 6 (IS6)</option>
+                                            </optgroup>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Admission Number</label>
+                                        <input type="text" id="admissionNumber" readonly class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary dark:text-white" placeholder="Select a course first">
+                                    </div>
+                                    <div class="flex justify-end gap-4 mt-6">
+                                        <button type="button" onclick="closeAdmissionModal()" class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">Cancel</button>
+                                        <button type="submit" class="px-4 py-2 bg-primary hover:bg-secondary text-white rounded-lg transition-colors">Register Student</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <button onclick="showPromotionModal()" class="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors">
+                        <i class="ri-arrow-up-line"></i>
+                        <span>Promote Students</span>
+                    </button>
+                    <button onclick="showExportModal()" class="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-secondary text-white rounded-lg transition-colors">
+                        <i class="ri-download-2-line"></i>
+                        <span>Export Data</span>
+                    </button>
+                </div>
+                <div class="flex flex-col md:flex-row gap-4 mb-6">
+                    <input type="text" placeholder="Search students..." class="flex-1 px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700">
+                    <select id="departmentFilter" class="px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700">
+                        <option value="all">All Departments</option>
+                        <option value="applied_science">Applied Science Department</option>
+                        <option value="agriculture">Agriculture Department</option>
+                        <option value="building_civil">Building and Civil Department</option>
+                        <option value="electromechanical">Electromechanical Department</option>
+                        <option value="hospitality">Hospitality Department</option>
+                        <option value="business_liberal">Business and Liberal Studies</option>
+                        <option value="computing_informatics">Computing and Informatics</option>
+                    </select>
+                    <select id="yearFilter" class="px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700">
+                        <option value="all">All Years</option>
+                        <option value="1">First Year</option>
+                        <option value="2">Second Year</option>
+                        <option value="3">Third Year</option>
+                        <option value="4">Fourth Year</option>
+                    </select>
+                </div>
+                <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 rounded-lg">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead class="bg-gray-50 dark:bg-gray-700">
+                                <tr>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Student ID</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Name</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Department</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Year</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                                </tr>
+                        </thead>
+                        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                            <!-- Student data will be dynamically populated here -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination Controls -->
+                <div id="pagination-container" class="mt-4 flex flex-col sm:flex-row justify-between items-center gap-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <div class="text-sm text-gray-600 dark:text-gray-400">
+                        <span id="pagination-info">Showing 0-0 of 0 students</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button 
+                            id="prev-page-btn" 
+                            onclick="navigateStudentsPage('prev')" 
+                            disabled
+                            class="flex items-center gap-1 px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-gray-800 transition-colors"
+                        >
+                            <i class="ri-arrow-left-s-line"></i>
+                            Previous
+                        </button>
+                        
+                        <div id="page-numbers" class="flex items-center gap-1">
+                            <!-- Page numbers will be dynamically generated -->
+                        </div>
+
+                        <button 
+                            id="next-page-btn" 
+                            onclick="navigateStudentsPage('next')" 
+                            disabled
+                            class="flex items-center gap-1 px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-gray-800 transition-colors"
+                        >
+                            Next
+                            <i class="ri-arrow-right-s-line"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Course Overview Section -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+                <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-6">Course Overview by Department</h2>
+                <div id="courseOverviewGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Course data will be populated here -->
+                </div>
+            </div>
+
+            <!-- View Student Modal -->
+            <div id="viewStudentModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-lg transform transition-all duration-300 scale-95">
+                    <div class="p-5">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
+                                <i class="ri-user-line text-primary mr-2"></i>
+                                Student Details
+                            </h3>
+                            <button onclick="closeViewModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+                                <i class="ri-close-line text-xl"></i>
+                            </button>
+                        </div>
+                        <div id="studentDetailsContent" class="space-y-3">
+                            <!-- Student details will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Edit Student Modal -->
+            <div id="editStudentModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md transform transition-all duration-300 scale-95">
+                    <div class="p-5">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
+                                <i class="ri-edit-line text-primary mr-2"></i>
+                                Edit Student
+                            </h3>
+                            <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+                                <i class="ri-close-line text-xl"></i>
+                            </button>
+                        </div>
+                        <form id="editStudentForm" onsubmit="handleEditStudent(event)" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name</label>
+                                <input type="text" id="editName" name="name" required class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ID Number</label>
+                                <input type="text" id="editIdNumber" name="idNumber" required class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone Number</label>
+                                <input type="tel" id="editPhone" name="phoneNumber" required class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Year of Study</label>
+                                <select id="editYear" name="year" required class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white text-sm">
+                                    <option value="1">Year 1</option>
+                                    <option value="2">Year 2</option>
+                                    <option value="3">Year 3</option>
+                                    <option value="4">Year 4</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Course</label>
+                                <input type="text" id="editCourse" name="course" readonly class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-600 dark:text-white text-sm">
+                            </div>
+                            <input type="hidden" id="editStudentId" name="studentId">
+                            <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                                <button type="button" onclick="closeEditModal()" class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 text-sm font-medium transition-colors">Cancel</button>
+                                <button type="submit" class="px-4 py-2 bg-primary hover:bg-secondary text-white rounded-lg transition-colors text-sm font-medium">Update</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Student Promotion Modal -->
+            <div id="promotionModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-[9999] p-4">
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-6xl max-h-[90vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
+                    <div class="p-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-xl font-bold text-gray-800 dark:text-white flex items-center">
+                                <i class="ri-arrow-up-line text-green-600 mr-2"></i>
+                                Student Promotion
+                            </h3>
+                            <button onclick="closePromotionModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+                                <i class="ri-close-line text-2xl"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Promotion Controls -->
+                        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6">
+                            <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
+                                <div class="flex flex-col md:flex-row gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Filter by Level</label>
+                                        <select id="modalLevelFilter" class="px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-600 dark:text-white">
+                                            <option value="all">All Levels</option>
+                                            <option value="5">Level 5</option>
+                                            <option value="6">Level 6</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Filter by Department</label>
+                                        <select id="modalDeptFilter" class="px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-600 dark:text-white">
+                                            <option value="all">All Departments</option>
+                                            <option value="applied_science">Applied Science</option>
+                                            <option value="agriculture">Agriculture</option>
+                                            <option value="building_civil">Building & Civil</option>
+                                            <option value="electromechanical">Electromechanical</option>
+                                            <option value="hospitality">Hospitality</option>
+                                            <option value="business_liberal">Business & Liberal</option>
+                                            <option value="computing_informatics">Computing & Informatics</option>
+                                        </select>
+                                    </div>
+                                    <div class="flex items-end">
+                                        <button onclick="loadModalPromotionStudents()" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors">
+                                            <i class="ri-refresh-line mr-2"></i>Load Students
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button onclick="promoteAllModalStudents()" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
+                                        <i class="ri-arrow-up-line mr-2"></i>Promote All
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Promotion Rules -->
+                        <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 mb-6">
+                            <h4 class="font-semibold text-blue-800 dark:text-blue-300 mb-2">Promotion Rules</h4>
+                            <ul class="text-sm text-blue-700 dark:text-blue-300 space-y-1">
+                                <li>• Level 5 students can be promoted up to Year 2 (2 years total)</li>
+                                <li>• Level 6 students can be promoted up to Year 3 (3 years total)</li>
+                                <li>• Students who have reached maximum years cannot be promoted further</li>
+                            </ul>
+                        </div>
+
+                        <!-- Students Table -->
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead class="bg-gray-50 dark:bg-gray-700">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            <input type="checkbox" id="selectAllStudents" class="rounded border-gray-300">
+                                        </th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Student</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Course</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Current Year</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Level</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Max Year</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="modalPromotionTableBody" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                    <tr>
+                                        <td colspan="7" class="px-6 py-4 text-center text-gray-500">
+                                            Click "Load Students" to view eligible students for promotion
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Promotion Progress -->
+                        <div id="modalPromotionProgress" class="hidden mt-6">
+                            <div class="bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                <div id="modalProgressBar" class="bg-green-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                            </div>
+                            <p id="modalProgressText" class="text-sm text-gray-600 dark:text-gray-400 mt-2">Preparing promotion...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            </div>
+
+            <!-- Student Promotion Section -->
+            <div id="content-promotion" class="content-section hidden">
+                <!-- Header -->
+                <div class="flex justify-between items-center mb-4">
+                    <div>
+                        <h1 class="text-2xl font-semibold mb-1">Student Promotion</h1>
+                        <p class="text-slate-500 text-sm">Promote students to the next academic year</p>
+                    </div>
+                </div>
+                
+                <div id="promotionSection" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-8">
+                <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-6">Promotion Controls</h2>
+                
+                <!-- Promotion Controls -->
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6">
+                    <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
+                        <div class="flex flex-col md:flex-row gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Filter by Level</label>
+                                <select id="levelFilter" class="px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-600 dark:text-white">
+                                    <option value="all">All Levels</option>
+                                    <option value="5">Level 5</option>
+                                    <option value="6">Level 6</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Filter by Department</label>
+                                <select id="deptFilter" class="px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-600 dark:text-white">
+                                    <option value="all">All Departments</option>
+                                    <option value="applied_science">Applied Science</option>
+                                    <option value="agriculture">Agriculture</option>
+                                    <option value="building_civil">Building & Civil</option>
+                                    <option value="electromechanical">Electromechanical</option>
+                                    <option value="hospitality">Hospitality</option>
+                                    <option value="business_liberal">Business & Liberal</option>
+                                    <option value="computing_informatics">Computing & Informatics</option>
+                                </select>
+                            </div>
+                            <div class="flex items-end">
+                                <button onclick="loadPromotionStudents()" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors">
+                                    <i class="ri-refresh-line mr-2"></i>Load Students
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="promoteAllStudents()" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
+                                <i class="ri-arrow-up-line mr-2"></i>Promote All
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Promotion Rules Info -->
+                <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-6">
+                    <div class="flex items-start gap-3">
+                        <i class="ri-information-line text-yellow-600 dark:text-yellow-400 text-xl mt-0.5"></i>
+                        <div>
+                            <h3 class="font-semibold text-yellow-800 dark:text-yellow-200 mb-2">Promotion Rules</h3>
+                            <ul class="text-sm text-yellow-700 dark:text-yellow-300 space-y-1">
+                                <li>• Level 5 students can only be promoted to Year 2 (2-year program)</li>
+                                <li>• Level 6 students can be promoted up to Year 3 (3-year program)</li>
+                                <li>• Students cannot be promoted beyond their program's maximum year</li>
+                                <li>• Only students who are eligible for promotion will be shown</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Students Table -->
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead class="bg-gray-50 dark:bg-gray-700">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    <input type="checkbox" id="selectAll" onchange="toggleAllStudents()" class="rounded border-gray-300">
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Student</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Course</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Current Year</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Level</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Max Year</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="promotionTableBody" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                            <tr>
+                                <td colspan="7" class="px-6 py-4 text-center text-gray-500">
+                                    Click "Load Students" to view eligible students for promotion
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Promotion Progress -->
+                <div id="promotionProgress" class="hidden mt-6">
+                    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                            <span class="text-blue-800 dark:text-blue-200 font-medium">Promoting students...</span>
+                        </div>
+                        <div class="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-2">
+                            <div id="progressBar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                        <p id="progressText" class="text-sm text-blue-700 dark:text-blue-300 mt-2">0 of 0 students promoted</p>
+                    </div>
+                </div>
+            </div>
+            </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Theme toggle functionality
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('darkMode', document.documentElement.classList.contains('dark'));
+        }
+
+        // Check for saved dark mode preference
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.documentElement.classList.add('dark');
+        }
+
+        // Get sidebar element for collapse functionality
+        const sidebar = document.getElementById('sidebar');
+
+        // Sidebar collapse functionality
+        let sidebarCollapsed = false;
+        const toggleSidebar = document.getElementById('toggleSidebar');
+        const sidebarTitle = document.getElementById('sidebar-title');
+
+        if (toggleSidebar && sidebar) {
+            toggleSidebar.addEventListener('click', () => {
+                sidebarCollapsed = !sidebarCollapsed;
+                
+                if (sidebarCollapsed) {
+                    sidebar.classList.add('w-16');
+                    sidebar.classList.remove('w-64');
+                    if (sidebarTitle) sidebarTitle.classList.add('hidden');
+                    toggleSidebar.innerHTML = '<i class="ri-menu-unfold-line text-xl text-slate-600"></i>';
+                    
+                    // Hide text in navigation items
+                    const navSpans = sidebar.querySelectorAll('nav span');
+                    navSpans.forEach(span => span.classList.add('hidden'));
+                    
+                    // Hide auth buttons container
+                    const authButtons = sidebar.querySelector('.mb-4');
+                    if (authButtons) authButtons.classList.add('hidden');
+                    
+                    // Hide dark mode toggle text and make button icon only
+                    const darkModeToggle = sidebar.querySelector('button[onclick="toggleDarkMode()"]');
+                    if (darkModeToggle) {
+                        const darkModeSpan = darkModeToggle.querySelector('span');
+                        if (darkModeSpan) darkModeSpan.classList.add('hidden');
+                        darkModeToggle.classList.add('w-full', 'justify-center');
+                        darkModeToggle.classList.remove('gap-2');
+                    }
+                } else {
+                    sidebar.classList.remove('w-16');
+                    sidebar.classList.add('w-64');
+                    if (sidebarTitle) sidebarTitle.classList.remove('hidden');
+                    toggleSidebar.innerHTML = '<i class="ri-menu-fold-line text-xl text-slate-600"></i>';
+                    
+                    // Show text in navigation items
+                    const navSpans = sidebar.querySelectorAll('nav span');
+                    navSpans.forEach(span => span.classList.remove('hidden'));
+                    
+                    // Show auth buttons container
+                    const authButtons = sidebar.querySelector('.mb-4');
+                    if (authButtons) authButtons.classList.remove('hidden');
+                    
+                    // Show dark mode toggle text and restore normal layout
+                    const darkModeToggle = sidebar.querySelector('button[onclick="toggleDarkMode()"]');
+                    if (darkModeToggle) {
+                        const darkModeSpan = darkModeToggle.querySelector('span');
+                        if (darkModeSpan) darkModeSpan.classList.remove('hidden');
+                        darkModeToggle.classList.remove('w-full', 'justify-center');
+                        darkModeToggle.classList.add('gap-2');
+                    }
+                }
+            });
+        }
+
+        // Dark mode functionality
+        function toggleDarkMode() {
+            const html = document.documentElement;
+            html.classList.toggle('dark');
+            
+            const darkModeButton = document.querySelector('button[onclick="toggleDarkMode()"]');
+            const icon = darkModeButton?.querySelector('i');
+            const span = darkModeButton?.querySelector('span');
+            
+            if (html.classList.contains('dark')) {
+                if (icon) {
+                    icon.classList.remove('ri-moon-line');
+                    icon.classList.add('ri-sun-line');
+                }
+                if (span) span.textContent = 'Light Mode';
+                localStorage.setItem('registrar-dark-mode', 'enabled');
+            } else {
+                if (icon) {
+                    icon.classList.remove('ri-sun-line');
+                    icon.classList.add('ri-moon-line');
+                }
+                if (span) span.textContent = 'Dark Mode';
+                localStorage.setItem('registrar-dark-mode', 'disabled');
+            }
+        }
+
+        // Initialize dark mode from localStorage
+        if (localStorage.getItem('registrar-dark-mode') === 'enabled') {
+            document.documentElement.classList.add('dark');
+        }
+
+        // Mobile menu functionality
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        
+        if (mobileMenuBtn && sidebar) {
+            mobileMenuBtn.addEventListener('click', () => {
+                sidebar.classList.toggle('active');
+            });
+            
+            // Close sidebar when clicking outside on mobile
+            document.addEventListener('click', (e) => {
+                if (window.innerWidth < 1024 && 
+                    !sidebar.contains(e.target) && 
+                    !mobileMenuBtn.contains(e.target)) {
+                    sidebar.classList.remove('active');
+                }
+            });
+        }
+    </script>
+
+    <!-- Admission Letter Modal - Embedded -->
+    <div id="admissionLetterModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <!-- Modal Header -->
+            <div class="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-600 no-print">
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-white">
+                    <i class="ri-graduation-cap-line mr-2 text-blue-600"></i>
+                    Admission Letter Generated
+                </h2>
+                <div class="flex space-x-2">
+                    <button onclick="printLetter()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+                        <i class="ri-printer-line"></i>
+                        <span>Print</span>
+                    </button>
+                    <button onclick="downloadPDF()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+                        <i class="ri-file-pdf-line"></i>
+                        <span>PDF</span>
+                    </button>
+                    <button onclick="closeAdmissionLetterModal()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+                        <i class="ri-close-line"></i>
+                        <span>Close</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Letter Content -->
+            <div id="letterContent" class="p-8 bg-white dark:bg-gray-800 text-black dark:text-white" style="font-family: 'Times New Roman', serif; line-height: 1.6;">
+                <!-- Letterhead -->
+                <div class="text-center border-b-4 border-blue-600 pb-6 mb-8">
+                    <div class="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center text-white text-2xl mx-auto mb-4">
+                        <i class="ri-graduation-cap-line"></i>
+                    </div>
+                    <h1 class="text-3xl font-bold text-blue-800 dark:text-blue-400 mb-2">EMURUA DIKIRR TECHNICAL TRAINING INSTITUTE</h1>
+                    <div class="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                        P.O. Box 49, Emurua Dikirr - 20500<br>
+                        Tel: +254 729 123 456 | Email: info@emurua-tech.ac.ke<br>
+                        Website: www.emurua-tech.ac.ke
+                    </div>
+                    <div class="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        <strong>ISO 9001:2015 Certified Institution</strong>
+                    </div>
+                </div>
+
+                <!-- Reference and Date -->
+                <div class="flex justify-between mb-6">
+                    <div></div>
+                    <div class="text-right">
+                        <div class="font-bold">Ref: EDTTI/ADMISSIONS/<span id="refYear">2024</span>/<span id="refNumber">001</span></div>
+                        <div id="letterDate" class="mt-2"></div>
+                    </div>
+                </div>
+
+                <!-- Letter Title -->
+                <div class="text-center text-xl font-bold underline mb-8 uppercase">
+                    LETTER OF ADMISSION
+                </div>
+
+                <!-- Letter Body -->
+                <div class="text-justify text-base leading-relaxed">
+                    <p class="mb-4"><strong>Dear <span id="studentName">[Student Name]</span>,</strong></p>
+
+                    <p class="mb-6">Following your application for admission to <strong>Emurua Dikirr Technical Training Institute</strong>, I am pleased to inform you that you have been <strong>SUCCESSFULLY ADMITTED</strong> to pursue the following course:</p>
+
+                    <div class="bg-yellow-50 dark:bg-yellow-900 border-l-4 border-yellow-400 dark:border-yellow-500 p-4 mb-6">
+                        <p class="mb-2 text-gray-800 dark:text-gray-200"><strong>Course:</strong> <span id="courseName">[Course Name]</span></p>
+                        <p class="mb-2 text-gray-800 dark:text-gray-200"><strong>Admission Number:</strong> <span id="letterAdmissionNumber">[Admission Number]</span></p>
+                        <p class="text-gray-800 dark:text-gray-200"><strong>Academic Year:</strong> <span id="intakeYear">[Intake Year]</span></p>
+                    </div>
+
+                    <p class="mb-4">This admission is subject to:</p>
+                    <ol class="list-decimal list-inside mb-6 space-y-1">
+                        <li>Payment of required fees as per the institute's fee structure</li>
+                        <li>Submission of original academic certificates and other required documents</li>
+                        <li>Compliance with the institute's rules and regulations</li>
+                        <li>Medical examination and fitness certification</li>
+                    </ol>
+
+                    <div class="bg-blue-50 dark:bg-blue-900 border-2 border-blue-200 dark:border-blue-700 rounded-lg p-6 mb-6">
+                        <h3 class="text-lg font-bold mb-3 text-blue-800 dark:text-blue-200 flex items-center">
+                            <i class="ri-computer-line mr-2"></i>STUDENT PORTAL ACCESS INSTRUCTIONS
+                        </h3>
+                        <p class="mb-3 text-gray-800 dark:text-gray-200"><strong>To access your student portal and academic services:</strong></p>
+                        <div class="bg-white dark:bg-gray-700 p-4 rounded border border-gray-200 dark:border-gray-600 mb-3">
+                            <p class="mb-2 text-gray-800 dark:text-gray-200"><strong>🌐 Website:</strong> <span class="text-blue-600 dark:text-blue-400 font-mono">https://ums.emurua-tech.ac.ke/login</span></p>
+                            <p class="mb-2 text-gray-800 dark:text-gray-200"><strong>👤 Username:</strong> <span class="font-mono bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-gray-200 px-2 py-1 rounded" id="portalUsername">[Admission Number]</span></p>
+                            <p class="text-gray-800 dark:text-gray-200"><strong>🔑 Initial Password:</strong> <span class="font-mono bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-gray-200 px-2 py-1 rounded" id="portalPassword">[Your Phone Number]</span></p>
+                        </div>
+                        <div class="bg-yellow-50 dark:bg-yellow-900 border border-yellow-200 dark:border-yellow-700 rounded p-3">
+                            <p class="text-sm text-gray-800 dark:text-gray-200"><strong>⚠️ IMPORTANT:</strong> On your first login, you will be required to:</p>
+                            <ul class="list-disc list-inside text-sm mt-2 space-y-1 text-gray-800 dark:text-gray-200">
+                                <li>Change your password to a secure one</li>
+                                <li>Provide a valid Gmail account for password recovery</li>
+                                <li>Update your profile information</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <p class="mb-4">We congratulate you on this achievement and look forward to welcoming you to our prestigious institution. Should you require any clarification, please do not hesitate to contact our admissions office.</p>
+
+                    <p class="mb-8"><strong>Welcome to Emurua Dikirr Technical Training Institute!</strong></p>
+                </div>
+
+                <!-- Signature Section -->
+                <div class="flex justify-between mt-12">
+                    <div class="text-center w-48">
+                        <div class="border-b-2 border-black h-16 mb-2"></div>
+                        <p><strong>REGISTRAR</strong><br>
+                        Emurua Dikirr Technical Training Institute</p>
+                    </div>
+                    <div class="text-center w-48">
+                        <div class="border-b-2 border-black h-16 mb-2"></div>
+                        <p><strong>PRINCIPAL</strong><br>
+                        Emurua Dikirr Technical Training Institute</p>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="text-center mt-10 pt-6 border-t border-gray-300 dark:border-gray-600 text-xs text-gray-500 dark:text-gray-400">
+                    <p><em>This is an official admission letter from Emurua Dikirr Technical Training Institute</em></p>
+                    <p>Generated on <span id="generationDate"></span> | Student Portal: ums.emurua-tech.ac.ke</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script>
+        // Function to format course names
+        function formatCourseName(courseName) {
+            if (!courseName) return courseName;
+            
+            // Replace underscores with spaces and convert to title case
+            return courseName
+                .replace(/_/g, ' ')
+                .replace(/\b\w/g, l => l.toUpperCase())
+                .replace(/(\d+)$/, ' Level $1'); // Add "Level" before numbers at the end
+        }
+
+        // Function to format department names
+        function formatDepartmentName(department) {
+            if (!department) return department;
+            
+            // Replace underscores with spaces and convert to title case
+            return department
+                .replace(/_/g, ' ')
+                .replace(/\b\w/g, l => l.toUpperCase());
+        }
+
+        // Admission Letter Functions
+        function showAdmissionLetter(studentData) {
+            
+            // Populate student data with formatting
+            document.getElementById('studentName').textContent = studentData.name || '[Student Name]';
+            document.getElementById('courseName').textContent = formatCourseName(studentData.course) || '[Course Name]';
+            document.getElementById('letterAdmissionNumber').textContent = studentData.admissionNumber || '[Admission Number]';
+            document.getElementById('intakeYear').textContent = studentData.intakeYear || '[Intake Year]';
+            document.getElementById('portalUsername').textContent = studentData.admissionNumber || '[Admission Number]';
+            document.getElementById('portalPassword').textContent = studentData.phoneNumber || '[Phone Number]';
+            
+            // Set dates
+            const currentDate = new Date();
+            const letterDate = currentDate.toLocaleDateString('en-GB', { 
+                day: '2-digit', 
+                month: 'long', 
+                year: 'numeric' 
+            });
+            document.getElementById('letterDate').textContent = letterDate;
+            document.getElementById('generationDate').textContent = currentDate.toLocaleDateString('en-GB');
+            
+            // Set reference number
+            document.getElementById('refYear').textContent = currentDate.getFullYear();
+            document.getElementById('refNumber').textContent = String(Math.floor(Math.random() * 9999) + 1).padStart(4, '0');
+            
+            // Show modal
+            const modal = document.getElementById('admissionLetterModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+
+        // Close admission letter modal
+        function closeAdmissionLetterModal() {
+            const modal = document.getElementById('admissionLetterModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        // Print letter
+        function printLetter() {
+            window.print();
+        }
+
+        // Download as PDF
+        function downloadPDF() {
+            const element = document.getElementById('letterContent');
+            const opt = {
+                margin: [10, 10, 10, 10],
+                filename: `Admission_Letter_${document.getElementById('letterAdmissionNumber').textContent}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { 
+                    unit: 'mm', 
+                    format: 'a4', 
+                    orientation: 'portrait',
+                    putOnlyUsedFonts: true
+                }
+            };
+            
+            html2pdf().set(opt).from(element).save();
+        }
+
+        // Make functions globally available
+        window.showAdmissionLetter = showAdmissionLetter;
+        window.closeAdmissionLetterModal = closeAdmissionLetterModal;
+        window.printLetter = printLetter;
+        window.downloadPDF = downloadPDF;
+    </script>
+</body>
+</html>

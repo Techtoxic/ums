@@ -1,0 +1,2082 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deputy Academics Dashboard - University Management System</title>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Tools of Trade Modal Functions
+        function openToolRequestModal() {
+            document.getElementById('toolRequestModal').classList.remove('hidden');
+            document.getElementById('toolRequestModal').classList.add('flex');
+            document.body.classList.add('menu-open');
+        }
+
+        function closeToolRequestModal() {
+            document.getElementById('toolRequestModal').classList.add('hidden');
+            document.getElementById('toolRequestModal').classList.remove('flex');
+            document.body.classList.remove('menu-open');
+        }
+
+        // Global variable to store tools data
+        let toolsData = [];
+
+        // Fetch and display tools of trade
+        async function fetchToolsOfTrade() {
+            const toolsContainer = document.querySelector('.grid.grid-cols-1.md\\:grid-cols-2.xl\\:grid-cols-4.gap-4');
+            if (!toolsContainer) return;
+
+            // Show loading state
+            toolsContainer.innerHTML = '<div class="col-span-full text-center py-4"><i class="ri-loader-4-line animate-spin text-2xl text-primary"></i></div>';
+
+            try {
+                const response = await fetch('http://localhost:5502/api/tools');
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch tools: ${response.status} ${response.statusText}`);
+                }
+                
+                const tools = await response.json();
+                if (!Array.isArray(tools)) {
+                    throw new Error('Invalid response format: expected an array of tools');
+                }
+                
+                toolsData = tools; // Store tools data globally
+                displayToolsOfTrade(tools);
+            } catch (error) {
+                console.error('Error fetching tools:', error);
+                toolsContainer.innerHTML = `
+                    <div class="col-span-full text-center py-4 text-danger">
+                        <i class="ri-error-warning-line text-2xl mb-2"></i>
+                        <p>Failed to load tools. Please try again later.</p>
+                    </div>`;
+                showToast(error.message, 'error');
+            }
+        }
+
+        function displayToolsOfTrade(tools) {
+            // Get the tools list container
+            const toolsContainer = document.querySelector('.grid.grid-cols-1.md\\:grid-cols-2.xl\\:grid-cols-4.gap-4');
+            if (!toolsContainer) return;
+
+            // Clear existing tools
+            toolsContainer.innerHTML = '';
+
+            if (tools.length === 0) {
+                toolsContainer.innerHTML = `
+                    <div class="col-span-full text-center py-8">
+                        <i class="ri-tools-line text-4xl text-gray-400 mb-4"></i>
+                        <p class="text-gray-500">No tools of trade submitted yet</p>
+                    </div>`;
+                return;
+            }
+
+            // Display each tool
+            tools.forEach(tool => {
+                const statusClass = getStatusClass(tool.status);
+                const toolTypeNames = {
+                    'course_outline': 'Course Outline',
+                    'learning_plan': 'Learning Plan',
+                    'record_of_work': 'Record of Work',
+                    'session_plan': 'Session Plan',
+                    'exam': 'Exam'
+                };
+                console.log('Tool data:', tool);
+                console.log('UnitId:', tool.unitId);
+                console.log('CommonUnitId:', tool.commonUnitId);
+                const unitName = tool.unitId?.unitName || tool.commonUnitId?.unitName || 'Unknown Unit';
+                const trainerName = tool.trainerId?.name || 'Unknown Trainer';
+                console.log('Unit Name:', unitName);
+                const submittedAt = new Date(tool.submittedAt).toLocaleDateString();
+                
+                const toolCard = `
+                    <div class="p-4 border border-slate-200 dark:border-gray-700 rounded-lg hover:border-primary/50 transition-colors">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="font-medium">${toolTypeNames[tool.toolType] || tool.toolType}</h4>
+                            <span class="px-3 py-1 rounded-full text-xs ${statusClass}">${tool.status.replace('_', ' ').toUpperCase()}</span>
+                        </div>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mb-2">${trainerName} - ${unitName}</p>
+                        <p class="text-xs text-slate-400 dark:text-slate-500 mb-3">Submitted: ${submittedAt}</p>
+                        <div class="flex items-center gap-2">
+                            <button onclick="reviewTool('${tool._id}')" class="text-sm text-primary hover:text-secondary transition-colors">Review</button>
+                            <span class="text-slate-300 dark:text-slate-600">|</span>
+                            <button onclick="downloadTool('${tool._id}')" class="text-sm text-slate-500 hover:text-slate-600 transition-colors">Download</button>
+                        </div>
+                    </div>
+                `;
+                toolsContainer.insertAdjacentHTML('beforeend', toolCard);
+            });
+        }
+
+        function getStatusClass(status) {
+            const statusClasses = {
+                'submitted': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+                'under_review': 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
+                'approved': 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+                'rejected': 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+                'needs_revision': 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+            };
+            return statusClasses[status] || 'bg-slate-100 text-slate-600';
+        }
+
+        async function handleToolRequest(event) {
+            event.preventDefault();
+            const submitButton = event.target.querySelector('button[type="submit"]');
+            const originalButtonText = submitButton.innerHTML;
+            
+            try {
+                // Disable submit button and show loading state
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<i class="ri-loader-4-line animate-spin mr-2"></i>Submitting...';
+                
+                const formData = new FormData(event.target);
+                const toolType = formData.get('toolType');
+                const sendTo = formData.get('sendTo');
+                const department = formData.get('department');
+                const trainerSelection = formData.get('trainer');
+                const instructions = formData.get('instructions');
+                const dueDate = formData.get('dueDate');
+
+                // Validate due date
+                const today = new Date();
+                const selectedDate = new Date(dueDate);
+                today.setHours(0, 0, 0, 0);
+                selectedDate.setHours(0, 0, 0, 0);
+
+                if (selectedDate < today) {
+                    showToast('Due date cannot be in the past', 'error');
+                    return;
+                }
+
+                // Create notification for trainers
+                const notification = {
+                    recipientType: 'trainer',
+                    title: 'Tools of Trade Request',
+                    message: `Please submit your ${toolType} by ${dueDate}. Instructions: ${instructions}`,
+                    type: 'tool_request',
+                    priority: 'high'
+                };
+
+                let response;
+                if (sendTo === 'all_trainers') {
+                    // Send to all trainers
+                    response = await fetch('http://localhost:5502/api/notifications/broadcast', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(notification)
+                    });
+                } else if (sendTo === 'by_department') {
+                    // Send to department trainers
+                    notification.message = `Please submit your ${toolType} for ${department} department by ${dueDate}. Instructions: ${instructions}`;
+                    response = await fetch('http://localhost:5502/api/notifications/broadcast', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(notification)
+                    });
+                } else if (sendTo === 'specific_trainer') {
+                    // Send to specific trainer
+                    notification.recipientId = trainerSelection;
+                    
+                    response = await fetch('http://localhost:5502/api/notifications', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(notification)
+                    });
+                }
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.message || `Failed to send notification: ${response.status} ${response.statusText}`);
+                }
+
+                showToast('Tool request sent to trainers successfully!');
+                event.target.reset();
+                closeToolRequestModal();
+                // Refresh the tools list
+                fetchToolsOfTrade();
+            } catch (error) {
+                console.error('Error submitting tool request:', error);
+                showToast(error.message, 'error');
+            } finally {
+                // Reset button state
+                submitButton.disabled = false;
+                submitButton.innerHTML = originalButtonText;
+            }
+        }
+
+        // Review tool function
+        async function reviewTool(toolId) {
+            try {
+                // Find the tool in the current tools data
+                const tool = toolsData.find(t => t._id === toolId);
+                if (!tool) {
+                    throw new Error('Tool not found in current data');
+                }
+                
+                // Show review modal
+                showToolReviewModal(tool);
+            } catch (error) {
+                console.error('Error fetching tool:', error);
+                showToast('Failed to load tool details', 'error');
+            }
+        }
+
+        // Download tool function
+        async function downloadTool(toolId) {
+            try {
+                // Find the tool in the current tools data
+                const tool = toolsData.find(t => t._id === toolId);
+                if (!tool) {
+                    throw new Error('Tool not found in current data');
+                }
+                
+                // Create download link
+                const downloadUrl = `http://localhost:5502/uploads/tools-of-trade/${tool.toolType}/${tool.fileName}`;
+                
+                // Test if the file exists first
+                const testResponse = await fetch(downloadUrl, { method: 'HEAD' });
+                if (!testResponse.ok) {
+                    throw new Error(`File not found: ${testResponse.status}`);
+                }
+                
+                const a = document.createElement('a');
+                a.href = downloadUrl;
+                a.download = tool.originalFileName;
+                a.target = '_blank';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                
+                showToast('Download started', 'success');
+            } catch (error) {
+                console.error('Error downloading tool:', error);
+                showToast('Failed to download file', 'error');
+            }
+        }
+
+        // Show tool review modal
+        function showToolReviewModal(tool) {
+            // Create review modal
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50';
+            modal.innerHTML = `
+                <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 w-full max-w-2xl mx-4 shadow-2xl max-h-[80vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold">Review Tool of Trade</h3>
+                        <button onclick="closeReviewModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                            <i class="ri-close-line text-xl"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="space-y-4 max-h-[60vh] overflow-y-auto">
+                        <!-- Tool Info -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Tool Type</label>
+                                <p class="text-sm text-gray-900 dark:text-white capitalize">${escapeHtml(tool.toolType.replace('_', ' '))}</p>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">File Name</label>
+                                <p class="text-sm text-gray-900 dark:text-white truncate">${escapeHtml(tool.originalFileName)}</p>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">File Size</label>
+                                <p class="text-sm text-gray-900 dark:text-white">${formatFileSize(tool.fileSize)}</p>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
+                                <span class="px-2 py-1 rounded-full text-xs font-medium ${getStatusClass(tool.status)}">${escapeHtml(tool.status.replace('_', ' '))}</span>
+                            </div>
+                        </div>
+
+                        <!-- File Preview -->
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">File Preview</label>
+                            <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-gray-50 dark:bg-gray-700">
+                                <div class="text-center">
+                                    <i class="ri-file-pdf-line text-2xl text-red-500 mb-1"></i>
+                                    <p class="text-xs text-gray-600 dark:text-gray-400">PDF Preview</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">Click download to view full content</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Review Actions -->
+                        <div class="flex flex-col space-y-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Review Status</label>
+                                <select id="reviewStatus" class="w-full px-2 py-1 text-sm border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                                    <option value="">Select Status...</option>
+                                    <option value="under_review">Under Review</option>
+                                    <option value="approved">Approved</option>
+                                    <option value="rejected">Rejected</option>
+                                    <option value="needs_revision">Needs Revision</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Feedback</label>
+                                <textarea id="reviewFeedback" rows="2" class="w-full px-2 py-1 text-sm border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white" placeholder="Enter your feedback..."></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex justify-end space-x-2">
+                            <button onclick="closeReviewModal()" class="px-3 py-1 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">Cancel</button>
+                            <button onclick="downloadTool('${tool._id}')" class="px-3 py-1 text-sm bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors">
+                                <i class="ri-download-line mr-1"></i>Download
+                            </button>
+                            <button onclick="updateToolStatus('${tool._id}')" class="px-3 py-1 text-sm bg-primary text-white rounded-lg hover:bg-secondary transition-colors">
+                                <i class="ri-check-line mr-1"></i>Update Status
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        }
+
+        // Close review modal
+        function closeReviewModal() {
+            const modal = document.querySelector('.fixed.inset-0.bg-black\\/50');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        // Update tool status
+        async function updateToolStatus(toolId) {
+            try {
+                // Wait a bit for the modal to be fully rendered
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                const statusElement = document.getElementById('reviewStatus');
+                const feedbackElement = document.getElementById('reviewFeedback');
+                
+                console.log('🔍 Debug modal elements:', { 
+                    statusElement: statusElement, 
+                    feedbackElement: feedbackElement,
+                    statusValue: statusElement?.value,
+                    feedbackValue: feedbackElement?.value
+                });
+                
+                if (!statusElement || !feedbackElement) {
+                    console.error('Modal elements not found:', { statusElement, feedbackElement });
+                    showToast('Modal elements not found. Please try again.', 'error');
+                    return;
+                }
+                
+                const status = statusElement.value;
+                const feedback = feedbackElement.value;
+                
+                console.log('🔍 Debug extracted values:', { status, feedback });
+
+                if (!status || status === '') {
+                    showToast('Please select a status', 'error');
+                    return;
+                }
+
+                const updateData = {
+                    status,
+                    feedback: feedback || ''
+                };
+                
+                console.log('Updating tool status:', toolId, updateData);
+                
+                const response = await fetch(`http://localhost:5502/api/tools/${toolId}/status`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(updateData)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.message || `HTTP ${response.status}: Failed to update tool status`);
+                }
+
+                showToast('Tool status updated successfully', 'success');
+                
+                // Update local tools data immediately
+                const toolIndex = toolsData.findIndex(tool => tool._id === toolId);
+                if (toolIndex !== -1) {
+                    toolsData[toolIndex].status = status;
+                    toolsData[toolIndex].feedback = feedback || '';
+                    toolsData[toolIndex].reviewedBy = 'deputy_academics';
+                    toolsData[toolIndex].reviewedAt = new Date().toISOString();
+                }
+                
+                // Refresh display and dashboard stats
+                await loadDashboardStats();
+                await fetchToolsOfTrade();
+                
+                // Small delay to ensure UI updates, then close modal
+                setTimeout(() => {
+                    closeReviewModal();
+                }, 500);
+            } catch (error) {
+                console.error('Error updating tool status:', error);
+                showToast('Failed to update tool status', 'error');
+            }
+        }
+
+        // Format file size
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Toast Notification Function
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `fixed bottom-4 right-4 p-4 rounded-lg shadow-lg text-white mb-4 transform transition-all duration-300 z-50 ${
+                type === 'success' ? 'bg-success' : 'bg-danger'
+            }`;
+            toast.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <i class="${type === 'success' ? 'ri-checkbox-circle-line' : 'ri-error-warning-line'}"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#7A0C0C',
+                        secondary: '#8B2A2A',
+                        success: '#22c55e',
+                        warning: '#f59e0b',
+                        danger: '#ef4444',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @media (max-width: 1024px) {
+            .sidebar.active {
+                display: block !important;
+            }
+        }
+        
+        /* Custom scrollbar styling */
+        .scrollbar-thin {
+            scrollbar-width: thin;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background-color: #d1d5db;
+            border-radius: 3px;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+            background-color: #9ca3af;
+        }
+        
+        .dark .scrollbar-thin::-webkit-scrollbar-thumb {
+            background-color: #4b5563;
+        }
+        
+        .dark .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+            background-color: #6b7280;
+        }
+        
+        body.menu-open::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 30;
+        }
+
+        /* Sidebar positioning with top navbar */
+        @media (min-width: 1024px) {
+            #sidebar {
+                top: 64px;
+                height: calc(100vh - 64px);
+            }
+        }
+
+        .stats-card {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .dark .stats-card {
+            background-color: #1f2937;
+        }
+        
+        .btn-primary {
+            background-color: #7A0C0C;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            background-color: #8B2A2A;
+        }
+        
+        .search-input {
+            background-color: #f9fafb;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            padding: 0.5rem 1rem;
+        }
+        
+        .dark .search-input {
+            background-color: #374151;
+            border-color: #4b5563;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .nav-item:hover {
+            background-color: rgba(122, 12, 12, 0.1);
+            color: #7A0C0C;
+        }
+
+        .nav-item.active {
+            background-color: rgba(122, 12, 12, 0.1);
+            color: #7A0C0C;
+        }
+
+        .content-section {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .card {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            border: 1px solid #e5e7eb;
+        }
+        
+        .dark .card {
+            background-color: #1f2937;
+            border-color: #374151;
+        }
+
+        .card-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .dark .card-header {
+            border-color: #374151;
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-gray-900 text-slate-800 dark:text-slate-200">
+    <!-- Top Navigation Bar -->
+    <nav class="fixed top-0 left-0 right-0 h-16 bg-white dark:bg-gray-800 border-b border-slate-200 dark:border-gray-700 flex items-center justify-between px-6 z-40">
+        <!-- Left side -->
+        <div class="flex items-center gap-4">
+            <button id="menuBtn" class="lg:hidden text-slate-500 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-300">
+                <i class="ri-menu-line text-2xl"></i>
+            </button>
+            <button id="toggleSidebar" class="hidden lg:block p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                <i class="ri-menu-fold-line text-xl text-slate-600 dark:text-slate-300"></i>
+            </button>
+            <div class="flex items-center gap-3">
+                <img src="https://via.placeholder.com/32x32/7A0C0C/FFFFFF?text=E" alt="Emura Logo" class="h-8 w-8 rounded">
+                <span class="font-bold text-lg hidden sm:inline">Deputy Academics Portal</span>
+            </div>
+        </div>
+
+        <!-- Right side -->
+        <div class="flex items-center gap-4">
+            <button id="themeToggle" class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-gray-700">
+                <i class="ri-sun-line dark:hidden"></i>
+                <i class="ri-moon-line hidden dark:block"></i>
+            </button>
+            <button class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-gray-700 relative">
+                <i class="ri-notification-3-line"></i>
+                <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+            </button>
+            <div class="flex items-center gap-3 border-l border-slate-200 dark:border-gray-700 pl-4">
+                <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                    <i class="ri-user-line text-primary"></i>
+                </div>
+                <div class="hidden sm:block">
+                    <p class="text-sm font-medium">Maxwell Ndung'u</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Deputy Academics</p>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="fixed left-0 top-0 h-screen w-64 bg-white dark:bg-gray-800 shadow-sm z-30 transform -translate-x-full lg:translate-x-0 transition-transform duration-300">
+        <div class="h-full flex flex-col pt-16">
+            <!-- Navigation -->
+            <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+                <a href="#" onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-item flex items-center gap-3 p-3 rounded-lg bg-primary/10 text-primary">
+                    <i class="ri-dashboard-line"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#" onclick="switchTab('students')" id="nav-students" class="nav-item flex items-center gap-3 p-3 rounded-lg hover:bg-primary/10 hover:text-primary transition-colors">
+                    <i class="ri-user-line"></i>
+                    <span>Students</span>
+                </a>
+                <a href="#" onclick="switchTab('trainers')" id="nav-trainers" class="nav-item flex items-center gap-3 p-3 rounded-lg hover:bg-primary/10 hover:text-primary transition-colors">
+                    <i class="ri-team-line"></i>
+                    <span>Trainers</span>
+                </a>
+                <a href="#" onclick="switchTab('courses')" id="nav-courses" class="nav-item flex items-center gap-3 p-3 rounded-lg hover:bg-primary/10 hover:text-primary transition-colors">
+                    <i class="ri-book-open-line"></i>
+                    <span>Courses</span>
+                </a>
+                <a href="#" onclick="switchTab('units')" id="nav-units" class="nav-item flex items-center gap-3 p-3 rounded-lg hover:bg-primary/10 hover:text-primary transition-colors">
+                    <i class="ri-file-list-3-line"></i>
+                    <span>Units</span>
+                </a>
+                <a href="#" onclick="switchTab('tools')" id="nav-tools" class="nav-item flex items-center gap-3 p-3 rounded-lg hover:bg-primary/10 hover:text-primary transition-colors">
+                    <i class="ri-tools-line"></i>
+                    <span>Tools of Trade</span>
+                </a>
+                <a href="#" onclick="switchTab('notifications')" id="nav-notifications" class="nav-item flex items-center gap-3 p-3 rounded-lg hover:bg-primary/10 hover:text-primary transition-colors">
+                    <i class="ri-notification-line"></i>
+                    <span>Notifications</span>
+                </a>
+            </nav>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="lg:ml-64 min-h-screen p-4 pt-20">
+        <!-- Page Header -->
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+            <div>
+                <h1 class="text-2xl font-bold" id="pageTitle">Dashboard Overview</h1>
+                <p class="text-slate-500 dark:text-slate-400">Welcome back, Maxwell!</p>
+            </div>
+        </div>
+
+        <!-- Dashboard Section -->
+        <div id="content-dashboard" class="content-section">
+            <!-- Quick Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                <!-- Active Students -->
+                <div class="stats-card">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold">Active Students</h3>
+                        <i class="ri-user-line text-2xl text-primary"></i>
+                    </div>
+                    <p class="text-3xl font-bold mb-2" id="totalStudents">Loading...</p>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Total enrolled students</p>
+                </div>
+
+                <!-- Active Trainers -->
+                <div class="stats-card">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold">Active Trainers</h3>
+                        <i class="ri-team-line text-2xl text-primary"></i>
+                    </div>
+                    <p class="text-3xl font-bold mb-2" id="totalTrainers">Loading...</p>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Total trainers</p>
+                </div>
+
+                <!-- Total Courses -->
+                <div class="stats-card">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold">Total Courses</h3>
+                        <i class="ri-book-open-line text-2xl text-primary"></i>
+                    </div>
+                    <p class="text-3xl font-bold mb-2" id="totalCourses">Loading...</p>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Available courses</p>
+                </div>
+
+                <!-- Total Units -->
+                <div class="stats-card">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold">Total Units</h3>
+                        <i class="ri-file-list-3-line text-2xl text-primary"></i>
+                    </div>
+                    <p class="text-3xl font-bold mb-2" id="totalUnits">Loading...</p>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Available units</p>
+                </div>
+            </div>
+
+            <!-- Second Row Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                <!-- Pending Tool Requests -->
+                <div class="stats-card">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold">Pending Tools</h3>
+                        <i class="ri-time-line text-2xl text-warning"></i>
+                    </div>
+                    <p class="text-3xl font-bold mb-2" id="pendingTools">Loading...</p>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Awaiting review</p>
+                </div>
+
+                <!-- Tools Submitted -->
+                <div class="stats-card">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold">Total Tools</h3>
+                        <i class="ri-checkbox-circle-line text-2xl text-success"></i>
+                    </div>
+                    <p class="text-3xl font-bold mb-2" id="totalTools">Loading...</p>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">All submitted tools</p>
+                </div>
+
+                <!-- Departments -->
+                <div class="stats-card">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold">Departments</h3>
+                        <i class="ri-building-line text-2xl text-primary"></i>
+                    </div>
+                    <p class="text-3xl font-bold mb-2" id="totalDepartments">Loading...</p>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Active departments</p>
+                </div>
+
+                <!-- Notifications -->
+                <div class="stats-card">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold">Notifications</h3>
+                        <i class="ri-notification-line text-2xl text-primary"></i>
+                    </div>
+                    <p class="text-3xl font-bold mb-2" id="totalNotifications">Loading...</p>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">System notifications</p>
+                </div>
+            </div>
+
+            <!-- Department Overview -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Students by Department -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="text-lg font-semibold">Students by Department</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="h-64">
+                            <canvas id="studentsByDeptChart" class="w-full h-full"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tools Status Overview -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="text-lg font-semibold">Tools Status Overview</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="h-64">
+                            <canvas id="toolsStatusChart" class="w-full h-full"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Students Section -->
+        <div id="content-students" class="content-section hidden">
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+                    <h2 class="text-xl font-semibold">Student Overview</h2>
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <div class="relative">
+                            <input type="text" placeholder="Search students..." class="search-input pl-10 pr-4 py-2 w-full">
+                            <i class="ri-search-line absolute left-3 top-3 text-slate-400"></i>
+                        </div>
+                        <button class="btn-primary whitespace-nowrap">
+                            <i class="ri-filter-line mr-2"></i>Filter
+                        </button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-200 dark:divide-gray-700">
+                        <thead>
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Student</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Course</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Admission Type</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Year</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentsTableBody" class="divide-y divide-slate-200 dark:divide-gray-700">
+                            <!-- Students will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination -->
+                <div id="studentsPagination" class="mt-6">
+                    <!-- Pagination controls will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Trainers Section -->
+        <div id="content-trainers" class="content-section hidden">
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+                    <h2 class="text-xl font-semibold">Trainers & Courses</h2>
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <div class="relative">
+                            <input type="text" placeholder="Search trainers..." class="search-input pl-10 pr-4 py-2 w-full">
+                            <i class="ri-search-line absolute left-3 top-3 text-slate-400"></i>
+                        </div>
+                        <button class="btn-primary whitespace-nowrap">
+                            <i class="ri-filter-line mr-2"></i>Filter
+                        </button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-200 dark:divide-gray-700">
+                        <thead>
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Trainer</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Department</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Assigned Units</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Students</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="trainersTableBody" class="divide-y divide-slate-200 dark:divide-gray-700">
+                            <!-- Trainers will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Courses Section -->
+        <div id="content-courses" class="content-section hidden">
+            <!-- Courses will be loaded here -->
+        </div>
+
+        <!-- Units Section -->
+        <div id="content-units" class="content-section hidden">
+            <!-- Units will be loaded here -->
+        </div>
+
+        <!-- Tools Section -->
+        <div id="content-tools" class="content-section hidden">
+        <div class="space-y-6">
+            <!-- Tools of Trade Management -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-semibold">Tools of Trade</h2>
+                    <button class="bg-primary hover:bg-secondary text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors" onclick="openToolRequestModal()">
+                        <i class="ri-add-line"></i>Request Tools of Trade
+                    </button>
+                </div>
+
+                <!-- Tools of Trade Request Modal -->
+                <div id="toolRequestModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg w-full max-w-lg mx-4">
+                        <div class="p-6">
+                            <div class="flex justify-between items-center mb-6">
+                                <h3 class="text-xl font-bold text-gray-800 dark:text-white">Request Tools of Trade</h3>
+                                <button onclick="closeToolRequestModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                                    <i class="ri-close-line text-2xl"></i>
+                                </button>
+                            </div>
+                            <form id="toolRequestForm" onsubmit="handleToolRequest(event)" class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tool Type</label>
+                                    <select name="toolType" required class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                                        <option value="">Select Tool Type</option>
+                                        <option value="course_outline">Course Outline</option>
+                                        <option value="learning_plan">Learning Plan</option>
+                                        <option value="record_of_work">Record of Work</option>
+                                        <option value="session_plan">Session Plan</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Send To</label>
+                                    <select name="sendTo" id="sendToSelect" required class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white" onchange="handleSendToChange()">
+                                        <option value="all_trainers">All Trainers</option>
+                                        <option value="by_department">By Department</option>
+                                        <option value="specific_trainer">Specific Trainer</option>
+                                    </select>
+                                </div>
+                                <div id="departmentFilter" class="hidden">
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Department</label>
+                                    <select name="department" id="departmentSelect" class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white" onchange="loadTrainersByDepartment()">
+                                        <option value="">Select Department</option>
+                                        <option value="applied_science">Applied Science</option>
+                                        <option value="agriculture">Agriculture</option>
+                                        <option value="building_civil">Building & Civil</option>
+                                        <option value="electromechanical">Electromechanical</option>
+                                        <option value="hospitality">Hospitality</option>
+                                        <option value="business_liberal">Business & Liberal</option>
+                                        <option value="computing_informatics">Computing & Informatics</option>
+                                    </select>
+                                </div>
+                                <div id="trainerFilter" class="hidden">
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Trainer</label>
+                                    <select name="trainer" id="trainerSelect" class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                                        <option value="">Select Trainer</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Due Date</label>
+                                    <input type="date" name="dueDate" required class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                                </div>
+                                <div class="col-span-2">
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Special Instructions</label>
+                                    <textarea name="instructions" rows="3" class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white" placeholder="Enter any specific requirements or notes..."></textarea>
+                                </div>
+                                <div class="col-span-2 flex justify-end gap-3 mt-4">
+                                    <button type="button" onclick="closeToolRequestModal()" class="px-4 py-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">Cancel</button>
+                                    <button type="submit" class="bg-primary hover:bg-secondary text-white px-6 py-2 rounded-lg transition-colors">Submit Request</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tools List -->
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                    <!-- Course Outline -->
+                    <div class="p-4 border border-slate-200 dark:border-gray-700 rounded-lg hover:border-primary/50 transition-colors">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="font-medium">Course Outline</h4>
+                            <span class="px-3 py-1 rounded-full text-xs bg-warning/10 text-warning">Pending</span>
+                        </div>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mb-3">Dr. Smith - Software Engineering</p>
+                        <div class="flex items-center gap-2">
+                            <button class="text-sm text-primary hover:text-secondary transition-colors">Review</button>
+                            <span class="text-slate-300 dark:text-slate-600">|</span>
+                            <button class="text-sm text-slate-500 hover:text-slate-600 transition-colors">Dismiss</button>
+                        </div>
+                    </div>
+
+                    <!-- Learning Plan -->
+                    <div class="p-4 border border-slate-200 dark:border-gray-700 rounded-lg hover:border-primary/50 transition-colors">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="font-medium">Learning Plan</h4>
+                            <span class="px-3 py-1 rounded-full text-xs bg-success/10 text-success">Approved</span>
+                        </div>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mb-3">Dr. Johnson - Data Science</p>
+                        <div class="flex items-center gap-2">
+                            <button class="text-sm text-primary hover:text-secondary transition-colors">View Details</button>
+                            <span class="text-slate-300 dark:text-slate-600">|</span>
+                            <button class="text-sm text-slate-500 hover:text-slate-600 transition-colors">Archive</button>
+                        </div>
+                    </div>
+
+                    <!-- Record of Work -->
+                    <div class="p-4 border border-slate-200 dark:border-gray-700 rounded-lg hover:border-primary/50 transition-colors">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="font-medium">Record of Work</h4>
+                            <span class="px-3 py-1 rounded-full text-xs bg-primary/10 text-primary">In Progress</span>
+                        </div>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mb-3">Prof. Williams - Cybersecurity</p>
+                        <div class="flex items-center gap-2">
+                            <button class="text-sm text-primary hover:text-secondary transition-colors">View Details</button>
+                            <span class="text-slate-300 dark:text-slate-600">|</span>
+                            <button class="text-sm text-slate-500 hover:text-slate-600 transition-colors">Update</button>
+                        </div>
+                    </div>
+
+                    <!-- Session Plan -->
+                    <div class="p-4 border border-slate-200 dark:border-gray-700 rounded-lg hover:border-primary/50 transition-colors">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="font-medium">Session Plan</h4>
+                            <span class="px-3 py-1 rounded-full text-xs bg-warning/10 text-warning">Pending Review</span>
+                        </div>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mb-3">Dr. Brown - Network Engineering</p>
+                        <div class="flex items-center gap-2">
+                            <button class="text-sm text-primary hover:text-secondary transition-colors">Review</button>
+                            <span class="text-slate-300 dark:text-slate-600">|</span>
+                            <button class="text-sm text-slate-500 hover:text-slate-600 transition-colors">Edit</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Notifications Section -->
+        <div id="content-notifications" class="content-section hidden">
+            <!-- Notifications will be loaded here -->
+        </div>
+    </main>
+
+    <!-- Tool Request Modal -->
+    <div id="toolRequestModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+        <div class="bg-white dark:bg-gray-800 p-8 rounded-xl w-full max-w-5xl mx-4 shadow-2xl">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-semibold">New Tool Request</h3>
+                <button onclick="closeToolRequestForm()" class="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300 transition-colors">
+                    <i class="ri-close-line text-2xl"></i>
+                </button>
+            </div>
+
+            <form id="toolRequestForm" class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Tool Type</label>
+                        <select name="toolType" class="w-full search-input" required>
+                            <option value="">Select Tool Type</option>
+                            <option value="course_outline">Course Outline</option>
+                            <option value="learning_plan">Learning Plan</option>
+                            <option value="record_of_work">Record of Work</option>
+                            <option value="session_plan">Session Plan</option>
+                            <option value="exam">Exam</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Due Date</label>
+                        <input type="date" name="dueDate" class="w-full search-input" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Trainer</label>
+                        <div class="space-y-3 bg-slate-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                            <label class="flex items-center gap-3 cursor-pointer">
+                                <input type="radio" name="trainer" value="all" class="text-primary" checked>
+                                <span>Send to All Trainers</span>
+                            </label>
+                            <label class="flex items-center gap-3 cursor-pointer">
+                                <input type="radio" name="trainer" value="specific" class="text-primary">
+                                <span>Select Specific Trainer</span>
+                            </label>
+                        </div>
+                        <select name="specificTrainerId" class="w-full search-input mt-3" id="specificTrainer" disabled>
+                            <option value="">Loading trainers...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium mb-2">Specific Instructions</label>
+                    <textarea 
+                        name="instructions"
+                        class="w-full h-[calc(100%-2rem)] search-input resize-none" 
+                        placeholder="Enter detailed instructions for the tool request..."
+                        required
+                    ></textarea>
+                </div>
+
+                <div class="md:col-span-2 flex justify-end gap-3 pt-6 border-t dark:border-gray-700">
+                    <button 
+                        type="button" 
+                        class="px-6 py-2 rounded-lg border border-slate-300 dark:border-gray-600 hover:bg-slate-50 dark:hover:bg-gray-700 transition-colors" 
+                        onclick="closeToolRequestForm()"
+                    >Cancel</button>
+                    <button type="submit" class="btn-primary px-6">Submit Request</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Theme Toggle
+        const themeToggle = document.getElementById('themeToggle');
+        themeToggle.addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+        });
+
+        // Mobile Menu Toggle
+        const menuBtn = document.getElementById('menuBtn');
+        const body = document.body;
+
+        menuBtn.addEventListener('click', () => {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('-translate-x-full');
+            body.classList.toggle('menu-open');
+        });
+
+        // Close menu when clicking outside
+        document.addEventListener('click', (e) => {
+            const sidebar = document.getElementById('sidebar');
+            if (body.classList.contains('menu-open') && 
+                !sidebar.contains(e.target) && 
+                !menuBtn.contains(e.target)) {
+                sidebar.classList.add('-translate-x-full');
+                body.classList.remove('menu-open');
+            }
+        });
+
+        // Tool Request Modal
+        const modal = document.getElementById('toolRequestModal');
+        const trainerRadios = document.getElementsByName('trainer');
+        const specificTrainerSelect = document.getElementById('specificTrainer');
+
+        function openToolRequestForm() {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeToolRequestForm() {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.body.style.overflow = '';
+        }
+
+        // Handle trainer selection
+        trainerRadios.forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                specificTrainerSelect.disabled = e.target.value !== 'specific';
+            });
+        });
+
+        // Close modal when clicking outside
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeToolRequestForm();
+            }
+        });
+    </script>
+<script>
+        async function viewToolRequest(requestId) {
+            try {
+                const response = await fetch(`http://localhost:5502/api/tools/requests/${requestId}`);
+                if (!response.ok) throw new Error('Failed to fetch tool request details');
+                
+                const request = await response.json();
+                // Show request details in a modal or dedicated view
+                showToast('Viewing request details - Feature coming soon', 'success');
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        async function updateToolRequestStatus(requestId, newStatus) {
+            try {
+                const response = await fetch(`http://localhost:5502/api/tools/${requestId}/status`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ status: newStatus })
+                });
+
+                if (!response.ok) throw new Error('Failed to update tool request status');
+                
+                showToast(`Tool request ${newStatus ? newStatus.toLowerCase() : 'updated'} successfully`);
+                // Refresh the tools of trade list
+                fetchToolsOfTrade();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        // Handle send to change
+        function handleSendToChange() {
+            const sendTo = document.getElementById('sendToSelect').value;
+            const departmentFilter = document.getElementById('departmentFilter');
+            const trainerFilter = document.getElementById('trainerFilter');
+            
+            // Hide all filters
+            departmentFilter.classList.add('hidden');
+            trainerFilter.classList.add('hidden');
+            
+            // Show relevant filter
+            if (sendTo === 'by_department') {
+                departmentFilter.classList.remove('hidden');
+            } else if (sendTo === 'specific_trainer') {
+                trainerFilter.classList.remove('hidden');
+                loadAllTrainers();
+            }
+        }
+
+        // Load trainers by department
+        async function loadTrainersByDepartment() {
+            const department = document.getElementById('departmentSelect').value;
+            if (!department) return;
+            
+            try {
+                const response = await fetch(`http://localhost:5502/api/trainers/department/${department}`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch trainers');
+                }
+                
+                const data = await response.json();
+                const trainers = data.trainers || [];
+                const trainerSelect = document.getElementById('trainerSelect');
+                
+                trainerSelect.innerHTML = '<option value="">Select Trainer</option>';
+                trainers.forEach(trainer => {
+                    const option = document.createElement('option');
+                    option.value = trainer._id;
+                    option.textContent = trainer.name;
+                    trainerSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading trainers by department:', error);
+            }
+        }
+
+        // Load all trainers for specific trainer selection
+        async function loadAllTrainers() {
+            try {
+                const response = await fetch('http://localhost:5502/api/trainers/all-departments');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch trainers');
+                }
+                
+                const data = await response.json();
+                const trainers = data.trainers || [];
+                const trainerSelect = document.getElementById('trainerSelect');
+                
+                trainerSelect.innerHTML = '<option value="">Select Trainer</option>';
+                trainers.forEach(trainer => {
+                    const option = document.createElement('option');
+                    option.value = trainer._id;
+                    option.textContent = `${trainer.name} (${trainer.department})`;
+                    trainerSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading all trainers:', error);
+            }
+        }
+
+        // Load trainers for dropdown
+        async function loadTrainers() {
+            try {
+                const response = await fetch('http://localhost:5502/api/trainers/all-departments');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch trainers');
+                }
+                
+                const data = await response.json();
+                const trainers = data.trainers || [];
+                const trainerSelect = document.getElementById('trainerSelect');
+                
+                trainerSelect.innerHTML = '<option value="all_trainers">All Trainers</option>';
+                trainers.forEach(trainer => {
+                    const option = document.createElement('option');
+                    option.value = trainer._id;
+                    option.textContent = `${trainer.name} (${trainer.department})`;
+                    trainerSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading trainers:', error);
+                document.getElementById('trainerSelect').innerHTML = '<option value="all_trainers">Error loading trainers</option>';
+            }
+        }
+
+        // Load dashboard stats
+        async function loadDashboardStats() {
+            try {
+                // Load students count
+                const studentsResponse = await fetch('http://localhost:5502/api/students');
+                if (studentsResponse.ok) {
+                    const students = await studentsResponse.json();
+                    document.getElementById('totalStudents').textContent = students.length;
+                }
+
+                // Load trainers count
+                const trainersResponse = await fetch('http://localhost:5502/api/trainers/all-departments');
+                if (trainersResponse.ok) {
+                    const data = await trainersResponse.json();
+                    const trainers = data.trainers || [];
+                    document.getElementById('totalTrainers').textContent = trainers.length;
+                }
+
+                // Load courses count
+                const coursesResponse = await fetch('http://localhost:5502/api/courses');
+                if (coursesResponse.ok) {
+                    const courses = await coursesResponse.json();
+                    document.getElementById('totalCourses').textContent = courses.length;
+                }
+
+                // Load units count
+                const unitsResponse = await fetch('http://localhost:5502/api/units');
+                if (unitsResponse.ok) {
+                    const data = await unitsResponse.json();
+                    const totalUnits = data.pagination?.totalUnits || data.units?.length || 0;
+                    document.getElementById('totalUnits').textContent = totalUnits;
+                }
+
+                // Load tools count
+                const toolsResponse = await fetch('http://localhost:5502/api/tools');
+                if (toolsResponse.ok) {
+                    const tools = await toolsResponse.json();
+                    console.log('Tools loaded for dashboard:', tools);
+                    document.getElementById('totalTools').textContent = tools.length;
+                    
+                    // Count pending tools
+                    const pendingTools = tools.filter(tool => tool.status === 'submitted' || tool.status === 'under_review');
+                    console.log('Pending tools:', pendingTools);
+                    console.log('Pending tools count:', pendingTools.length);
+                    document.getElementById('pendingTools').textContent = pendingTools.length;
+                }
+
+                // Load departments count
+                const departments = ['applied_science', 'agriculture', 'building_civil', 'electromechanical', 'hospitality', 'business_liberal', 'computing_informatics'];
+                document.getElementById('totalDepartments').textContent = departments.length;
+
+                // Load notifications count
+                const notificationsResponse = await fetch('http://localhost:5502/api/notifications');
+                if (notificationsResponse.ok) {
+                    const notifications = await notificationsResponse.json();
+                    document.getElementById('totalNotifications').textContent = notifications.length;
+                }
+
+                // Load charts
+                await loadCharts();
+            } catch (error) {
+                console.error('Error loading dashboard stats:', error);
+            }
+        }
+
+        // Load charts
+        async function loadCharts() {
+            try {
+                // Students by Department Chart
+                const studentsResponse = await fetch('http://localhost:5502/api/students');
+                if (studentsResponse.ok) {
+                    const students = await studentsResponse.json();
+                    const studentsByDept = {};
+                    students.forEach(student => {
+                        const dept = student.department || 'unknown';
+                        studentsByDept[dept] = (studentsByDept[dept] || 0) + 1;
+                    });
+                    
+                    const ctx1 = document.getElementById('studentsByDeptChart');
+                    if (ctx1 && typeof Chart !== 'undefined') {
+                        // Clear any existing chart
+                        if (window.studentsChart) {
+                            window.studentsChart.destroy();
+                        }
+                        
+                        window.studentsChart = new Chart(ctx1, {
+                            type: 'doughnut',
+                            data: {
+                                labels: Object.keys(studentsByDept),
+                                datasets: [{
+                                    data: Object.values(studentsByDept),
+                                    backgroundColor: [
+                                        '#7A0C0C',
+                                        '#8B2A2A',
+                                        '#10b981',
+                                        '#f59e0b',
+                                        '#ef4444',
+                                        '#6366f1',
+                                        '#8b5cf6'
+                                    ]
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: {
+                                        position: 'bottom'
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }
+
+                // Tools Status Chart
+                const toolsResponse = await fetch('http://localhost:5502/api/tools');
+                if (toolsResponse.ok) {
+                    const tools = await toolsResponse.json();
+                    const statusCounts = {};
+                    tools.forEach(tool => {
+                        const status = tool.status || 'unknown';
+                        statusCounts[status] = (statusCounts[status] || 0) + 1;
+                    });
+                    
+                    const ctx2 = document.getElementById('toolsStatusChart');
+                    if (ctx2 && typeof Chart !== 'undefined') {
+                        // Clear any existing chart
+                        if (window.toolsChart) {
+                            window.toolsChart.destroy();
+                        }
+                        
+                        window.toolsChart = new Chart(ctx2, {
+                            type: 'bar',
+                            data: {
+                                labels: Object.keys(statusCounts),
+                                datasets: [{
+                                    label: 'Tools',
+                                    data: Object.values(statusCounts),
+                                    backgroundColor: '#7A0C0C'
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: {
+                                        display: false
+                                    }
+                                },
+                                scales: {
+                                    y: {
+                                        beginAtZero: true
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading charts:', error);
+                // Show error message in chart containers
+                const studentsChartDiv = document.getElementById('studentsByDeptChart').parentElement;
+                const toolsChartDiv = document.getElementById('toolsStatusChart').parentElement;
+                
+                if (studentsChartDiv) {
+                    studentsChartDiv.innerHTML = '<div class="flex items-center justify-center h-full text-red-500">Error loading chart</div>';
+                }
+                if (toolsChartDiv) {
+                    toolsChartDiv.innerHTML = '<div class="flex items-center justify-center h-full text-red-500">Error loading chart</div>';
+                }
+            }
+        }
+
+        // Pagination state
+        let studentsPagination = {
+            currentPage: 1,
+            itemsPerPage: 10,
+            totalItems: 0,
+            allItems: [],
+            filteredItems: []
+        };
+
+        // Load students data
+        async function loadStudents() {
+            try {
+                const response = await fetch('http://localhost:5502/api/students');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch students');
+                }
+                
+                const students = await response.json();
+                studentsPagination.allItems = students;
+                studentsPagination.filteredItems = students;
+                studentsPagination.totalItems = students.length;
+                studentsPagination.currentPage = 1;
+                
+                displayStudents();
+                updatePagination('students');
+            } catch (error) {
+                console.error('Error loading students:', error);
+                document.getElementById('studentsTableBody').innerHTML = `
+                    <tr>
+                        <td colspan="5" class="px-6 py-4 text-center text-gray-500">
+                            Error loading students: ${error.message}
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        // Display students with pagination
+        function displayStudents() {
+            const tbody = document.getElementById('studentsTableBody');
+            const { currentPage, itemsPerPage, filteredItems } = studentsPagination;
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const currentStudents = filteredItems.slice(startIndex, endIndex);
+            
+            if (currentStudents.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="px-6 py-4 text-center text-gray-500">
+                            No students found
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = currentStudents.map(student => `
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 h-10 w-10">
+                                <div class="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                    <i class="ri-user-line text-primary"></i>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <div class="text-sm font-medium text-gray-900 dark:text-white">${escapeHtml(student.name)}</div>
+                                <div class="text-sm text-gray-500 dark:text-gray-400">${escapeHtml(student.admissionNumber)}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900 dark:text-white">${escapeHtml(student.course)}</div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">${escapeHtml(student.department)}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                        ${escapeHtml(student.admissionType || 'walk-in')}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                        Year ${student.year}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                            Active
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Update pagination controls
+        function updatePagination(type) {
+            const pagination = type === 'students' ? studentsPagination : trainersPagination;
+            const containerId = type === 'students' ? 'studentsPagination' : 'trainersPagination';
+            const container = document.getElementById(containerId);
+            
+            if (!container) return;
+            
+            const totalPages = Math.ceil(pagination.totalItems / pagination.itemsPerPage);
+            const currentPage = pagination.currentPage;
+            
+            let paginationHTML = `
+                <div class="flex items-center justify-between">
+                    <div class="text-sm text-gray-700 dark:text-gray-300">
+                        Showing ${(currentPage - 1) * pagination.itemsPerPage + 1} to ${Math.min(currentPage * pagination.itemsPerPage, pagination.totalItems)} of ${pagination.totalItems} results
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="changePage('${type}', 'prev')" ${currentPage === 1 ? 'disabled' : ''} 
+                                class="px-3 py-1 text-sm border rounded-lg ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50 dark:hover:bg-gray-700'}">
+                            Previous
+                        </button>
+            `;
+            
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === currentPage || i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+                    paginationHTML += `
+                        <button onclick="changePage('${type}', ${i})" 
+                                class="px-3 py-1 text-sm border rounded-lg ${i === currentPage ? 'bg-primary text-white border-primary' : 'hover:bg-gray-50 dark:hover:bg-gray-700'}">
+                            ${i}
+                        </button>
+                    `;
+                } else if (i === currentPage - 2 || i === currentPage + 2) {
+                    paginationHTML += `<span class="px-2 text-gray-500">...</span>`;
+                }
+            }
+            
+            paginationHTML += `
+                        <button onclick="changePage('${type}', 'next')" ${currentPage === totalPages ? 'disabled' : ''} 
+                                class="px-3 py-1 text-sm border rounded-lg ${currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50 dark:hover:bg-gray-700'}">
+                            Next
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            container.innerHTML = paginationHTML;
+        }
+
+        // Change page
+        function changePage(type, direction) {
+            const pagination = type === 'students' ? studentsPagination : trainersPagination;
+            const totalPages = Math.ceil(pagination.totalItems / pagination.itemsPerPage);
+            
+            if (direction === 'prev' && pagination.currentPage > 1) {
+                pagination.currentPage--;
+            } else if (direction === 'next' && pagination.currentPage < totalPages) {
+                pagination.currentPage++;
+            } else if (typeof direction === 'number' && direction >= 1 && direction <= totalPages) {
+                pagination.currentPage = direction;
+            }
+            
+            if (type === 'students') {
+                displayStudents();
+                updatePagination('students');
+            } else if (type === 'trainers') {
+                displayTrainers();
+                updatePagination('trainers');
+            }
+        }
+
+        // Display students in table
+        function displayStudents(students = null) {
+            const tbody = document.getElementById('studentsTableBody');
+            
+            // Use pagination data if no students parameter provided
+            if (!students) {
+                students = studentsPagination.filteredItems || [];
+            }
+            
+            if (students.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="px-6 py-4 text-center text-gray-500">
+                            No students found
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = students.map(student => `
+                <tr class="hover:bg-slate-50 dark:hover:bg-gray-700/50">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 h-10 w-10">
+                                <div class="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                    <i class="ri-user-line text-primary"></i>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <div class="text-sm font-medium">${escapeHtml(student.name)}</div>
+                                <div class="text-sm text-slate-500 dark:text-slate-400">${escapeHtml(student.admissionNumber)}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm">${escapeHtml(student.course)}</div>
+                        <div class="text-sm text-slate-500 dark:text-slate-400">${escapeHtml(student.department)}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            student.admissionType === 'KUCCPS' 
+                                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                                : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                        }">
+                            ${student.admissionType === 'KUCCPS' ? 'KUCCPS' : 'Walk-in'}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm">Year ${student.year}</div>
+                        <div class="text-sm text-slate-500 dark:text-slate-400">${student.intake} ${student.intakeYear}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-success/10 text-success">
+                            Active
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Escape HTML function
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Load trainers data
+        async function loadTrainersData() {
+            try {
+                const response = await fetch('http://localhost:5502/api/trainers/all-departments');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch trainers data');
+                }
+                
+                const data = await response.json();
+                const trainers = data.trainers || [];
+                
+                // Load additional data for each trainer
+                const trainersWithData = await Promise.all(trainers.map(async (trainer) => {
+                    try {
+                        // Get students for this trainer
+                        const studentsResponse = await fetch(`http://localhost:5502/api/trainers/${trainer._id}/students`);
+                        let studentCount = 0;
+                        if (studentsResponse.ok) {
+                            const studentsData = await studentsResponse.json();
+                            studentCount = Object.values(studentsData.students || {}).flat().length;
+                        }
+                        
+                        // Get assignments for this trainer
+                        const assignmentsResponse = await fetch(`http://localhost:5502/api/trainers/${trainer._id}/assignments`);
+                        let assignedUnits = 0;
+                        if (assignmentsResponse.ok) {
+                            const assignmentsData = await assignmentsResponse.json();
+                            assignedUnits = assignmentsData.assignments?.length || 0;
+                        }
+                        
+                        return {
+                            ...trainer,
+                            studentCount,
+                            assignedUnits
+                        };
+                    } catch (error) {
+                        console.error(`Error loading data for trainer ${trainer._id}:`, error);
+                        return {
+                            ...trainer,
+                            studentCount: 0,
+                            assignedUnits: 0
+                        };
+                    }
+                }));
+                
+                displayTrainers(trainersWithData);
+            } catch (error) {
+                console.error('Error loading trainers data:', error);
+                document.getElementById('trainersTableBody').innerHTML = `
+                    <tr>
+                        <td colspan="5" class="px-6 py-4 text-center text-gray-500">
+                            Error loading trainers: ${error.message}
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        // Display trainers in table
+        function displayTrainers(trainers) {
+            const tbody = document.getElementById('trainersTableBody');
+            
+            if (trainers.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="px-6 py-4 text-center text-gray-500">
+                            No trainers found
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = trainers.map(trainer => `
+                <tr class="hover:bg-slate-50 dark:hover:bg-gray-700/50">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 h-10 w-10">
+                                <div class="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                    <i class="ri-user-line text-primary"></i>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <div class="text-sm font-medium">${escapeHtml(trainer.name)}</div>
+                                <div class="text-sm text-slate-500 dark:text-slate-400">${escapeHtml(trainer.email)}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm">${escapeHtml(trainer.department)}</div>
+                        <div class="text-sm text-slate-500 dark:text-slate-400">${escapeHtml(trainer.role)}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm">${trainer.assignedUnits || 0}</div>
+                        <div class="text-sm text-slate-500 dark:text-slate-400">Units assigned</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm">${trainer.studentCount || 0}</div>
+                        <div class="text-sm text-slate-500 dark:text-slate-400">Students enrolled</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-success/10 text-success">
+                            Active
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Tab switching function
+        function switchTab(tabName) {
+            // Hide all content sections
+            const allSections = document.querySelectorAll('.content-section');
+            allSections.forEach(section => section.classList.add('hidden'));
+            
+            // Remove active class from all nav items
+            const allNavItems = document.querySelectorAll('.nav-item');
+            allNavItems.forEach(item => {
+                item.classList.remove('bg-primary/10', 'text-primary');
+                item.classList.add('hover:bg-primary/10', 'hover:text-primary');
+            });
+            
+            // Show selected section
+            const targetSection = document.getElementById(`content-${tabName}`);
+            if (targetSection) {
+                targetSection.classList.remove('hidden');
+            }
+            
+            // Add active class to selected nav item
+            const activeNavItem = document.getElementById(`nav-${tabName}`);
+            if (activeNavItem) {
+                activeNavItem.classList.add('bg-primary/10', 'text-primary');
+                activeNavItem.classList.remove('hover:bg-primary/10', 'hover:text-primary');
+            }
+            
+            // Update page title
+            const titles = {
+                'dashboard': 'Dashboard Overview',
+                'students': 'Student Management',
+                'trainers': 'Trainer Management',
+                'courses': 'Course Management',
+                'units': 'Unit Management',
+                'tools': 'Tools of Trade',
+                'notifications': 'Notifications'
+            };
+            document.getElementById('pageTitle').textContent = titles[tabName] || tabName;
+            
+            // Load section-specific data
+            if (tabName === 'dashboard') {
+                loadDashboardStats();
+            } else if (tabName === 'students') {
+                loadStudents();
+            } else if (tabName === 'trainers') {
+                loadTrainersData();
+            } else if (tabName === 'courses') {
+                loadCoursesData();
+            } else if (tabName === 'units') {
+                loadUnitsData();
+            } else if (tabName === 'tools') {
+                fetchToolsOfTrade();
+            } else if (tabName === 'notifications') {
+                loadNotificationsData();
+            }
+        }
+
+        // Load courses data
+        async function loadCoursesData() {
+            try {
+                const response = await fetch('http://localhost:5502/api/courses');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch courses');
+                }
+                
+                const courses = await response.json();
+                displayCourses(courses);
+            } catch (error) {
+                console.error('Error loading courses:', error);
+            }
+        }
+
+        // Load units data
+        async function loadUnitsData() {
+            try {
+                const response = await fetch('http://localhost:5502/api/units');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch units');
+                }
+                
+                const data = await response.json();
+                const units = data.units || data;
+                displayUnits(units);
+            } catch (error) {
+                console.error('Error loading units:', error);
+            }
+        }
+
+        // Load notifications data
+        async function loadNotificationsData() {
+            try {
+                const response = await fetch('http://localhost:5502/api/notifications');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch notifications');
+                }
+                
+                const notifications = await response.json();
+                displayNotifications(notifications);
+            } catch (error) {
+                console.error('Error loading notifications:', error);
+            }
+        }
+
+        // Display courses
+        function displayCourses(courses) {
+            const content = document.getElementById('content-courses');
+            if (!content) return;
+
+            const coursesByDept = {};
+            courses.forEach(course => {
+                if (!coursesByDept[course.department]) {
+                    coursesByDept[course.department] = [];
+                }
+                coursesByDept[course.department].push(course);
+            });
+
+            content.innerHTML = `
+                <div class="space-y-6">
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+                        <h2 class="text-xl font-semibold mb-6">All Courses by Department</h2>
+                        ${Object.keys(coursesByDept).map(dept => `
+                            <div class="mb-8">
+                                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 capitalize">${dept.replace('_', ' ')}</h3>
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    ${coursesByDept[dept].map(course => `
+                                        <div class="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-primary/50 transition-colors">
+                                            <h4 class="font-medium text-gray-900 dark:text-white">${escapeHtml(course.name)}</h4>
+                                            <p class="text-sm text-gray-500 dark:text-gray-400">Level ${course.level}</p>
+                                            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">${escapeHtml(course.code)}</p>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Display units
+        function displayUnits(units) {
+            const content = document.getElementById('content-units');
+            if (!content) return;
+
+            const unitsByCourse = {};
+            units.forEach(unit => {
+                if (!unitsByCourse[unit.courseCode]) {
+                    unitsByCourse[unit.courseCode] = [];
+                }
+                unitsByCourse[unit.courseCode].push(unit);
+            });
+
+            content.innerHTML = `
+                <div class="space-y-6">
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+                        <h2 class="text-xl font-semibold mb-6">All Units by Course</h2>
+                        ${Object.keys(unitsByCourse).map(courseCode => `
+                            <div class="mb-8">
+                                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">${escapeHtml(courseCode)}</h3>
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    ${unitsByCourse[courseCode].map(unit => `
+                                        <div class="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-primary/50 transition-colors">
+                                            <h4 class="font-medium text-gray-900 dark:text-white">${escapeHtml(unit.unitName)}</h4>
+                                            <p class="text-sm text-gray-500 dark:text-gray-400">${escapeHtml(unit.unitCode)}</p>
+                                            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">${unit.creditHours || 0} Credit Hours</p>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Display notifications
+        function displayNotifications(notifications) {
+            const content = document.getElementById('content-notifications');
+            if (!content) return;
+
+            content.innerHTML = `
+                <div class="space-y-6">
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+                        <h2 class="text-xl font-semibold mb-6">System Notifications</h2>
+                        <div class="space-y-4">
+                            ${notifications.map(notification => `
+                                <div class="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                                    <h4 class="font-medium text-gray-900 dark:text-white">${escapeHtml(notification.title)}</h4>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">${escapeHtml(notification.message)}</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-500 mt-2">${new Date(notification.createdAt).toLocaleDateString()}</p>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Sidebar collapse functionality
+        let sidebarCollapsed = false;
+        const toggleSidebar = document.getElementById('toggleSidebar');
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.querySelector('main');
+
+        if (toggleSidebar && sidebar) {
+            toggleSidebar.addEventListener('click', () => {
+                sidebarCollapsed = !sidebarCollapsed;
+                
+                if (sidebarCollapsed) {
+                    sidebar.classList.add('w-16');
+                    sidebar.classList.remove('w-64');
+                    toggleSidebar.innerHTML = '<i class="ri-menu-unfold-line text-xl text-slate-600 dark:text-slate-300"></i>';
+                    
+                    // Hide text in navigation items
+                    const navSpans = sidebar.querySelectorAll('nav span');
+                    navSpans.forEach(span => span.classList.add('hidden'));
+                } else {
+                    sidebar.classList.remove('w-16');
+                    sidebar.classList.add('w-64');
+                    toggleSidebar.innerHTML = '<i class="ri-menu-fold-line text-xl text-slate-600 dark:text-slate-300"></i>';
+                    
+                    // Show text in navigation items
+                    const navSpans = sidebar.querySelectorAll('nav span');
+                    navSpans.forEach(span => span.classList.remove('hidden'));
+                }
+            });
+        }
+
+        // Mobile responsive behavior
+        function handleResize() {
+            if (window.innerWidth < 1024) {
+                // Mobile: sidebar should be hidden by default
+                sidebar.classList.add('-translate-x-full');
+                sidebar.classList.remove('w-16');
+                sidebar.classList.add('w-64');
+            } else {
+                // Desktop: show sidebar
+                sidebar.classList.remove('-translate-x-full');
+            }
+        }
+
+        // Handle window resize
+        window.addEventListener('resize', handleResize);
+        
+        // Initialize on load
+        handleResize();
+
+        // Mobile menu functionality
+        const mobileMenuBtn = document.getElementById('menuBtn');
+        if (mobileMenuBtn && sidebar) {
+            mobileMenuBtn.addEventListener('click', () => {
+                sidebar.classList.toggle('-translate-x-full');
+                document.body.classList.toggle('menu-open');
+            });
+        }
+
+        // Load data on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadDashboardStats();
+            loadCoursesData();
+            loadTrainers();
+        });
+        </script>
+</body>
+</html>

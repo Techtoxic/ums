@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Principal Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2563eb',
+                        secondary: '#1d4ed8',
+                        success: '#22c55e',
+                        warning: '#f59e0b',
+                        danger: '#ef4444',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .card {
+            transition: all 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        @media (max-width: 768px) {
+            .sidebar.active {
+                transform: translateX(0);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside class="sidebar fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
+            <div class="flex flex-col h-full">
+                <div class="flex items-center justify-center h-20 border-b">
+                    <h1 class="text-xl font-bold text-primary">Principal Dashboard</h1>
+                </div>
+                <nav class="flex-1 overflow-y-auto py-4">
+                    <ul class="space-y-2 px-4">
+                        <li>
+                            <a href="#dashboard" class="flex items-center space-x-2 p-2 rounded-lg bg-primary text-white">
+                                <i class="fas fa-tachometer-alt"></i>
+                                <span>Dashboard</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#students" class="flex items-center space-x-2 p-2 rounded-lg text-gray-700 hover:bg-primary hover:text-white">
+                                <i class="fas fa-user-graduate"></i>
+                                <span>Students</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="trainerManagement.html" class="flex items-center space-x-2 p-2 rounded-lg text-gray-700 hover:bg-primary hover:text-white">
+                                <i class="fas fa-chalkboard-teacher"></i>
+                                <span>Trainers</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#courses" class="flex items-center space-x-2 p-2 rounded-lg text-gray-700 hover:bg-primary hover:text-white">
+                                <i class="fas fa-book"></i>
+                                <span>Courses</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#units" class="flex items-center space-x-2 p-2 rounded-lg text-gray-700 hover:bg-primary hover:text-white">
+                                <i class="fas fa-book-open"></i>
+                                <span>Units</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#transcripts" class="flex items-center space-x-2 p-2 rounded-lg text-gray-700 hover:bg-primary hover:text-white">
+                                <i class="fas fa-file-alt"></i>
+                                <span>Transcripts</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#finance" class="flex items-center space-x-2 p-2 rounded-lg text-gray-700 hover:bg-primary hover:text-white">
+                                <i class="fas fa-money-bill-wave"></i>
+                                <span>Finance</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#settings" class="flex items-center space-x-2 p-2 rounded-lg text-gray-700 hover:bg-primary hover:text-white">
+                                <i class="fas fa-cog"></i>
+                                <span>Settings</span>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+                <div class="p-4 border-t">
+                    <button id="logout-button" class="w-full flex items-center justify-center space-x-2 p-2 rounded-lg text-white bg-red-500 hover:bg-red-600 transition-colors">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Logout</span>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Mobile Header -->
+        <div class="md:hidden fixed top-0 left-0 right-0 z-40 bg-white shadow-md">
+            <div class="flex items-center justify-between p-4">
+                <button id="mobile-menu-button" class="text-gray-700 focus:outline-none">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+                <h1 class="text-xl font-bold text-primary">Principal Dashboard</h1>
+                <div class="w-8"></div> <!-- Spacer for alignment -->
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <main class="flex-1 md:ml-64 p-4 md:p-8">
+            <div class="md:hidden h-16"></div> <!-- Spacer for mobile header -->
+            
+            <!-- Dashboard Header -->
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Dashboard Overview</h2>
+                <div class="mt-4 md:mt-0 flex items-center space-x-2">
+                    <span class="text-gray-600">Academic Year: 2023/2024</span>
+                    <select class="border rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-primary">
+                        <option>Current Term</option>
+                        <option>Previous Term</option>
+                        <option>All Time</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow-md p-6 card">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500">Total Students</p>
+                            <h3 class="text-2xl font-bold" id="total-students">0</h3>
+                            <p class="text-sm mt-1 text-green-500">+5% from last term</p>
+                        </div>
+                        <div class="bg-blue-100 p-3 rounded-full">
+                            <i class="fas fa-user-graduate text-blue-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow-md p-6 card">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500">Total Trainers</p>
+                            <h3 class="text-2xl font-bold" id="total-trainers">0</h3>
+                            <p class="text-sm mt-1 text-green-500">+2% from last term</p>
+                        </div>
+                        <div class="bg-green-100 p-3 rounded-full">
+                            <i class="fas fa-chalkboard-teacher text-green-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow-md p-6 card">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500">Courses Offered</p>
+                            <h3 class="text-2xl font-bold" id="total-courses">0</h3>
+                            <p class="text-sm mt-1 text-blue-500">Same as last term</p>
+                        </div>
+                        <div class="bg-purple-100 p-3 rounded-full">
+                            <i class="fas fa-book text-purple-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow-md p-6 card">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500">Total Revenue</p>
+                            <h3 class="text-2xl font-bold" id="total-revenue">KES 0</h3>
+                            <p class="text-sm mt-1 text-green-500">+8% from last term</p>
+                        </div>
+                        <div class="bg-yellow-100 p-3 rounded-full">
+                            <i class="fas fa-money-bill-wave text-yellow-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <!-- Enrollment Trends -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Enrollment Trends</h3>
+                    <div class="h-80">
+                        <canvas id="enrollment-chart"></canvas>
+                    </div>
+                </div>
+                <!-- Performance Overview -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Performance Overview</h3>
+                    <div class="h-80">
+                        <canvas id="performance-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activities & Course Distribution -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                <!-- Recent Activities -->
+                <div class="lg:col-span-2 bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Recent Activities</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Activity</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200" id="recent-activities">
+                                <!-- Activities will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <!-- Course Distribution -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Course Distribution</h3>
+                    <div class="h-64">
+                        <canvas id="course-distribution-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Performing Students & Units -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Top Performing Students -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Top Performing Students</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Course</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Average Grade</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200" id="top-students">
+                                <!-- Top students will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <!-- Top Units -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Units Performance</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Course</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Average Score</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200" id="top-units">
+                                <!-- Top units will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="adminDashboard.js"></script>
+</body>
+</html>

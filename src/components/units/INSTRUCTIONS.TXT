@@ -1,0 +1,54 @@
+Project Change – Common Units in Trainer’s Portal
+
+Background:
+Currently, HODs (Heads of Department) can only assign units to trainers within their own department. However, there are "common units" (shared across all departments) that need to be assigned to trainers from any department.
+
+Change Required:
+Introduce a new section for common units in the HOD’s unit assignment portal.
+
+Details & Requirements:
+
+1. Database Structure
+
+Create a separate collection for common units (to avoid interfering with department-specific unit logic).
+
+Each common unit record should be distinguishable from department units.
+
+Maintain existing department-specific collection as is.
+
+
+
+2. HOD Portal – Unit Assignment
+
+Add a dedicated section for common units where HODs can:
+
+View all common units.
+
+Assign these units to trainers from any department.
+
+Filter trainers by department when assigning.
+
+
+Remove common units from the main department-specific assignment section (so HODs only see their department’s core units there).
+
+
+3. System Logic
+
+Department-specific assignment flow remains unchanged.
+
+Common units assignment uses the new collection and logic, ensuring clean separation.
+
+
+Outcome:
+
+HODs can continue assigning department units as before.
+
+HODs gain a separate, dedicated section to assign common units to trainers across all departments.
+
+System remains maintainable, with no disruption to existing logic.
+
+
+
+I THINK AFTER THESE CHANGES I SHOULD DROP THE COLLECTION FOR UNITS WHICH CURRENTLY INCLUDES EVEN THE COMMON UNITS \
+SO THAT AFTER YOU MAKE THE SERVERSIDE CHANGES WE GONNA RE INITIALIZE THE NEW DEPARTMENT UNITS AGAIN (BUT WITH EXECPTIONAL OF COMMON UNITS )
+AND THEN THE COMMON UNITS IN THEIR SEPARATE COLLLECTION  RIGHT?

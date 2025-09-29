@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finance Dashboard - University Management System</title>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        /* Deriv-inspired Dark Theme */
+        .dark {
+            background: linear-gradient(135deg, #0E1217 0%, #1A1D29 100%);
+            color: #F2F3F4;
+        }
+        
+        .dark body {
+            background: linear-gradient(135deg, #0E1217 0%, #1A1D29 100%);
+            min-height: 100vh;
+        }
+        
+        .dark .bg-white {
+            background: linear-gradient(145deg, #1A1D29 0%, #242835 100%) !important;
+            border: 1px solid #2A2D3A !important;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+        }
+        
+        .dark .sidebar {
+            background: linear-gradient(180deg, #1A1D29 0%, #242835 100%) !important;
+            border-right: 1px solid #2A2D3A !important;
+        }
+        
+        .dark .text-slate-800 { color: #F2F3F4 !important; }
+        .dark .text-slate-600 { color: #C2C2C2 !important; }
+        .dark .text-slate-500 { color: #999999 !important; }
+        .dark .text-slate-700 { color: #E6E9EA !important; }
+        
+        .dark .border-slate-200 { border-color: #2A2D3A !important; }
+        .dark .border-slate-300 { border-color: #3A3D4A !important; }
+        
+        .dark .bg-slate-50 { background-color: #2A2D3A !important; }
+        .dark .bg-slate-100 { background-color: #3A3D4A !important; }
+        
+        .dark .hover\\:bg-slate-50:hover { background-color: #3A3D4A !important; }
+        .dark .hover\\:bg-slate-100:hover { background-color: #4A4D5A !important; }
+        .dark .hover\\:bg-gray-50:hover { background-color: #3A3D4A !important; }
+        
+        .dark tr:hover { background-color: rgba(58, 61, 74, 0.5) !important; }
+        .dark th {
+            background: linear-gradient(145deg, #2A2D3A 0%, #3A3D4A 100%) !important;
+            color: #F2F3F4 !important;
+            border-bottom: 1px solid #3A3D4A !important;
+        }
+        .dark td {
+            border-bottom: 1px solid #2A2D3A !important;
+            color: #E6E9EA !important;
+        }
+        
+        .dark input, .dark select, .dark textarea {
+            background: linear-gradient(145deg, #2A2D3A 0%, #3A3D4A 100%) !important;
+            border: 1px solid #4A4D5A !important;
+            color: #F2F3F4 !important;
+        }
+        
+        .dark input:focus, .dark select:focus, .dark textarea:focus {
+            border-color: #FF444F !important;
+            box-shadow: 0 0 0 3px rgba(255, 68, 79, 0.1) !important;
+        }
+        
+        .dark input::placeholder { color: #999999 !important; }
+        
+        .dark .bg-primary {
+            background: linear-gradient(135deg, #FF444F 0%, #FF6B7A 100%) !important;
+        }
+        
+        .dark .bg-primary:hover {
+            background: linear-gradient(135deg, #E63946 0%, #FF5A6A 100%) !important;
+        }
+    </style>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2563eb',
+                        secondary: '#1d4ed8',
+                        success: '#22c55e',
+                        warning: '#f59e0b',
+                        danger: '#ef4444',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @media (max-width: 1024px) {
+            .sidebar.active {
+                display: block !important;
+            }
+        }
+        
+        body.menu-open::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 30;
+        }
+
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-gray-900 text-slate-800 dark:text-white">
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="sidebar w-64 bg-white dark:bg-gray-800 border-r border-slate-200 dark:border-gray-700 p-4 transition-all duration-300 flex-shrink-0">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center gap-2 text-lg font-semibold text-primary">
+                    <i class="ri-bank-line"></i>
+                    <span id="sidebar-title">Finance Dashboard</span>
+                </div>
+                <button id="toggleSidebar" class="p-1 hover:bg-slate-100 rounded">
+                    <i class="ri-menu-fold-line text-xl text-slate-600"></i>
+            </button>
+        </div>
+
+            <!-- Auth Buttons -->
+            <div class="mb-4">
+                <div class="flex gap-2">
+                    <button id="loginBtn" class="flex-1 px-2 py-1 text-xs bg-success text-white rounded hover:bg-green-600 transition-colors">
+                        <i class="ri-login-box-line mr-1"></i>Login
+            </button>
+                    <button id="logoutBtn" class="flex-1 px-2 py-1 text-xs bg-danger text-white rounded hover:bg-red-600 transition-colors">
+                        <i class="ri-logout-box-line mr-1"></i>Logout
+                </button>
+            </div>
+        </div>
+            
+            <!-- Dark Mode Toggle -->
+            <div class="mb-6">
+                <button id="dark-mode-toggle" onclick="toggleDarkMode()" class="w-full flex items-center gap-2 px-3 py-2 text-sm bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">
+                    <i class="ri-moon-line"></i>
+                    <span>Dark Mode</span>
+                </button>
+            </div>
+            <nav>
+                <ul class="space-y-2">
+                    <li>
+                        <a href="#" onclick="showSection('dashboard')" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-primary bg-blue-50 hover:bg-blue-100 transition-colors active">
+                            <i class="ri-dashboard-line"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" onclick="showSection('analytics')" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 hover:bg-slate-50 transition-colors">
+                            <i class="ri-bar-chart-line"></i>
+                            <span>Analytics</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" onclick="showSection('reports')" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 hover:bg-slate-50 transition-colors">
+                            <i class="ri-file-chart-line"></i>
+                            <span>Reports</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" onclick="showSection('revenue')" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 hover:bg-slate-50 transition-colors">
+                            <i class="ri-line-chart-line"></i>
+                            <span>Revenue</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" onclick="showSection('expenditure')" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 hover:bg-slate-50 transition-colors">
+                            <i class="ri-shopping-cart-line"></i>
+                            <span>Expenditure</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" onclick="showSection('collections')" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 hover:bg-slate-50 transition-colors">
+                            <i class="ri-money-dollar-circle-line"></i>
+                            <span>Collections</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" onclick="showSection('settings')" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 hover:bg-slate-50 transition-colors">
+                            <i class="ri-settings-line"></i>
+                            <span>Settings</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-4 overflow-auto bg-slate-50 dark:bg-gray-900">
+            <div class="flex justify-between items-center mb-4">
+                <div>
+                    <h1 class="text-2xl font-semibold mb-1">Financial Overview</h1>
+                    <p class="text-slate-500 text-sm">Academic Year 2024/2025 | <strong>Maxwell Ndung'u</strong></p>
+                </div>
+                <div class="flex gap-2">
+                    <button class="flex items-center gap-1 px-3 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors text-sm" onclick="generateFeesStatement()">
+                        <i class="ri-file-list-line"></i>
+                        <span>Statement</span>
+                    </button>
+                    <button class="flex items-center gap-1 px-3 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors text-sm">
+                        <i class="ri-download-line"></i>
+                        <span>Export</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Program Management Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <!-- Update Program Costs Card -->
+                <div class="bg-white rounded-lg shadow-sm p-4">
+                    <h3 class="text-base font-semibold mb-3 flex items-center gap-2">
+                        <i class="ri-edit-circle-line text-primary"></i>
+                        <span>Update Program Costs</span>
+                    </h3>
+                    <form id="update-program-form" class="space-y-4">
+                        <div>
+                            <label for="select-program" class="block text-sm font-medium text-slate-700 mb-1">Select Program</label>
+                            <select id="select-program" class="w-full px-3 py-2 border border-slate-300 rounded-md" required>
+                                <option value="">Loading programs...</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="program-department-display" class="block text-sm font-medium text-slate-700 mb-1">Department</label>
+                            <input type="text" id="program-department-display" class="w-full px-3 py-2 border border-slate-300 rounded-md bg-slate-50" readonly placeholder="Department will be auto-filled">
+                        </div>
+                        <div>
+                            <label for="program-cost-update" class="block text-sm font-medium text-slate-700 mb-1">Update Program Cost (KES)</label>
+                            <input type="number" id="program-cost-update" class="w-full px-3 py-2 border border-slate-300 rounded-md" min="0" step="any" required placeholder="Enter new cost">
+                        </div>
+                        <button type="submit" class="w-full py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors">
+                            Update Program Cost
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Recent Programs Card -->
+                <div class="bg-white rounded-lg shadow-sm p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-base font-semibold flex items-center gap-2">
+                        <i class="ri-list-check text-primary"></i>
+                            <span>Program Costs</span>
+                    </h3>
+                        <div class="flex gap-1">
+                            <button id="prevPrograms" class="px-2 py-1 text-xs bg-slate-100 hover:bg-slate-200 rounded disabled:opacity-50">
+                                <i class="ri-arrow-left-line"></i>
+                            </button>
+                            <button id="nextPrograms" class="px-2 py-1 text-xs bg-slate-100 hover:bg-slate-200 rounded disabled:opacity-50">
+                                <i class="ri-arrow-right-line"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-slate-200">
+                            <thead>
+                                <tr>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase">Program Name</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase">Department</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase">Cost</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recent-programs-body" class="divide-y divide-slate-200">
+                                <tr>
+                                    <td colspan="3" class="px-3 py-2 text-center text-slate-500 text-sm">Loading programs...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mt-2 text-xs text-slate-500 text-center">
+                        <span id="programsInfo">Showing programs 1-5</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Student Fees Management Section -->
+            <div class="mb-6">
+                <!-- Search and Filter -->
+                <div class="bg-white rounded-lg shadow-sm p-4 mb-4">
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <div class="relative flex-1">
+                            <input 
+                                type="text" 
+                                id="search-student" 
+                                placeholder="Search students..." 
+                                class="w-full pl-8 pr-3 py-2 border border-slate-200 rounded-lg text-sm"
+                            >
+                            <i class="ri-search-line absolute left-2 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        </div>
+                        <div class="flex gap-2">
+                            <select id="department-filter" class="px-3 py-2 border border-slate-200 rounded-lg bg-white text-sm">
+                                <option value="">All Departments</option>
+                                <option value="applied_science">Applied Science</option>
+                                <option value="agriculture">Agriculture</option>
+                                <option value="building_civil">Building & Civil</option>
+                                <option value="electromechanical">Electromechanical</option>
+                                <option value="hospitality">Hospitality</option>
+                                <option value="business_liberal">Business & Liberal</option>
+                                <option value="computing_informatics">Computing & Informatics</option>
+                            </select>
+                            <select id="year-filter" class="px-3 py-2 border border-slate-200 rounded-lg bg-white text-sm">
+                                <option value="">All Years</option>
+                                <option value="1">Year 1</option>
+                                <option value="2">Year 2</option>
+                                <option value="3">Year 3</option>
+                                <option value="4">Year 4</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Students Table -->
+                <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-slate-200">
+                            <thead class="bg-slate-50">
+                                <tr>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase">Student ID</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase">Name</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase">Course</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase">Department</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase">Year</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase">Intake</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase">Total Paid</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase">Balance</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="student-table-body" class="bg-white divide-y divide-slate-200">
+                                <!-- Student data will be loaded here -->
+                                <tr>
+                                    <td colspan="8" class="px-3 py-3 text-center text-slate-500 text-sm">Loading student data...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="px-4 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+                        <p class="text-xs text-slate-500">Showing <span class="font-medium" id="student-count">0</span> students</p>
+                        <div class="flex gap-1">
+                            <button id="prevStudents" class="px-2 py-1 text-xs border border-slate-200 rounded bg-white text-slate-500 hover:bg-slate-50 disabled:opacity-50">
+                                Previous
+                            </button>
+                            <button id="nextStudents" class="px-2 py-1 text-xs border border-slate-200 rounded bg-white text-slate-500 hover:bg-slate-50">
+                                Next
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Confirmation Modal -->
+            <div id="confirmationModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div class="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 overflow-hidden">
+                    <div class="bg-primary text-white p-4">
+                        <h3 class="text-xl font-semibold" id="modalTitle">Confirm Delete</h3>
+                    </div>
+                    <div class="p-6">
+                        <p class="text-slate-600 mb-6" id="modalMessage">Are you sure you want to delete this program? This action cannot be undone.</p>
+                        <div class="flex justify-end gap-3">
+                            <button id="modalCancelBtn" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors">
+                                <i class="ri-close-line mr-1"></i> Cancel
+                            </button>
+                            <button id="modalConfirmBtn" class="px-4 py-2 bg-danger text-white rounded-lg hover:bg-red-600 transition-colors">
+                                <i class="ri-check-line mr-1"></i> Confirm
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Payment Modal -->
+            <div id="payment-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
+                <div class="absolute inset-0 bg-black bg-opacity-50"></div>
+                <div class="relative bg-white rounded-lg shadow-lg max-w-md w-full mx-4">
+                    <div class="flex items-center justify-between p-4 border-b">
+                        <h3 class="text-xl font-semibold text-slate-800">Add Payment</h3>
+                        <button id="close-modal" class="text-slate-400 hover:text-slate-500">
+                            <i class="ri-close-line text-2xl"></i>
+                        </button>
+                    </div>
+                    <form id="payment-form" class="p-6">
+                        <div class="space-y-4">
+                            <!-- Student Information (Read-only) -->
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label for="student-id" class="block text-sm font-medium text-slate-700 mb-1">Student ID</label>
+                                    <input type="text" id="student-id" class="w-full px-3 py-2 border border-slate-300 rounded-md bg-slate-50" readonly>
+                                </div>
+                                <div>
+                                    <label for="student-name" class="block text-sm font-medium text-slate-700 mb-1">Student Name</label>
+                                    <input type="text" id="student-name" class="w-full px-3 py-2 border border-slate-300 rounded-md bg-slate-50" readonly>
+                                </div>
+                            </div>
+
+                            <!-- Payment Details -->
+                            <div>
+                                <label for="payment-mode" class="block text-sm font-medium text-slate-700 mb-1">Payment Mode</label>
+                                <select id="payment-mode" class="w-full px-3 py-2 border border-slate-300 rounded-md">
+                                    <option value="mpesa">M-Pesa</option>
+                                    <option value="bank">Bank Transfer</option>
+                                    <option value="bursary">CDF Bursary</option>
+                                </select>
+                            </div>
+
+                            <!-- M-Pesa Details (conditionally shown) -->
+                            <div id="mpesa-details" class="hidden space-y-4">
+                                <div>
+                                    <label for="mpesa-transaction-id" class="block text-sm font-medium text-slate-700 mb-1">M-Pesa Transaction ID</label>
+                                    <input type="text" id="mpesa-transaction-id" class="w-full px-3 py-2 border border-slate-300 rounded-md" placeholder="Enter M-Pesa transaction ID (e.g., QJI8XS8L9D)">
+                                </div>
+                            </div>
+
+                            <!-- Bank Details (conditionally shown) -->
+                            <div id="bank-details" class="hidden space-y-4">
+                                <div>
+                                    <label for="bank-name" class="block text-sm font-medium text-slate-700 mb-1">Bank</label>
+                                    <select id="bank-name" class="w-full px-3 py-2 border border-slate-300 rounded-md">
+                                        <option value="kcb">Kenya Commercial Bank (KCB)</option>
+                                        <option value="equity">Equity Bank</option>
+                                        <option value="cooperative">Cooperative Bank</option>
+                                        <option value="stanbic">Stanbic Bank</option>
+                                        <option value="absa">ABSA Bank</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="receipt-number" class="block text-sm font-medium text-slate-700 mb-1">Receipt/Slip Number</label>
+                                    <input type="text" id="receipt-number" class="w-full px-3 py-2 border border-slate-300 rounded-md" placeholder="Enter bank slip number">
+                                </div>
+                            </div>
+
+                            <!-- Bursary Details (conditionally shown) -->
+                            <div id="bursary-details" class="hidden space-y-4">
+                                <div>
+                                    <label for="bursary-reference" class="block text-sm font-medium text-slate-700 mb-1">CDF Bursary Reference</label>
+                                    <div class="flex">
+                                        <span class="inline-flex items-center px-3 py-2 rounded-l-md border border-r-0 border-slate-300 bg-slate-50 text-slate-500 text-sm font-medium">
+                                            CDF-
+                                        </span>
+                                        <input type="text" id="bursary-note" class="flex-1 px-3 py-2 border border-slate-300 rounded-r-md focus:ring-primary focus:border-primary" placeholder="Enter note/reference">
+                                    </div>
+                                    <p class="text-xs text-slate-500 mt-1">Example: CDF-2024-EDUCATION-001</p>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label for="payment-amount" class="block text-sm font-medium text-slate-700 mb-1">Amount (KES)</label>
+                                <input type="number" id="payment-amount" class="w-full px-3 py-2 border border-slate-300 rounded-md" min="1" step="any" required>
+                            </div>
+
+                            <div>
+                                <label for="payment-date" class="block text-sm font-medium text-slate-700 mb-1">Payment Date</label>
+                                <input type="date" id="payment-date" class="w-full px-3 py-2 border border-slate-300 rounded-md" value="" required>
+                            </div>
+                        </div>
+
+                        <div class="mt-6">
+                            <button type="submit" class="w-full py-2.5 bg-primary text-white rounded-lg hover:bg-secondary transition-colors">
+                                Add Payment
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Analytics Section -->
+            <div id="analytics-section" class="section hidden">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-2">Financial Analytics</h2>
+                    <p class="text-slate-600 dark:text-slate-300">Comprehensive financial insights and metrics</p>
+                </div>
+                
+                <!-- Analytics Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
+                                <i class="ri-money-dollar-circle-line text-green-600 dark:text-green-400"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm text-slate-500 dark:text-slate-400">Total Revenue</p>
+                                <p id="total-revenue" class="text-lg font-semibold text-slate-800 dark:text-white">Loading...</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                                <i class="ri-wallet-line text-blue-600 dark:text-blue-400"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm text-slate-500 dark:text-slate-400">Outstanding</p>
+                                <p id="outstanding-balance" class="text-lg font-semibold text-slate-800 dark:text-white">Loading...</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
+                                <i class="ri-percent-line text-purple-600 dark:text-purple-400"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm text-slate-500 dark:text-slate-400">Collection Rate</p>
+                                <p id="collection-rate" class="text-lg font-semibold text-slate-800 dark:text-white">Loading...</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg">
+                                <i class="ri-user-line text-orange-600 dark:text-orange-400"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm text-slate-500 dark:text-slate-400">Active Students</p>
+                                <p id="active-students" class="text-lg font-semibold text-slate-800 dark:text-white">Loading...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Department Analysis -->
+                <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 mb-6">
+                    <h3 class="text-lg font-semibold text-slate-800 dark:text-white mb-4">Department Revenue Analysis</h3>
+                    <div id="department-analysis" class="space-y-4">
+                        <p class="text-slate-500 dark:text-slate-400">Loading department analysis...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reports Section -->
+            <div id="reports-section" class="section hidden">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-2">Financial Reports</h2>
+                    <p class="text-slate-600 dark:text-slate-300">Generate comprehensive reports for administration</p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Revenue Report -->
+                    <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
+                                <i class="ri-line-chart-line text-green-600 dark:text-green-400"></i>
+                            </div>
+                            <h3 class="text-lg font-semibold text-slate-800 dark:text-white">Revenue Report</h3>
+                        </div>
+                        <p class="text-slate-600 dark:text-slate-300 mb-4">Complete revenue analysis with trends</p>
+                        <button onclick="exportRevenueReport()" class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                            Generate Report
+                        </button>
+                    </div>
+                    
+                    <!-- Outstanding Balances -->
+                    <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="p-2 bg-red-100 dark:bg-red-900 rounded-lg">
+                                <i class="ri-alert-line text-red-600 dark:text-red-400"></i>
+                            </div>
+                            <h3 class="text-lg font-semibold text-slate-800 dark:text-white">Outstanding Balances</h3>
+                        </div>
+                        <p class="text-slate-600 dark:text-slate-300 mb-4">Students with pending payments</p>
+                        <button onclick="exportOutstandingReport()" class="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                            Generate Report
+                        </button>
+                    </div>
+                    
+                    <!-- Department Summary -->
+                    <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                                <i class="ri-building-line text-blue-600 dark:text-blue-400"></i>
+                            </div>
+                            <h3 class="text-lg font-semibold text-slate-800 dark:text-white">Department Summary</h3>
+                        </div>
+                        <p class="text-slate-600 dark:text-slate-300 mb-4">Revenue breakdown by department</p>
+                        <button onclick="exportDepartmentReport()" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            Generate Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Revenue Section -->
+            <div id="revenue-section" class="section hidden">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-2">Revenue Management</h2>
+                    <p class="text-slate-600 dark:text-slate-300">Track and analyze revenue streams</p>
+                </div>
+                
+                <!-- Revenue content will be added here -->
+                <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+                    <p class="text-slate-600 dark:text-slate-300">Revenue management features coming soon...</p>
+                </div>
+            </div>
+
+            <!-- Expenditure Section -->
+            <div id="expenditure-section" class="section hidden">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-2">Expenditure Tracking</h2>
+                    <p class="text-slate-600 dark:text-slate-300">Monitor and manage institutional expenses</p>
+                </div>
+                
+                <!-- Expenditure content will be added here -->
+                <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+                    <p class="text-slate-600 dark:text-slate-300">Expenditure tracking features coming soon...</p>
+                </div>
+            </div>
+
+            <!-- Collections Section -->
+            <div id="collections-section" class="section hidden">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-2">Payment Collections</h2>
+                    <p class="text-slate-600 dark:text-slate-300">Monitor payment collection efficiency</p>
+                </div>
+                
+                <!-- Collections content will be added here -->
+                <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+                    <p class="text-slate-600 dark:text-slate-300">Collection management features coming soon...</p>
+                </div>
+            </div>
+
+            <!-- Settings Section -->
+            <div id="settings-section" class="section hidden">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-2">System Settings</h2>
+                    <p class="text-slate-600 dark:text-slate-300">Configure finance system parameters</p>
+                </div>
+                
+                <!-- Fee Threshold Setting -->
+                <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 mb-6">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+                            <i class="ri-money-dollar-circle-line text-blue-600 dark:text-blue-400"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-slate-800 dark:text-white">Unit Registration Fee Threshold</h3>
+                            <p class="text-sm text-slate-600 dark:text-slate-300">Set the minimum fee balance required for students to register for units</p>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4 mb-4">
+                        <div class="flex items-center gap-2 mb-2">
+                            <i class="ri-information-line text-blue-600 dark:text-blue-400"></i>
+                            <span class="text-sm font-medium text-slate-700 dark:text-slate-300">How it works:</span>
+                        </div>
+                        <p class="text-sm text-slate-600 dark:text-slate-400">
+                            Students with outstanding balances above this threshold will be blocked from registering for new units until they clear their fees.
+                        </p>
+                    </div>
+                    
+                    <div class="flex items-end gap-4">
+                        <div class="flex-1">
+                            <label for="feeThreshold" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                Fee Threshold (KES)
+                            </label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <span class="text-slate-500 dark:text-slate-400 text-sm">KES</span>
+                                </div>
+                                <input type="number" 
+                                       id="feeThreshold" 
+                                       class="block w-full pl-12 pr-3 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                                       placeholder="50000"
+                                       min="0"
+                                       step="1000">
+                            </div>
+                        </div>
+                        <button onclick="updateFeeThreshold()" 
+                                class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-2">
+                            <i class="ri-save-line"></i>
+                            Update Threshold
+                        </button>
+                    </div>
+                    
+                    <div id="thresholdStatus" class="mt-4 hidden">
+                        <!-- Status messages will appear here -->
+                    </div>
+                </div>
+                
+                <!-- Current Settings Display -->
+                <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+                    <h3 class="text-lg font-semibold text-slate-800 dark:text-white mb-4">Current System Settings</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4">
+                            <div class="flex items-center gap-2 mb-2">
+                                <i class="ri-money-dollar-circle-line text-green-600"></i>
+                                <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Fee Threshold</span>
+                            </div>
+                            <p id="currentThreshold" class="text-lg font-semibold text-slate-900 dark:text-white">Loading...</p>
+                        </div>
+                        <div class="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4">
+                            <div class="flex items-center gap-2 mb-2">
+                                <i class="ri-calendar-line text-blue-600"></i>
+                                <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Academic Year</span>
+                            </div>
+                            <p id="currentAcademicYear" class="text-lg font-semibold text-slate-900 dark:text-white">Loading...</p>
+                        </div>
+                        <div class="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4">
+                            <div class="flex items-center gap-2 mb-2">
+                                <i class="ri-bookmark-line text-purple-600"></i>
+                                <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Current Semester</span>
+                            </div>
+                            <p id="currentSemester" class="text-lg font-semibold text-slate-900 dark:text-white">Loading...</p>
+                        </div>
+                        <div class="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4">
+                            <div class="flex items-center gap-2 mb-2">
+                                <i class="ri-toggle-line text-orange-600"></i>
+                                <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Registration Status</span>
+                            </div>
+                            <p id="registrationEnabled" class="text-lg font-semibold text-slate-900 dark:text-white">Loading...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Toast Notification -->
+            <div id="toast" class="fixed bottom-4 right-4 px-6 py-3 rounded-xl text-white transform translate-y-full opacity-0 transition-all duration-300 shadow-lg z-50"></div>
+
+        </main>
+    </div>
+
+    <script>
+        // Initialize dark mode from localStorage
+        if (localStorage.getItem('finance-dark-mode') === 'enabled') {
+            document.documentElement.classList.add('dark');
+        }
+        
+        // Set today's date as default for payment date
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date().toISOString().split('T')[0];
+            const paymentDateField = document.getElementById('payment-date');
+            if (paymentDateField) {
+                paymentDateField.value = today;
+            }
+        });
+
+        // Toggle dark mode function
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+            const darkModeToggle = document.getElementById('dark-mode-toggle');
+            const icon = darkModeToggle.querySelector('i');
+            const span = darkModeToggle.querySelector('span');
+            
+            if (document.documentElement.classList.contains('dark')) {
+                // Switch to sun icon for dark mode
+                icon.classList.remove('ri-moon-line');
+                icon.classList.add('ri-sun-line');
+                if (span) span.textContent = 'Light Mode';
+                localStorage.setItem('finance-dark-mode', 'enabled');
+            } else {
+                // Switch to moon icon for light mode
+                icon.classList.remove('ri-sun-line');
+                icon.classList.add('ri-moon-line');
+                if (span) span.textContent = 'Dark Mode';
+                localStorage.setItem('finance-dark-mode', 'disabled');
+            }
+        }
+        
+        // Check for saved dark mode preference
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set today's date as default for payment date
+            const today = new Date().toISOString().split('T')[0];
+            const paymentDateField = document.getElementById('payment-date');
+            if (paymentDateField) {
+                paymentDateField.value = today;
+            }
+            
+            // Apply saved dark mode preference
+            const darkModePreference = localStorage.getItem('finance-dark-mode');
+            if (darkModePreference === 'enabled') {
+                document.documentElement.classList.add('dark');
+                const darkModeToggle = document.getElementById('dark-mode-toggle');
+                const icon = darkModeToggle.querySelector('i');
+                const span = darkModeToggle.querySelector('span');
+                if (icon) {
+                    icon.classList.remove('ri-moon-line');
+                    icon.classList.add('ri-sun-line');
+                }
+                if (span) span.textContent = 'Light Mode';
+            }
+        });
+
+    </script>
+    <!-- Include jsPDF for PDF export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    
+    <script src="financeAnalytics.js"></script>
+    <script src="financeDashboard.js"></script>
+    
+    <script>
+        // Navigation and Analytics functionality
+        let financeAnalytics = null;
+        
+        // Initialize analytics
+        async function initializeAnalytics() {
+            try {
+                financeAnalytics = new FinanceAnalytics();
+                await financeAnalytics.loadData();
+                updateAnalyticsDashboard();
+            } catch (error) {
+                console.error('Failed to initialize analytics:', error);
+            }
+        }
+        
+        // Show different sections
+        function showSection(sectionName) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.add('hidden');
+            });
+            
+            // Show dashboard by default if section doesn't exist
+            const targetSection = document.getElementById(`${sectionName}-section`);
+            if (targetSection) {
+                targetSection.classList.remove('hidden');
+            } else {
+                // Show main dashboard content
+                document.querySelectorAll('.section').forEach(section => {
+                    if (!section.id.includes('-section')) {
+                        section.classList.remove('hidden');
+                    }
+                });
+            }
+            
+            // Update navigation active state
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active', 'text-primary', 'bg-blue-50');
+                item.classList.add('text-slate-500');
+            });
+            
+            // Set active nav item
+            const activeNav = document.querySelector(`[onclick="showSection('${sectionName}')"]`);
+            if (activeNav) {
+                activeNav.classList.add('active', 'text-primary', 'bg-blue-50');
+                activeNav.classList.remove('text-slate-500');
+            }
+            
+            // Load section-specific data
+            if (sectionName === 'analytics' && financeAnalytics) {
+                updateAnalyticsDashboard();
+            }
+        }
+        
+        // Update analytics dashboard
+        function updateAnalyticsDashboard() {
+            if (!financeAnalytics) return;
+            
+            // Update summary cards
+            document.getElementById('total-revenue').textContent = 
+                financeAnalytics.formatCurrency(financeAnalytics.getTotalRevenue());
+            document.getElementById('outstanding-balance').textContent = 
+                financeAnalytics.formatCurrency(financeAnalytics.getOutstandingBalance());
+            document.getElementById('active-students').textContent = 
+                financeAnalytics.students.length.toLocaleString();
+                
+            const expectedRevenue = financeAnalytics.getExpectedRevenue();
+            const actualRevenue = financeAnalytics.getTotalRevenue();
+            const collectionRate = expectedRevenue > 0 ? ((actualRevenue / expectedRevenue) * 100).toFixed(1) : 0;
+            document.getElementById('collection-rate').textContent = `${collectionRate}%`;
+            
+            // Update department analysis
+            const departmentStats = financeAnalytics.getDepartmentRevenue();
+            const departmentContainer = document.getElementById('department-analysis');
+            
+            let departmentHTML = '';
+            Object.entries(departmentStats).forEach(([dept, stats]) => {
+                const deptName = dept.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                departmentHTML += `
+                    <div class="flex justify-between items-center p-4 bg-slate-50 dark:bg-slate-700 rounded-lg">
+                        <div>
+                            <h4 class="font-medium text-slate-800 dark:text-white">${deptName}</h4>
+                            <p class="text-sm text-slate-500 dark:text-slate-400">${stats.studentCount} students</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-semibold text-slate-800 dark:text-white">${financeAnalytics.formatCurrency(stats.actualRevenue)}</p>
+                            <p class="text-sm text-slate-500 dark:text-slate-400">of ${financeAnalytics.formatCurrency(stats.expectedRevenue)}</p>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            departmentContainer.innerHTML = departmentHTML;
+        }
+        
+        // Export functions for reports
+        async function exportRevenueReport() {
+            if (!financeAnalytics) {
+                await initializeAnalytics();
+            }
+            
+            try {
+                // Show format selection
+                const format = await showFormatSelectionModal('Revenue Report');
+                if (!format) return; // User cancelled
+                
+                financeAnalytics.exportAnalyticsReport(format);
+                showToast(`Revenue report exported as ${format.toUpperCase()} successfully!`, 'success');
+            } catch (error) {
+                console.error('Export error:', error);
+                showToast('Failed to export revenue report', 'error');
+            }
+        }
+        
+        async function exportOutstandingReport() {
+            if (!financeAnalytics) {
+                await initializeAnalytics();
+            }
+            
+            try {
+                const outstandingStudents = financeAnalytics.getStudentsWithBalances(0);
+                const totalOutstanding = outstandingStudents.reduce((sum, student) => sum + student.balance, 0);
+                
+                // Create PDF report
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF('p', 'mm', 'a4');
+                
+                // Add title
+                doc.setFontSize(18);
+                doc.setFont(undefined, 'bold');
+                doc.text('Outstanding Balances Report', 20, 20);
+                
+                // Add generation date and summary
+                doc.setFontSize(10);
+                doc.setFont(undefined, 'normal');
+                doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 30);
+                doc.text(`Total Students with Outstanding Balance: ${outstandingStudents.length}`, 20, 35);
+                doc.text(`Total Outstanding Amount: KES ${totalOutstanding.toLocaleString()}`, 20, 40);
+                
+                // Prepare table data
+                const tableData = outstandingStudents.map(student => [
+                    student.admissionNumber || 'N/A',
+                    student.name || 'N/A',
+                    financeAnalytics.formatCourseName(student.course),
+                    `KES ${(student.totalPaid || 0).toLocaleString()}`,
+                    `KES ${student.balance.toLocaleString()}`,
+                    student.intake ? `${student.intake} ${student.intakeYear}` : 'N/A'
+                ]);
+                
+                // Add table
+                doc.autoTable({
+                    head: [['Admission No', 'Student Name', 'Program', 'Paid', 'Outstanding', 'Intake']],
+                    body: tableData,
+                    startY: 50,
+                    styles: { fontSize: 8 },
+                    headStyles: { fillColor: [37, 99, 235] },
+                    alternateRowStyles: { fillColor: [245, 245, 245] }
+                });
+                
+                // Save the PDF
+                const filename = `outstanding_balances_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.pdf`;
+                doc.save(filename);
+                
+                showToast('Outstanding balances report exported as PDF successfully!', 'success');
+            } catch (error) {
+                console.error('Export error:', error);
+                showToast('Failed to export outstanding report', 'error');
+            }
+        }
+        
+        async function exportDepartmentReport() {
+            if (!financeAnalytics) {
+                await initializeAnalytics();
+            }
+            
+            try {
+                const departmentStats = financeAnalytics.getDepartmentRevenue();
+                
+                // Create PDF report
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF('p', 'mm', 'a4');
+                
+                // Add title
+                doc.setFontSize(18);
+                doc.setFont(undefined, 'bold');
+                doc.text('Department Revenue Analysis', 20, 20);
+                
+                // Add generation date
+                doc.setFontSize(10);
+                doc.setFont(undefined, 'normal');
+                doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 30);
+                
+                // Calculate totals
+                const totalStudents = Object.values(departmentStats).reduce((sum, stats) => sum + stats.studentCount, 0);
+                const totalExpected = Object.values(departmentStats).reduce((sum, stats) => sum + stats.expectedRevenue, 0);
+                const totalActual = Object.values(departmentStats).reduce((sum, stats) => sum + stats.actualRevenue, 0);
+                const totalOutstanding = Object.values(departmentStats).reduce((sum, stats) => sum + stats.outstandingBalance, 0);
+                
+                // Add summary
+                doc.text(`Total Students: ${totalStudents}`, 20, 40);
+                doc.text(`Total Expected Revenue: KES ${totalExpected.toLocaleString()}`, 20, 45);
+                doc.text(`Total Actual Revenue: KES ${totalActual.toLocaleString()}`, 20, 50);
+                doc.text(`Total Outstanding: KES ${totalOutstanding.toLocaleString()}`, 20, 55);
+                doc.text(`Overall Collection Rate: ${totalExpected > 0 ? ((totalActual / totalExpected) * 100).toFixed(2) : 0}%`, 20, 60);
+                
+                // Prepare table data
+                const tableData = Object.entries(departmentStats).map(([dept, stats]) => [
+                    dept.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+                    stats.studentCount.toString(),
+                    `KES ${stats.expectedRevenue.toLocaleString()}`,
+                    `KES ${stats.actualRevenue.toLocaleString()}`,
+                    `KES ${stats.outstandingBalance.toLocaleString()}`,
+                    stats.expectedRevenue > 0 ? `${((stats.actualRevenue / stats.expectedRevenue) * 100).toFixed(2)}%` : '0%'
+                ]);
+                
+                // Add table
+                doc.autoTable({
+                    head: [['Department', 'Students', 'Expected', 'Collected', 'Outstanding', 'Rate %']],
+                    body: tableData,
+                    startY: 70,
+                    styles: { fontSize: 8 },
+                    headStyles: { fillColor: [37, 99, 235] },
+                    alternateRowStyles: { fillColor: [245, 245, 245] }
+                });
+                
+                // Save the PDF
+                const filename = `department_analysis_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.pdf`;
+                doc.save(filename);
+                
+                showToast('Department analysis report exported as PDF successfully!', 'success');
+            } catch (error) {
+                console.error('Export error:', error);
+                showToast('Failed to export department report', 'error');
+            }
+        }
+        
+        // Format selection modal
+        function showFormatSelectionModal(reportType) {
+            return new Promise((resolve) => {
+                const modal = document.createElement('div');
+                modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
+                modal.innerHTML = `
+                    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-sm">
+                        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                            <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Export ${reportType}</h3>
+                        </div>
+                        <div class="p-6">
+                            <p class="text-gray-600 dark:text-gray-300 mb-4">Choose export format:</p>
+                            <div class="space-y-3">
+                                <button onclick="selectFormat('json')" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">JSON</button>
+                                <button onclick="selectFormat('csv')" class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">CSV</button>
+                                <button onclick="selectFormat('pdf')" class="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">PDF</button>
+                                <button onclick="selectFormat(null)" class="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+                
+                window.selectFormat = function(format) {
+                    document.body.removeChild(modal);
+                    delete window.selectFormat;
+                    resolve(format);
+                };
+            });
+        }
+
+        // Generate individual payment receipt
+        function generatePaymentReceipt(payment, student = null) {
+            try {
+                // Create PDF receipt
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF('p', 'mm', 'a4');
+                
+                // Header
+                doc.setFontSize(20);
+                doc.setFont(undefined, 'bold');
+                doc.text('EDTTI Payment Receipt', 20, 25);
+                
+                // Receipt details
+                doc.setFontSize(12);
+                doc.setFont(undefined, 'normal');
+                doc.text(`Receipt No: ${payment.reference || payment._id || 'N/A'}`, 20, 40);
+                doc.text(`Date: ${payment.paymentDate ? new Date(payment.paymentDate).toLocaleDateString() : new Date().toLocaleDateString()}`, 20, 50);
+                
+                // Student details
+                doc.setFontSize(14);
+                doc.setFont(undefined, 'bold');
+                doc.text('Student Information:', 20, 70);
+                doc.setFontSize(12);
+                doc.setFont(undefined, 'normal');
+                doc.text(`Student ID: ${payment.studentId || 'N/A'}`, 20, 80);
+                doc.text(`Student Name: ${student?.name || 'N/A'}`, 20, 90);
+                doc.text(`Program: ${student?.course || 'N/A'}`, 20, 100);
+                
+                // Payment details
+                doc.setFontSize(14);
+                doc.setFont(undefined, 'bold');
+                doc.text('Payment Details:', 20, 120);
+                doc.setFontSize(12);
+                doc.setFont(undefined, 'normal');
+                
+                // Format payment mode properly
+                let paymentModeDisplay = 'N/A';
+                if (payment.paymentMode) {
+                    const modes = {
+                        'mpesa': 'M-Pesa',
+                        'bank': 'Bank Transfer',
+                        'bursary': 'CDF Bursary'
+                    };
+                    paymentModeDisplay = modes[payment.paymentMode] || payment.paymentMode;
+                }
+                
+                doc.text(`Payment Mode: ${paymentModeDisplay}`, 20, 130);
+                doc.text(`Amount: KES ${(payment.amount || 0).toLocaleString()}`, 20, 140);
+                
+                // Add mode-specific details
+                if (payment.paymentMode === 'bursary' && payment.bursaryReference) {
+                    doc.text(`Bursary Reference: ${payment.bursaryReference}`, 20, 150);
+                } else if (payment.paymentMode === 'mpesa' && payment.mpesaTransactionId) {
+                    doc.text(`M-Pesa Transaction ID: ${payment.mpesaTransactionId}`, 20, 150);
+                } else if (payment.paymentMode === 'bank' && payment.receiptNumber) {
+                    doc.text(`Bank Receipt Number: ${payment.receiptNumber}`, 20, 150);
+                    if (payment.bankName) {
+                        doc.text(`Bank: ${payment.bankName}`, 20, 160);
+                    }
+                }
+                
+                // Footer
+                doc.setFontSize(10);
+                doc.text('This is a computer-generated receipt.', 20, 250);
+                doc.text(`Generated on: ${new Date().toLocaleString()}`, 20, 260);
+                
+                // Save the PDF
+                const filename = `payment_receipt_${payment.studentId}_${Date.now()}.pdf`;
+                doc.save(filename);
+                
+                showToast('Payment receipt generated successfully!', 'success');
+            } catch (error) {
+                console.error('Error generating receipt:', error);
+                showToast('Failed to generate payment receipt', 'error');
+            }
+        }
+
+        // Add function to generate receipt for a specific payment (for testing)
+        window.generatePaymentReceipt = generatePaymentReceipt;
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeAnalytics();
+        });
+
+        // ========================================
+        // SETTINGS FUNCTIONALITY
+        // ========================================
+
+        // Load system settings when settings section is shown
+        async function loadSystemSettings() {
+            try {
+                const response = await fetch('http://localhost:5502/api/system-settings');
+                if (!response.ok) {
+                    throw new Error('Failed to load system settings');
+                }
+                
+                const settings = await response.json();
+                console.log('Loaded system settings:', settings);
+                
+                // Update UI with current settings
+                settings.forEach(setting => {
+                    switch (setting.key) {
+                        case 'fee_threshold':
+                            document.getElementById('feeThreshold').value = setting.value;
+                            document.getElementById('currentThreshold').textContent = `KES ${setting.value?.toLocaleString() || '0'}`;
+                            break;
+                        case 'current_academic_year':
+                            document.getElementById('currentAcademicYear').textContent = setting.value || 'Not Set';
+                            break;
+                        case 'current_semester':
+                            document.getElementById('currentSemester').textContent = `Semester ${setting.value || 'Not Set'}`;
+                            break;
+                        case 'registration_enabled':
+                            document.getElementById('registrationEnabled').textContent = setting.value ? 'Enabled' : 'Disabled';
+                            break;
+                    }
+                });
+                
+            } catch (error) {
+                console.error('Error loading system settings:', error);
+                showToast('Failed to load system settings', 'error');
+            }
+        }
+
+        // Update fee threshold
+        async function updateFeeThreshold() {
+            try {
+                const thresholdInput = document.getElementById('feeThreshold');
+                const newThreshold = parseInt(thresholdInput.value);
+                
+                if (!newThreshold || newThreshold < 0) {
+                    showToast('Please enter a valid threshold amount', 'error');
+                    return;
+                }
+                
+                const response = await fetch('http://localhost:5502/api/system-settings/fee_threshold', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        value: newThreshold,
+                        description: 'Minimum fee balance required for unit registration'
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to update fee threshold');
+                }
+                
+                const result = await response.json();
+                console.log('Updated fee threshold:', result);
+                
+                // Update the display
+                document.getElementById('currentThreshold').textContent = `KES ${newThreshold.toLocaleString()}`;
+                
+                // Show success message
+                showToast(`Fee threshold updated to KES ${newThreshold.toLocaleString()}`, 'success');
+                
+                // Show status
+                showThresholdStatus('Threshold updated successfully! Students with outstanding balances above this amount will be blocked from registering for units.', 'success');
+                
+            } catch (error) {
+                console.error('Error updating fee threshold:', error);
+                showToast('Failed to update fee threshold', 'error');
+                showThresholdStatus('Failed to update threshold. Please try again.', 'error');
+            }
+        }
+
+        // Show threshold status message
+        function showThresholdStatus(message, type) {
+            const statusDiv = document.getElementById('thresholdStatus');
+            statusDiv.className = `mt-4 p-3 rounded-lg ${
+                type === 'success' ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' :
+                'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
+            }`;
+            
+            statusDiv.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <i class="ri-${type === 'success' ? 'check' : 'error-warning'}-line text-${type === 'success' ? 'green' : 'red'}-600"></i>
+                    <span class="text-sm font-medium text-${type === 'success' ? 'green' : 'red'}-800 dark:text-${type === 'success' ? 'green' : 'red'}-200">
+                        ${message}
+                    </span>
+                </div>
+            `;
+            
+            statusDiv.classList.remove('hidden');
+            
+            // Hide after 5 seconds
+            setTimeout(() => {
+                statusDiv.classList.add('hidden');
+            }, 5000);
+        }
+
+        // Override showSection to load settings when needed
+        const originalShowSection = showSection;
+        showSection = function(sectionName) {
+            originalShowSection(sectionName);
+            
+            // Load settings when settings section is shown
+            if (sectionName === 'settings') {
+                loadSystemSettings();
+            }
+        };
+
+        // Toast notification function (if not already exists)
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            
+            // Set colors based on type
+            const colors = {
+                success: 'bg-green-500',
+                error: 'bg-red-500',
+                warning: 'bg-yellow-500',
+                info: 'bg-blue-500'
+            };
+            
+            toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-xl text-white transform translate-y-full opacity-0 transition-all duration-300 shadow-lg z-50 ${colors[type] || colors.info}`;
+            toast.textContent = message;
+            
+            // Show toast
+            setTimeout(() => {
+                toast.classList.remove('translate-y-full', 'opacity-0');
+                toast.classList.add('translate-y-0', 'opacity-100');
+            }, 100);
+            
+            // Hide toast after 4 seconds
+            setTimeout(() => {
+                toast.classList.add('translate-y-full', 'opacity-0');
+                toast.classList.remove('translate-y-0', 'opacity-100');
+            }, 4000);
+        }
+    </script>
+</body>
+</html>

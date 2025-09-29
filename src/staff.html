@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EMURUA DIKIRR TTI - Staff Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'emurua-red': '#7A0C0C',
+                        'emurua-green': '#44E006',
+                        'emurua-brown-red': '#8B2A2A',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Mobile menu styles */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: -100%;
+                top: 0;
+                bottom: 0;
+                width: 80%;
+                max-width: 300px;
+                z-index: 50;
+                transition: left 0.3s ease;
+                background-color: white;
+            }
+            .sidebar.active {
+                left: 0;
+            }
+            body.menu-open::before {
+                content: '';
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-color: rgba(0, 0, 0, 0.5);
+                z-index: 40;
+            }
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background-color: #44E006;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+        .sidebar-item:hover {
+            background-color: rgba(122, 12, 12, 0.1);
+        }
+        .sidebar-item.active {
+            background-color: rgba(122, 12, 12, 0.2);
+            border-left: 4px solid #7A0C0C;
+        }
+        .file-upload {
+            border: 2px dashed #8B2A2A;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .file-upload:hover {
+            background-color: rgba(139, 42, 42, 0.05);
+        }
+        .timetable-day {
+            transition: all 0.3s;
+        }
+        .timetable-day:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .header-title {
+                font-size: 1rem;
+            }
+            .header-subtitle {
+                font-size: 0.75rem;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            .announcement-date {
+                font-size: 0.7rem;
+            }
+        }
+    </style>
+</head>
+<body class="bg-white font-sans">
+    <!-- Header -->
+    <header class="bg-emurua-red text-white shadow-md">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <button id="menuToggle" class="lg:hidden text-white mr-2">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+                <img src="components/student/logo.jpg" alt="EMURUA DIKIRR TTI Logo" class="h-10">
+                <div class="hidden lg:block">
+                    <h1 class="text-xl font-bold header-title">EMURUA DIKIRR TTI</h1>
+                    <p class="text-xs opacity-80 header-subtitle">Staff Portal</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="relative">
+                    <button id="notificationBtn" class="text-white hover:text-emurua-green transition">
+                        <i class="fas fa-bell text-xl"></i>
+                        <div class="notification-badge">3</div>
+                    </button>
+                    <div id="notificationDropdown" class="hidden absolute right-0 mt-2 w-72 bg-white text-gray-800 rounded-md shadow-lg z-10">
+                        <div class="p-3 border-b border-gray-200 bg-emurua-brown-red text-white">
+                            <h3 class="font-semibold">Notifications</h3>
+                        </div>
+                        <div class="max-h-60 overflow-y-auto">
+                            <div class="p-3 border-b border-gray-200 hover:bg-gray-100">
+                                <p class="text-sm">New timetable has been uploaded for Semester 2</p>
+                                <p class="text-xs text-gray-500 mt-1">10 mins ago</p>
+                            </div>
+                            <div class="p-3 border-b border-gray-200 hover:bg-gray-100">
+                                <p class="text-sm">Staff meeting scheduled for Friday 10:00 AM</p>
+                                <p class="text-xs text-gray-500 mt-1">1 hour ago</p>
+                            </div>
+                            <div class="p-3 hover:bg-gray-100">
+                                <p class="text-sm">Reminder: Submit your tools of trade by end of week</p>
+                                <p class="text-xs text-gray-500 mt-1">Yesterday</p>
+                            </div>
+                        </div>
+                        <div class="p-2 bg-gray-100 text-center">
+                            <a href="#" class="text-sm text-emurua-brown-red font-medium">View All</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="relative">
+                    <button id="profileBtn" class="flex items-center space-x-2">
+                        <img src="https://via.placeholder.com/40" alt="Profile" class="h-8 w-8 rounded-full">
+                        <span class="text-sm">Prof. John Doe</span>
+                    </button>
+                    <div id="profileDropdown" class="hidden absolute right-0 mt-2 w-48 bg-white text-gray-800 rounded-md shadow-lg z-10">
+                        <a href="#" class="block px-4 py-2 hover:bg-gray-100">My Profile</a>
+                        <a href="#" class="block px-4 py-2 hover:bg-gray-100">Settings</a>
+                        <div class="border-t border-gray-200"></div>
+                        <a href="#" class="block px-4 py-2 hover:bg-gray-100 text-red-600">Logout</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex">
+        <!-- Sidebar -->
+        <aside class="sidebar w-64 bg-gray-50 min-h-screen border-r border-gray-200 lg:relative lg:left-0">
+            <div class="p-4">
+                <div class="mb-6">
+                    <h2 class="text-emurua-brown-red font-bold text-lg">Navigation</h2>
+                </div>
+                <nav>
+                    <ul class="space-y-1">
+                        <li>
+                            <a href="#" class="sidebar-item active flex items-center p-3 text-emurua-red rounded">
+                                <i class="fas fa-home mr-3"></i>
+                                <span>Dashboard</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="sidebar-item flex items-center p-3 text-gray-700 hover:text-emurua-red rounded">
+                                <i class="fas fa-calendar-alt mr-3"></i>
+                                <span>Timetable</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="sidebar-item flex items-center p-3 text-gray-700 hover:text-emurua-red rounded">
+                                <i class="fas fa-tools mr-3"></i>
+                                <span>Tools of Trade</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="sidebar-item flex items-center p-3 text-gray-700 hover:text-emurua-red rounded">
+                                <i class="fas fa-chalkboard-teacher mr-3"></i>
+                                <span>Teaching Materials</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="sidebar-item flex items-center p-3 text-gray-700 hover:text-emurua-red rounded">
+                                <i class="fas fa-bullhorn mr-3"></i>
+                                <span>Announcements</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="sidebar-item flex items-center p-3 text-gray-700 hover:text-emurua-red rounded">
+                                <i class="fas fa-users mr-3"></i>
+                                <span>Students</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="sidebar-item flex items-center p-3 text-gray-700 hover:text-emurua-red rounded">
+                                <i class="fas fa-file-alt mr-3"></i>
+                                <span>Reports</span>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+                <div class="mt-8">
+                    <h2 class="text-emurua-brown-red font-bold text-lg mb-3">Quick Links</h2>
+                    <ul class="space-y-1">
+                        <li>
+                            <a href="#" class="sidebar-item flex items-center p-3 text-gray-700 hover:text-emurua-red rounded">
+                                <i class="fas fa-book mr-3"></i>
+                                <span>Library</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="sidebar-item flex items-center p-3 text-gray-700 hover:text-emurua-red rounded">
+                                <i class="fas fa-envelope mr-3"></i>
+                                <span>Staff Email</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="sidebar-item flex items-center p-3 text-gray-700 hover:text-emurua-red rounded">
+                                <i class="fas fa-question-circle mr-3"></i>
+                                <span>Help Desk</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-6">
+            <div class="mb-6">
+                <h2 class="text-2xl font-bold text-emurua-brown-red">Staff Dashboard</h2>
+                <p class="text-gray-600">Welcome back, Prof. John Doe</p>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-6 mb-6 stats-grid">
+                <div class="bg-white p-3 sm:p-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 border-l-4 border-emurua-green transform hover:-translate-y-1">
+                    <div class="flex items-center space-x-3">
+                        <i class="fas fa-chalkboard-teacher text-2xl sm:text-3xl text-emurua-brown-red opacity-70"></i>
+                        <div>
+                            <p class="text-xs sm:text-sm text-gray-500">Classes Today</p>
+                            <h3 class="text-lg sm:text-xl font-bold text-emurua-red">3</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white p-3 sm:p-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 border-l-4 border-emurua-green transform hover:-translate-y-1">
+                    <div class="flex items-center space-x-3">
+                        <i class="fas fa-tasks text-2xl sm:text-3xl text-emurua-brown-red opacity-70"></i>
+                        <div>
+                            <p class="text-xs sm:text-sm text-gray-500">Pending Tasks</p>
+                            <h3 class="text-lg sm:text-xl font-bold text-emurua-red">2</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white p-3 sm:p-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 border-l-4 border-emurua-green transform hover:-translate-y-1">
+                    <div class="flex items-center space-x-3">
+                        <i class="fas fa-bell text-2xl sm:text-3xl text-emurua-brown-red opacity-70"></i>
+                        <div>
+                            <p class="text-xs sm:text-sm text-gray-500">Notifications</p>
+                            <h3 class="text-lg sm:text-xl font-bold text-emurua-red">3</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white p-3 sm:p-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 border-l-4 border-emurua-green transform hover:-translate-y-1 group cursor-pointer">
+                    <div class="flex items-center space-x-3">
+                        <i class="fas fa-calendar-alt text-2xl sm:text-3xl text-emurua-brown-red opacity-70 group-hover:text-emurua-green transition-colors"></i>
+                        <div>
+                            <p class="text-xs sm:text-sm text-gray-500">Timetable</p>
+                            <div class="flex items-center space-x-2 mt-1">
+                                <button class="text-xs text-emurua-green hover:text-emurua-brown-red transition-colors">
+                                    <i class="fas fa-eye mr-1"></i>View
+                                </button>
+                                <span class="text-gray-300">|</span>
+                                <button class="text-xs text-emurua-green hover:text-emurua-brown-red transition-colors">
+                                    <i class="fas fa-download mr-1"></i>Download
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tools of Trade Section -->
+            <div class="bg-white rounded-lg shadow mb-6">
+                <div class="p-4 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-emurua-brown-red">Tools of Trade</h3>
+                </div>
+                <div class="p-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <!-- Course Outline Upload -->
+                        <div class="file-upload">
+                            <input type="file" id="courseOutline" class="hidden" accept=".pdf,.doc,.docx">
+                            <label for="courseOutline" class="cursor-pointer block">
+                                <i class="fas fa-file-alt text-3xl text-emurua-brown-red mb-2"></i>
+                                <p class="font-medium">Course Outline</p>
+                                <p class="text-sm text-gray-500 mt-1">Upload your course outline document</p>
+                                <span class="text-xs text-gray-400">.pdf, .doc, .docx</span>
+                            </label>
+                        </div>
+
+                        <!-- Learning Plan Upload -->
+                        <div class="file-upload">
+                            <input type="file" id="learningPlan" class="hidden" accept=".pdf,.doc,.docx">
+                            <label for="learningPlan" class="cursor-pointer block">
+                                <i class="fas fa-book text-3xl text-emurua-brown-red mb-2"></i>
+                                <p class="font-medium">Learning Plan</p>
+                                <p class="text-sm text-gray-500 mt-1">Upload your learning plan document</p>
+                                <span class="text-xs text-gray-400">.pdf, .doc, .docx</span>
+                            </label>
+                        </div>
+
+                        <!-- Record of Work Upload -->
+                        <div class="file-upload">
+                            <input type="file" id="recordOfWork" class="hidden" accept=".pdf,.doc,.docx">
+                            <label for="recordOfWork" class="cursor-pointer block">
+                                <i class="fas fa-clipboard-list text-3xl text-emurua-brown-red mb-2"></i>
+                                <p class="font-medium">Record of Work</p>
+                                <p class="text-sm text-gray-500 mt-1">Upload your record of work document</p>
+                                <span class="text-xs text-gray-400">.pdf, .doc, .docx</span>
+                            </label>
+                        </div>
+
+                        <!-- Session Plan Upload -->
+                        <div class="file-upload">
+                            <input type="file" id="sessionPlan" class="hidden" accept=".pdf,.doc,.docx">
+                            <label for="sessionPlan" class="cursor-pointer block">
+                                <i class="fas fa-calendar-alt text-3xl text-emurua-brown-red mb-2"></i>
+                                <p class="font-medium">Session Plan</p>
+                                <p class="text-sm text-gray-500 mt-1">Upload your session plan document</p>
+                                <span class="text-xs text-gray-400">.pdf, .doc, .docx</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="border rounded-lg">
+                        <div class="p-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+                            <h4 class="font-medium text-emurua-brown-red">Uploaded Files</h4>
+                            <span class="text-xs text-gray-500">Last updated: Today</span>
+                        </div>
+                            <div class="divide-y divide-gray-200">
+                                <div class="p-3 flex justify-between items-center">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-file-pdf text-red-500 mr-3"></i>
+                                        <div>
+                                            <p class="font-medium">Teaching Plan.pdf</p>
+                                            <p class="text-xs text-gray-500">2.4 MB</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex space-x-2">
+                                        <button class="text-emurua-green hover:text-emurua-brown-red">
+                                            <i class="fas fa-download"></i>
+                                        </button>
+                                        <button class="text-red-500 hover:text-red-700">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="p-3 flex justify-between items-center">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-file-word text-blue-500 mr-3"></i>
+                                        <div>
+                                            <p class="font-medium">Course Outline.docx</p>
+                                            <p class="text-xs text-gray-500">1.8 MB</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex space-x-2">
+                                        <button class="text-emurua-green hover:text-emurua-brown-red">
+                                            <i class="fas fa-download"></i>
+                                        </button>
+                                        <button class="text-red-500 hover:text-red-700">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4 text-right">
+                            <button class="bg-emurua-green text-white px-4 py-2 rounded hover:bg-opacity-90 transition">
+                                <i class="fas fa-paper-plane mr-1"></i> Submit to Admin
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Announcements Section -->
+                <div class="bg-white rounded-lg shadow">
+                    <div class="p-4 border-b border-gray-200 flex justify-between items-center">
+                        <h3 class="text-lg font-semibold text-emurua-brown-red">Latest Announcements</h3>
+                        <button class="text-emurua-green hover:text-emurua-brown-red">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                    <div class="p-4">
+                        <div class="space-y-4">
+                            <div class="border-l-4 border-emurua-green pl-4 py-1">
+                                <div class="flex justify-between items-start">
+                                    <h4 class="font-medium text-emurua-red">Semester 2 Timetable Released</h4>
+                                    <span class="text-xs text-gray-500">Today, 10:30 AM</span>
+                                </div>
+                                <p class="text-sm text-gray-600 mt-1">The timetable for Semester 2 has been uploaded. Please check your schedules and report any conflicts.</p>
+                                <div class="mt-2">
+                                    <span class="inline-block bg-gray-100 text-xs px-2 py-1 rounded">From: Deputy Academics</span>
+                                </div>
+                            </div>
+                            <div class="border-l-4 border-emurua-green pl-4 py-1">
+                                <div class="flex justify-between items-start">
+                                    <h4 class="font-medium text-emurua-red">Staff Development Workshop</h4>
+                                    <span class="text-xs text-gray-500">Yesterday, 2:15 PM</span>
+                                </div>
+                                <p class="text-sm text-gray-600 mt-1">There will be a staff development workshop on modern teaching methodologies next Wednesday at 9:00 AM in the conference room.</p>
+                                <div class="mt-2">
+                                    <span class="inline-block bg-gray-100 text-xs px-2 py-1 rounded">From: Principal</span>
+                                </div>
+                            </div>
+                            <div class="border-l-4 border-emurua-green pl-4 py-1">
+                                <div class="flex justify-between items-start">
+                                    <h4 class="font-medium text-emurua-red">Tools of Trade Submission</h4>
+                                    <span class="text-xs text-gray-500">2 days ago</span>
+                                </div>
+                                <p class="text-sm text-gray-600 mt-1">All staff are reminded to submit their tools of trade for this semester by Friday. Late submissions will not be accepted.</p>
+                                <div class="mt-2">
+                                    <span class="inline-block bg-gray-100 text-xs px-2 py-1 rounded">From: Deputy Academics</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4 text-center">
+                            <button class="text-emurua-brown-red hover:text-emurua-red text-sm font-medium">
+                                View All Announcements <i class="fas fa-chevron-right ml-1"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-emurua-brown-red text-white py-4">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <p class="text-sm">&copy; 2023 EMURUA DIKIRR TTI. All rights reserved.</p>
+                </div>
+                <div class="flex space-x-4">
+                    <a href="#" class="hover:text-emurua-green transition">
+                        <i class="fab fa-facebook-f"></i>
+                    </a>
+                    <a href="#" class="hover:text-emurua-green transition">
+                        <i class="fab fa-twitter"></i>
+                    </a>
+                    <a href="#" class="hover:text-emurua-green transition">
+                        <i class="fab fa-linkedin-in"></i>
+                    </a>
+                    <a href="#" class="hover:text-emurua-green transition">
+                        <i class="fab fa-instagram"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Mobile menu toggle
+        const menuToggle = document.getElementById('menuToggle');
+        const sidebar = document.querySelector('.sidebar');
+        const body = document.body;
+
+        menuToggle.addEventListener('click', function() {
+            sidebar.classList.toggle('active');
+            body.classList.toggle('menu-open');
+        });
+
+        // Close menu when clicking outside
+        document.addEventListener('click', function(e) {
+            if (body.classList.contains('menu-open') && 
+                !sidebar.contains(e.target) && 
+                !menuToggle.contains(e.target)) {
+                sidebar.classList.remove('active');
+                body.classList.remove('menu-open');
+            }
+        });
+
+        // Toggle notification dropdown
+        document.getElementById('notificationBtn').addEventListener('click', function() {
+            document.getElementById('notificationDropdown').classList.toggle('hidden');
+            document.getElementById('profileDropdown').classList.add('hidden');
+        });
+
+        // Toggle profile dropdown
+        document.getElementById('profileBtn').addEventListener('click', function() {
+            document.getElementById('profileDropdown').classList.toggle('hidden');
+            document.getElementById('notificationDropdown').classList.add('hidden');
+        });
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(event) {
+            if (!event.target.closest('#notificationBtn') && !event.target.closest('#notificationDropdown')) {
+                document.getElementById('notificationDropdown').classList.add('hidden');
+            }
+            if (!event.target.closest('#profileBtn') && !event.target.closest('#profileDropdown')) {
+                document.getElementById('profileDropdown').classList.add('hidden');
+            }
+        });
+
+        // File upload preview (simplified example)
+        document.getElementById('toolsUpload').addEventListener('change', function(e) {
+            const files = e.target.files;
+            if (files.length > 0) {
+                alert(`You've selected ${files.length} file(s) to upload.`);
+                // In a real application, you would handle file previews here
+            }
+        });
+
+        // Active sidebar item
+        document.querySelectorAll('.sidebar-item').forEach(item => {
+            item.addEventListener('click', function() {
+                document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>
