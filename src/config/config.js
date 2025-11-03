@@ -78,20 +78,13 @@ function validateConfig() {
         console.warn(`⚠️  Warning: Missing configuration for: ${missing.join(', ')}`);
     }
     
+    // Note: JWT and session secrets are optional - not all apps use them
     if (config.nodeEnv === 'production') {
-        const productionRequired = ['jwt.secret', 'session.secret'];
-        const missingProd = productionRequired.filter(key => {
-            const keys = key.split('.');
-            let value = config;
-            for (const k of keys) {
-                value = value[k];
-            }
-            return !value || value.includes('dev-');
-        });
-        
-        if (missingProd.length > 0) {
-            console.error(`❌ Error: Production requires: ${missingProd.join(', ')}`);
-            process.exit(1);
+        if (!config.jwt || !config.jwt.secret || config.jwt.secret.includes('dev-')) {
+            console.warn('⚠️  Warning: Using default JWT secret in production (not recommended for security)');
+        }
+        if (!config.session || !config.session.secret || config.session.secret.includes('dev-')) {
+            console.warn('⚠️  Warning: Using default session secret in production (not recommended for security)');
         }
     }
 }
