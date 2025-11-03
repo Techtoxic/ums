@@ -61,6 +61,7 @@ async function initializeDashboard() {
         // Create charts
         createEnrollmentChart();
         createRevenueChart();
+        createDepartmentChart();
         
         // Load recent activity
         loadRecentActivity();
@@ -345,6 +346,111 @@ function createRevenueChart() {
         }
     });
 }
+
+function createDepartmentChart() {
+    const ctx = document.getElementById('departmentChart');
+    if (!ctx) return;
+
+    // Count students by department
+    const departments = {
+        'applied_science': 0,
+        'agriculture': 0,
+        'building_civil': 0,
+        'electromechanical': 0,
+        'hospitality': 0,
+        'business_liberal': 0,
+        'computing_informatics': 0
+    };
+
+    allStudents.forEach(student => {
+        if (student.department && departments.hasOwnProperty(student.department)) {
+            departments[student.department]++;
+        }
+    });
+
+    const labels = Object.keys(departments).map(dept => formatDepartmentName(dept));
+    const data = Object.values(departments);
+
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: [
+                    '#7A0C0C',  // Applied Science (maroon)
+                    '#8B2A2A',  // Agriculture
+                    '#3b82f6',  // Building & Civil (blue)
+                    '#10b981',  // Electromechanical (green)
+                    '#f59e0b',  // Hospitality (yellow)
+                    '#8b5cf6',  // Business & Liberal (purple)
+                    '#ec4899'   // Computing & Informatics (pink)
+                ],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 15,
+                        font: {
+                            size: 11
+                        }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.parsed || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return `${label}: ${value} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// ========================================
+// DARK MODE
+// ========================================
+
+function toggleDarkMode() {
+    const html = document.documentElement;
+    const icon = document.getElementById('dark-mode-icon');
+    
+    if (html.classList.contains('dark')) {
+        html.classList.remove('dark');
+        localStorage.setItem('darkMode', 'false');
+        if (icon) icon.className = 'ri-moon-line text-2xl';
+    } else {
+        html.classList.add('dark');
+        localStorage.setItem('darkMode', 'true');
+        if (icon) icon.className = 'ri-sun-line text-2xl';
+    }
+}
+
+// Initialize dark mode from localStorage
+function initDarkMode() {
+    const darkMode = localStorage.getItem('darkMode');
+    const icon = document.getElementById('dark-mode-icon');
+    
+    if (darkMode === 'true') {
+        document.documentElement.classList.add('dark');
+        if (icon) icon.className = 'ri-sun-line text-2xl';
+    }
+}
+
+// Call on page load
+document.addEventListener('DOMContentLoaded', initDarkMode);
 
 // ========================================
 // RECENT ACTIVITY & ALERTS
@@ -1122,3 +1228,18 @@ async function handleAddTrainer(e) {
         showToast(error.message || 'Failed to add trainer', 'error');
     }
 }
+
+// ========================================
+// MAKE FUNCTIONS GLOBALLY AVAILABLE
+// ========================================
+
+window.showSection = showSection;
+window.toggleSidebar = toggleSidebar;
+window.toggleProfileMenu = toggleProfileMenu;
+window.toggleDarkMode = toggleDarkMode;
+window.logout = logout;
+window.openAddTrainerModal = openAddTrainerModal;
+window.closeAddTrainerModal = closeAddTrainerModal;
+window.handleAddTrainer = handleAddTrainer;
+window.openAddStudentModal = openAddStudentModal;
+window.exportStudents = exportStudents;

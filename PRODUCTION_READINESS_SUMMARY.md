@@ -196,7 +196,7 @@ const API_BASE = window.APP_CONFIG.API_BASE_URL;
    PORT=5502
    NODE_ENV=production
    MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/ums
-   API_BASE_URL=https://yourdomain.com/api
+   
    ```
 
 3. **That's it!** Everything automatically updates!

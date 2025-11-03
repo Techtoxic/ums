@@ -175,8 +175,8 @@ Handles: 3000-5000 users
 **~$300/month** - Still very affordable!
 
 ---
-
-## 📊 System Capabilities
+'\
+'
 
 | Users | Server | Database | Cost/Month | Status |
 |-------|--------|----------|------------|--------|

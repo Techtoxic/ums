@@ -4789,6 +4789,15 @@ app.get('/dean/dashboard', (req, res) => {
     res.sendFile(path.join(__dirname, 'src', 'components', 'dean', 'DeanDashboard.html'));
 });
 
+// Deputy routes
+app.get('/deputy/login', (req, res) => {
+    res.redirect('/deputy/dashboard');
+});
+
+app.get('/deputy/dashboard', (req, res) => {
+    res.sendFile(path.join(__dirname, 'src', 'components', 'deputy', 'DeputyDashboard.html'));
+});
+
 // HOD routes
 app.get('/hod/login', (req, res) => {
     res.sendFile(path.join(__dirname, 'src', 'components', 'hod', 'HODLogin.html'));
@@ -5629,5 +5638,6 @@ app.listen(PORT, () => {
     console.log(`💰 Finance Portal: http://localhost:${PORT}/finance/dashboard`);
     console.log(`📝 Registrar Portal: http://localhost:${PORT}/registrar/dashboard`);
     console.log(`🎓 Dean Portal: http://localhost:${PORT}/dean/dashboard`);
+    console.log(`👔 Deputy Portal: http://localhost:${PORT}/deputy/dashboard`);
     console.log(`🏢 HOD Portal: http://localhost:${PORT}/hod/dashboard`);
 });

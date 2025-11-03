@@ -101,13 +101,7 @@ GET  /api/trainers/:id/payslips             - Trainer payslips
 
 ### For Testing
 ```
-✅ Admin: https://emura-tti.onrender.com/admin/login
-✅ Student: https://emura-tti.onrender.com/student/login
-✅ Trainer: https://emura-tti.onrender.com/trainer/login
-✅ Finance: https://emura-tti.onrender.com/finance/dashboard
-✅ Registrar: https://emura-tti.onrender.com/registrar/dashboard
-✅ Dean: https://emura-tti.onrender.com/dean/dashboard
-✅ HOD: https://emura-tti.onrender.com/hod/login
+
 ```
 
 ---
