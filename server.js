@@ -4741,6 +4741,12 @@ app.get('/admin/login', (req, res) => {
 });
 
 app.get('/admin/dashboard', (req, res) => {
+    // Prevent caching to ensure latest version is served
+    res.set({
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+    });
     res.sendFile(path.join(__dirname, 'src', 'components', 'admin', 'adminDashboard.html'));
 });
 
@@ -4831,7 +4837,18 @@ app.get('/', (req, res) => {
 });
 
 // Serve static files after routes
-app.use(express.static(path.join(__dirname, 'src', 'components')));
+// Prevent caching for admin dashboard JS file
+app.use(express.static(path.join(__dirname, 'src', 'components'), {
+    setHeaders: (res, filePath) => {
+        if (filePath.includes('adminDashboard.js')) {
+            res.set({
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+            });
+        }
+    }
+}));
 app.use(express.static('.'));
 
 const PORT = config.port;
