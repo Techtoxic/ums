@@ -161,9 +161,11 @@ function calculateDashboardMetrics() {
     const totalTrainersEl = document.getElementById('total-trainers');
     if (totalTrainersEl) totalTrainersEl.textContent = allTrainers.length.toLocaleString();
 
+    // Calculate total revenue (needed for multiple calculations)
+    const totalRevenue = allPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
+    
     const totalRevenueEl = document.getElementById('total-revenue');
     if (totalRevenueEl) {
-        const totalRevenue = allPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
         totalRevenueEl.textContent = formatCurrency(totalRevenue);
     }
 

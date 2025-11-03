@@ -227,6 +227,7 @@ function updateStudentInfo(data) {
     });
     
     // Update email address
+    console.log('Setting email:', studentInfo.email);
     document.querySelectorAll('.student-email').forEach(el => {
         el.textContent = studentInfo.email || 'Not set';
     });
@@ -288,14 +289,18 @@ function updateStudentInfo(data) {
     });
     
     // Update admission type
+    console.log('Setting admissionType:', studentInfo.admissionType);
     document.querySelectorAll('.student-admission-type').forEach(el => {
         if (studentInfo.admissionType) {
             const admissionTypeText = studentInfo.admissionType === 'walk-in' ? 'Walk-in' : 'KUCCPS';
             el.textContent = admissionTypeText;
+            console.log('Set admission type to:', admissionTypeText);
         } else {
             el.textContent = 'Not Available';
+            console.log('No admissionType in studentInfo');
         }
     });
+    console.log('Full studentInfo:', studentInfo);
 }
 
 // Update program cost in the UI
