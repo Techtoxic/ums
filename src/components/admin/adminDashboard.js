@@ -143,7 +143,14 @@ async function loadPrograms() {
 // ========================================
 
 function calculateDashboardMetrics() {
-    // Only set elements that exist - check before setting
+    // Update stat cards (these IDs exist in the HTML)
+    const statStudentsEl = document.getElementById('stat-students');
+    if (statStudentsEl) statStudentsEl.textContent = allStudents.length.toLocaleString();
+    
+    const statTrainersEl = document.getElementById('stat-trainers');
+    if (statTrainersEl) statTrainersEl.textContent = allTrainers.length.toLocaleString();
+    
+    // Legacy IDs (may not exist)
     const totalStudentsEl = document.getElementById('total-students');
     if (totalStudentsEl) totalStudentsEl.textContent = allStudents.length.toLocaleString();
     
@@ -164,22 +171,38 @@ function calculateDashboardMetrics() {
     // Calculate total revenue (needed for multiple calculations)
     const totalRevenue = allPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
     
+    // Update stat-revenue (actual HTML ID)
+    const statRevenueEl = document.getElementById('stat-revenue');
+    if (statRevenueEl) {
+        statRevenueEl.textContent = formatCurrency(totalRevenue);
+    }
+    
+    // Legacy ID
     const totalRevenueEl = document.getElementById('total-revenue');
     if (totalRevenueEl) {
         totalRevenueEl.textContent = formatCurrency(totalRevenue);
     }
 
+    // Calculate outstanding balance
+    const totalOutstanding = allStudents.reduce((sum, student) => {
+        const program = allPrograms.find(p => p.programName === getCourseProgram(student.course));
+        const programCost = program ? program.programCost : 67189;
+        const totalFees = programCost * (student.year || 1);
+        const studentPayments = allPayments.filter(p => p.studentId === student.admissionNumber);
+        const totalPaid = studentPayments.reduce((pSum, p) => pSum + (p.amount || 0), 0);
+        const balance = totalFees - totalPaid;
+        return sum + (balance > 0 ? balance : 0);
+    }, 0);
+    
+    // Update stat-outstanding (actual HTML ID)
+    const statOutstandingEl = document.getElementById('stat-outstanding');
+    if (statOutstandingEl) {
+        statOutstandingEl.textContent = formatCurrency(totalOutstanding);
+    }
+    
+    // Legacy ID
     const outstandingBalanceEl = document.getElementById('outstanding-balance');
     if (outstandingBalanceEl) {
-        const totalOutstanding = allStudents.reduce((sum, student) => {
-            const program = allPrograms.find(p => p.programName === getCourseProgram(student.course));
-            const programCost = program ? program.programCost : 67189;
-            const totalFees = programCost * (student.year || 1);
-            const studentPayments = allPayments.filter(p => p.studentId === student.admissionNumber);
-            const totalPaid = studentPayments.reduce((pSum, p) => pSum + (p.amount || 0), 0);
-            const balance = totalFees - totalPaid;
-            return sum + (balance > 0 ? balance : 0);
-        }, 0);
         outstandingBalanceEl.textContent = formatCurrency(totalOutstanding);
     }
     

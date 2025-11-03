@@ -98,7 +98,7 @@ async function fetchStudentData() {
             return null;
         }
 
-        const response = await fetch(`${API_BASE_URL}/students/admission/${studentData.admissionNumber}`, {
+        const response = await fetch(`${API_BASE_URL}/students/admission/${encodeURIComponent(studentData.admissionNumber)}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'
