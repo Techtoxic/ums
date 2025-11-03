@@ -4741,7 +4741,7 @@ app.get('/admin/login', (req, res) => {
 });
 
 app.get('/admin/dashboard', (req, res) => {
-    res.sendFile(path.join(__dirname, 'src', 'components', 'admin', 'AdminDashboard.html'));
+    res.sendFile(path.join(__dirname, 'src', 'components', 'admin', 'adminDashboard.html'));
 });
 
 // Student routes
@@ -4796,6 +4796,24 @@ app.get('/hod/login', (req, res) => {
 
 app.get('/hod/dashboard', (req, res) => {
     res.sendFile(path.join(__dirname, 'src', 'components', 'hod', 'HODDashboard.html'));
+});
+
+// ILO routes (Industrial Liaison Office)
+app.get('/ilo/login', (req, res) => {
+    res.redirect('/ilo/dashboard');
+});
+
+app.get('/ilo/dashboard', (req, res) => {
+    res.sendFile(path.join(__dirname, 'src', 'components', 'ilo', 'ILODashboard.html'));
+});
+
+// CIBEC routes (Competency-Based Education & Training Center)
+app.get('/cibec/login', (req, res) => {
+    res.redirect('/cibec/dashboard');
+});
+
+app.get('/cibec/dashboard', (req, res) => {
+    res.sendFile(path.join(__dirname, 'src', 'components', 'cibec', 'CIBECDashboard.html'));
 });
 
 // Root redirect to student login
