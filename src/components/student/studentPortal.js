@@ -1062,27 +1062,22 @@ async function initializePortal() {
     showLoading();
     
     try {
-    // First check if we already have complete data in session storage
-    const hasCompleteData = studentData && studentData.idNumber && 
-                           studentData.kcseGrade && studentData.department && 
-                           studentData.phoneNumber;
-    
-    // Update UI with data from session storage
-    updateStudentInfo();
-    
-    // Only fetch from API if we don't have complete data
-        if (!hasCompleteData && studentData.admissionNumber) {
+    // Always fetch fresh data from API on portal load to ensure we have latest updates
+    // This ensures email, admissionType, and other fields are up-to-date
+    if (studentData.admissionNumber) {
         console.log('Fetching complete student data from API...');
         const completeData = await fetchStudentData();
         if (completeData) {
-            // Update session storage with complete data
+            // Merge session data with fresh API data (API data takes precedence)
             const updatedStudentData = {...studentData, ...completeData};
             sessionStorage.setItem('studentData', JSON.stringify(updatedStudentData));
-                studentData = updatedStudentData;
-            // Update UI with complete data
-            updateStudentInfo(completeData);
+            studentData = updatedStudentData;
+            console.log('Updated student data with API response:', studentData);
         }
     }
+    
+    // Update UI with latest data
+    updateStudentInfo();
     
     // Fetch and display program cost
         const courseKey = studentData.course;
