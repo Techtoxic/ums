@@ -25,7 +25,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Set admin name
     const admin = JSON.parse(adminData);
-    document.getElementById('admin-name').textContent = admin.name || 'Administrator';
+    const adminNameEl = document.getElementById('admin-name');
+    if (adminNameEl) adminNameEl.textContent = admin.name || 'Administrator';
 
     // Initialize dashboard
     initializeDashboard();
@@ -142,36 +143,43 @@ async function loadPrograms() {
 // ========================================
 
 function calculateDashboardMetrics() {
-    // Total Students
-    document.getElementById('total-students').textContent = allStudents.length.toLocaleString();
+    // Only set elements that exist - check before setting
+    const totalStudentsEl = document.getElementById('total-students');
+    if (totalStudentsEl) totalStudentsEl.textContent = allStudents.length.toLocaleString();
     
-    // Students this month
-    const thisMonth = new Date().getMonth();
-    const thisYear = new Date().getFullYear();
-    const studentsThisMonth = allStudents.filter(s => {
-        const createdDate = new Date(s.createdAt);
-        return createdDate.getMonth() === thisMonth && createdDate.getFullYear() === thisYear;
-    }).length;
-    document.getElementById('students-this-month').textContent = `+${studentsThisMonth}`;
+    const studentsThisMonthEl = document.getElementById('students-this-month');
+    if (studentsThisMonthEl) {
+        const thisMonth = new Date().getMonth();
+        const thisYear = new Date().getFullYear();
+        const studentsThisMonth = allStudents.filter(s => {
+            const createdDate = new Date(s.createdAt);
+            return createdDate.getMonth() === thisMonth && createdDate.getFullYear() === thisYear;
+        }).length;
+        studentsThisMonthEl.textContent = `+${studentsThisMonth}`;
+    }
 
-    // Total Trainers
-    document.getElementById('total-trainers').textContent = allTrainers.length.toLocaleString();
+    const totalTrainersEl = document.getElementById('total-trainers');
+    if (totalTrainersEl) totalTrainersEl.textContent = allTrainers.length.toLocaleString();
 
-    // Total Revenue
-    const totalRevenue = allPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
-    document.getElementById('total-revenue').textContent = formatCurrency(totalRevenue);
+    const totalRevenueEl = document.getElementById('total-revenue');
+    if (totalRevenueEl) {
+        const totalRevenue = allPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
+        totalRevenueEl.textContent = formatCurrency(totalRevenue);
+    }
 
-    // Outstanding Balance - calculate based on (programCost * year) - totalPaid
-    const totalOutstanding = allStudents.reduce((sum, student) => {
-        const program = allPrograms.find(p => p.programName === getCourseProgram(student.course));
-        const programCost = program ? program.programCost : 67189;
-        const totalFees = programCost * (student.year || 1);
-        const studentPayments = allPayments.filter(p => p.studentId === student.admissionNumber);
-        const totalPaid = studentPayments.reduce((pSum, p) => pSum + (p.amount || 0), 0);
-        const balance = totalFees - totalPaid;
-        return sum + (balance > 0 ? balance : 0); // Only count positive balances
-    }, 0);
-    document.getElementById('outstanding-balance').textContent = formatCurrency(totalOutstanding);
+    const outstandingBalanceEl = document.getElementById('outstanding-balance');
+    if (outstandingBalanceEl) {
+        const totalOutstanding = allStudents.reduce((sum, student) => {
+            const program = allPrograms.find(p => p.programName === getCourseProgram(student.course));
+            const programCost = program ? program.programCost : 67189;
+            const totalFees = programCost * (student.year || 1);
+            const studentPayments = allPayments.filter(p => p.studentId === student.admissionNumber);
+            const totalPaid = studentPayments.reduce((pSum, p) => pSum + (p.amount || 0), 0);
+            const balance = totalFees - totalPaid;
+            return sum + (balance > 0 ? balance : 0);
+        }, 0);
+        outstandingBalanceEl.textContent = formatCurrency(totalOutstanding);
+    }
     
     // Students owing
     const studentsOwing = allStudents.filter(s => {
@@ -182,7 +190,8 @@ function calculateDashboardMetrics() {
         const totalPaid = studentPayments.reduce((pSum, p) => pSum + (p.amount || 0), 0);
         return (totalFees - totalPaid) > 0;
     }).length;
-    document.getElementById('students-owing-count').textContent = `${studentsOwing} students`;
+    const studentsOwingEl = document.getElementById('students-owing-count');
+    if (studentsOwingEl) studentsOwingEl.textContent = `${studentsOwing} students`;
 
     // Collection Rate - based on total expected fees
     const totalExpected = allStudents.reduce((sum, student) => {
@@ -192,7 +201,8 @@ function calculateDashboardMetrics() {
     }, 0);
     
     const collectionRate = totalExpected > 0 ? ((totalRevenue / totalExpected) * 100).toFixed(1) : 0;
-    document.getElementById('collection-rate').textContent = `${collectionRate}%`;
+    const collectionRateEl = document.getElementById('collection-rate');
+    if (collectionRateEl) collectionRateEl.textContent = `${collectionRate}%`;
 }
 
 // ========================================
