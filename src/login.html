@@ -6,6 +6,10 @@
     <title>Student Login - University Management System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Frontend Config (Load First!) -->
+    <script src="/public/js/config.js"></script>
+    
     <style>
         .login-container {
             background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
@@ -126,11 +130,14 @@
             const userType = document.querySelector('input[name="userType"]:checked').value;
 
             try {
+                // Use dynamic API base URL
+                const API_BASE_URL = window.APP_CONFIG?.API_BASE_URL || `${window.location.protocol}//${window.location.host}/api`;
+                
                 let endpoint = '';
                 if (userType === 'student') {
-                    endpoint = 'http://localhost:5502/api/students/login';
+                    endpoint = `${API_BASE_URL}/students/login`;
                 } else if (userType === 'trainer') {
-                    endpoint = 'http://localhost:5502/api/trainers/login';
+                    endpoint = `${API_BASE_URL}/trainers/login`;
                 }
 
                 const response = await fetch(endpoint, {
