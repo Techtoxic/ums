@@ -3378,19 +3378,24 @@ app.put('/api/students/:studentId/email', async (req, res) => {
         const { studentId } = req.params;
         const { email } = req.body;
 
+        console.log('📧 Student email update request:', { studentId, newEmail: email });
+
         if (!email) {
+            console.log('❌ Email is missing in request body');
             return res.status(400).json({ message: 'Email is required' });
         }
 
         // Validate email format
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
+            console.log('❌ Invalid email format:', email);
             return res.status(400).json({ message: 'Invalid email format' });
         }
 
         // Check if email already exists
         const existingStudent = await Student.findOne({ email: email.toLowerCase(), admissionNumber: { $ne: studentId } });
         if (existingStudent) {
+            console.log('❌ Email already in use by another student:', existingStudent.admissionNumber);
             return res.status(400).json({ message: 'Email already exists' });
         }
 
@@ -3402,8 +3407,14 @@ app.put('/api/students/:studentId/email', async (req, res) => {
         ).select('-password');
 
         if (!student) {
+            console.log('❌ Student not found:', studentId);
             return res.status(404).json({ message: 'Student not found' });
         }
+
+        console.log('✅ Student email updated successfully:', { 
+            admissionNumber: student.admissionNumber, 
+            newEmail: student.email 
+        });
 
         res.json({
             message: 'Email updated successfully',
@@ -3415,7 +3426,7 @@ app.put('/api/students/:studentId/email', async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('Error updating student email:', error);
+        console.error('❌ Error updating student email:', error);
         res.status(500).json({ message: 'Internal server error' });
     }
 });
