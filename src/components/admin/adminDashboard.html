@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Admin Dashboard - EDTTI</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.0.0/fonts/remixicon.css" rel="stylesheet">
@@ -13,6 +16,7 @@
     
     <script>
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
@@ -22,6 +26,19 @@
                 }
             }
         }
+        
+        // Test dark mode immediately after Tailwind loads
+        console.log('✅ Tailwind darkMode configured as:', tailwind.config.darkMode);
+        
+        // Verify dark mode support
+        window.addEventListener('DOMContentLoaded', () => {
+            const testEl = document.createElement('div');
+            testEl.className = 'bg-white dark:bg-gray-800';
+            document.body.appendChild(testEl);
+            const computed = window.getComputedStyle(testEl);
+            console.log('🧪 Dark mode test element created');
+            document.body.removeChild(testEl);
+        });
     </script>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
@@ -42,60 +59,60 @@
 
             <!-- Navigation -->
             <nav class="space-y-2">
-                <a href="#" onclick="showSection('dashboard')" data-section="dashboard" class="nav-link flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-primary hover:text-white transition active">
+                <a href="#" onclick="showSection('dashboard')" data-section="dashboard" class="nav-link flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-primary dark:hover:bg-primary hover:text-white transition active">
                     <i class="ri-dashboard-line text-xl"></i>
                     <span>Dashboard</span>
                 </a>
                 
-                <a href="#" onclick="showSection('students')" data-section="students" class="nav-link flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-primary hover:text-white transition">
+                <a href="#" onclick="showSection('students')" data-section="students" class="nav-link flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-primary dark:hover:bg-primary hover:text-white transition">
                     <i class="ri-graduation-cap-line text-xl"></i>
                     <span>Students</span>
                 </a>
                 
-                <a href="#" onclick="showSection('trainers')" data-section="trainers" class="nav-link flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-primary hover:text-white transition">
+                <a href="#" onclick="showSection('trainers')" data-section="trainers" class="nav-link flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-primary dark:hover:bg-primary hover:text-white transition">
                     <i class="ri-user-star-line text-xl"></i>
                     <span>Trainers</span>
                 </a>
                 
-                <a href="#" onclick="showSection('financial')" data-section="financial" class="nav-link flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-primary hover:text-white transition">
+                <a href="#" onclick="showSection('financial')" data-section="financial" class="nav-link flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-primary dark:hover:bg-primary hover:text-white transition">
                     <i class="ri-money-dollar-circle-line text-xl"></i>
                     <span>Financial</span>
                 </a>
                 
-                <a href="#" onclick="showSection('programs')" data-section="programs" class="nav-link flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-primary hover:text-white transition">
+                <a href="#" onclick="showSection('programs')" data-section="programs" class="nav-link flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-primary dark:hover:bg-primary hover:text-white transition">
                     <i class="ri-book-line text-xl"></i>
                     <span>Programs</span>
                 </a>
                 
-                <a href="#" onclick="showSection('reports')" data-section="reports" class="nav-link flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-primary hover:text-white transition">
+                <a href="#" onclick="showSection('reports')" data-section="reports" class="nav-link flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-primary dark:hover:bg-primary hover:text-white transition">
                     <i class="ri-bar-chart-box-line text-xl"></i>
                     <span>Reports</span>
                 </a>
                 
                 <!-- Coming Soon Links -->
-                <div class="pt-4 mt-4 border-t border-gray-200">
-                    <p class="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Coming Soon</p>
+                <div class="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
+                    <p class="px-4 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Coming Soon</p>
                     
-                    <a href="#" onclick="showSection('staff')" data-section="staff" class="nav-link flex items-center justify-between px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 transition">
+                    <a href="#" onclick="showSection('staff')" data-section="staff" class="nav-link flex items-center justify-between px-4 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
                         <div class="flex items-center space-x-3">
                             <i class="ri-team-line text-xl"></i>
                             <span>Staff Management</span>
                         </div>
-                        <span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">Soon</span>
+                        <span class="text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 px-2 py-1 rounded">Soon</span>
                     </a>
                     
-                    <a href="#" onclick="showSection('communications')" data-section="communications" class="nav-link flex items-center justify-between px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 transition">
+                    <a href="#" onclick="showSection('communications')" data-section="communications" class="nav-link flex items-center justify-between px-4 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
                         <div class="flex items-center space-x-3">
                             <i class="ri-mail-send-line text-xl"></i>
                             <span>Communications</span>
                         </div>
-                        <span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">Soon</span>
+                        <span class="text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 px-2 py-1 rounded">Soon</span>
                     </a>
                 </div>
                 
                 <!-- Settings -->
                 <div class="pt-4">
-                    <a href="#" onclick="showSection('settings')" data-section="settings" class="nav-link flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-primary hover:text-white transition">
+                    <a href="#" onclick="showSection('settings')" data-section="settings" class="nav-link flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-primary dark:hover:bg-primary hover:text-white transition">
                         <i class="ri-settings-line text-xl"></i>
                         <span>Settings</span>
                     </a>
@@ -144,15 +161,15 @@
                         <button onclick="toggleProfileMenu()" class="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-semibold hover:bg-secondary transition">
                             <i class="ri-admin-line text-xl"></i>
                         </button>
-                        <div id="profile-menu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-2 z-50">
-                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                        <div id="profile-menu" class="hidden absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl py-2 z-50 border border-gray-200 dark:border-gray-700">
+                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
                                 <i class="ri-user-line mr-2"></i>Profile
                             </a>
-                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
                                 <i class="ri-settings-line mr-2"></i>Settings
                             </a>
-                            <hr class="my-2">
-                            <button onclick="logout()" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                            <hr class="my-2 border-gray-200 dark:border-gray-700">
+                            <button onclick="logout()" class="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">
                                 <i class="ri-logout-box-line mr-2"></i>Logout
                             </button>
                         </div>
@@ -168,50 +185,50 @@
                 <!-- Dashboard content from existing code... -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
                     <!-- Stats Cards -->
-                    <div class="bg-white rounded-xl p-6 shadow-lg border-l-4 border-blue-500">
+                    <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border-l-4 border-blue-500">
                         <div class="flex items-center justify-between">
                             <div>
-                                <p class="text-gray-500 text-sm">Total Students</p>
-                                <h3 id="stat-students" class="text-3xl font-bold text-gray-800 mt-1">-</h3>
+                                <p class="text-gray-500 dark:text-gray-400 text-sm">Total Students</p>
+                                <h3 id="stat-students" class="text-3xl font-bold text-gray-800 dark:text-white mt-1">-</h3>
                             </div>
-                            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                                <i class="ri-graduation-cap-line text-2xl text-blue-600"></i>
+                            <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+                                <i class="ri-graduation-cap-line text-2xl text-blue-600 dark:text-blue-400"></i>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="bg-white rounded-xl p-6 shadow-lg border-l-4 border-green-500">
+                    <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border-l-4 border-green-500">
                         <div class="flex items-center justify-between">
                             <div>
-                                <p class="text-gray-500 text-sm">Active Trainers</p>
-                                <h3 id="stat-trainers" class="text-3xl font-bold text-gray-800 mt-1">-</h3>
+                                <p class="text-gray-500 dark:text-gray-400 text-sm">Active Trainers</p>
+                                <h3 id="stat-trainers" class="text-3xl font-bold text-gray-800 dark:text-white mt-1">-</h3>
                             </div>
-                            <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                                <i class="ri-user-star-line text-2xl text-green-600"></i>
+                            <div class="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
+                                <i class="ri-user-star-line text-2xl text-green-600 dark:text-green-400"></i>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="bg-white rounded-xl p-6 shadow-lg border-l-4 border-yellow-500">
+                    <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border-l-4 border-yellow-500">
                         <div class="flex items-center justify-between">
                             <div>
-                                <p class="text-gray-500 text-sm">Revenue (KES)</p>
-                                <h3 id="stat-revenue" class="text-3xl font-bold text-gray-800 mt-1">-</h3>
+                                <p class="text-gray-500 dark:text-gray-400 text-sm">Revenue (KES)</p>
+                                <h3 id="stat-revenue" class="text-3xl font-bold text-gray-800 dark:text-white mt-1">-</h3>
                             </div>
-                            <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
-                                <i class="ri-money-dollar-circle-line text-2xl text-yellow-600"></i>
+                            <div class="w-12 h-12 bg-yellow-100 dark:bg-yellow-900 rounded-full flex items-center justify-center">
+                                <i class="ri-money-dollar-circle-line text-2xl text-yellow-600 dark:text-yellow-400"></i>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="bg-white rounded-xl p-6 shadow-lg border-l-4 border-red-500">
+                    <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border-l-4 border-red-500">
                         <div class="flex items-center justify-between">
                             <div>
-                                <p class="text-gray-500 text-sm">Outstanding (KES)</p>
-                                <h3 id="stat-outstanding" class="text-3xl font-bold text-gray-800 mt-1">-</h3>
+                                <p class="text-gray-500 dark:text-gray-400 text-sm">Outstanding (KES)</p>
+                                <h3 id="stat-outstanding" class="text-3xl font-bold text-gray-800 dark:text-white mt-1">-</h3>
                             </div>
-                            <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-                                <i class="ri-alert-line text-2xl text-red-600"></i>
+                            <div class="w-12 h-12 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center">
+                                <i class="ri-alert-line text-2xl text-red-600 dark:text-red-400"></i>
                             </div>
                         </div>
                     </div>
@@ -237,17 +254,17 @@
 
                 <!-- Quick Links -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <button onclick="showSection('students')" class="bg-primary text-white p-6 rounded-xl hover:bg-secondary transition shadow-lg">
+                    <button onclick="showSection('students')" class="bg-primary dark:bg-primary text-white p-6 rounded-xl hover:bg-secondary dark:hover:bg-secondary transition shadow-lg">
                         <i class="ri-user-add-line text-3xl mb-2"></i>
                         <h4 class="font-bold">Manage Students</h4>
                     </button>
                     
-                    <button onclick="showSection('financial')" class="bg-green-600 text-white p-6 rounded-xl hover:bg-green-700 transition shadow-lg">
+                    <button onclick="showSection('financial')" class="bg-green-600 dark:bg-green-700 text-white p-6 rounded-xl hover:bg-green-700 dark:hover:bg-green-800 transition shadow-lg">
                         <i class="ri-file-list-line text-3xl mb-2"></i>
                         <h4 class="font-bold">Financial Reports</h4>
                     </button>
                     
-                    <button onclick="openAddTrainerModal()" class="bg-blue-600 text-white p-6 rounded-xl hover:bg-blue-700 transition shadow-lg">
+                    <button onclick="openAddTrainerModal()" class="bg-blue-600 dark:bg-blue-700 text-white p-6 rounded-xl hover:bg-blue-700 dark:hover:bg-blue-800 transition shadow-lg">
                         <i class="ri-user-star-line text-3xl mb-2"></i>
                         <h4 class="font-bold">Add Trainer</h4>
                     </button>
@@ -256,9 +273,9 @@
 
             <!-- Students Section -->
             <div id="students-section" class="content-section">
-                <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
                     <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-2xl font-bold text-gray-800">Student Management</h2>
+                        <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Student Management</h2>
                         <div class="flex space-x-3">
                             <button onclick="openAddStudentModal()" class="bg-primary text-white px-6 py-3 rounded-lg hover:bg-secondary transition shadow-lg">
                                 <i class="ri-user-add-line mr-2"></i>Add Student
@@ -271,14 +288,14 @@
                     
                     <!-- Search and Filters -->
                     <div class="mb-6 flex flex-wrap gap-4">
-                        <input type="text" id="student-search" placeholder="Search students..." class="flex-1 px-4 py-2 border border-gray-300 rounded-lg">
-                        <select id="year-filter" class="px-4 py-2 border border-gray-300 rounded-lg">
+                        <input type="text" id="student-search" placeholder="Search students..." class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                        <select id="year-filter" class="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg">
                             <option value="">All Years</option>
                             <option value="1">Year 1</option>
                             <option value="2">Year 2</option>
                             <option value="3">Year 3</option>
                         </select>
-                        <select id="program-filter" class="px-4 py-2 border border-gray-300 rounded-lg">
+                        <select id="program-filter" class="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg">
                             <option value="">All Programs</option>
                         </select>
                     </div>
@@ -290,9 +307,9 @@
 
             <!-- Trainers Section -->
             <div id="trainers-section" class="content-section">
-                <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
                     <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-2xl font-bold text-gray-800">Trainer Management</h2>
+                        <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Trainer Management</h2>
                         <button onclick="openAddTrainerModal()" class="bg-primary text-white px-6 py-3 rounded-lg hover:bg-secondary transition shadow-lg">
                             <i class="ri-user-add-line mr-2"></i>Add Trainer
                         </button>
@@ -304,33 +321,33 @@
 
             <!-- Financial Section -->
             <div id="financial-section" class="content-section">
-                <div class="bg-white rounded-xl shadow-lg p-6">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-6">Financial Overview</h2>
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                    <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">Financial Overview</h2>
                     <div id="financial-content"></div>
                 </div>
             </div>
 
             <!-- Programs Section -->
             <div id="programs-section" class="content-section">
-                <div class="bg-white rounded-xl shadow-lg p-6">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-6">Program Management</h2>
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                    <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">Program Management</h2>
                     <div id="programs-list"></div>
                 </div>
             </div>
 
             <!-- Reports Section -->
             <div id="reports-section" class="content-section">
-                <div class="bg-white rounded-xl shadow-lg p-6">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-6">Reports & Analytics</h2>
-                    <p class="text-gray-600">Coming soon: Comprehensive reporting system</p>
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                    <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">Reports & Analytics</h2>
+                    <p class="text-gray-600 dark:text-gray-400">Coming soon: Comprehensive reporting system</p>
                 </div>
             </div>
 
             <!-- Settings Section -->
             <div id="settings-section" class="content-section">
-                <div class="bg-white rounded-xl shadow-lg p-6">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-6">System Settings</h2>
-                    <p class="text-gray-600">Coming soon: System configuration</p>
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                    <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">System Settings</h2>
+                    <p class="text-gray-600 dark:text-gray-400">Coming soon: System configuration</p>
                 </div>
             </div>
         </main>
@@ -340,7 +357,7 @@
     <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
 
     <!-- Load Admin Dashboard JavaScript -->
-    <script src="adminDashboard.js"></script>
+    <script src="adminDashboard.js?v=3.3"></script>
 
     <style>
         .content-section {
@@ -352,6 +369,122 @@
         .nav-link.active {
             background-color: #7A0C0C;
             color: white;
+        }
+        
+        /* DARK MODE CSS - Direct styles since Tailwind CDN doesn't fully support dark mode properly */
+        .dark body {
+            background-color: #111827 !important; /* gray-900 */
+        }
+        
+        .dark aside {
+            background-color: #1F2937 !important; /* gray-800 */
+            border-color: #374151 !important; /* gray-700 */
+        }
+        
+        .dark header {
+            background-color: #1F2937 !important; /* gray-800 */
+            border-color: #374151 !important; /* gray-700 */
+        }
+        
+        .dark h1, .dark h2, .dark h3, .dark h4 {
+            color: #FFFFFF !important;
+        }
+        
+        .dark .nav-link {
+            color: #D1D5DB !important; /* gray-300 */
+        }
+        
+        .dark .nav-link:hover {
+            background-color: #7A0C0C !important;
+            color: #FFFFFF !important;
+        }
+        
+        .dark .nav-link.active {
+            background-color: #7A0C0C !important;
+            color: #FFFFFF !important;
+        }
+        
+        .dark .bg-white {
+            background-color: #1F2937 !important; /* gray-800 */
+        }
+        
+        .dark .text-gray-800 {
+            color: #FFFFFF !important;
+        }
+        
+        .dark .text-gray-700 {
+            color: #D1D5DB !important; /* gray-300 */
+        }
+        
+        .dark .text-gray-500 {
+            color: #9CA3AF !important; /* gray-400 */
+        }
+        
+        .dark .text-gray-600 {
+            color: #D1D5DB !important; /* gray-300 */
+        }
+        
+        .dark .border-gray-200 {
+            border-color: #374151 !important; /* gray-700 */
+        }
+        
+        .dark .border-gray-300 {
+            border-color: #4B5563 !important; /* gray-600 */
+        }
+        
+        .dark input, .dark select {
+            background-color: #374151 !important; /* gray-700 */
+            border-color: #4B5563 !important; /* gray-600 */
+            color: #FFFFFF !important;
+        }
+        
+        .dark .bg-gray-100 {
+            background-color: #374151 !important; /* gray-700 */
+        }
+        
+        .dark #profile-menu {
+            background-color: #1F2937 !important; /* gray-800 */
+            border-color: #374151 !important; /* gray-700 */
+        }
+        
+        .dark #profile-menu a, .dark #profile-menu button {
+            color: #D1D5DB !important; /* gray-300 */
+        }
+        
+        .dark #profile-menu a:hover, .dark #profile-menu button:hover {
+            background-color: #374151 !important; /* gray-700 */
+        }
+        
+        .dark .bg-blue-100 {
+            background-color: #1E3A8A !important; /* blue-900 */
+        }
+        
+        .dark .text-blue-600 {
+            color: #60A5FA !important; /* blue-400 */
+        }
+        
+        .dark .bg-green-100 {
+            background-color: #064E3B !important; /* green-900 */
+        }
+        
+        .dark .text-green-600 {
+            color: #4ADE80 !important; /* green-400 */
+        }
+        
+        .dark .bg-yellow-100 {
+            background-color: #78350F !important; /* yellow-900 */
+        }
+        
+        .dark .text-yellow-600 {
+            color: #FCD34D !important; /* yellow-400 */
+        }
+        
+        .dark .bg-red-100 {
+            background-color: #7F1D1D !important; /* red-900 */
+        }
+        
+        .dark .text-red-600 {
+            color: #F87171 !important; /* red-400 */
         }
     </style>
 </body>
