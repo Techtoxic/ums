@@ -424,18 +424,28 @@ function createDepartmentChart() {
 // ========================================
 
 function toggleDarkMode() {
+    console.log('🌙 toggleDarkMode() called!');
     const html = document.documentElement;
     const icon = document.getElementById('dark-mode-icon');
+    
+    console.log('Current dark mode state:', html.classList.contains('dark'));
+    console.log('Icon element found:', !!icon);
     
     if (html.classList.contains('dark')) {
         html.classList.remove('dark');
         localStorage.setItem('darkMode', 'false');
         if (icon) icon.className = 'ri-moon-line text-2xl';
+        console.log('✅ Dark mode DISABLED - removed "dark" class');
     } else {
         html.classList.add('dark');
         localStorage.setItem('darkMode', 'true');
         if (icon) icon.className = 'ri-sun-line text-2xl';
+        console.log('✅ Dark mode ENABLED - added "dark" class');
     }
+    
+    // Double-check the class is there
+    console.log('HTML classes after toggle:', html.className);
+    console.log('Has dark class:', html.classList.contains('dark'));
 }
 
 // Initialize dark mode from localStorage
