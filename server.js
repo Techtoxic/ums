@@ -8,6 +8,7 @@ const crypto = require('crypto');
 const path = require('path');
 const multer = require('multer');
 const fs = require('fs');
+const config = require('./src/config/config');
 
 // Student Schema
 const studentSchema = new mongoose.Schema({
@@ -80,9 +81,14 @@ const Notification = require('./src/models/Notification');
 const GraduationApplication = require('./src/models/GraduationApplication');
 const AttachmentApplication = require('./src/models/AttachmentApplication');
 const PasswordReset = require('./src/models/PasswordReset');
+const StudentUpload = require('./src/models/StudentUpload');
+const AuditLog = require('./src/models/AuditLog');
+const StudentNote = require('./src/models/StudentNote');
+const Payslip = require('./src/models/Payslip');
 
 // Import services
 const EmailService = require('./src/utils/emailService');
+const { uploadToS3, getPresignedUrl, deleteFromS3, isS3Configured } = require('./src/utils/s3Service');
 
 // Initialize email service
 const emailService = new EmailService();
@@ -135,28 +141,41 @@ if (!fs.existsSync(uploadsDir)) {
 }
 
 // Multer configuration for file uploads
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        // Always upload to general folder first, then move to correct folder
-        const uploadPath = path.join(uploadsDir, 'tools-of-trade', 'general');
-        if (!fs.existsSync(uploadPath)) {
-            fs.mkdirSync(uploadPath, { recursive: true });
+// Use memory storage for S3 uploads, or disk storage as fallback
+const storage = isS3Configured() 
+    ? multer.memoryStorage() // Store in memory for S3 upload
+    : multer.diskStorage({
+        destination: function (req, file, cb) {
+            // Fallback: local storage if S3 not configured
+            const uploadPath = path.join(uploadsDir, 'tools-of-trade', 'general');
+            if (!fs.existsSync(uploadPath)) {
+                fs.mkdirSync(uploadPath, { recursive: true });
+            }
+            cb(null, uploadPath);
+        },
+        filename: function (req, file, cb) {
+            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+            const extension = path.extname(file.originalname);
+            cb(null, file.fieldname + '-' + uniqueSuffix + extension);
         }
-        cb(null, uploadPath);
-    },
-    filename: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const extension = path.extname(file.originalname);
-        cb(null, file.fieldname + '-' + uniqueSuffix + extension);
-    }
-});
+    });
 
 const fileFilter = (req, file, cb) => {
-    const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    const allowedTypes = [
+        'application/pdf', 
+        'application/msword', 
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'image/jpeg',
+        'image/jpg', 
+        'image/png',
+        'video/mp4',
+        'video/mpeg',
+        'video/quicktime'
+    ];
     if (allowedTypes.includes(file.mimetype)) {
         cb(null, true);
     } else {
-        cb(new Error('Only PDF, DOC, and DOCX files are allowed'), false);
+        cb(new Error('Invalid file type. Allowed: PDF, DOC, DOCX, JPG, PNG, MP4'), false);
     }
 };
 
@@ -164,7 +183,7 @@ const upload = multer({
     storage: storage,
     fileFilter: fileFilter,
     limits: {
-        fileSize: 1024 * 1024 // 1MB limit
+        fileSize: 10 * 1024 * 1024 // 10MB limit (increased for images and videos)
     }
 });
 
@@ -2939,6 +2958,77 @@ app.patch('/api/students/:id', async (req, res) => {
         const { id } = req.params;
         const updates = req.body;
         
+        // Handle year promotion with balance update
+        if (updates.year !== undefined) {
+            // Get the current student to check if year is actually changing (promotion)
+            const currentStudent = await Student.findById(id);
+            
+            if (currentStudent) {
+                console.log(`🔄 Checking promotion: Current Year=${currentStudent.year}, New Year=${updates.year}, Course=${currentStudent.course}`);
+                
+                if (currentStudent.year !== updates.year) {
+                    // Student is being promoted to a new year
+                    console.log(`📚 Student ${currentStudent.admissionNumber} is being promoted from Year ${currentStudent.year} to Year ${updates.year}`);
+                    
+                    // Map course code to program name
+                    const courseToProgram = {
+                        'applied_biology_6': 'Applied Biology Level 6',
+                        'analytical_chemistry_6': 'Analytical Chemistry Level 6',
+                        'science_lab_technology_5': 'Science Lab Technology Level 5',
+                        'science_laboratory_technology_5': 'Science Lab Technology Level 5',
+                        'general_agriculture_4': 'General Agriculture Level 4',
+                        'sustainable_agriculture_5': 'Sustainable Agriculture Level 5',
+                        'building_construction_4': 'Building Construction Level 4',
+                        'building_construction_5': 'Building Construction Level 5',
+                        'plumbing_4': 'Plumbing Level 4',
+                        'plumbing_5': 'Plumbing Level 5',
+                        'electrical_engineering_4': 'Electrical Engineering Level 4',
+                        'electrical_engineering_5': 'Electrical Engineering Level 5',
+                        'electrical_engineering_6': 'Electrical Engineering Level 6',
+                        'automotive_engineering_5': 'Automotive Engineering Level 5',
+                        'automotive_engineering_6': 'Automotive Engineering Level 6',
+                        'hospitality_management_5': 'Hospitality Management Level 5',
+                        'hospitality_management_6': 'Hospitality Management Level 6',
+                        'food_beverage_production_management_5': 'Food & Beverage Production Management Level 5',
+                        'food_beverage_production_management_6': 'Food & Beverage Production Management Level 6',
+                        'business_management_6': 'Business Management Level 6',
+                        'supply_chain_management_6': 'Supply Chain Management Level 6',
+                        'human_resource_management_6': 'Human Resource Management Level 6',
+                        'journalism_mass_communication_6': 'Journalism & Mass Communication Level 6',
+                        'information_communication_technology_6': 'Information Communication Technology Level 6',
+                        'information_technology_5': 'Information Technology Level 5',
+                        'computer_science_6': 'Computer Science Level 6'
+                    };
+                    
+                    const programName = courseToProgram[currentStudent.course];
+                    console.log(`🔍 Looking for program: ${programName} for course: ${currentStudent.course}`);
+                    
+                    // Get the program cost for their course
+                    const program = programName ? await Program.findOne({ programName }) : null;
+                    
+                    if (program) {
+                        console.log(`✅ Program found: ${program.programName}, Cost: KES ${program.programCost}`);
+                        
+                        if (program.programCost && program.programCost > 0) {
+                            // Add the new year's cost to their existing balance
+                            const existingBalance = currentStudent.balance || 0;
+                            const newBalance = existingBalance + program.programCost;
+                            updates.balance = newBalance;
+                            
+                            console.log(`💰 Adding program cost KES ${program.programCost.toLocaleString()} to existing balance KES ${existingBalance.toLocaleString()}`);
+                            console.log(`💳 New balance will be: KES ${newBalance.toLocaleString()}`);
+                        } else {
+                            console.warn(`⚠️ Program cost is not set or is zero for ${program.programName}`);
+                        }
+                    } else {
+                        console.warn(`⚠️ Program not found for course: ${currentStudent.course} (mapped to: ${programName})`);
+                    }
+                } else {
+                    console.log(`ℹ️ Year not changed (both are ${updates.year}), no balance update needed`);
+                }
+            }
+        }
+        
         const student = await Student.findByIdAndUpdate(id, updates, { new: true });
         if (!student) {
             return res.status(404).json({ message: 'Student not found' });
@@ -3185,7 +3275,79 @@ app.put('/api/students/:id', async (req, res) => {
                                   normalizedPhone;
             updateData.phoneNumber = formattedPhone;
         }
-        if (year !== undefined) updateData.year = year;
+        
+        // Handle year promotion with balance update
+        if (year !== undefined) {
+            updateData.year = year;
+            
+            // Get the current student to check if year is actually changing (promotion)
+            const currentStudent = await Student.findById(req.params.id);
+            
+            if (currentStudent) {
+                console.log(`🔄 Checking promotion: Current Year=${currentStudent.year}, New Year=${year}, Course=${currentStudent.course}`);
+                
+                if (currentStudent.year !== year) {
+                    // Student is being promoted to a new year
+                    console.log(`📚 Student ${currentStudent.admissionNumber} is being promoted from Year ${currentStudent.year} to Year ${year}`);
+                    
+                    // Map course code to program name
+                    const courseToProgram = {
+                        'applied_biology_6': 'Applied Biology Level 6',
+                        'analytical_chemistry_6': 'Analytical Chemistry Level 6',
+                        'science_lab_technology_5': 'Science Lab Technology Level 5',
+                        'science_laboratory_technology_5': 'Science Lab Technology Level 5',
+                        'general_agriculture_4': 'General Agriculture Level 4',
+                        'sustainable_agriculture_5': 'Sustainable Agriculture Level 5',
+                        'building_construction_4': 'Building Construction Level 4',
+                        'building_construction_5': 'Building Construction Level 5',
+                        'plumbing_4': 'Plumbing Level 4',
+                        'plumbing_5': 'Plumbing Level 5',
+                        'electrical_engineering_4': 'Electrical Engineering Level 4',
+                        'electrical_engineering_5': 'Electrical Engineering Level 5',
+                        'electrical_engineering_6': 'Electrical Engineering Level 6',
+                        'automotive_engineering_5': 'Automotive Engineering Level 5',
+                        'automotive_engineering_6': 'Automotive Engineering Level 6',
+                        'hospitality_management_5': 'Hospitality Management Level 5',
+                        'hospitality_management_6': 'Hospitality Management Level 6',
+                        'food_beverage_production_management_5': 'Food & Beverage Production Management Level 5',
+                        'food_beverage_production_management_6': 'Food & Beverage Production Management Level 6',
+                        'business_management_6': 'Business Management Level 6',
+                        'supply_chain_management_6': 'Supply Chain Management Level 6',
+                        'human_resource_management_6': 'Human Resource Management Level 6',
+                        'journalism_mass_communication_6': 'Journalism & Mass Communication Level 6',
+                        'information_communication_technology_6': 'Information Communication Technology Level 6',
+                        'information_technology_5': 'Information Technology Level 5',
+                        'computer_science_6': 'Computer Science Level 6'
+                    };
+                    
+                    const programName = courseToProgram[currentStudent.course];
+                    console.log(`🔍 Looking for program: ${programName} for course: ${currentStudent.course}`);
+                    
+                    // Get the program cost for their course
+                    const program = programName ? await Program.findOne({ programName }) : null;
+                    
+                    if (program) {
+                        console.log(`✅ Program found: ${program.programName}, Cost: KES ${program.programCost}`);
+                        
+                        if (program.programCost && program.programCost > 0) {
+                            // Add the new year's cost to their existing balance
+                            const existingBalance = currentStudent.balance || 0;
+                            const newBalance = existingBalance + program.programCost;
+                            updateData.balance = newBalance;
+                            
+                            console.log(`💰 Adding program cost KES ${program.programCost.toLocaleString()} to existing balance KES ${existingBalance.toLocaleString()}`);
+                            console.log(`💳 New balance will be: KES ${newBalance.toLocaleString()}`);
+                        } else {
+                            console.warn(`⚠️ Program cost is not set or is zero for ${program.programName}`);
+                        }
+                    } else {
+                        console.warn(`⚠️ Program not found for course: ${currentStudent.course} (mapped to: ${programName})`);
+                    }
+                } else {
+                    console.log(`ℹ️ Year not changed (both are ${year}), no balance update needed`);
+                }
+            }
+        }
 
         const student = await Student.findByIdAndUpdate(
             req.params.id,
@@ -3746,26 +3908,60 @@ app.post('/api/tools/upload', upload.single('file'), async (req, res) => {
             return res.status(400).json({ message: 'Either unitId or commonUnitId is required' });
         }
 
-        // Move file to correct folder based on toolType
-        const correctFolder = path.join(uploadsDir, 'tools-of-trade', toolType);
-        if (!fs.existsSync(correctFolder)) {
-            fs.mkdirSync(correctFolder, { recursive: true });
+        let filePath, s3Key, s3Bucket, storageType;
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const extension = path.extname(req.file.originalname);
+        const fileName = `file-${uniqueSuffix}${extension}`;
+
+        // Check if S3 is configured
+        if (isS3Configured()) {
+            // Upload to S3
+            console.log('📤 Uploading to S3...');
+            const folder = `tools-of-trade/${toolType}`;
+            const s3Result = await uploadToS3(
+                req.file.buffer, 
+                fileName, 
+                req.file.mimetype, 
+                folder
+            );
+            
+            s3Key = s3Result.key;
+            s3Bucket = s3Result.bucket;
+            filePath = s3Result.location; // Store S3 URL as filePath for backward compatibility
+            storageType = 's3';
+            
+            console.log('✅ File uploaded to S3:', s3Key);
+        } else {
+            // Fallback to local storage
+            console.log('💾 S3 not configured, using local storage...');
+            const correctFolder = path.join(uploadsDir, 'tools-of-trade', toolType);
+            if (!fs.existsSync(correctFolder)) {
+                fs.mkdirSync(correctFolder, { recursive: true });
+            }
+            
+            const oldPath = req.file.path;
+            const newPath = path.join(correctFolder, fileName);
+            
+            // Move file to correct location
+            fs.renameSync(oldPath, newPath);
+            
+            filePath = newPath;
+            storageType = 'local';
+            
+            console.log('✅ File saved locally:', filePath);
         }
-        
-        const oldPath = req.file.path;
-        const newPath = path.join(correctFolder, req.file.filename);
-        
-        // Move file to correct location
-        fs.renameSync(oldPath, newPath);
 
         const toolSubmission = new ToolsOfTrade({
             trainerId,
             unitId: unitId || null,
             commonUnitId: commonUnitId || null,
             toolType,
-            fileName: req.file.filename,
+            fileName: fileName,
             originalFileName: req.file.originalname,
-            filePath: newPath,
+            filePath: filePath,
+            s3Key: s3Key || null,
+            s3Bucket: s3Bucket || null,
+            storageType: storageType,
             fileSize: req.file.size,
             mimeType: req.file.mimetype,
             academicYear,
@@ -3779,7 +3975,7 @@ app.post('/api/tools/upload', upload.single('file'), async (req, res) => {
             recipientId: 'hod', // This should be the actual HOD ID
             recipientType: 'hod',
             title: 'New Tools of Trade Submission',
-            message: `New ${toolType.replace('_', ' ')} submitted by trainer`,
+            message: `New ${toolType.replace(/_/g, ' ')} submitted by trainer`,
             type: 'tool_request',
             relatedId: toolSubmission._id.toString(),
             priority: 'medium'
@@ -3789,19 +3985,23 @@ app.post('/api/tools/upload', upload.single('file'), async (req, res) => {
 
         res.json({
             success: true,
-            message: 'File uploaded successfully',
+            message: `File uploaded successfully to ${storageType === 's3' ? 'S3' : 'local storage'}`,
             data: {
                 id: toolSubmission._id,
                 fileName: toolSubmission.fileName,
                 originalFileName: toolSubmission.originalFileName,
                 fileSize: toolSubmission.fileSize,
                 toolType: toolSubmission.toolType,
-                status: toolSubmission.status
+                status: toolSubmission.status,
+                storageType: storageType
             }
         });
     } catch (error) {
-        console.error('Error uploading file:', error);
-        res.status(500).json({ message: 'Error uploading file' });
+        console.error('❌ Error uploading file:', error);
+        res.status(500).json({ 
+            message: 'Error uploading file', 
+            error: error.message 
+        });
     }
 });
 
@@ -3927,6 +4127,43 @@ app.patch('/api/tools/:toolId/status', async (req, res) => {
     }
 });
 
+// Get presigned URL for downloading a file from S3
+app.get('/api/tools/:toolId/download', async (req, res) => {
+    try {
+        const { toolId } = req.params;
+
+        const tool = await ToolsOfTrade.findById(toolId);
+        if (!tool) {
+            return res.status(404).json({ message: 'Tool not found' });
+        }
+
+        // If stored in S3, generate presigned URL
+        if (tool.storageType === 's3' && tool.s3Key) {
+            const presignedUrl = await getPresignedUrl(tool.s3Key, 3600); // 1 hour expiry
+            res.json({
+                success: true,
+                url: presignedUrl,
+                fileName: tool.originalFileName,
+                storageType: 's3'
+            });
+        } else {
+            // Return local file path for local storage
+            res.json({
+                success: true,
+                url: `/uploads/${path.relative(uploadsDir, tool.filePath).replace(/\\/g, '/')}`,
+                fileName: tool.originalFileName,
+                storageType: 'local'
+            });
+        }
+    } catch (error) {
+        console.error('❌ Error getting download URL:', error);
+        res.status(500).json({ 
+            message: 'Error getting download URL',
+            error: error.message 
+        });
+    }
+});
+
 // Delete tool submission
 app.delete('/api/tools/:toolId', async (req, res) => {
     try {
@@ -3937,9 +4174,15 @@ app.delete('/api/tools/:toolId', async (req, res) => {
             return res.status(404).json({ message: 'Tool not found' });
         }
 
-        // Delete the file from filesystem
-        if (fs.existsSync(tool.filePath)) {
+        // Delete the file from storage
+        if (tool.storageType === 's3' && tool.s3Key) {
+            // Delete from S3
+            await deleteFromS3(tool.s3Key);
+            console.log('✅ File deleted from S3:', tool.s3Key);
+        } else if (tool.filePath && fs.existsSync(tool.filePath)) {
+            // Delete from local filesystem
             fs.unlinkSync(tool.filePath);
+            console.log('✅ File deleted from local storage:', tool.filePath);
         }
 
         await ToolsOfTrade.findByIdAndDelete(toolId);
@@ -3949,8 +4192,11 @@ app.delete('/api/tools/:toolId', async (req, res) => {
             message: 'Tool submission deleted successfully'
         });
     } catch (error) {
-        console.error('Error deleting tool:', error);
-        res.status(500).json({ message: 'Error deleting tool' });
+        console.error('❌ Error deleting tool:', error);
+        res.status(500).json({ 
+            message: 'Error deleting tool',
+            error: error.message 
+        });
     }
 });
 
@@ -4474,9 +4720,885 @@ app.patch('/api/ilo/applications/:type/:applicationId/status', async (req, res) 
     }
 });
 
-app.use(express.static(path.join(__dirname, 'src', 'components')));
+// ========================================
+// CLEAN URL ROUTES (Hide .html extensions)
+// ========================================
 
-const PORT = process.env.PORT || 5502;
+// Admin routes
+app.get('/admin/login', (req, res) => {
+    res.sendFile(path.join(__dirname, 'src', 'admin-login.html'));
+});
+
+app.get('/admin/dashboard', (req, res) => {
+    res.sendFile(path.join(__dirname, 'src', 'components', 'admin', 'AdminDashboard.html'));
+});
+
+// Student routes
+app.get('/student/login', (req, res) => {
+    res.sendFile(path.join(__dirname, 'src', 'login.html'));
+});
+
+app.get('/student/portal', (req, res) => {
+    res.sendFile(path.join(__dirname, 'src', 'components', 'student', 'StudentPortalTailwind.html'));
+});
+
+// Trainer routes
+app.get('/trainer/login', (req, res) => {
+    res.sendFile(path.join(__dirname, 'src', 'components', 'trainer', 'TrainerLogin.html'));
+});
+
+app.get('/trainer/dashboard', (req, res) => {
+    res.sendFile(path.join(__dirname, 'src', 'components', 'trainer', 'TrainerDashboard.html'));
+});
+
+// Finance routes (using dashboard as login for now)
+app.get('/finance/login', (req, res) => {
+    res.redirect('/finance/dashboard');
+});
+
+app.get('/finance/dashboard', (req, res) => {
+    res.sendFile(path.join(__dirname, 'src', 'components', 'finance', 'FinanceDashboard.html'));
+});
+
+// Registrar routes (using dashboard as login for now)
+app.get('/registrar/login', (req, res) => {
+    res.redirect('/registrar/dashboard');
+});
+
+app.get('/registrar/dashboard', (req, res) => {
+    res.sendFile(path.join(__dirname, 'src', 'components', 'registrar', 'RegistrarDashboardNew.html'));
+});
+
+// Dean routes (using dashboard as login for now)
+app.get('/dean/login', (req, res) => {
+    res.redirect('/dean/dashboard');
+});
+
+app.get('/dean/dashboard', (req, res) => {
+    res.sendFile(path.join(__dirname, 'src', 'components', 'dean', 'DeanDashboard.html'));
+});
+
+// HOD routes
+app.get('/hod/login', (req, res) => {
+    res.sendFile(path.join(__dirname, 'src', 'components', 'hod', 'HODLogin.html'));
+});
+
+app.get('/hod/dashboard', (req, res) => {
+    res.sendFile(path.join(__dirname, 'src', 'components', 'hod', 'HODDashboard.html'));
+});
+
+// Root redirect to student login
+app.get('/', (req, res) => {
+    res.redirect('/student/login');
+});
+
+// Serve static files after routes
+app.use(express.static(path.join(__dirname, 'src', 'components')));
+app.use(express.static('.'));
+
+const PORT = config.port;
+// ========================================
+// STUDENT UPLOADS API ENDPOINTS
+// ========================================
+
+// Upload student file (profile, KCSE, KCPE, assessment, practical)
+app.post('/api/student-uploads', upload.single('file'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'No file uploaded' });
+        }
+
+        const {
+            studentId,
+            uploadType,
+            unitId,
+            unitCode,
+            unitName,
+            assessmentNumber,
+            practicalNumber,
+            academicYear,
+            semester
+        } = req.body;
+
+        // Validate required fields
+        if (!studentId || !uploadType || !academicYear || !semester) {
+            return res.status(400).json({ message: 'Missing required fields' });
+        }
+
+        // Get student details
+        const student = await Student.findOne({ admissionNumber: studentId });
+        if (!student) {
+            return res.status(404).json({ message: 'Student not found' });
+        }
+
+        // Validate unit-related uploads
+        if (['assessment', 'practical'].includes(uploadType)) {
+            if (!unitId || !unitCode) {
+                return res.status(400).json({ message: 'Unit information required for this upload type' });
+            }
+
+            // Check if student is registered for this unit
+            const registration = await StudentUnitRegistration.findOne({
+                studentId,
+                unitId,
+                status: 'registered',
+                isActive: true,
+                academicYear,
+                semester
+            });
+
+            if (!registration) {
+                return res.status(403).json({ message: 'You are not registered for this unit' });
+            }
+
+            // Check if unit is common (should not allow uploads for common units)
+            if (registration.unitType === 'common') {
+                return res.status(403).json({ message: 'Cannot upload assessments for common units' });
+            }
+        }
+
+        // Validate assessment number
+        if (uploadType === 'assessment') {
+            if (!assessmentNumber || assessmentNumber < 1 || assessmentNumber > 3) {
+                return res.status(400).json({ message: 'Invalid assessment number (must be 1-3)' });
+            }
+        }
+
+        // Validate practical number
+        if (uploadType === 'practical') {
+            if (!practicalNumber || practicalNumber < 1 || practicalNumber > 3) {
+                return res.status(400).json({ message: 'Invalid practical number (must be 1-3)' });
+            }
+        }
+
+            // Check for existing upload (to replace)
+            let existingUpload = null;
+            const searchCriteria = {
+                studentId,
+                uploadType,
+                status: 'uploaded'
+            };
+
+            // For profile/results, only check by studentId and uploadType
+            // For assessments/practicals, also check unit and semester
+            if (uploadType === 'assessment') {
+                searchCriteria.unitId = unitId;
+                searchCriteria.assessmentNumber = assessmentNumber;
+                searchCriteria.academicYear = academicYear;
+                searchCriteria.semester = semester;
+            } else if (uploadType === 'practical') {
+                searchCriteria.unitId = unitId;
+                searchCriteria.practicalNumber = practicalNumber;
+                searchCriteria.academicYear = academicYear;
+                searchCriteria.semester = semester;
+            }
+            // For profile_photo, kcse_results, kcpe_results - don't filter by academic year/semester
+
+            existingUpload = await StudentUpload.findOne(searchCriteria);
+
+            console.log('Existing upload check:', searchCriteria, 'Found:', !!existingUpload);
+
+        // If replacing existing, mark old as replaced FIRST to avoid duplicate key error
+        if (existingUpload) {
+            existingUpload.status = 'replaced';
+            existingUpload.updatedAt = Date.now();
+            await existingUpload.save();
+            console.log('✅ Marked old upload as replaced:', existingUpload._id);
+        }
+
+        // Upload to S3
+        const timestamp = Date.now();
+        const month = new Date().getMonth() + 1;
+        const year = new Date().getFullYear();
+        const extension = path.extname(req.file.originalname);
+        const fileName = `${timestamp}_${req.file.originalname}`;
+
+        let folderPath;
+        if (['profile_photo', 'kcse_results', 'kcpe_results'].includes(uploadType)) {
+            folderPath = `cibec/${uploadType}/${studentId}/${year}/${month.toString().padStart(2, '0')}`;
+        } else {
+            folderPath = `cibec/${unitId}/${studentId}/${uploadType}/${year}/${month.toString().padStart(2, '0')}`;
+        }
+
+        const s3Result = await uploadToS3(
+            req.file.buffer,
+            fileName,
+            req.file.mimetype,
+            folderPath
+        );
+
+        // Create new upload record
+        const newUpload = new StudentUpload({
+            studentId,
+            studentName: student.name,
+            admissionNumber: student.admissionNumber,
+            course: student.course,
+            department: student.department,
+            year: student.year,
+            uploadType,
+            unitId: unitId || null,
+            unitCode: unitCode || null,
+            unitName: unitName || null,
+            assessmentNumber: assessmentNumber || null,
+            practicalNumber: practicalNumber || null,
+            fileName: fileName,
+            originalFileName: req.file.originalname,
+            s3Key: s3Result.key,
+            s3Bucket: s3Result.bucket,
+            fileSize: req.file.size,
+            mimeType: req.file.mimetype,
+            status: 'uploaded',
+            version: existingUpload ? existingUpload.version + 1 : 1,
+            replaces: existingUpload ? existingUpload._id : null,
+            academicYear,
+            semester
+        });
+
+        await newUpload.save();
+        console.log('✅ Saved new upload:', newUpload._id, 'version:', newUpload.version);
+
+        // Create audit log
+        await AuditLog.logAction({
+            userId: studentId,
+            userType: 'student',
+            action: existingUpload ? 'replace' : 'upload',
+            fileId: newUpload._id,
+            studentId,
+            details: {
+                uploadType,
+                unitCode,
+                assessmentNumber,
+                practicalNumber,
+                fileName: req.file.originalname,
+                fileSize: req.file.size,
+                replaced: !!existingUpload
+            }
+        });
+
+        // Notify CIBEC
+        await Notification.create({
+            recipientId: 'cibec',
+            recipientType: 'cibec',
+            title: `New ${uploadType.replace(/_/g, ' ')} Upload`,
+            message: `${student.name} (${student.admissionNumber}) uploaded ${uploadType.replace(/_/g, ' ')}${unitName ? ` for ${unitName}` : ''}`,
+            type: 'student_upload',
+            relatedId: newUpload._id.toString(),
+            priority: 'medium'
+        });
+
+        res.json({
+            success: true,
+            message: existingUpload ? 'File replaced successfully' : 'File uploaded successfully',
+            data: {
+                id: newUpload._id,
+                uploadType: newUpload.uploadType,
+                fileName: newUpload.originalFileName,
+                status: newUpload.status,
+                version: newUpload.version,
+                uploadedAt: newUpload.uploadedAt
+            }
+        });
+
+    } catch (error) {
+        console.error('❌ Error uploading student file:', error);
+        res.status(500).json({
+            message: 'Error uploading file',
+            error: error.message
+        });
+    }
+});
+
+// Get student's uploads
+app.get('/api/student-uploads/:studentId', async (req, res) => {
+    try {
+        const { studentId } = req.params;
+        const { uploadType, status = 'uploaded' } = req.query;
+
+        const query = { studentId, status };
+        if (uploadType) query.uploadType = uploadType;
+
+        const uploads = await StudentUpload.find(query)
+            .populate('unitId')
+            .sort({ uploadedAt: -1 });
+
+        // Log view action
+        await AuditLog.logAction({
+            userId: studentId,
+            userType: 'student',
+            action: 'view',
+            studentId,
+            details: { uploadType, status, count: uploads.length }
+        });
+
+        res.json(uploads);
+    } catch (error) {
+        console.error('Error fetching student uploads:', error);
+        res.status(500).json({ message: 'Error fetching uploads' });
+    }
+});
+
+// Get student's unit uploads
+app.get('/api/student-uploads/:studentId/unit/:unitId', async (req, res) => {
+    try {
+        const { studentId, unitId } = req.params;
+
+        const uploads = await StudentUpload.find({
+            studentId,
+            unitId,
+            status: 'uploaded'
+        }).sort({ uploadType: 1, assessmentNumber: 1 });
+
+        res.json(uploads);
+    } catch (error) {
+        console.error('Error fetching unit uploads:', error);
+        res.status(500).json({ message: 'Error fetching unit uploads' });
+    }
+});
+
+// Get download URL for student upload
+app.get('/api/student-uploads/:uploadId/download', async (req, res) => {
+    try {
+        const { uploadId } = req.params;
+        const { userId, userType } = req.query;
+
+        const upload = await StudentUpload.findById(uploadId);
+        if (!upload) {
+            return res.status(404).json({ message: 'Upload not found' });
+        }
+
+        // Generate presigned URL
+        const presignedUrl = await getPresignedUrl(upload.s3Key, 3600);
+
+        // Log download action
+        await AuditLog.logAction({
+            userId: userId || upload.studentId,
+            userType: userType || 'student',
+            action: 'download',
+            fileId: upload._id,
+            studentId: upload.studentId,
+            details: {
+                fileName: upload.originalFileName,
+                uploadType: upload.uploadType
+            }
+        });
+
+        res.json({
+            success: true,
+            url: presignedUrl,
+            fileName: upload.originalFileName,
+            uploadType: upload.uploadType
+        });
+    } catch (error) {
+        console.error('❌ Error getting download URL:', error);
+        res.status(500).json({
+            message: 'Error getting download URL',
+            error: error.message
+        });
+    }
+});
+
+// Delete student upload
+app.delete('/api/student-uploads/:uploadId', async (req, res) => {
+    try {
+        const { uploadId } = req.params;
+        const { studentId } = req.query;
+
+        const upload = await StudentUpload.findById(uploadId);
+        if (!upload) {
+            return res.status(404).json({ message: 'Upload not found' });
+        }
+
+        // Verify ownership
+        if (upload.studentId !== studentId) {
+            return res.status(403).json({ message: 'Unauthorized' });
+        }
+
+        // Delete from S3
+        await deleteFromS3(upload.s3Key);
+
+        // Mark as deleted in DB (soft delete)
+        upload.status = 'deleted';
+        upload.updatedAt = Date.now();
+        await upload.save();
+
+        // Log delete action
+        await AuditLog.logAction({
+            userId: studentId,
+            userType: 'student',
+            action: 'delete',
+            fileId: upload._id,
+            studentId,
+            details: {
+                fileName: upload.originalFileName,
+                uploadType: upload.uploadType
+            }
+        });
+
+        res.json({
+            success: true,
+            message: 'File deleted successfully'
+        });
+    } catch (error) {
+        console.error('❌ Error deleting upload:', error);
+        res.status(500).json({
+            message: 'Error deleting file',
+            error: error.message
+        });
+    }
+});
+
+// ========================================
+// CIBEC PORTAL API ENDPOINTS
+// ========================================
+
+// Get all uploads with filters (CIBEC)
+app.get('/api/cibec/uploads', async (req, res) => {
+    try {
+        const filters = {
+            course: req.query.course,
+            department: req.query.department,
+            unitCode: req.query.unitCode,
+            year: req.query.year,
+            courseLevel: req.query.courseLevel,
+            uploadType: req.query.uploadType,
+            academicYear: req.query.academicYear,
+            semester: req.query.semester,
+            studentId: req.query.studentId,
+            admissionNumber: req.query.admissionNumber,
+            status: req.query.status || 'uploaded'
+        };
+
+        const uploads = await StudentUpload.getCIBECUploads(filters);
+
+        // Log search action
+        await AuditLog.logAction({
+            userId: req.query.cibecUserId || 'cibec',
+            userType: 'cibec',
+            action: 'search',
+            details: { filters, resultCount: uploads.length }
+        });
+
+        res.json({
+            success: true,
+            count: uploads.length,
+            uploads
+        });
+    } catch (error) {
+        console.error('Error fetching CIBEC uploads:', error);
+        res.status(500).json({ message: 'Error fetching uploads' });
+    }
+});
+
+// Get CIBEC statistics
+app.get('/api/cibec/statistics', async (req, res) => {
+    try {
+        const { academicYear, semester } = req.query;
+
+        const query = academicYear && semester
+            ? { academicYear, semester, status: 'uploaded' }
+            : { status: 'uploaded' };
+
+        const [
+            totalUploads,
+            byType,
+            byDepartment,
+            byCourse,
+            recentUploads
+        ] = await Promise.all([
+            StudentUpload.countDocuments(query),
+            StudentUpload.aggregate([
+                { $match: query },
+                { $group: { _id: '$uploadType', count: { $sum: 1 } } }
+            ]),
+            StudentUpload.aggregate([
+                { $match: query },
+                { $group: { _id: '$department', count: { $sum: 1 } } }
+            ]),
+            StudentUpload.aggregate([
+                { $match: query },
+                { $group: { _id: '$course', count: { $sum: 1 } } }
+            ]),
+            StudentUpload.find(query)
+                .sort({ uploadedAt: -1 })
+                .limit(10)
+                .populate('unitId')
+        ]);
+
+        res.json({
+            success: true,
+            statistics: {
+                totalUploads,
+                byType,
+                byDepartment,
+                byCourse,
+                recentUploads
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching CIBEC statistics:', error);
+        res.status(500).json({ message: 'Error fetching statistics' });
+    }
+});
+
+// Get student's all uploads (CIBEC view)
+app.get('/api/cibec/student/:studentId/uploads', async (req, res) => {
+    try {
+        const { studentId } = req.params;
+        const { cibecUserId } = req.query;
+
+        const student = await Student.findOne({ admissionNumber: studentId });
+        if (!student) {
+            return res.status(404).json({ message: 'Student not found' });
+        }
+
+        const uploads = await StudentUpload.find({
+            studentId,
+            status: 'uploaded'
+        })
+            .populate('unitId')
+            .sort({ uploadedAt: -1 });
+
+        // Log view action
+        await AuditLog.logAction({
+            userId: cibecUserId || 'cibec',
+            userType: 'cibec',
+            action: 'view',
+            studentId,
+            details: {
+                studentName: student.name,
+                admissionNumber: student.admissionNumber,
+                uploadCount: uploads.length
+            }
+        });
+
+        res.json({
+            success: true,
+            student: {
+                studentId: student.admissionNumber,
+                name: student.name,
+                course: student.course,
+                department: student.department,
+                year: student.year
+            },
+            uploads
+        });
+    } catch (error) {
+        console.error('Error fetching student uploads for CIBEC:', error);
+        res.status(500).json({ message: 'Error fetching student uploads' });
+    }
+});
+
+// Get audit logs (CIBEC)
+app.get('/api/cibec/audit-logs', async (req, res) => {
+    try {
+        const { dateFrom, dateTo, action, userId, limit = 100 } = req.query;
+
+        const query = {};
+        if (dateFrom || dateTo) {
+            query.timestamp = {};
+            if (dateFrom) query.timestamp.$gte = new Date(dateFrom);
+            if (dateTo) query.timestamp.$lte = new Date(dateTo);
+        }
+        if (action) query.action = action;
+        if (userId) query.userId = userId;
+
+        const logs = await AuditLog.find(query)
+            .sort({ timestamp: -1 })
+            .limit(parseInt(limit))
+            .populate('fileId');
+
+        res.json({
+            success: true,
+            count: logs.length,
+            logs
+        });
+    } catch (error) {
+        console.error('Error fetching audit logs:', error);
+        res.status(500).json({ message: 'Error fetching audit logs' });
+    }
+});
+
+// ========================================
+// DEAN PORTAL API ENDPOINTS
+// ========================================
+
+// Get all students for Dean Portal
+app.get('/api/dean/students', async (req, res) => {
+    try {
+        const { course, department, year, intake, search } = req.query;
+        
+        let query = {};
+        if (course) query.course = course;
+        if (department) query.department = department;
+        if (year) query.year = parseInt(year);
+        if (intake) query.intake = intake;
+        
+        if (search) {
+            query.$or = [
+                { name: { $regex: search, $options: 'i' } },
+                { admissionNumber: { $regex: search, $options: 'i' } },
+                { idNumber: { $regex: search, $options: 'i' } },
+                { email: { $regex: search, $options: 'i' } }
+            ];
+        }
+        
+        const students = await Student.find(query)
+            .select('-password')
+            .sort({ name: 1 });
+        
+        res.json(students);
+    } catch (error) {
+        console.error('Error fetching students for dean:', error);
+        res.status(500).json({ message: 'Error fetching students' });
+    }
+});
+
+// Add note to student
+app.post('/api/dean/students/:studentId/notes', async (req, res) => {
+    try {
+        const { studentId } = req.params;
+        const { noteType, title, content, category, priority, createdBy } = req.body;
+        
+        if (!noteType || !title || !content || !createdBy) {
+            return res.status(400).json({ message: 'Missing required fields' });
+        }
+        
+        const student = await Student.findOne({ admissionNumber: studentId });
+        if (!student) {
+            return res.status(404).json({ message: 'Student not found' });
+        }
+        
+        const note = new StudentNote({
+            studentId,
+            studentName: student.name,
+            admissionNumber: student.admissionNumber,
+            noteType,
+            title,
+            content,
+            category: category || 'general',
+            priority: priority || 'medium',
+            createdBy
+        });
+        
+        await note.save();
+        
+        // If public note, create notification
+        if (noteType === 'public') {
+            await Notification.create({
+                recipientId: studentId,
+                recipientType: 'student',
+                title: `New Note: ${title}`,
+                message: content,
+                type: 'general',
+                relatedId: note._id.toString(),
+                priority: priority || 'medium'
+            });
+        }
+        
+        res.json({
+            success: true,
+            message: 'Note added successfully',
+            note
+        });
+    } catch (error) {
+        console.error('Error adding student note:', error);
+        res.status(500).json({ message: 'Error adding note', error: error.message });
+    }
+});
+
+// Get student notes
+app.get('/api/dean/students/:studentId/notes', async (req, res) => {
+    try {
+        const { studentId } = req.params;
+        const { noteType } = req.query;
+        
+        const notes = await StudentNote.getStudentNotes(studentId, noteType);
+        res.json(notes);
+    } catch (error) {
+        console.error('Error fetching student notes:', error);
+        res.status(500).json({ message: 'Error fetching notes' });
+    }
+});
+
+// Get student's public notes (for student portal)
+app.get('/api/students/:studentId/public-notes', async (req, res) => {
+    try {
+        const { studentId } = req.params;
+        
+        const notes = await StudentNote.find({
+            studentId,
+            noteType: 'public'
+        }).sort({ createdAt: -1 });
+        
+        res.json({ notes });
+    } catch (error) {
+        console.error('Error fetching public notes:', error);
+        res.status(500).json({ message: 'Error fetching public notes' });
+    }
+});
+
+// Mark note as read
+app.put('/api/students/:studentId/notes/:noteId/read', async (req, res) => {
+    try {
+        const { noteId } = req.params;
+        
+        const note = await StudentNote.findById(noteId);
+        if (!note) {
+            return res.status(404).json({ message: 'Note not found' });
+        }
+        
+        note.isRead = true;
+        note.readAt = new Date();
+        await note.save();
+        
+        res.json({ success: true, message: 'Note marked as read' });
+    } catch (error) {
+        console.error('Error marking note as read:', error);
+        res.status(500).json({ message: 'Error updating note' });
+    }
+});
+
+// ========================================
+// PAYSLIP API ENDPOINTS
+// ========================================
+
+// Generate payslips (Finance admin)
+app.post('/api/payslips/generate', async (req, res) => {
+    try {
+        const { trainerIds, month, year, amount, description, generatedBy } = req.body;
+        
+        if (!trainerIds || !month || !year || !amount || !generatedBy) {
+            return res.status(400).json({ message: 'Missing required fields' });
+        }
+        
+        const period = `${month} ${year}`;
+        const payslips = [];
+        
+        for (const trainerId of trainerIds) {
+            // Find trainer by _id (MongoDB ObjectId)
+            const trainer = await Trainer.findById(trainerId);
+            if (!trainer) {
+                console.warn(`Trainer ${trainerId} not found`);
+                continue;
+            }
+            
+            // Use trainer's email as the unique trainerId for payslip
+            const trainerIdentifier = trainer.email;
+            
+            // Check if payslip already exists for this period
+            const existing = await Payslip.findOne({ trainerId: trainerIdentifier, month, year });
+            if (existing) {
+                console.warn(`Payslip already exists for ${trainer.name} for ${period}`);
+                continue;
+            }
+            
+            const payslip = new Payslip({
+                trainerId: trainerIdentifier,
+                trainerName: trainer.name,
+                email: trainer.email,
+                department: trainer.department,
+                month,
+                year,
+                amount,
+                period,
+                description: description || 'Monthly Salary',
+                generatedBy
+            });
+            
+            await payslip.save();
+            payslips.push(payslip);
+            
+            // Create notification for trainer (use email as recipientId)
+            await Notification.create({
+                recipientId: trainer.email,
+                recipientType: 'trainer',
+                title: 'New Payslip Generated',
+                message: `Your payslip for ${period} has been generated. Amount: KES ${amount.toLocaleString()}`,
+                type: 'payment',
+                relatedId: payslip._id.toString(),
+                priority: 'medium'
+            });
+        }
+        
+        res.json({
+            success: true,
+            message: `Generated ${payslips.length} payslips`,
+            payslips
+        });
+    } catch (error) {
+        console.error('Error generating payslips:', error);
+        res.status(500).json({ message: 'Error generating payslips', error: error.message });
+    }
+});
+
+// Get trainer's payslips
+app.get('/api/trainers/:trainerId/payslips', async (req, res) => {
+    try {
+        const { trainerId } = req.params;
+        
+        // Find trainer by _id to get their email
+        const trainer = await Trainer.findById(trainerId);
+        if (!trainer) {
+            return res.status(404).json({ message: 'Trainer not found' });
+        }
+        
+        // Fetch payslips using trainer's email (which is now the trainerId in payslips)
+        const payslips = await Payslip.getTrainerPayslips(trainer.email);
+        res.json({ payslips });
+    } catch (error) {
+        console.error('Error fetching trainer payslips:', error);
+        res.status(500).json({ message: 'Error fetching payslips' });
+    }
+});
+
+// Get all payslips (Finance admin)
+app.get('/api/payslips', async (req, res) => {
+    try {
+        const { month, year } = req.query;
+        
+        let payslips;
+        if (month && year) {
+            payslips = await Payslip.getPayslipsByPeriod(month, parseInt(year));
+        } else {
+            payslips = await Payslip.find().sort({ createdAt: -1 });
+        }
+        
+        res.json({ payslips });
+    } catch (error) {
+        console.error('Error fetching payslips:', error);
+        res.status(500).json({ message: 'Error fetching payslips' });
+    }
+});
+
+// Mark payslip as viewed
+app.put('/api/payslips/:payslipId/view', async (req, res) => {
+    try {
+        const { payslipId } = req.params;
+        
+        const payslip = await Payslip.findById(payslipId);
+        if (!payslip) {
+            return res.status(404).json({ message: 'Payslip not found' });
+        }
+        
+        payslip.isViewed = true;
+        payslip.viewedAt = new Date();
+        payslip.status = 'viewed';
+        await payslip.save();
+        
+        res.json({ success: true, message: 'Payslip marked as viewed' });
+    } catch (error) {
+        console.error('Error marking payslip as viewed:', error);
+        res.status(500).json({ message: 'Error updating payslip' });
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
+    console.log(`🔐 Admin Portal: http://localhost:${PORT}/admin/login`);
+    console.log(`👨‍🎓 Student Portal: http://localhost:${PORT}/student/login`);
+    console.log(`👨‍🏫 Trainer Portal: http://localhost:${PORT}/trainer/login`);
+    console.log(`💰 Finance Portal: http://localhost:${PORT}/finance/dashboard`);
+    console.log(`📝 Registrar Portal: http://localhost:${PORT}/registrar/dashboard`);
+    console.log(`🎓 Dean Portal: http://localhost:${PORT}/dean/dashboard`);
+    console.log(`🏢 HOD Portal: http://localhost:${PORT}/hod/dashboard`);
 });

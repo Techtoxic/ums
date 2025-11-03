@@ -232,33 +232,32 @@
         // Download tool function
         async function downloadTool(toolId) {
             try {
-                // Find the tool in the current tools data
-                const tool = toolsData.find(t => t._id === toolId);
-                if (!tool) {
-                    throw new Error('Tool not found in current data');
+                // Get download URL from API (supports both S3 and local storage)
+                const response = await fetch(`http://localhost:5502/api/tools/${toolId}/download`);
+                if (!response.ok) {
+                    throw new Error(`Failed to get download URL: ${response.status}`);
                 }
+                
+                const data = await response.json();
+                if (!data.success || !data.url) {
+                    throw new Error('Invalid download URL received');
+                }
+                
+                console.log(`📥 Downloading file from ${data.storageType}:`, data.fileName);
                 
                 // Create download link
-                const downloadUrl = `http://localhost:5502/uploads/tools-of-trade/${tool.toolType}/${tool.fileName}`;
-                
-                // Test if the file exists first
-                const testResponse = await fetch(downloadUrl, { method: 'HEAD' });
-                if (!testResponse.ok) {
-                    throw new Error(`File not found: ${testResponse.status}`);
-                }
-                
                 const a = document.createElement('a');
-                a.href = downloadUrl;
-                a.download = tool.originalFileName;
+                a.href = data.url;
+                a.download = data.fileName;
                 a.target = '_blank';
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
                 
-                showToast('Download started', 'success');
+                showToast(`Download started (${data.storageType})`, 'success');
             } catch (error) {
-                console.error('Error downloading tool:', error);
-                showToast('Failed to download file', 'error');
+                console.error('❌ Error downloading tool:', error);
+                showToast('Failed to download file: ' + error.message, 'error');
             }
         }
 

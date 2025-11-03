@@ -8,6 +8,7 @@
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.0.0/fonts/remixicon.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -156,6 +157,12 @@
             <a href="#" onclick="showSection('tools-of-trade')" id="nav-tools-of-trade" class="nav-item flex items-center space-x-3 p-3 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-all duration-200">
                 <i class="ri-tools-line text-lg"></i>
                 <span class="sidebar-text font-medium">Tools of Trade</span>
+            </a>
+            
+            <a href="#" onclick="showSection('payslips')" id="nav-payslips" class="nav-item flex items-center space-x-3 p-3 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-all duration-200 relative">
+                <i class="ri-file-text-line text-lg"></i>
+                <span class="sidebar-text font-medium">My Payslips</span>
+                <span id="payslip-unread-badge" class="hidden absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">0</span>
             </a>
             
             <a href="#" onclick="showSection('notifications')" id="nav-notifications" class="nav-item flex items-center space-x-3 p-3 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-all duration-200 relative">
@@ -561,6 +568,46 @@
                                     <p class="text-gray-500 dark:text-gray-500">Upload your first tool of trade to get started.</p>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Payslips Section -->
+            <section id="section-payslips" class="content-section hidden">
+                <div class="space-y-6">
+                    <!-- Payslips Header -->
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+                                <div>
+                                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">My Payslips</h2>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">View and manage your salary payslips</p>
+                                </div>
+                                <button onclick="refreshPayslips()" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/80 transition-colors text-sm font-medium">
+                                    <i class="ri-refresh-line mr-2"></i>Refresh
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Loading State -->
+                        <div id="payslips-loading" class="hidden px-6 py-12 text-center">
+                            <i class="ri-loader-4-line text-4xl text-primary animate-spin mb-4"></i>
+                            <p class="text-gray-600 dark:text-gray-400">Loading payslips...</p>
+                        </div>
+                        
+                        <!-- Empty State -->
+                        <div id="payslips-empty" class="hidden px-6 py-12 text-center">
+                            <div class="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="ri-file-text-line text-2xl text-gray-400"></i>
+                            </div>
+                            <p class="text-gray-600 dark:text-gray-400 font-medium">No Payslips Yet</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-500 mt-2">Your payslips will appear here once generated</p>
+                        </div>
+                        
+                        <!-- Payslips List -->
+                        <div id="payslips-list" class="divide-y divide-gray-200 dark:divide-gray-700">
+                            <!-- Payslips will be loaded here dynamically -->
                         </div>
                     </div>
                 </div>

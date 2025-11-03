@@ -32,6 +32,19 @@ const toolsOfTradeSchema = new mongoose.Schema({
         type: String, 
         required: true 
     },
+    s3Key: {
+        type: String,
+        // S3 object key - required if using S3
+    },
+    s3Bucket: {
+        type: String,
+        // S3 bucket name
+    },
+    storageType: {
+        type: String,
+        enum: ['local', 's3'],
+        default: 'local'
+    },
     fileSize: { 
         type: Number, 
         required: true 

@@ -8,7 +8,7 @@ const notificationSchema = new mongoose.Schema({
     recipientType: { 
         type: String, 
         required: true,
-        enum: ['trainer', 'hod', 'student', 'deputy']
+        enum: ['trainer', 'hod', 'student', 'deputy', 'cibec', 'registrar', 'ilo', 'finance', 'admin']
     },
     title: { 
         type: String, 
@@ -21,7 +21,7 @@ const notificationSchema = new mongoose.Schema({
     type: { 
         type: String, 
         required: true,
-        enum: ['tool_request', 'tool_approved', 'tool_rejected', 'tool_revision_needed', 'general']
+        enum: ['tool_request', 'tool_approved', 'tool_rejected', 'tool_revision_needed', 'general', 'student_upload', 'payment', 'registration', 'system']
     },
     relatedId: { 
         type: String // ID of related tool request, assignment, etc.
@@ -53,6 +53,11 @@ notificationSchema.index({ createdAt: -1 });
 notificationSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 module.exports = mongoose.model('Notification', notificationSchema);
+
+
+
+
+
 
 
 

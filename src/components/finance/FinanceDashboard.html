@@ -185,6 +185,12 @@
                         </a>
                     </li>
                     <li>
+                        <a href="#" onclick="showSection('payslips')" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 hover:bg-slate-50 transition-colors">
+                            <i class="ri-file-text-line"></i>
+                            <span>Trainer Payslips</span>
+                        </a>
+                    </li>
+                    <li>
                         <a href="#" onclick="showSection('settings')" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 hover:bg-slate-50 transition-colors">
                             <i class="ri-settings-line"></i>
                             <span>Settings</span>
@@ -328,6 +334,7 @@
                                     <th class="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase">Department</th>
                                     <th class="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase">Year</th>
                                     <th class="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase">Intake</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase">Total Billed</th>
                                     <th class="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase">Total Paid</th>
                                     <th class="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase">Balance</th>
                                     <th class="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase">Action</th>
@@ -627,6 +634,156 @@
                 </div>
             </div>
 
+            <!-- Payslips Section -->
+            <div id="payslips-section" class="section hidden">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-2">Trainer Payslips</h2>
+                    <p class="text-slate-600 dark:text-slate-300">Generate and manage trainer payslips</p>
+                </div>
+                
+                <!-- Generate Payslip Form -->
+                <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 mb-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h3 class="text-lg font-semibold text-slate-800 dark:text-white mb-1">Generate New Payslip</h3>
+                            <p class="text-sm text-slate-600 dark:text-slate-300">Create payslips for all trainers for a specific month</p>
+                        </div>
+                    </div>
+                    
+                    <form id="generate-payslip-form" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label for="payslip-month" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                    Month
+                                </label>
+                                <select id="payslip-month" class="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white" required>
+                                    <option value="">Select Month</option>
+                                    <option value="01">January</option>
+                                    <option value="02">February</option>
+                                    <option value="03">March</option>
+                                    <option value="04">April</option>
+                                    <option value="05">May</option>
+                                    <option value="06">June</option>
+                                    <option value="07">July</option>
+                                    <option value="08">August</option>
+                                    <option value="09">September</option>
+                                    <option value="10">October</option>
+                                    <option value="11">November</option>
+                                    <option value="12">December</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label for="payslip-year" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                    Year
+                                </label>
+                                <select id="payslip-year" class="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white" required>
+                                    <option value="">Select Year</option>
+                                    <option value="2024">2024</option>
+                                    <option value="2025">2025</option>
+                                    <option value="2026">2026</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label for="payslip-amount" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                    Amount (KES)
+                                </label>
+                                <input type="number" id="payslip-amount" placeholder="e.g., 50000" class="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white" required>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label for="payslip-description" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                Description (Optional)
+                            </label>
+                            <textarea id="payslip-description" rows="2" placeholder="e.g., Monthly salary for January 2025" class="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white"></textarea>
+                        </div>
+                        
+                        <div class="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-700">
+                            <p class="text-sm text-slate-600 dark:text-slate-400">
+                                <i class="ri-information-line mr-1"></i>
+                                Payslips will be generated for all active trainers
+                            </p>
+                            <button type="submit" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors">
+                                <i class="ri-send-plane-fill mr-2"></i>Generate Payslips
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- Payslips History -->
+                <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h3 class="text-lg font-semibold text-slate-800 dark:text-white mb-1">Payslips History</h3>
+                            <p class="text-sm text-slate-600 dark:text-slate-300">View previously generated payslips</p>
+                        </div>
+                        <button onclick="refreshPayslips()" class="px-4 py-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors">
+                            <i class="ri-refresh-line mr-1"></i>Refresh
+                        </button>
+                    </div>
+                    
+                    <!-- Filter -->
+                    <div class="flex items-center gap-4 mb-4">
+                        <select id="filter-payslip-month" onchange="filterPayslips()" class="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm">
+                            <option value="">All Months</option>
+                            <option value="01">January</option>
+                            <option value="02">February</option>
+                            <option value="03">March</option>
+                            <option value="04">April</option>
+                            <option value="05">May</option>
+                            <option value="06">June</option>
+                            <option value="07">July</option>
+                            <option value="08">August</option>
+                            <option value="09">September</option>
+                            <option value="10">October</option>
+                            <option value="11">November</option>
+                            <option value="12">December</option>
+                        </select>
+                        <select id="filter-payslip-year" onchange="filterPayslips()" class="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm">
+                            <option value="">All Years</option>
+                            <option value="2024">2024</option>
+                            <option value="2025">2025</option>
+                            <option value="2026">2026</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Loading State -->
+                    <div id="payslips-loading" class="hidden text-center py-12">
+                        <i class="ri-loader-4-line text-4xl text-blue-600 animate-spin mb-4"></i>
+                        <p class="text-slate-600 dark:text-slate-300">Loading payslips...</p>
+                    </div>
+                    
+                    <!-- Empty State -->
+                    <div id="payslips-empty" class="hidden text-center py-12">
+                        <div class="w-16 h-16 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="ri-file-text-line text-2xl text-slate-400"></i>
+                        </div>
+                        <p class="text-slate-600 dark:text-slate-300">No payslips generated yet</p>
+                    </div>
+                    
+                    <!-- Payslips Table -->
+                    <div id="payslips-table-container" class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="bg-slate-50 dark:bg-slate-700/50">
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wider">Month/Year</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wider">Amount</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wider">Trainers</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wider">Generated By</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wider">Date</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wider">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="payslips-table-body" class="divide-y divide-slate-200 dark:divide-slate-700">
+                                <!-- Payslips will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
             <!-- Settings Section -->
             <div id="settings-section" class="section hidden">
                 <div class="mb-6">
@@ -847,6 +1004,11 @@
             // Load section-specific data
             if (sectionName === 'analytics' && financeAnalytics) {
                 updateAnalyticsDashboard();
+            }
+            
+            // Initialize payslips section
+            if (sectionName === 'payslips' && typeof initializePayslips === 'function') {
+                initializePayslips();
             }
         }
         

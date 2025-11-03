@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dean Portal - Student Welfare Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        .content-section { display: none; }
+        .content-section.active { display: block; }
+        .nav-link.active { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Top Navigation Bar -->
+    <nav class="bg-white shadow-md fixed w-full top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <i class="ri-graduation-cap-line text-3xl text-purple-600 mr-3"></i>
+                    <h1 class="text-2xl font-bold text-gray-800">Dean Portal</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-gray-700" id="dean-name">Loading...</span>
+                    <button onclick="logout()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
+                        <i class="ri-logout-box-line mr-2"></i>Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="pt-20 flex">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-white shadow-lg h-screen fixed overflow-y-auto">
+            <nav class="p-4 space-y-2">
+                <a href="#students" class="nav-link flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-purple-50 transition active">
+                    <i class="ri-group-line text-xl mr-3"></i>
+                    <span>Students</span>
+                </a>
+                <a href="#notes" class="nav-link flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-purple-50 transition">
+                    <i class="ri-file-list-line text-xl mr-3"></i>
+                    <span>All Notes</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="ml-64 flex-1 p-8">
+            <!-- Students Section -->
+            <section id="students" class="content-section active">
+                <!-- Header & Filters -->
+                <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Student Management & Welfare</h2>
+                    
+                    <!-- Search & Filters -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                        <input type="text" id="search-student" placeholder="Search by name, admission number, ID..." 
+                            class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                        
+                        <select id="filter-department" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                            <option value="">All Departments</option>
+                        </select>
+                        
+                        <select id="filter-year" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                            <option value="">All Years</option>
+                            <option value="1">Year 1</option>
+                            <option value="2">Year 2</option>
+                            <option value="3">Year 3</option>
+                            <option value="4">Year 4</option>
+                        </select>
+                        
+                        <select id="filter-intake" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                            <option value="">All Intakes</option>
+                            <option value="january">January</option>
+                            <option value="september">September</option>
+                        </select>
+                    </div>
+                    
+                    <button onclick="loadStudents()" class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
+                        <i class="ri-search-line mr-2"></i>Search
+                    </button>
+                </div>
+
+                <!-- Students Table -->
+                <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admission No.</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Course</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Year</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="students-table-body" class="bg-white divide-y divide-gray-200">
+                            <tr>
+                                <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+                                    <i class="ri-loader-4-line text-4xl animate-spin mb-4"></i>
+                                    <p>Loading students...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- All Notes Section -->
+            <section id="notes" class="content-section">
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6">All Student Notes</h2>
+                    <div id="all-notes-container">
+                        <p class="text-center text-gray-500 py-8">Select a student to view notes</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Add Note Modal -->
+    <div id="add-note-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto m-4">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-2xl font-bold text-gray-800">Add Note</h3>
+                    <button onclick="closeAddNoteModal()" class="text-gray-500 hover:text-gray-700">
+                        <i class="ri-close-line text-2xl"></i>
+                    </button>
+                </div>
+                <p class="text-sm text-gray-600 mt-2">Student: <span id="modal-student-name" class="font-semibold"></span></p>
+            </div>
+            
+            <div class="p-6 space-y-4">
+                <!-- Note Type -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Note Type *</label>
+                    <div class="grid grid-cols-2 gap-4">
+                        <label class="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-purple-50 transition">
+                            <input type="radio" name="noteType" value="private" class="mr-3" checked>
+                            <div>
+                                <div class="font-semibold text-gray-800">Private</div>
+                                <div class="text-xs text-gray-500">Confidential - Only you can see</div>
+                            </div>
+                        </label>
+                        <label class="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-purple-50 transition">
+                            <input type="radio" name="noteType" value="public" class="mr-3">
+                            <div>
+                                <div class="font-semibold text-gray-800">Public</div>
+                                <div class="text-xs text-gray-500">Visible to student</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Category -->
+                <div>
+                    <label for="note-category" class="block text-sm font-medium text-gray-700 mb-2">Category *</label>
+                    <select id="note-category" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                        <option value="welfare">Welfare</option>
+                        <option value="academic">Academic</option>
+                        <option value="disciplinary">Disciplinary</option>
+                        <option value="health">Health</option>
+                        <option value="financial">Financial</option>
+                        <option value="general">General</option>
+                    </select>
+                </div>
+
+                <!-- Priority -->
+                <div>
+                    <label for="note-priority" class="block text-sm font-medium text-gray-700 mb-2">Priority *</label>
+                    <select id="note-priority" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                        <option value="low">Low</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="high">High</option>
+                        <option value="urgent">Urgent</option>
+                    </select>
+                </div>
+
+                <!-- Title -->
+                <div>
+                    <label for="note-title" class="block text-sm font-medium text-gray-700 mb-2">Title *</label>
+                    <input type="text" id="note-title" placeholder="Enter note title" 
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                </div>
+
+                <!-- Content -->
+                <div>
+                    <label for="note-content" class="block text-sm font-medium text-gray-700 mb-2">Note Content *</label>
+                    <textarea id="note-content" rows="6" placeholder="Enter detailed note..." 
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"></textarea>
+                </div>
+            </div>
+
+            <div class="p-6 border-t border-gray-200 flex justify-end space-x-3">
+                <button onclick="closeAddNoteModal()" class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
+                    Cancel
+                </button>
+                <button onclick="saveNote()" class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
+                    <i class="ri-save-line mr-2"></i>Save Note
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Student Notes Modal -->
+    <div id="view-notes-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto m-4">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-800" id="view-notes-student-name">Student Notes</h3>
+                        <p class="text-sm text-gray-600 mt-1" id="view-notes-student-info"></p>
+                    </div>
+                    <button onclick="closeViewNotesModal()" class="text-gray-500 hover:text-gray-700">
+                        <i class="ri-close-line text-2xl"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <!-- Note Type Filter -->
+                <div class="flex space-x-2 mb-6">
+                    <button onclick="filterNotes('all')" class="note-filter-btn active px-4 py-2 bg-purple-100 text-purple-700 rounded-lg">
+                        All Notes
+                    </button>
+                    <button onclick="filterNotes('private')" class="note-filter-btn px-4 py-2 bg-gray-100 text-gray-700 rounded-lg">
+                        Private
+                    </button>
+                    <button onclick="filterNotes('public')" class="note-filter-btn px-4 py-2 bg-gray-100 text-gray-700 rounded-lg">
+                        Public
+                    </button>
+                </div>
+
+                <div id="student-notes-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="deanDashboard.js"></script>
+</body>
+</html>
+
+

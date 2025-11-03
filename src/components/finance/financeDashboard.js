@@ -203,12 +203,16 @@ function renderStudentTable(students, programs, payments) {
         const program = programs.find(p => p.programName && p.programName.toLowerCase() === (programName || '').toLowerCase());
         const programCost = program ? program.programCost : 67189; // Default to standard cost
         
+        // Calculate total fees based on year of study (programCost is per year)
+        const yearOfStudy = student.year || 1;
+        const totalFees = programCost * yearOfStudy;
+        
         // Calculate total paid
         const studentPayments = payments.filter(payment => payment.studentId === student.admissionNumber);
         const totalPaid = studentPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
         
-        // Calculate balance (program cost minus payments)
-        const balance = Math.max(0, programCost - totalPaid);
+        // Calculate balance (total fees minus payments) - allow negative values for overpayment
+        const balance = totalFees - totalPaid;
         
         // Get department name
         const departmentMap = {
@@ -237,8 +241,9 @@ function renderStudentTable(students, programs, payments) {
             <td class="px-3 py-2 text-sm">${departmentName}</td>
             <td class="px-3 py-2 text-sm">Year ${student.year || 'N/A'}</td>
             <td class="px-3 py-2 text-sm">${intakeText}</td>
+            <td class="px-3 py-2 text-sm font-semibold">${formatCurrency(totalFees)}</td>
             <td class="px-3 py-2 text-sm">${formatCurrency(totalPaid)}</td>
-            <td class="px-3 py-2 text-sm">${formatCurrency(balance)}</td>
+            <td class="px-3 py-2 text-sm ${balance > 0 ? 'text-red-600' : 'text-green-600'} font-semibold">${formatCurrency(balance)}</td>
             <td class="px-3 py-2 text-sm">
                 <div class="flex space-x-1">
                     <button 
@@ -246,7 +251,7 @@ function renderStudentTable(students, programs, payments) {
                         data-student-id="${student.admissionNumber}"
                         data-student-name="${student.name}"
                         data-balance="${balance}"
-                        data-program-cost="${programCost}"
+                        data-total-fees="${totalFees}"
                     >
                         Add Payment
                     </button>
@@ -316,27 +321,42 @@ function showPaymentSelectionModal(payments, student) {
     const modal = document.createElement('div');
     modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
     modal.innerHTML = `
-        <div class="bg-white rounded-lg max-w-md w-full max-h-96 overflow-y-auto">
+        <div class="bg-white rounded-lg max-w-2xl w-full max-h-[600px] overflow-hidden flex flex-col">
             <div class="p-4 border-b">
-                <h3 class="text-lg font-semibold">Select Payment Receipt</h3>
-                <p class="text-sm text-gray-600">Student: ${student.name}</p>
+                <h3 class="text-lg font-semibold">All Payment Receipts</h3>
+                <p class="text-sm text-gray-600">Student: ${student.name} | Total Payments: ${payments.length}</p>
             </div>
-            <div class="p-4 space-y-2">
-                ${payments.map(payment => `
-                    <button class="w-full text-left p-3 border rounded hover:bg-gray-50 payment-receipt-btn" 
-                            data-payment='${JSON.stringify(payment)}'>
-                        <div class="flex justify-between">
-                            <span>Date: ${payment.paymentDate ? new Date(payment.paymentDate).toLocaleDateString() : 'N/A'}</span>
-                            <span>KES ${(payment.amount || 0).toLocaleString()}</span>
-                        </div>
-                        <div class="text-sm text-gray-600">
-                            Mode: ${formatPaymentModeForDisplay(payment.paymentMode)}
-                        </div>
-                    </button>
-                `).join('')}
+            <div class="p-4 overflow-y-auto flex-1">
+                <div class="space-y-2">
+                    ${payments.map((payment, index) => `
+                        <button class="w-full text-left p-3 border rounded hover:bg-gray-50 payment-receipt-btn transition-colors" 
+                                data-payment='${JSON.stringify(payment)}'>
+                            <div class="flex justify-between items-start">
+                                <div class="flex-1">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <span class="font-medium text-gray-700">#${payments.length - index}</span>
+                                        <span class="text-sm text-gray-500">Date: ${payment.paymentDate ? new Date(payment.paymentDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A'}</span>
+                                    </div>
+                                    <div class="text-sm text-gray-600">
+                                        Mode: ${formatPaymentModeForDisplay(payment.paymentMode)}
+                                        ${payment.reference ? ` | Ref: ${payment.reference}` : ''}
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="font-semibold text-green-600">KES ${(payment.amount || 0).toLocaleString()}</div>
+                                    <span class="text-xs text-gray-500">Click to view</span>
+                                </div>
+                            </div>
+                        </button>
+                    `).join('')}
+                </div>
             </div>
-            <div class="p-4 border-t">
-                <button class="w-full px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400" 
+            <div class="p-4 border-t bg-gray-50">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="font-medium text-gray-700">Total Paid:</span>
+                    <span class="font-bold text-lg text-green-600">KES ${payments.reduce((sum, p) => sum + (p.amount || 0), 0).toLocaleString()}</span>
+                </div>
+                <button class="w-full px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition-colors" 
                         onclick="this.closest('.fixed').remove()">Close</button>
             </div>
         </div>
@@ -349,7 +369,7 @@ function showPaymentSelectionModal(payments, student) {
             if (window.generatePaymentReceipt) {
                 window.generatePaymentReceipt(payment, student);
             }
-            modal.remove();
+            // Don't remove modal - let user view multiple receipts
         });
     });
     
@@ -986,6 +1006,268 @@ function setupSidebar() {
             }
         });
     }
+}
+
+// ========================================
+// UTILITY FUNCTIONS
+// ========================================
+
+// Show notification toast
+function showNotification(message, type = 'info') {
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg text-white transform transition-all duration-300 ${
+        type === 'success' ? 'bg-green-500' :
+        type === 'error' ? 'bg-red-500' :
+        type === 'warning' ? 'bg-yellow-500' :
+        'bg-blue-500'
+    }`;
+    toast.innerHTML = `
+        <div class="flex items-center space-x-2">
+            <i class="ri-${type === 'success' ? 'check' : type === 'error' ? 'error-warning' : 'information'}-line"></i>
+            <span>${message}</span>
+        </div>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // Animate in
+    setTimeout(() => toast.style.transform = 'translateX(0)', 10);
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+        toast.style.transform = 'translateX(400px)';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+// ========================================
+// PAYSLIP MANAGEMENT
+// ========================================
+
+let allPayslips = [];
+let filteredPayslips = [];
+
+// Initialize payslips on section load
+async function initializePayslips() {
+    await loadPayslips();
+    
+    // Add form submit listener
+    const form = document.getElementById('generate-payslip-form');
+    if (form) {
+        form.addEventListener('submit', handleGeneratePayslips);
+    }
+}
+
+// Generate payslips for all trainers
+async function handleGeneratePayslips(e) {
+    e.preventDefault();
+    
+    const month = document.getElementById('payslip-month').value;
+    const year = document.getElementById('payslip-year').value;
+    const amount = document.getElementById('payslip-amount').value;
+    const description = document.getElementById('payslip-description').value;
+    
+    if (!month || !year || !amount) {
+        showNotification('Please fill in all required fields', 'error');
+        return;
+    }
+    
+    if (parseFloat(amount) <= 0) {
+        showNotification('Amount must be greater than 0', 'error');
+        return;
+    }
+    
+    try {
+        // First, fetch all trainers to get their IDs
+        showNotification('Fetching trainers...', 'info');
+        const trainersResponse = await fetch('http://localhost:5502/api/trainers/all-departments');
+        if (!trainersResponse.ok) throw new Error('Failed to fetch trainers');
+        
+        const trainersData = await trainersResponse.json();
+        const trainers = trainersData.trainers || [];
+        
+        if (trainers.length === 0) {
+            showNotification('No trainers found to generate payslips for', 'error');
+            return;
+        }
+        
+        // Extract trainer IDs (use MongoDB _id)
+        const trainerIds = trainers.map(trainer => trainer._id);
+        
+        const financeData = getFinanceUserData();
+        showNotification(`Generating payslips for ${trainerIds.length} trainers...`, 'info');
+        
+        const response = await fetch('http://localhost:5502/api/payslips/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                trainerIds,
+                month,
+                year: parseInt(year),
+                amount: parseFloat(amount),
+                description,
+                generatedBy: {
+                    userId: financeData.userId || 'finance-admin',
+                    userName: financeData.userName || 'Finance Admin'
+                }
+            })
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Failed to generate payslips');
+        }
+        
+        const result = await response.json();
+        showNotification(`Successfully generated ${result.payslips.length} payslips`, 'success');
+        
+        // Reset form and reload payslips
+        e.target.reset();
+        await loadPayslips();
+        
+    } catch (error) {
+        console.error('Error generating payslips:', error);
+        showNotification(error.message, 'error');
+    }
+}
+
+// Load all payslips
+async function loadPayslips() {
+    try {
+        showPayslipsLoading();
+        
+        const response = await fetch('http://localhost:5502/api/payslips');
+        if (!response.ok) throw new Error('Failed to load payslips');
+        
+        const data = await response.json();
+        allPayslips = data.payslips || [];
+        filteredPayslips = allPayslips;
+        
+        displayPayslips();
+        hidePayslipsLoading();
+        
+    } catch (error) {
+        console.error('Error loading payslips:', error);
+        hidePayslipsLoading();
+        showPayslipsEmpty();
+    }
+}
+
+// Display payslips in table
+function displayPayslips() {
+    const tbody = document.getElementById('payslips-table-body');
+    const empty = document.getElementById('payslips-empty');
+    const tableContainer = document.getElementById('payslips-table-container');
+    
+    if (!tbody) return;
+    
+    if (filteredPayslips.length === 0) {
+        tableContainer.style.display = 'none';
+        empty.classList.remove('hidden');
+        return;
+    }
+    
+    empty.classList.add('hidden');
+    tableContainer.style.display = 'block';
+    
+    // Group payslips by month/year/amount
+    const grouped = {};
+    filteredPayslips.forEach(payslip => {
+        const key = `${payslip.month}-${payslip.year}-${payslip.amount}`;
+        if (!grouped[key]) {
+            grouped[key] = {
+                month: payslip.month,
+                year: payslip.year,
+                amount: payslip.amount,
+                generatedBy: payslip.generatedBy,
+                createdAt: payslip.createdAt,
+                trainers: []
+            };
+        }
+        grouped[key].trainers.push(payslip);
+    });
+    
+    // Convert to array and sort by date (newest first)
+    const groupedArray = Object.values(grouped).sort((a, b) => 
+        new Date(b.createdAt) - new Date(a.createdAt)
+    );
+    
+    tbody.innerHTML = groupedArray.map(group => {
+        const monthNames = ['', 'January', 'February', 'March', 'April', 'May', 'June', 
+                          'July', 'August', 'September', 'October', 'November', 'December'];
+        const monthName = monthNames[parseInt(group.month)];
+        
+        const viewedCount = group.trainers.filter(p => p.isViewed).length;
+        const totalCount = group.trainers.length;
+        
+        const generatedByName = group.generatedBy?.userName || group.generatedBy || 'Unknown';
+        
+        return `
+            <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-300">${monthName} ${group.year}</td>
+                <td class="px-4 py-3 text-sm font-semibold text-slate-900 dark:text-white">KES ${group.amount.toLocaleString()}</td>
+                <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-300">${totalCount} trainers</td>
+                <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-300">${generatedByName}</td>
+                <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">${new Date(group.createdAt).toLocaleDateString()}</td>
+                <td class="px-4 py-3">
+                    <span class="px-2 py-1 text-xs font-medium rounded-full ${viewedCount === totalCount ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}">
+                        ${viewedCount}/${totalCount} viewed
+                    </span>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// Filter payslips
+function filterPayslips() {
+    const month = document.getElementById('filter-payslip-month').value;
+    const year = document.getElementById('filter-payslip-year').value;
+    
+    filteredPayslips = allPayslips.filter(payslip => {
+        if (month && payslip.month !== month) return false;
+        if (year && payslip.year !== year) return false;
+        return true;
+    });
+    
+    displayPayslips();
+}
+
+// Refresh payslips
+async function refreshPayslips() {
+    await loadPayslips();
+    showNotification('Payslips refreshed', 'success');
+}
+
+// Show/hide loading
+function showPayslipsLoading() {
+    const loading = document.getElementById('payslips-loading');
+    const table = document.getElementById('payslips-table-container');
+    const empty = document.getElementById('payslips-empty');
+    
+    if (loading) loading.classList.remove('hidden');
+    if (table) table.style.display = 'none';
+    if (empty) empty.classList.add('hidden');
+}
+
+function hidePayslipsLoading() {
+    const loading = document.getElementById('payslips-loading');
+    if (loading) loading.classList.add('hidden');
+}
+
+function showPayslipsEmpty() {
+    const empty = document.getElementById('payslips-empty');
+    if (empty) empty.classList.remove('hidden');
+}
+
+// Get finance user data (from session or local storage)
+function getFinanceUserData() {
+    // This should be replaced with actual auth logic
+    return {
+        userId: 'finance_admin',
+        name: 'Finance Administrator'
+    };
 }
 
 // Initialize when DOM is loaded

@@ -161,13 +161,13 @@
                         };
                         sessionStorage.setItem('studentData', JSON.stringify(studentData));
                         // Redirect to student portal
-                        window.location.href = '/student/dashboard';
+                        window.location.href = '/student/portal';
                     } else if (userType === 'trainer') {
                         // Store trainer data in sessionStorage
                         // Store trainer data in sessionStorage
                         sessionStorage.setItem('trainer', JSON.stringify(data.trainer));
                         // Redirect to trainer portal
-                        window.location.href = '/src/components/trainer/Dashboard.html';
+                        window.location.href = '/trainer/dashboard';
                     }
                 } else {
                     errorMessage.textContent = data.message;

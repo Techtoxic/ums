@@ -169,6 +169,19 @@
                     </a>
                 </li>
                 <li>
+                    <a href="#uploads" class="nav-link flex items-center gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                        <i class="ri-upload-cloud-line text-lg"></i>
+                        <span class="sidebar-text">Uploads</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#notes" class="nav-link flex items-center gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                        <i class="ri-message-3-line text-lg"></i>
+                        <span class="sidebar-text">Notes & Messages</span>
+                        <span id="notes-badge" class="hidden ml-auto px-2 py-0.5 text-xs font-semibold text-white bg-red-500 rounded-full">0</span>
+                    </a>
+                </li>
+                <li>
                     <a href="#units" class="nav-link flex items-center gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
                         <i class="ri-book-open-line text-lg"></i>
                         <span class="sidebar-text">Units & Courses</span>
@@ -608,6 +621,201 @@
                 </div>
             </section>
 
+            <!-- Uploads Section -->
+            <section id="uploads" class="content-section hidden">
+                <div class="space-y-6">
+                    <!-- Page Header -->
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                        <h2 class="text-xl font-semibold text-gray-800 dark:text-white">Document Uploads</h2>
+                        <p class="text-gray-600 dark:text-gray-400 mt-1">Upload your profile photo, certificates, and assessment work</p>
+                    </div>
+
+                    <!-- Profile & Documents Uploads -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Profile Photo Card -->
+                        <div id="profile-photo-card" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                            <div class="flex items-start justify-between mb-4">
+                                <div class="flex items-center space-x-3">
+                                    <div class="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                                        <i class="ri-user-line text-2xl text-purple-600"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-semibold text-gray-900 dark:text-white">Profile Photo</h3>
+                                        <p class="text-xs text-gray-500">JPG, PNG (Max 2MB)</p>
+                                    </div>
+                                </div>
+                                <span class="upload-status-badge px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">Not Uploaded</span>
+                            </div>
+                            <div class="upload-info mb-4">
+                                <p class="text-xs text-gray-500">No file uploaded yet</p>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <button onclick="uploadProfilePhoto()" class="upload-btn flex-1 px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg text-sm transition-colors">
+                                    <i class="ri-upload-line mr-2"></i>Upload
+                                </button>
+                                <button onclick="viewUpload(uploadStates.profile?._id)" class="view-btn hidden px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors">
+                                    <i class="ri-eye-line"></i>
+                                </button>
+                                <button onclick="uploadProfilePhoto()" class="replace-btn hidden px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm transition-colors">
+                                    <i class="ri-refresh-line"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- KCSE Results Card -->
+                        <div id="kcse-card" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                            <div class="flex items-start justify-between mb-4">
+                                <div class="flex items-center space-x-3">
+                                    <div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                                        <i class="ri-file-text-line text-2xl text-blue-600"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-semibold text-gray-900 dark:text-white">KCSE Results</h3>
+                                        <p class="text-xs text-gray-500">PDF, Image (Max 5MB)</p>
+                                    </div>
+                                </div>
+                                <span class="upload-status-badge px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">Not Uploaded</span>
+                            </div>
+                            <div class="upload-info mb-4">
+                                <p class="text-xs text-gray-500">No file uploaded yet</p>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <button onclick="uploadResults('kcse')" class="upload-btn flex-1 px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg text-sm transition-colors">
+                                    <i class="ri-upload-line mr-2"></i>Upload
+                                </button>
+                                <button onclick="viewUpload(uploadStates.kcse?._id)" class="view-btn hidden px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors">
+                                    <i class="ri-eye-line"></i>
+                                </button>
+                                <button onclick="uploadResults('kcse')" class="replace-btn hidden px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm transition-colors">
+                                    <i class="ri-refresh-line"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- KCPE Results Card -->
+                        <div id="kcpe-card" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                            <div class="flex items-start justify-between mb-4">
+                                <div class="flex items-center space-x-3">
+                                    <div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                                        <i class="ri-file-text-line text-2xl text-green-600"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-semibold text-gray-900 dark:text-white">KCPE Results</h3>
+                                        <p class="text-xs text-gray-500">PDF, Image (Max 5MB)</p>
+                                    </div>
+                                </div>
+                                <span class="upload-status-badge px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">Not Uploaded</span>
+                            </div>
+                            <div class="upload-info mb-4">
+                                <p class="text-xs text-gray-500">No file uploaded yet</p>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <button onclick="uploadResults('kcpe')" class="upload-btn flex-1 px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg text-sm transition-colors">
+                                    <i class="ri-upload-line mr-2"></i>Upload
+                                </button>
+                                <button onclick="viewUpload(uploadStates.kcpe?._id)" class="view-btn hidden px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors">
+                                    <i class="ri-eye-line"></i>
+                                </button>
+                                <button onclick="uploadResults('kcpe')" class="replace-btn hidden px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm transition-colors">
+                                    <i class="ri-refresh-line"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Unit Assessments & Practicals -->
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                        <div class="mb-6">
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Unit Assessments & Practical Work</h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Upload assessments and practical work for your registered units (department units only)</p>
+                        </div>
+
+                        <!-- Unit Uploads Container -->
+                        <div id="unit-uploads-container" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Units will be loaded here dynamically -->
+                            <div class="col-span-full text-center py-12">
+                                <i class="ri-loader-4-line text-4xl text-gray-400 animate-spin mb-4"></i>
+                                <p class="text-gray-600 dark:text-gray-400">Loading your registered units...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Upload Instructions -->
+                    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6">
+                        <div class="flex items-start space-x-3">
+                            <i class="ri-information-line text-2xl text-blue-600 mt-1"></i>
+                            <div>
+                                <h4 class="font-semibold text-blue-900 dark:text-blue-100 mb-2">Upload Guidelines</h4>
+                                <ul class="text-sm text-blue-800 dark:text-blue-200 space-y-1 list-disc list-inside">
+                                    <li>Profile photos should be clear passport-style images (JPG/PNG, max 2MB)</li>
+                                    <li>KCSE/KCPE results should be scanned copies or clear photos (PDF/Image, max 5MB)</li>
+                                    <li>Assessments should be PDF documents with your work clearly visible (max 10MB)</li>
+                                    <li>Practical work can be videos or photos showing your work (max 10MB)</li>
+                                    <li>Only department units (not common units) allow assessment uploads</li>
+                                    <li>You can replace any file - the old file will be marked as replaced</li>
+                                    <li>All files are stored securely in the cloud and can be accessed by CIBEC for evaluation</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Notes & Messages Section -->
+            <section id="notes" class="content-section hidden">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                    <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h2 class="text-xl font-semibold text-gray-800 dark:text-white">Notes & Messages</h2>
+                                <p class="text-gray-600 dark:text-gray-400 mt-1">Important notes from the Dean's office</p>
+                            </div>
+                            <button id="refresh-notes-btn" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                                <i class="ri-refresh-line text-xl text-gray-600 dark:text-gray-400"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Filter Tabs -->
+                    <div class="px-6 pt-4">
+                        <div class="flex items-center space-x-2 border-b border-gray-200 dark:border-gray-700">
+                            <button class="notes-filter-tab px-4 py-2 text-sm font-medium border-b-2 border-primary text-primary transition-colors" data-filter="all">
+                                All
+                            </button>
+                            <button class="notes-filter-tab px-4 py-2 text-sm font-medium border-b-2 border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors" data-filter="unread">
+                                Unread
+                                <span id="unread-count" class="ml-1 px-2 py-0.5 text-xs bg-red-500 text-white rounded-full hidden">0</span>
+                            </button>
+                            <button class="notes-filter-tab px-4 py-2 text-sm font-medium border-b-2 border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors" data-filter="read">
+                                Read
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="p-6">
+                        <!-- Loading State -->
+                        <div id="notes-loading" class="hidden text-center py-8">
+                            <i class="ri-loader-4-line text-4xl text-primary animate-spin mb-4"></i>
+                            <p class="text-gray-600 dark:text-gray-400">Loading notes...</p>
+                        </div>
+                        
+                        <!-- Empty State -->
+                        <div id="notes-empty" class="hidden text-center py-8">
+                            <div class="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="ri-message-3-line text-2xl text-gray-400"></i>
+                            </div>
+                            <p class="text-gray-600 dark:text-gray-400">No notes or messages yet</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-500 mt-2">Notes from the Dean will appear here</p>
+                        </div>
+                        
+                        <!-- Notes List -->
+                        <div id="notes-list" class="space-y-3">
+                            <!-- Notes will be loaded here dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <!-- Units Section -->
             <section id="units" class="content-section hidden">
                 <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
@@ -948,6 +1156,36 @@
         }
     </script>
     <script src="studentPortal.js"></script>
+    <script src="uploadSection.js"></script>
+    <script>
+        // Initialize uploads section when uploads tab is shown
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, setting up uploads initialization');
+            
+            const uploadsLink = document.querySelector('a[href="#uploads"]');
+            if (uploadsLink) {
+                uploadsLink.addEventListener('click', function(e) {
+                    console.log('Uploads link clicked');
+                    // Initialize uploads section on first click
+                    setTimeout(() => {
+                        if (typeof initializeUploadsSection === 'function' && !window.uploadsInitialized) {
+                            console.log('Initializing uploads section...');
+                            window.uploadsInitialized = true;
+                            initializeUploadsSection().catch(err => {
+                                console.error('Error initializing uploads:', err);
+                            });
+                        } else if (window.uploadsInitialized) {
+                            console.log('Uploads already initialized');
+                        } else {
+                            console.error('initializeUploadsSection function not found!');
+                        }
+                    }, 100);
+                });
+            } else {
+                console.error('Uploads link not found!');
+            }
+        });
+    </script>
     <script>
         // ========================================
         // COURSE NAME MAPPING AND UTILITY FUNCTIONS
@@ -1479,7 +1717,7 @@
                     localStorage.removeItem('studentData');
                     
                     // Redirect to login page
-                    window.location.replace('../../login.html');
+                    window.location.replace('/student/login');
                 };
             }
 

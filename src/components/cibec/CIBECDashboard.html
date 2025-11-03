@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CIBEC Portal - Student Uploads</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        .stat-card {
+            transition: all 0.3s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+        }
+        .upload-card {
+            transition: all 0.2s ease;
+        }
+        .upload-card:hover {
+            background-color: rgba(59, 130, 246, 0.05);
+        }
+        .filter-chip {
+            transition: all 0.2s ease;
+        }
+        .filter-chip:hover {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-3">
+                    <i class="ri-folder-user-line text-3xl text-blue-600"></i>
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-900">CIBEC Portal</h1>
+                        <p class="text-xs text-gray-500">Student Uploads Management</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="refresh-btn" class="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                        <i class="ri-refresh-line text-xl text-gray-600"></i>
+                    </button>
+                    <button id="notifications-btn" class="p-2 hover:bg-gray-100 rounded-full transition-colors relative">
+                        <i class="ri-notification-line text-xl text-gray-600"></i>
+                        <span id="notif-badge" class="hidden absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">0</span>
+                    </button>
+                    <div class="flex items-center space-x-2">
+                        <i class="ri-user-line text-gray-600"></i>
+                        <span class="text-sm font-medium text-gray-700">CIBEC Admin</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Statistics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="stat-card bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-blue-100 text-sm font-medium">Total Uploads</p>
+                        <h3 id="stat-total" class="text-3xl font-bold mt-2">-</h3>
+                    </div>
+                    <i class="ri-file-upload-line text-4xl text-blue-200"></i>
+                </div>
+            </div>
+
+            <div class="stat-card bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-green-100 text-sm font-medium">Assessments</p>
+                        <h3 id="stat-assessments" class="text-3xl font-bold mt-2">-</h3>
+                    </div>
+                    <i class="ri-file-list-line text-4xl text-green-200"></i>
+                </div>
+            </div>
+
+            <div class="stat-card bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-purple-100 text-sm font-medium">Practicals</p>
+                        <h3 id="stat-practicals" class="text-3xl font-bold mt-2">-</h3>
+                    </div>
+                    <i class="ri-video-line text-4xl text-purple-200"></i>
+                </div>
+            </div>
+
+            <div class="stat-card bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg p-6 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-orange-100 text-sm font-medium">Profile Docs</p>
+                        <h3 id="stat-profiles" class="text-3xl font-bold mt-2">-</h3>
+                    </div>
+                    <i class="ri-user-star-line text-4xl text-orange-200"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters Section -->
+        <div class="bg-white rounded-xl shadow-md p-6 mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold text-gray-900 flex items-center">
+                    <i class="ri-filter-3-line mr-2 text-blue-600"></i>
+                    Filters
+                </h2>
+                <button id="clear-filters-btn" class="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                    Clear All
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <!-- Department Filter -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Department</label>
+                    <select id="filter-department" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="">All Departments</option>
+                        <option value="applied_science">Applied Science</option>
+                        <option value="agriculture">Agriculture</option>
+                        <option value="building_civil">Building & Civil</option>
+                        <option value="electromechanical">Electromechanical</option>
+                        <option value="hospitality">Hospitality</option>
+                        <option value="business_liberal">Business & Liberal</option>
+                        <option value="computing_informatics">Computing & Informatics</option>
+                    </select>
+                </div>
+
+                <!-- Course Level Filter -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Course Level</label>
+                    <select id="filter-course-level" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="">All Levels</option>
+                        <option value="4">Level 4</option>
+                        <option value="5">Level 5</option>
+                        <option value="6">Level 6</option>
+                    </select>
+                </div>
+
+                <!-- Upload Type Filter -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Upload Type</label>
+                    <select id="filter-upload-type" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="">All Types</option>
+                        <option value="profile_photo">Profile Photo</option>
+                        <option value="kcse_results">KCSE Results</option>
+                        <option value="kcpe_results">KCPE Results</option>
+                        <option value="assessment">Assessments</option>
+                        <option value="practical">Practical Work</option>
+                    </select>
+                </div>
+
+                <!-- Year Filter -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Year of Study</label>
+                    <select id="filter-year" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="">All Years</option>
+                        <option value="1">Year 1</option>
+                        <option value="2">Year 2</option>
+                        <option value="3">Year 3</option>
+                        <option value="4">Year 4</option>
+                    </select>
+                </div>
+
+                <!-- Search Student -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Search Student</label>
+                    <input type="text" id="search-student" placeholder="Admission No. or Name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+            </div>
+
+            <div class="mt-4 flex items-center space-x-2">
+                <button id="apply-filters-btn" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors">
+                    <i class="ri-search-line mr-2"></i>Apply Filters
+                </button>
+                <button id="export-btn" class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors">
+                    <i class="ri-file-excel-line mr-2"></i>Export to Excel
+                </button>
+            </div>
+        </div>
+
+        <!-- Active Filters Display -->
+        <div id="active-filters" class="mb-6 hidden">
+            <div class="flex items-center flex-wrap gap-2">
+                <span class="text-sm font-medium text-gray-700">Active Filters:</span>
+                <div id="filter-chips" class="flex items-center flex-wrap gap-2"></div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="bg-white rounded-xl shadow-md p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-lg font-semibold text-gray-900 flex items-center">
+                    <i class="ri-folder-line mr-2 text-blue-600"></i>
+                    Student Uploads
+                    <span id="results-count" class="ml-3 px-3 py-1 bg-blue-100 text-blue-700 text-sm rounded-full">0 results</span>
+                </h2>
+                <div class="flex items-center space-x-2">
+                    <button id="view-grid-btn" class="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                        <i class="ri-layout-grid-line text-gray-600"></i>
+                    </button>
+                    <button id="view-list-btn" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                        <i class="ri-list-check text-gray-600"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loading-state" class="hidden text-center py-12">
+                <i class="ri-loader-4-line text-4xl text-blue-600 animate-spin mb-4"></i>
+                <p class="text-gray-600">Loading uploads...</p>
+            </div>
+
+            <!-- Empty State -->
+            <div id="empty-state" class="hidden text-center py-12">
+                <i class="ri-folder-open-line text-6xl text-gray-300 mb-4"></i>
+                <p class="text-gray-600 text-lg">No uploads found</p>
+                <p class="text-gray-500 text-sm mt-2">Try adjusting your filters</p>
+            </div>
+
+            <!-- Uploads List -->
+            <div id="uploads-list" class="space-y-3"></div>
+
+            <!-- Pagination -->
+            <div id="pagination" class="hidden mt-6 flex items-center justify-between">
+                <div class="text-sm text-gray-700">
+                    Showing <span id="page-start">1</span> to <span id="page-end">10</span> of <span id="page-total">0</span> results
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button id="prev-page" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                        Previous
+                    </button>
+                    <button id="next-page" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                        Next
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Student Details Modal -->
+    <div id="student-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            <div class="bg-blue-600 text-white p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 id="modal-student-name" class="text-2xl font-bold">-</h2>
+                        <p id="modal-student-id" class="text-blue-100 mt-1">-</p>
+                    </div>
+                    <button onclick="closeStudentModal()" class="p-2 hover:bg-blue-700 rounded-full transition-colors">
+                        <i class="ri-close-line text-2xl"></i>
+                    </button>
+                </div>
+                <div class="grid grid-cols-3 gap-4 mt-4">
+                    <div>
+                        <p class="text-blue-200 text-sm">Course</p>
+                        <p id="modal-student-course" class="font-medium">-</p>
+                    </div>
+                    <div>
+                        <p class="text-blue-200 text-sm">Department</p>
+                        <p id="modal-student-department" class="font-medium">-</p>
+                    </div>
+                    <div>
+                        <p class="text-blue-200 text-sm">Year</p>
+                        <p id="modal-student-year" class="font-medium">-</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="modal-content" class="p-6 overflow-y-auto max-h-[60vh]">
+                <!-- Student uploads will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="hidden fixed bottom-4 right-4 bg-gray-900 text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-transform duration-300">
+        <div class="flex items-center space-x-2">
+            <i id="toast-icon" class="ri-information-line"></i>
+            <span id="toast-message">Message</span>
+        </div>
+    </div>
+
+    <script src="./cibecDashboard.js"></script>
+</body>
+</html>
+
+

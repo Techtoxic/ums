@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.919.0",
+    "@aws-sdk/lib-storage": "^3.919.0",
+    "@aws-sdk/s3-request-presigner": "^3.919.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@mui/icons-material": "^7.0.2",
@@ -21,7 +24,7 @@
     "axios": "^1.8.4",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
-    "dotenv": "^16.5.0",
+    "dotenv": "^16.6.1",
     "express": "^5.1.0",
     "formik": "^2.4.6",
     "mongoose": "^8.14.1",
