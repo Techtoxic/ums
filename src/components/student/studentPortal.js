@@ -1,5 +1,5 @@
 // Student Portal JavaScript
-const API_BASE_URL = 'http://localhost:5502/api';
+const API_BASE_URL = window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : `${window.location.protocol}//${window.location.host}/api`;
 
 // Get student data from session storage
 let studentData = JSON.parse(sessionStorage.getItem('studentData')) || {};

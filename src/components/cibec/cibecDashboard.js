@@ -1,5 +1,5 @@
 // CIBEC Dashboard JavaScript
-const API_BASE = 'http://localhost:5502/api';
+const API_BASE = window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : `${window.location.protocol}//${window.location.host}/api`;
 const CIBEC_USER_ID = 'cibec_admin'; // This should come from login
 
 // State management

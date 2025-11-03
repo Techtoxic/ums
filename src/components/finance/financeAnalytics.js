@@ -1,12 +1,14 @@
 // Finance Analytics Module
 // Production-level analytics and reporting for Finance Dashboard
 
+const API_BASE_URL_CONFIG = window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : `${window.location.protocol}//${window.location.host}/api`;
+
 class FinanceAnalytics {
     constructor() {
         this.students = [];
         this.payments = [];
         this.programs = [];
-        this.API_BASE_URL = 'http://localhost:5502/api';
+        this.API_BASE_URL = API_BASE_URL_CONFIG;
     }
 
     // Load all necessary data

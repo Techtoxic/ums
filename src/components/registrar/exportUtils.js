@@ -1,6 +1,8 @@
 // Export Utilities for Registrar Dashboard
 // Production-level export functionality with multiple formats and filters
 
+const API_BASE_URL = window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : `${window.location.protocol}//${window.location.host}/api`;
+
 class StudentExporter {
     constructor() {
         this.students = [];
@@ -18,7 +20,7 @@ class StudentExporter {
     // Load students data
     async loadStudents() {
         try {
-            const response = await fetch('http://localhost:5502/api/students');
+            const response = await fetch(`${API_BASE_URL}/students`);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }

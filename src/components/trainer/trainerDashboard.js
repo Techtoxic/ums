@@ -1,4 +1,6 @@
 // Beautiful Trainer Dashboard - Matching Student Portal Design
+const API_BASE_URL = window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : `${window.location.protocol}//${window.location.host}/api`;
+
 let currentTrainer = null;
 let assignmentsData = [];
 let studentsData = [];
@@ -226,7 +228,7 @@ async function loadAssignments() {
             showLoadingState();
         }
         
-        const response = await fetch(`/api/trainers/${currentTrainer._id}/assignments`);
+        const response = await fetch(`${API_BASE_URL}/trainers/${currentTrainer._id}/assignments`);
         
         if (!response.ok) {
             const errorData = await response.json();
@@ -265,7 +267,7 @@ async function loadStudents() {
     try {
         console.log('🔄 Loading students...');
         
-        const response = await fetch(`/api/trainers/${currentTrainer._id}/students`);
+        const response = await fetch(`${API_BASE_URL}/trainers/${currentTrainer._id}/students`);
         
         if (!response.ok) {
             const errorData = await response.json();
@@ -688,7 +690,7 @@ async function handlePhoneUpdate(event) {
     }
     
     try {
-        const response = await fetch(`/api/trainers/${currentTrainer._id}/profile`, {
+        const response = await fetch(`${API_BASE_URL}/trainers/${currentTrainer._id}/profile`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json'
@@ -725,7 +727,7 @@ async function handleProfileUpdate(event) {
     const phone = document.getElementById('profilePhone').value.trim();
     
     try {
-        const response = await fetch(`/api/trainers/${currentTrainer._id}/profile`, {
+        const response = await fetch(`${API_BASE_URL}/trainers/${currentTrainer._id}/profile`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json'
@@ -848,7 +850,7 @@ async function loadToolsOfTrade() {
         await loadUnitsForTools();
         
         // Load submitted tools
-        const response = await fetch(`/api/tools/trainer/${currentTrainer._id}`);
+        const response = await fetch(`${API_BASE_URL}/tools/trainer/${currentTrainer._id}`);
         
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -870,7 +872,7 @@ async function loadToolsOfTrade() {
 // Load units for tools dropdown
 async function loadUnitsForTools() {
     try {
-        const response = await fetch(`/api/trainers/${currentTrainer._id}/assignments`);
+        const response = await fetch(`${API_BASE_URL}/trainers/${currentTrainer._id}/assignments`);
         
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -988,7 +990,7 @@ async function uploadTool() {
         uploadBtn.disabled = true;
         uploadBtn.innerHTML = '<i class="ri-loader-4-line animate-spin mr-2"></i>Uploading...';
         
-        const response = await fetch('/api/tools/upload', {
+        const response = await fetch(`${API_BASE_URL}/tools/upload`, {
             method: 'POST',
             body: formData
         });
@@ -1129,7 +1131,7 @@ function createToolCard(tool) {
 async function downloadTool(toolId) {
     try {
         // Get download URL from API (supports both S3 and local storage)
-        const response = await fetch(`/api/tools/${toolId}/download`);
+        const response = await fetch(`${API_BASE_URL}/tools/${toolId}/download`);
         
         if (!response.ok) {
             throw new Error(`Failed to get download URL: ${response.status}`);
@@ -1166,7 +1168,7 @@ async function deleteTool(toolId) {
     }
     
     try {
-        const response = await fetch(`/api/tools/${toolId}`, {
+        const response = await fetch(`${API_BASE_URL}/tools/${toolId}`, {
             method: 'DELETE'
         });
         
@@ -1391,7 +1393,7 @@ async function uploadBulkTools() {
                 formData.append('academicYear', '2024/2025');
                 formData.append('semester', '1');
                 
-                const response = await fetch('/api/tools/upload', {
+                const response = await fetch(`${API_BASE_URL}/tools/upload`, {
                     method: 'POST',
                     body: formData
                 });
@@ -1449,7 +1451,7 @@ async function loadNotifications() {
 
         showNotificationsLoadingState();
 
-        const response = await fetch(`http://localhost:5502/api/notifications/${currentTrainer._id}`);
+        const response = await fetch(`${API_BASE_URL}/notifications/${currentTrainer._id}`);
         
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -1523,7 +1525,7 @@ function createNotificationCard(notification) {
 // Mark notification as read
 async function markAsRead(notificationId) {
     try {
-        const response = await fetch(`http://localhost:5502/api/notifications/${notificationId}/read`, {
+        const response = await fetch(`${API_BASE_URL}/notifications/${notificationId}/read`, {
             method: 'PATCH'
         });
 
@@ -1549,7 +1551,7 @@ async function markAllAsRead() {
             return;
         }
 
-        const response = await fetch(`http://localhost:5502/api/notifications/${currentTrainer._id}/read-all`, {
+        const response = await fetch(`${API_BASE_URL}/notifications/${currentTrainer._id}/read-all`, {
             method: 'PATCH'
         });
 
@@ -1631,7 +1633,7 @@ async function loadTrainerPayslips() {
             return;
         }
         
-        const response = await fetch(`http://localhost:5502/api/trainers/${currentTrainer._id}/payslips`);
+        const response = await fetch(`${API_BASE_URL}/trainers/${currentTrainer._id}/payslips`);
         if (!response.ok) throw new Error('Failed to load payslips');
         
         const data = await response.json();
@@ -1979,7 +1981,7 @@ function downloadPayslipPDF(payslipId) {
 // Mark payslip as viewed
 async function markPayslipAsViewed(payslipId) {
     try {
-        const response = await fetch(`http://localhost:5502/api/payslips/${payslipId}/view`, {
+        const response = await fetch(`${API_BASE_URL}/payslips/${payslipId}/view`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' }
         });

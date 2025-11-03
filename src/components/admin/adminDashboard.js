@@ -1,8 +1,8 @@
 // Admin Dashboard JavaScript
 // Emurua Dikirr Technical Training Institute
 
-// Use global config or fallback to localhost
-const API_BASE = window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : 'http://localhost:5502/api';
+// Use global config or fallback to same host
+const API_BASE = window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : `${window.location.protocol}//${window.location.host}/api`;
 
 // State
 let allStudents = [];

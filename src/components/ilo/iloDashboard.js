@@ -1,5 +1,5 @@
 console.log('🚀 ILO Dashboard JavaScript loading...');
-const API_BASE_URL = 'http://localhost:5502/api';
+const API_BASE_URL = window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : `${window.location.protocol}//${window.location.host}/api`;
 let currentApplicationType = '';
 let currentApplicationId = '';
 let graduationApplications = [];

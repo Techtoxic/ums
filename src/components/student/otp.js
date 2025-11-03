@@ -30,6 +30,8 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
+const API_BASE_URL = window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : `${window.location.protocol}//${window.location.host}/api`;
+
 // Function to show notifications
 function showNotification(message, type) {
     const notification = document.createElement('div');
@@ -59,7 +61,7 @@ async function sendOTP() {
     }
 
     try {
-        const response = await fetch('http://localhost:5502/api/send-otp', {
+        const response = await fetch(`${API_BASE_URL}/send-otp`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -90,7 +92,7 @@ async function verifyOTP(email) {
     }
 
     try {
-        const response = await fetch('http://localhost:5502/api/verify-otp', {
+        const response = await fetch(`${API_BASE_URL}/verify-otp`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

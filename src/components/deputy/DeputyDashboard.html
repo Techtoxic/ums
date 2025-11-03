@@ -7,6 +7,10 @@
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Frontend Config (Load First!) -->
+    <script src="/public/js/config.js"></script>
+    
     <script>
         // Tools of Trade Modal Functions
         function openToolRequestModal() {
@@ -23,6 +27,7 @@
 
         // Global variable to store tools data
         let toolsData = [];
+        const API_BASE_URL = window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : `${window.location.protocol}//${window.location.host}/api`;
 
         // Fetch and display tools of trade
         async function fetchToolsOfTrade() {
@@ -33,7 +38,7 @@
             toolsContainer.innerHTML = '<div class="col-span-full text-center py-4"><i class="ri-loader-4-line animate-spin text-2xl text-primary"></i></div>';
 
             try {
-                const response = await fetch('http://localhost:5502/api/tools');
+                const response = await fetch(`${API_BASE_URL}/tools`);
                 if (!response.ok) {
                     throw new Error(`Failed to fetch tools: ${response.status} ${response.statusText}`);
                 }
@@ -162,7 +167,7 @@
                 let response;
                 if (sendTo === 'all_trainers') {
                     // Send to all trainers
-                    response = await fetch('http://localhost:5502/api/notifications/broadcast', {
+                    response = await fetch(`${API_BASE_URL}/notifications/broadcast`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -172,7 +177,7 @@
                 } else if (sendTo === 'by_department') {
                     // Send to department trainers
                     notification.message = `Please submit your ${toolType} for ${department} department by ${dueDate}. Instructions: ${instructions}`;
-                    response = await fetch('http://localhost:5502/api/notifications/broadcast', {
+                    response = await fetch(`${API_BASE_URL}/notifications/broadcast`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -183,7 +188,7 @@
                     // Send to specific trainer
                     notification.recipientId = trainerSelection;
                     
-                    response = await fetch('http://localhost:5502/api/notifications', {
+                    response = await fetch(`${API_BASE_URL}/notifications`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -233,7 +238,7 @@
         async function downloadTool(toolId) {
             try {
                 // Get download URL from API (supports both S3 and local storage)
-                const response = await fetch(`http://localhost:5502/api/tools/${toolId}/download`);
+                const response = await fetch(`${API_BASE_URL}/tools/${toolId}/download`);
                 if (!response.ok) {
                     throw new Error(`Failed to get download URL: ${response.status}`);
                 }
@@ -391,7 +396,7 @@
                 
                 console.log('Updating tool status:', toolId, updateData);
                 
-                const response = await fetch(`http://localhost:5502/api/tools/${toolId}/status`, {
+                const response = await fetch(`${API_BASE_URL}/tools/${toolId}/status`, {
                     method: 'PATCH',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1178,7 +1183,7 @@
 <script>
         async function viewToolRequest(requestId) {
             try {
-                const response = await fetch(`http://localhost:5502/api/tools/requests/${requestId}`);
+                const response = await fetch(`${API_BASE_URL}/tools/requests/${requestId}`);
                 if (!response.ok) throw new Error('Failed to fetch tool request details');
                 
                 const request = await response.json();
@@ -1191,7 +1196,7 @@
 
         async function updateToolRequestStatus(requestId, newStatus) {
             try {
-                const response = await fetch(`http://localhost:5502/api/tools/${requestId}/status`, {
+                const response = await fetch(`${API_BASE_URL}/tools/${requestId}/status`, {
                     method: 'PATCH',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1234,7 +1239,7 @@
             if (!department) return;
             
             try {
-                const response = await fetch(`http://localhost:5502/api/trainers/department/${department}`);
+                const response = await fetch(`${API_BASE_URL}/trainers/department/${department}`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch trainers');
                 }
@@ -1258,7 +1263,7 @@
         // Load all trainers for specific trainer selection
         async function loadAllTrainers() {
             try {
-                const response = await fetch('http://localhost:5502/api/trainers/all-departments');
+                const response = await fetch(`${API_BASE_URL}/trainers/all-departments`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch trainers');
                 }
@@ -1282,7 +1287,7 @@
         // Load trainers for dropdown
         async function loadTrainers() {
             try {
-                const response = await fetch('http://localhost:5502/api/trainers/all-departments');
+                const response = await fetch(`${API_BASE_URL}/trainers/all-departments`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch trainers');
                 }
@@ -1308,14 +1313,14 @@
         async function loadDashboardStats() {
             try {
                 // Load students count
-                const studentsResponse = await fetch('http://localhost:5502/api/students');
+                const studentsResponse = await fetch(`${API_BASE_URL}/students`);
                 if (studentsResponse.ok) {
                     const students = await studentsResponse.json();
                     document.getElementById('totalStudents').textContent = students.length;
                 }
 
                 // Load trainers count
-                const trainersResponse = await fetch('http://localhost:5502/api/trainers/all-departments');
+                const trainersResponse = await fetch(`${API_BASE_URL}/trainers/all-departments`);
                 if (trainersResponse.ok) {
                     const data = await trainersResponse.json();
                     const trainers = data.trainers || [];
@@ -1323,14 +1328,14 @@
                 }
 
                 // Load courses count
-                const coursesResponse = await fetch('http://localhost:5502/api/courses');
+                const coursesResponse = await fetch(`${API_BASE_URL}/courses`);
                 if (coursesResponse.ok) {
                     const courses = await coursesResponse.json();
                     document.getElementById('totalCourses').textContent = courses.length;
                 }
 
                 // Load units count
-                const unitsResponse = await fetch('http://localhost:5502/api/units');
+                const unitsResponse = await fetch(`${API_BASE_URL}/units`);
                 if (unitsResponse.ok) {
                     const data = await unitsResponse.json();
                     const totalUnits = data.pagination?.totalUnits || data.units?.length || 0;
@@ -1338,7 +1343,7 @@
                 }
 
                 // Load tools count
-                const toolsResponse = await fetch('http://localhost:5502/api/tools');
+                const toolsResponse = await fetch(`${API_BASE_URL}/tools`);
                 if (toolsResponse.ok) {
                     const tools = await toolsResponse.json();
                     console.log('Tools loaded for dashboard:', tools);
@@ -1356,7 +1361,7 @@
                 document.getElementById('totalDepartments').textContent = departments.length;
 
                 // Load notifications count
-                const notificationsResponse = await fetch('http://localhost:5502/api/notifications');
+                const notificationsResponse = await fetch(`${API_BASE_URL}/notifications`);
                 if (notificationsResponse.ok) {
                     const notifications = await notificationsResponse.json();
                     document.getElementById('totalNotifications').textContent = notifications.length;
@@ -1373,7 +1378,7 @@
         async function loadCharts() {
             try {
                 // Students by Department Chart
-                const studentsResponse = await fetch('http://localhost:5502/api/students');
+                const studentsResponse = await fetch(`${API_BASE_URL}/students`);
                 if (studentsResponse.ok) {
                     const students = await studentsResponse.json();
                     const studentsByDept = {};
@@ -1420,7 +1425,7 @@
                 }
 
                 // Tools Status Chart
-                const toolsResponse = await fetch('http://localhost:5502/api/tools');
+                const toolsResponse = await fetch(`${API_BASE_URL}/tools`);
                 if (toolsResponse.ok) {
                     const tools = await toolsResponse.json();
                     const statusCounts = {};
@@ -1490,7 +1495,7 @@
         // Load students data
         async function loadStudents() {
             try {
-                const response = await fetch('http://localhost:5502/api/students');
+                const response = await fetch(`${API_BASE_URL}/students`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch students');
                 }
@@ -1709,7 +1714,7 @@
         // Load trainers data
         async function loadTrainersData() {
             try {
-                const response = await fetch('http://localhost:5502/api/trainers/all-departments');
+                const response = await fetch(`${API_BASE_URL}/trainers/all-departments`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch trainers data');
                 }
@@ -1721,7 +1726,7 @@
                 const trainersWithData = await Promise.all(trainers.map(async (trainer) => {
                     try {
                         // Get students for this trainer
-                        const studentsResponse = await fetch(`http://localhost:5502/api/trainers/${trainer._id}/students`);
+                        const studentsResponse = await fetch(`${API_BASE_URL}/trainers/${trainer._id}/students`);
                         let studentCount = 0;
                         if (studentsResponse.ok) {
                             const studentsData = await studentsResponse.json();
@@ -1729,7 +1734,7 @@
                         }
                         
                         // Get assignments for this trainer
-                        const assignmentsResponse = await fetch(`http://localhost:5502/api/trainers/${trainer._id}/assignments`);
+                        const assignmentsResponse = await fetch(`${API_BASE_URL}/trainers/${trainer._id}/assignments`);
                         let assignedUnits = 0;
                         if (assignmentsResponse.ok) {
                             const assignmentsData = await assignmentsResponse.json();
@@ -1874,7 +1879,7 @@
         // Load courses data
         async function loadCoursesData() {
             try {
-                const response = await fetch('http://localhost:5502/api/courses');
+                const response = await fetch(`${API_BASE_URL}/courses`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch courses');
                 }
@@ -1889,7 +1894,7 @@
         // Load units data
         async function loadUnitsData() {
             try {
-                const response = await fetch('http://localhost:5502/api/units');
+                const response = await fetch(`${API_BASE_URL}/units`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch units');
                 }
@@ -1905,7 +1910,7 @@
         // Load notifications data
         async function loadNotificationsData() {
             try {
-                const response = await fetch('http://localhost:5502/api/notifications');
+                const response = await fetch(`${API_BASE_URL}/notifications`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch notifications');
                 }

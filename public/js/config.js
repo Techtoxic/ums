@@ -10,10 +10,8 @@
     
     // Configuration object
     const config = {
-        // API Base URL
-        API_BASE_URL: isProduction 
-            ? `${window.location.protocol}//${window.location.host}/api`
-            : 'http://localhost:5502/api',
+        // API Base URL - Always use same host
+        API_BASE_URL: `${window.location.protocol}//${window.location.host}/api`,
         
         // Environment
         ENV: isProduction ? 'production' : 'development',

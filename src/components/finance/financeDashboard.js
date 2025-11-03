@@ -131,7 +131,7 @@ const sidebarTitle = document.getElementById('sidebar-title');
 const studentCountSpan = document.getElementById('student-count');
 
 // API Base URL
-const API_BASE_URL = 'http://localhost:5502/api';
+const API_BASE_URL = window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : `${window.location.protocol}//${window.location.host}/api`;
 
 // Global variables for pagination and filtering
 let currentProgramPage = 0;
@@ -1081,7 +1081,7 @@ async function handleGeneratePayslips(e) {
     try {
         // First, fetch all trainers to get their IDs
         showNotification('Fetching trainers...', 'info');
-        const trainersResponse = await fetch('http://localhost:5502/api/trainers/all-departments');
+        const trainersResponse = await fetch(`${API_BASE_URL}/trainers/all-departments`);
         if (!trainersResponse.ok) throw new Error('Failed to fetch trainers');
         
         const trainersData = await trainersResponse.json();
@@ -1098,7 +1098,7 @@ async function handleGeneratePayslips(e) {
         const financeData = getFinanceUserData();
         showNotification(`Generating payslips for ${trainerIds.length} trainers...`, 'info');
         
-        const response = await fetch('http://localhost:5502/api/payslips/generate', {
+        const response = await fetch(`${API_BASE_URL}/payslips/generate`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -1137,7 +1137,7 @@ async function loadPayslips() {
     try {
         showPayslipsLoading();
         
-        const response = await fetch('http://localhost:5502/api/payslips');
+        const response = await fetch(`${API_BASE_URL}/payslips`);
         if (!response.ok) throw new Error('Failed to load payslips');
         
         const data = await response.json();

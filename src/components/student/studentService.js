@@ -1,6 +1,6 @@
 // Student API Service
 
-const API_BASE_URL = 'http://localhost:5502/api';
+const API_BASE_URL = window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : `${window.location.protocol}//${window.location.host}/api`;
 
 // Data refresh interval in milliseconds (5 minutes)
 const REFRESH_INTERVAL = 5 * 60 * 1000;
