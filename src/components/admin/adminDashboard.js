@@ -60,7 +60,7 @@ async function initializeDashboard() {
         
         // Create charts
         createEnrollmentChart();
-        createDepartmentChart();
+        createRevenueChart();
         
         // Load recent activity
         loadRecentActivity();
@@ -235,7 +235,7 @@ function calculateDashboardMetrics() {
 // ========================================
 
 function createEnrollmentChart() {
-    const ctx = document.getElementById('enrollment-chart');
+    const ctx = document.getElementById('enrollmentChart');
     if (!ctx) return;
 
     // Get enrollment data for last 6 months
@@ -271,7 +271,7 @@ function createEnrollmentChart() {
         },
         options: {
             responsive: true,
-            maintainAspectRatio: false,
+            maintainAspectRatio: true,
             plugins: {
                 legend: {
                     display: false
@@ -289,53 +289,57 @@ function createEnrollmentChart() {
     });
 }
 
-function createDepartmentChart() {
-    const ctx = document.getElementById('department-chart');
+function createRevenueChart() {
+    const ctx = document.getElementById('revenueChart');
     if (!ctx) return;
 
-    // Count students by department
-    const departments = {
-        'applied_science': 0,
-        'agriculture': 0,
-        'building_civil': 0,
-        'electromechanical': 0,
-        'hospitality': 0,
-        'business_liberal': 0,
-        'computing_informatics': 0
-    };
-
-    allStudents.forEach(student => {
-        if (student.department && departments.hasOwnProperty(student.department)) {
-            departments[student.department]++;
-        }
-    });
-
-    const labels = Object.keys(departments).map(dept => formatDepartmentName(dept));
-    const data = Object.values(departments);
+    // Get revenue data for last 6 months
+    const months = [];
+    const revenueData = [];
+    
+    for (let i = 5; i >= 0; i--) {
+        const date = new Date();
+        date.setMonth(date.getMonth() - i);
+        const monthName = date.toLocaleDateString('en-US', { month: 'short' });
+        months.push(monthName);
+        
+        const monthRevenue = allPayments.filter(p => {
+            const paymentDate = new Date(p.date || p.createdAt);
+            return paymentDate.getMonth() === date.getMonth() && 
+                   paymentDate.getFullYear() === date.getFullYear();
+        }).reduce((sum, p) => sum + (p.amount || 0), 0);
+        
+        revenueData.push(monthRevenue);
+    }
 
     new Chart(ctx, {
-        type: 'doughnut',
+        type: 'bar',
         data: {
-            labels: labels,
+            labels: months,
             datasets: [{
-                data: data,
-                backgroundColor: [
-                    '#7A0C0C',
-                    '#8B2A2A',
-                    '#3b82f6',
-                    '#10b981',
-                    '#f59e0b',
-                    '#8b5cf6',
-                    '#ec4899'
-                ]
+                label: 'Revenue (KES)',
+                data: revenueData,
+                backgroundColor: '#10b981',
+                borderColor: '#059669',
+                borderWidth: 1
             }]
         },
         options: {
             responsive: true,
-            maintainAspectRatio: false,
+            maintainAspectRatio: true,
             plugins: {
                 legend: {
-                    position: 'right'
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return 'KES ' + value.toLocaleString();
+                        }
+                    }
                 }
             }
         }
@@ -514,14 +518,11 @@ function logout() {
 // ========================================
 
 async function displayStudents() {
-    const container = document.getElementById('students-list');
-    const loading = document.getElementById('students-loading');
-    const countEl = document.getElementById('students-count');
-
-    if (!container) return;
-
-    loading.classList.remove('hidden');
-    container.classList.add('hidden');
+    const container = document.getElementById('students-table');
+    if (!container) {
+        console.error('students-table container not found');
+        return;
+    }
 
     try {
         // Ensure students are loaded
@@ -529,59 +530,61 @@ async function displayStudents() {
             await loadStudents();
         }
 
-        countEl.textContent = allStudents.length;
+        // Calculate balance for each student
+        const studentsWithBalance = allStudents.map(student => {
+            const program = allPrograms.find(p => p.programName === getCourseProgram(student.course));
+            const programCost = program ? program.programCost : 67189;
+            const totalFees = programCost * (student.year || 1);
+            const studentPayments = allPayments.filter(p => p.studentId === student.admissionNumber);
+            const totalPaid = studentPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+            const balance = totalFees - totalPaid;
+            return { ...student, balance };
+        });
 
         // Create table
         container.innerHTML = `
-            <div class="overflow-x-auto">
-                <table class="w-full">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Admission No.</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Name</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Course</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Year</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Balance</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Actions</th>
+            <table class="w-full">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Admission No.</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Name</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Course</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Year</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Balance</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    ${studentsWithBalance.map(student => `
+                        <tr class="hover:bg-gray-50 transition">
+                            <td class="px-4 py-3 text-sm font-medium text-gray-900">${student.admissionNumber || 'N/A'}</td>
+                            <td class="px-4 py-3">
+                                <div>
+                                    <p class="text-sm font-semibold text-gray-900">${student.name}</p>
+                                    <p class="text-xs text-gray-500">${student.phoneNumber || ''}</p>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3 text-sm text-gray-600">${formatCourseName(student.course)}</td>
+                            <td class="px-4 py-3">
+                                <span class="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">Year ${student.year || 1}</span>
+                            </td>
+                            <td class="px-4 py-3 text-sm font-semibold ${student.balance > 0 ? 'text-red-600' : 'text-green-600'}">
+                                ${formatCurrency(student.balance)}
+                            </td>
+                            <td class="px-4 py-3">
+                                <button onclick="viewStudent('${student._id}')" class="text-primary hover:text-secondary transition">
+                                    <i class="ri-eye-line text-lg"></i>
+                                </button>
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-200">
-                        ${allStudents.map(student => `
-                            <tr class="hover:bg-gray-50 transition">
-                                <td class="px-4 py-3 text-sm font-medium text-gray-900">${student.admissionNumber || 'N/A'}</td>
-                                <td class="px-4 py-3">
-                                    <div>
-                                        <p class="text-sm font-semibold text-gray-900">${student.name}</p>
-                                        <p class="text-xs text-gray-500">${student.phoneNumber || ''}</p>
-                                    </div>
-                                </td>
-                                <td class="px-4 py-3 text-sm text-gray-600">${formatCourseName(student.course)}</td>
-                                <td class="px-4 py-3">
-                                    <span class="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">Year ${student.year || 1}</span>
-                                </td>
-                                <td class="px-4 py-3 text-sm font-semibold ${(student.balance || 0) > 0 ? 'text-red-600' : 'text-green-600'}">
-                                    ${formatCurrency(student.balance || 0)}
-                                </td>
-                                <td class="px-4 py-3">
-                                    <button onclick="viewStudent('${student._id}')" class="text-primary hover:text-secondary transition">
-                                        <i class="ri-eye-line text-lg"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            </div>
+                    `).join('')}
+                </tbody>
+            </table>
         `;
-
-        loading.classList.add('hidden');
-        container.classList.remove('hidden');
 
     } catch (error) {
         console.error('Error displaying students:', error);
-        container.innerHTML = '<p class="text-red-600 text-center py-8">Error loading students</p>';
-        loading.classList.add('hidden');
-        container.classList.remove('hidden');
+        container.innerHTML = '<p class="text-red-600 text-center py-8">Error loading students: ' + error.message + '</p>';
     }
 }
 
@@ -599,8 +602,11 @@ function viewStudent(studentId) {
 // ========================================
 
 async function displayTrainers() {
-    const container = document.getElementById('trainers-container');
-    if (!container) return;
+    const container = document.getElementById('trainers-list');
+    if (!container) {
+        console.error('trainers-list container not found');
+        return;
+    }
 
     try {
         if (allTrainers.length === 0) {
@@ -610,41 +616,31 @@ async function displayTrainers() {
         // Filter only active trainers
         const activeTrainers = allTrainers.filter(t => t.isActive !== false);
 
-        container.innerHTML = `
-            <div class="flex items-center justify-between mb-6">
-                <h3 class="text-lg font-bold text-gray-800">Active Trainers (${activeTrainers.length})</h3>
-                <button onclick="openAddTrainerModal()" class="bg-primary text-white px-6 py-3 rounded-lg hover:bg-secondary transition shadow-lg">
-                    <i class="ri-user-add-line mr-2"></i>Add New Trainer
-                </button>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                ${activeTrainers.map(trainer => `
-                    <div class="border rounded-lg p-4 hover:shadow-lg transition">
-                        <div class="flex items-center space-x-3 mb-3">
-                            <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                                <i class="ri-user-line text-2xl text-green-600"></i>
-                            </div>
-                            <div>
-                                <h4 class="font-semibold text-gray-800">${trainer.name}</h4>
-                                <p class="text-xs text-gray-500">${trainer.email}</p>
-                            </div>
-                        </div>
-                        <div class="space-y-2 text-sm">
-                            <p class="text-gray-600">
-                                <i class="ri-building-line mr-2"></i>${formatDepartmentName(trainer.department)}
-                            </p>
-                            ${trainer.specialization ? `<p class="text-gray-600"><i class="ri-star-line mr-2"></i>${trainer.specialization}</p>` : ''}
-                            <span class="inline-block px-2 py-1 ${trainer.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'} text-xs rounded-full">
-                                ${trainer.isActive ? 'Active' : 'Inactive'}
-                            </span>
-                        </div>
+        container.innerHTML = activeTrainers.map(trainer => `
+            <div class="border rounded-lg p-4 hover:shadow-lg transition">
+                <div class="flex items-center space-x-3 mb-3">
+                    <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                        <i class="ri-user-line text-2xl text-green-600"></i>
                     </div>
-                `).join('')}
+                    <div>
+                        <h4 class="font-semibold text-gray-800">${trainer.name}</h4>
+                        <p class="text-xs text-gray-500">${trainer.email}</p>
+                    </div>
+                </div>
+                <div class="space-y-2 text-sm">
+                    <p class="text-gray-600">
+                        <i class="ri-building-line mr-2"></i>${formatDepartmentName(trainer.department)}
+                    </p>
+                    ${trainer.specialization ? `<p class="text-gray-600"><i class="ri-star-line mr-2"></i>${trainer.specialization}</p>` : ''}
+                    <span class="inline-block px-2 py-1 ${trainer.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'} text-xs rounded-full">
+                        ${trainer.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                </div>
             </div>
-        `;
+        `).join('');
     } catch (error) {
         console.error('Error displaying trainers:', error);
-        container.innerHTML = '<p class="text-red-600 text-center py-8">Error loading trainers</p>';
+        container.innerHTML = '<p class="text-red-600 text-center py-8">Error loading trainers: ' + error.message + '</p>';
     }
 }
 
@@ -653,12 +649,25 @@ async function displayTrainers() {
 // ========================================
 
 async function displayFinancial() {
-    const container = document.getElementById('financial-container');
-    if (!container) return;
+    const container = document.getElementById('financial-content');
+    if (!container) {
+        console.error('financial-content container not found');
+        return;
+    }
 
     try {
+        // Calculate financial metrics with proper balance calculation
         const totalRevenue = allPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
-        const totalOutstanding = allStudents.reduce((sum, s) => sum + (s.balance || 0), 0);
+        
+        const totalOutstanding = allStudents.reduce((sum, student) => {
+            const program = allPrograms.find(p => p.programName === getCourseProgram(student.course));
+            const programCost = program ? program.programCost : 67189;
+            const totalFees = programCost * (student.year || 1);
+            const studentPayments = allPayments.filter(p => p.studentId === student.admissionNumber);
+            const totalPaid = studentPayments.reduce((pSum, p) => pSum + (p.amount || 0), 0);
+            const balance = totalFees - totalPaid;
+            return sum + (balance > 0 ? balance : 0);
+        }, 0);
 
         container.innerHTML = `
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -677,7 +686,14 @@ async function displayFinancial() {
                         <i class="ri-alert-line text-3xl text-red-600"></i>
                     </div>
                     <p class="text-3xl font-bold text-red-600">${formatCurrency(totalOutstanding)}</p>
-                    <p class="text-sm text-red-700 mt-2">${allStudents.filter(s => (s.balance || 0) > 0).length} students owing</p>
+                    <p class="text-sm text-red-700 mt-2">${allStudents.filter(s => {
+                        const program = allPrograms.find(p => p.programName === getCourseProgram(s.course));
+                        const programCost = program ? program.programCost : 67189;
+                        const totalFees = programCost * (s.year || 1);
+                        const studentPayments = allPayments.filter(p => p.studentId === s.admissionNumber);
+                        const totalPaid = studentPayments.reduce((pSum, p) => pSum + (p.amount || 0), 0);
+                        return (totalFees - totalPaid) > 0;
+                    }).length} students owing</p>
                 </div>
             </div>
 
@@ -707,7 +723,7 @@ async function displayFinancial() {
         `;
     } catch (error) {
         console.error('Error displaying financial data:', error);
-        container.innerHTML = '<p class="text-red-600 text-center py-8">Error loading financial data</p>';
+        container.innerHTML = '<p class="text-red-600 text-center py-8">Error loading financial data: ' + error.message + '</p>';
     }
 }
 
@@ -716,8 +732,11 @@ async function displayFinancial() {
 // ========================================
 
 async function displayPrograms() {
-    const container = document.getElementById('programs-container');
-    if (!container) return;
+    const container = document.getElementById('programs-list');
+    if (!container) {
+        console.error('programs-list container not found');
+        return;
+    }
 
     try {
         if (allPrograms.length === 0) {
