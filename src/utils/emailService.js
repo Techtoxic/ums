@@ -9,11 +9,12 @@ class EmailService {
 
     initializeTransporter() {
         try {
+            // Try port 465 with SSL for better compatibility on cloud platforms like Render
             this.transporter = nodemailer.createTransport({
                 service: 'gmail',
                 host: 'smtp.gmail.com',
-                port: 587,
-                secure: false, // Use TLS
+                port: 465, // SSL port (changed from 587 TLS)
+                secure: true, // Use SSL instead of TLS
                 auth: {
                     user: process.env.EMAIL_USER,
                     pass: process.env.EMAIL_APP_PASSWORD // App password
