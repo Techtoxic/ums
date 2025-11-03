@@ -1,5 +1,5 @@
 const nodemailer = require('nodemailer');
-require('dotenv').config();
+const config = require('../config/config');
 
 class EmailService {
     constructor() {
@@ -61,7 +61,7 @@ class EmailService {
     // Send reset link email
     async sendResetLinkEmail(email, resetToken, userName, userType) {
         try {
-            const resetLink = `${process.env.BASE_URL || 'http://localhost:5502'}/reset-password?token=${resetToken}&type=${userType}`;
+            const resetLink = `${config.baseUrl}/reset-password?token=${resetToken}&type=${userType}`;
             
             const mailOptions = {
                 from: {

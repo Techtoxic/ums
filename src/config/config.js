@@ -15,6 +15,7 @@ const config = {
     // API Configuration
     apiBaseUrl: process.env.API_BASE_URL || 'http://localhost:5502/api',
     clientUrl: process.env.CLIENT_URL || 'http://localhost:5502',
+    baseUrl: process.env.BASE_URL || process.env.CLIENT_URL || 'http://localhost:5502', // For email reset links
     
     // JWT Configuration
     jwt: {
