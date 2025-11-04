@@ -260,6 +260,7 @@ function renderStudentTable(students, programs, payments) {
                         class="view-receipts-btn bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 transition-colors text-xs"
                         data-student-id="${student.admissionNumber}"
                         data-student-name="${student.name}"
+                        data-student-course="${student.course || ''}"
                     >
                         Receipts
                     </button>
@@ -287,14 +288,48 @@ async function showStudentPaymentReceipts(data) {
     try {
         const studentId = data.studentId;
         const studentName = data.studentName;
-        
+
+        // Fetch full student data to get course information
+        let studentData = { name: studentName, course: data.studentCourse || 'N/A' };
+        try {
+            const studentResponse = await fetch(`${API_BASE_URL}/students/admission/${encodeURIComponent(studentId)}`);
+            if (studentResponse.ok) {
+                const fullStudent = await studentResponse.json();
+                
+                // Fetch program data to get the full program name
+                let programName = formatCourseName(fullStudent.course);
+                try {
+                    const programsResponse = await fetch(`${API_BASE_URL}/programs`);
+                    if (programsResponse.ok) {
+                        const programs = await programsResponse.json();
+                        const program = programs.find(p => p.programCode === fullStudent.course);
+                        if (program) {
+                            programName = program.programName;
+                        }
+                    }
+                } catch (progErr) {
+                    console.warn('Could not fetch program data, using formatted course name:', progErr);
+                }
+                
+                studentData = {
+                    name: fullStudent.name || studentName,
+                    course: fullStudent.course || 'N/A',
+                    programName: programName,
+                    admissionNumber: fullStudent.admissionNumber,
+                    department: fullStudent.department
+                };
+            }
+        } catch (err) {
+            console.warn('Could not fetch full student data, using available info:', err);
+        }
+
         // Fetch all payments for this student
         const response = await fetch(`${API_BASE_URL}/payments`);
         if (!response.ok) throw new Error('Failed to load payments');
-        
+
         const allPayments = await response.json();
         const studentPayments = allPayments.filter(payment => payment.studentId === studentId);
-        
+
         if (studentPayments.length === 0) {
             showToast('No payments found for this student', 'info');
             return;
@@ -304,11 +339,11 @@ async function showStudentPaymentReceipts(data) {
         if (studentPayments.length === 1) {
             // If only one payment, generate receipt directly
             if (window.generatePaymentReceipt) {
-                window.generatePaymentReceipt(studentPayments[0], { name: studentName, course: 'N/A' });
+                window.generatePaymentReceipt(studentPayments[0], studentData);
             }
         } else {
             // Show modal to select which payment receipt to generate
-            showPaymentSelectionModal(studentPayments, { name: studentName, studentId });
+            showPaymentSelectionModal(studentPayments, studentData);
         }
     } catch (error) {
         console.error('Error loading student payments:', error);
