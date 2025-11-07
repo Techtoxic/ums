@@ -91,7 +91,7 @@ async function loadStudentUploads() {
                 uploadStates.kcse = upload;
             } else if (upload.uploadType === 'kcpe_results') {
                 uploadStates.kcpe = upload;
-            } else if (upload.uploadType === 'assessment' || upload.uploadType === 'practical') {
+            } else if (upload.uploadType === 'assessment' || upload.uploadType === 'practical' || upload.uploadType === 'combined_video') {
                 const unitKey = upload.unitId?._id || upload.unitId;
                 if (!uploadStates.units[unitKey]) {
                     uploadStates.units[unitKey] = {};
@@ -100,6 +100,8 @@ async function loadStudentUploads() {
                     uploadStates.units[unitKey][`assessment${upload.assessmentNumber}`] = upload;
                 } else if (upload.uploadType === 'practical') {
                     uploadStates.units[unitKey][`practical${upload.practicalNumber}`] = upload;
+                } else if (upload.uploadType === 'combined_video') {
+                    uploadStates.units[unitKey].combinedVideo = upload;
                 }
             }
         });
@@ -242,6 +244,7 @@ function createUnitUploadCard(unit) {
             <div class="space-y-3">
                 ${['1', '2', '3'].map(num => createAssessmentUploadSlot(unitId, num, unitUploads[`assessment${num}`])).join('')}
                 ${['1', '2', '3'].map(num => createPracticalUploadSlot(unitId, num, unitUploads[`practical${num}`])).join('')}
+                ${createCombinedVideoUploadSlot(unitId, unitUploads.combinedVideo)}
             </div>
         </div>
     `;
@@ -293,11 +296,11 @@ function createPracticalUploadSlot(unitId, practicalNum, uploadData) {
         <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded">
             <div class="flex-1">
                 <div class="flex items-center gap-2">
-                    <i class="ri-video-line text-gray-400"></i>
+                    <i class="ri-file-pdf-line text-gray-400"></i>
                     <span class="text-sm font-medium text-gray-900 dark:text-white">Practical ${practicalNum}</span>
                     <span class="px-2 py-0.5 rounded-full text-xs font-medium ${statusClass}">${status}</span>
                 </div>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Video or Photo</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">PDF Document</p>
                 ${uploadData ? `
                     <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
                         ${uploadData.originalFileName} • ${new Date(uploadData.uploadedAt).toLocaleDateString()}
@@ -322,6 +325,44 @@ function createPracticalUploadSlot(unitId, practicalNum, uploadData) {
     `;
 }
 
+// Create combined video upload slot
+function createCombinedVideoUploadSlot(unitId, uploadData) {
+    const status = uploadData ? (uploadData.version > 1 ? 'Replaced' : 'Uploaded') : 'Not Uploaded';
+    const statusClass = uploadData ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700';
+
+    return `
+        <div class="flex items-center justify-between p-3 bg-purple-50 dark:bg-purple-900/20 rounded border border-purple-200 dark:border-purple-800">
+            <div class="flex-1">
+                <div class="flex items-center gap-2">
+                    <i class="ri-video-line text-purple-600"></i>
+                    <span class="text-sm font-medium text-gray-900 dark:text-white">Combined Video</span>
+                    <span class="px-2 py-0.5 rounded-full text-xs font-medium ${statusClass}">${status}</span>
+                </div>
+                <p class="text-xs text-purple-600 dark:text-purple-400 mt-1">Video or Image</p>
+                ${uploadData ? `
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        ${uploadData.originalFileName} • ${new Date(uploadData.uploadedAt).toLocaleDateString()}
+                    </p>
+                ` : ''}
+            </div>
+            <div class="flex items-center gap-2">
+                ${uploadData ? `
+                    <button onclick="viewUpload('${uploadData._id}')" class="text-blue-600 hover:text-blue-700 text-sm">
+                        <i class="ri-eye-line"></i>
+                    </button>
+                    <button onclick="replaceUpload('${unitId}', 'combined_video', null, '${uploadData._id}')" class="text-orange-600 hover:text-orange-700 text-sm">
+                        <i class="ri-refresh-line"></i>
+                    </button>
+                ` : `
+                    <button onclick="uploadFile('${unitId}', 'combined_video', null)" class="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded transition-colors">
+                        <i class="ri-upload-line mr-1"></i>Upload
+                    </button>
+                `}
+            </div>
+        </div>
+    `;
+}
+
 // Upload file handler
 async function uploadFile(unitId, uploadType, assessmentNumber) {
     try {
@@ -331,6 +372,8 @@ async function uploadFile(unitId, uploadType, assessmentNumber) {
         
         // Set accept based on upload type
         if (uploadType === 'practical') {
+            fileInput.accept = '.pdf';
+        } else if (uploadType === 'combined_video') {
             fileInput.accept = 'image/*,video/*';
         } else {
             fileInput.accept = '.pdf,.doc,.docx';
