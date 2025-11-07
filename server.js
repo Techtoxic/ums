@@ -3633,7 +3633,7 @@ app.post('/api/students/register-units', async (req, res) => {
                     
                     const registrationData = {
                         studentId,
-                        commonUnitId,
+                        unitId: commonUnitId,  // Use unitId instead of commonUnitId for consistency
                         courseCode: commonUnit.courseCode,
                         unitCode: commonUnit.unitCode,
                         unitName: commonUnit.unitName,
@@ -4887,7 +4887,7 @@ app.post('/api/student-uploads', upload.single('file'), async (req, res) => {
         }
 
         // Validate unit-related uploads
-        if (['assessment', 'practical'].includes(uploadType)) {
+        if (['assessment', 'practical', 'combined_video'].includes(uploadType)) {
             if (!unitId || !unitCode) {
                 return res.status(400).json({ message: 'Unit information required for this upload type' });
             }
@@ -4924,6 +4924,16 @@ app.post('/api/student-uploads', upload.single('file'), async (req, res) => {
             if (!practicalNumber || practicalNumber < 1 || practicalNumber > 3) {
                 return res.status(400).json({ message: 'Invalid practical number (must be 1-3)' });
             }
+            
+            // Validate file type for practical uploads
+            // Practical 1, 2, 3 should be PDF only
+            if (practicalNumber >= 1 && practicalNumber <= 3) {
+                if (req.file.mimetype !== 'application/pdf') {
+                    return res.status(400).json({ 
+                        message: 'Practical documents must be PDF files. Please upload a PDF file.' 
+                    });
+                }
+            }
         }
 
             // Check for existing upload (to replace)
@@ -4935,7 +4945,7 @@ app.post('/api/student-uploads', upload.single('file'), async (req, res) => {
             };
 
             // For profile/results, only check by studentId and uploadType
-            // For assessments/practicals, also check unit and semester
+            // For assessments/practicals/combined_video, also check unit and semester
             if (uploadType === 'assessment') {
                 searchCriteria.unitId = unitId;
                 searchCriteria.assessmentNumber = assessmentNumber;
@@ -4944,6 +4954,10 @@ app.post('/api/student-uploads', upload.single('file'), async (req, res) => {
             } else if (uploadType === 'practical') {
                 searchCriteria.unitId = unitId;
                 searchCriteria.practicalNumber = practicalNumber;
+                searchCriteria.academicYear = academicYear;
+                searchCriteria.semester = semester;
+            } else if (uploadType === 'combined_video') {
+                searchCriteria.unitId = unitId;
                 searchCriteria.academicYear = academicYear;
                 searchCriteria.semester = semester;
             }
@@ -5480,8 +5494,9 @@ app.get('/api/students/:studentId/public-notes', async (req, res) => {
     try {
         const { studentId } = req.params;
         
+        // Public notes should be visible to all students, not just the assigned student
+        // Remove studentId filter to show all public notes
         const notes = await StudentNote.find({
-            studentId,
             noteType: 'public'
         }).sort({ createdAt: -1 });
         
