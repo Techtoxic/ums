@@ -1240,6 +1240,43 @@ async function handleAddTrainer(e) {
 }
 
 // ========================================
+// MOBILE SEARCH FUNCTIONALITY
+// ========================================
+
+// Setup mobile search toggle
+document.addEventListener('DOMContentLoaded', function() {
+    const mobileSearchToggle = document.getElementById('mobile-search-toggle');
+    if (mobileSearchToggle) {
+        mobileSearchToggle.addEventListener('click', openMobileSearch);
+    }
+    
+    const mobileSearchInput = document.getElementById('mobile-search-input');
+    if (mobileSearchInput) {
+        mobileSearchInput.addEventListener('input', function(e) {
+            handleGlobalSearch(e);
+        });
+    }
+});
+
+function openMobileSearch() {
+    const modal = document.getElementById('mobile-search-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        const input = document.getElementById('mobile-search-input');
+        if (input) {
+            setTimeout(() => input.focus(), 100);
+        }
+    }
+}
+
+function closeMobileSearch() {
+    const modal = document.getElementById('mobile-search-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+// ========================================
 // MAKE FUNCTIONS GLOBALLY AVAILABLE
 // ========================================
 
@@ -1253,3 +1290,5 @@ window.closeAddTrainerModal = closeAddTrainerModal;
 window.handleAddTrainer = handleAddTrainer;
 window.openAddStudentModal = openAddStudentModal;
 window.exportStudents = exportStudents;
+window.openMobileSearch = openMobileSearch;
+window.closeMobileSearch = closeMobileSearch;

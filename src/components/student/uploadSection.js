@@ -135,12 +135,11 @@ async function loadRegisteredUnitsForUploads() {
         const registrations = await response.json();
         console.log('Fetched registrations:', registrations);
 
-        // Filter only department units (not common units)
-        const departmentUnits = registrations.filter(reg => reg.unitType === 'department');
-        console.log('Department units:', departmentUnits);
+        // Allow uploads for all registered units (both department and common units)
+        console.log('All registered units:', registrations);
 
         // Display unit upload cards
-        displayUnitUploadCards(departmentUnits);
+        displayUnitUploadCards(registrations);
 
     } catch (error) {
         console.error('Error loading registered units:', error);
@@ -216,8 +215,8 @@ function displayUnitUploadCards(units) {
         container.innerHTML = `
             <div class="col-span-full text-center py-12">
                 <i class="ri-file-upload-line text-4xl text-gray-400 mb-4"></i>
-                <p class="text-gray-600 dark:text-gray-400">You have no registered department units.</p>
-                <p class="text-sm text-gray-500 dark:text-gray-500 mt-2">Only department units (not common units) allow assessment uploads.</p>
+                <p class="text-gray-600 dark:text-gray-400">You have no registered units.</p>
+                <p class="text-sm text-gray-500 dark:text-gray-500 mt-2">Register for units to start uploading assessments and practicals.</p>
             </div>
         `;
         return;
@@ -238,7 +237,7 @@ function createUnitUploadCard(unit) {
                     <h3 class="font-semibold text-gray-900 dark:text-white">${unit.unitName}</h3>
                     <p class="text-sm text-gray-600 dark:text-gray-400">${unit.unitCode}</p>
                 </div>
-                <span class="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">Department Unit</span>
+                <span class="px-2 py-1 ${unit.unitType === 'common' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'} text-xs rounded-full">${unit.unitType === 'common' ? 'Common Unit' : 'Department Unit'}</span>
             </div>
 
             <div class="space-y-3">
