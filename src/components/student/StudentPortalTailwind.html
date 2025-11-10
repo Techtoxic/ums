@@ -231,15 +231,15 @@
     <main id="main-content" class="md:ml-64 transition-all duration-300">
         <!-- Top Bar -->
         <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30">
-            <div class="flex items-center justify-between px-4 py-3">
-                <div class="flex items-center gap-4">
+            <div class="flex items-center justify-between px-2 py-1.5 text-xs">
+                <div class="flex items-center gap-2">
                     <button id="mobile-menu-btn" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg md:hidden">
                         <i class="ri-menu-line text-xl text-gray-600 dark:text-gray-300"></i>
                     </button>
                     <button id="desktop-sidebar-toggle" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg hidden md:block">
                         <i class="ri-menu-fold-line text-xl text-gray-600 dark:text-gray-300"></i>
                     </button>
-                    <h2 id="page-title" class="text-xl font-semibold text-gray-800 dark:text-white">Dashboard</h2>
+                    <h2 id="page-title" class="text-base md:text-sm md:text-base font-semibold text-gray-800 dark:text-white">Dashboard</h2>
                 </div>
                 <div class="flex items-center gap-3">
                     <div class="hidden sm:flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
@@ -251,98 +251,98 @@
         </header>
 
         <!-- Content Area -->
-        <div class="p-4 md:p-6 space-y-6">
+        <div class="p-2 md:p-4 space-y-3">
             <!-- Dashboard Section -->
             <section id="dashboard" class="content-section">
                 <!-- Welcome Card -->
-                <div class="bg-gradient-to-r from-primary to-secondary rounded-2xl p-6 text-white mb-6 card-hover">
-                    <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div class="bg-gradient-to-r from-primary to-secondary rounded-lg p-3 md:p-4 text-white mb-3 card-hover">
+                    <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
                         <div>
-                            <h1 class="text-2xl md:text-3xl font-bold mb-2">Welcome back, <span class="student-name">Student</span>!</h1>
-                            <p class="text-white/80 text-lg">Hope you're having a great day learning.</p>
+                            <h1 class="text-base md:text-lg font-bold mb-1">Welcome, <span class="student-name">Student</span>!</h1>
+                            <p class="text-white/80 text-xs md:text-sm">Hope you're having a great day learning.</p>
                         </div>
-                        <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-2">
                             <div class="text-center">
-                                <div class="text-2xl font-bold student-year">-</div>
-                                <div class="text-sm text-white/70">Year</div>
+                                <div class="text-lg md:text-xl font-bold student-year">-</div>
+                                <div class="text-xs text-white/70">Year</div>
                             </div>
-                            <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
-                                <i class="ri-graduation-cap-line text-3xl"></i>
+                            <div class="w-10 h-10 md:w-12 md:h-12 bg-white/20 rounded-full flex items-center justify-center">
+                                <i class="ri-graduation-cap-line text-xl md:text-2xl"></i>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Quick Stats -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-2 mb-3">
                     <!-- Program Cost Card -->
-                    <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 card-hover">
-                        <div class="flex items-center justify-between mb-4">
-                            <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-                                <i class="ri-price-tag-3-line text-blue-600 text-xl"></i>
+                    <div class="bg-white dark:bg-gray-800 rounded-lg p-2 md:p-3 shadow-sm border border-gray-200 dark:border-gray-700 card-hover">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="w-8 h-8 md:w-10 md:h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+                                <i class="ri-price-tag-3-line text-blue-600 text-sm md:text-base"></i>
                             </div>
-                            <span class="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">Program</span>
+                            <span class="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded-full">Program</span>
                         </div>
                         <div>
-                            <p class="text-2xl font-bold text-gray-800 dark:text-white program-cost">Loading...</p>
-                            <p class="text-sm text-gray-600 dark:text-gray-400">Total Program Cost</p>
+                            <p class="text-base md:text-lg font-bold text-gray-800 dark:text-white program-cost">Loading...</p>
+                            <p class="text-xs text-gray-600 dark:text-gray-400">Total Program Cost</p>
                         </div>
                     </div>
 
                     <!-- Total Paid Card -->
-                    <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 card-hover">
-                        <div class="flex items-center justify-between mb-4">
-                            <div class="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
-                                <i class="ri-check-double-line text-green-600 text-xl"></i>
+                    <div class="bg-white dark:bg-gray-800 rounded-lg p-2 md:p-3 shadow-sm border border-gray-200 dark:border-gray-700 card-hover">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="w-8 h-8 md:w-10 md:h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
+                                <i class="ri-check-double-line text-green-600 text-sm md:text-base"></i>
                             </div>
-                            <span class="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">Paid</span>
+                            <span class="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded-full">Paid</span>
                         </div>
                         <div>
-                            <p class="text-2xl font-bold text-green-600 total-paid">KES 0</p>
-                            <p class="text-sm text-gray-600 dark:text-gray-400">Total Paid</p>
+                            <p class="text-base md:text-lg font-bold text-green-600 total-paid">KES 0</p>
+                            <p class="text-xs text-gray-600 dark:text-gray-400">Total Paid</p>
                         </div>
                     </div>
 
                     <!-- Balance Card -->
-                    <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 card-hover">
-                        <div class="flex items-center justify-between mb-4">
-                            <div class="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
-                                <i class="ri-wallet-3-line text-orange-600 text-xl"></i>
+                    <div class="bg-white dark:bg-gray-800 rounded-lg p-2 md:p-3 shadow-sm border border-gray-200 dark:border-gray-700 card-hover">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="w-8 h-8 md:w-10 md:h-10 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
+                                <i class="ri-wallet-3-line text-orange-600 text-sm md:text-base"></i>
                             </div>
-                            <span class="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">Balance</span>
+                            <span class="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded-full">Balance</span>
                         </div>
                         <div>
-                            <p class="text-2xl font-bold text-orange-600 balance">KES 0</p>
-                            <p class="text-sm text-gray-600 dark:text-gray-400">Outstanding Balance</p>
+                            <p class="text-base md:text-lg font-bold text-orange-600 balance">KES 0</p>
+                            <p class="text-xs text-gray-600 dark:text-gray-400">Outstanding Balance</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Payment Progress -->
-                <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 mb-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Payment Progress</h3>
-                        <span id="payment-percentage" class="text-sm font-medium text-gray-600 dark:text-gray-400">0%</span>
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-2 md:p-3 shadow-sm border border-gray-200 dark:border-gray-700 mb-3">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-sm md:text-base font-semibold text-gray-800 dark:text-white">Payment Progress</h3>
+                        <span id="payment-percentage" class="text-xs font-medium text-gray-600 dark:text-gray-400">0%</span>
                     </div>
-                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 mb-2">
-                        <div id="payment-progress" class="bg-gradient-to-r from-primary to-secondary h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-1">
+                        <div id="payment-progress" class="bg-gradient-to-r from-primary to-secondary h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
                     </div>
-                    <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400">
+                    <div class="flex justify-between text-xs text-gray-600 dark:text-gray-400">
                         <span>KES 0</span>
                         <span class="program-cost-text">KES 0</span>
                     </div>
                 </div>
 
                 <!-- Recent Activity -->
-                <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Recent Activity</h3>
-                    <div id="recent-activity" class="space-y-3">
-                        <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                            <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
-                                <i class="ri-user-line text-blue-600 text-sm"></i>
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-2 md:p-3 shadow-sm border border-gray-200 dark:border-gray-700">
+                    <h3 class="text-sm md:text-base font-semibold text-gray-800 dark:text-white mb-2">Recent Activity</h3>
+                    <div id="recent-activity" class="space-y-2">
+                        <div class="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <div class="w-6 h-6 md:w-8 md:h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+                                <i class="ri-user-line text-blue-600 text-xs md:text-sm"></i>
                             </div>
                             <div class="flex-1">
-                                <p class="text-sm font-medium text-gray-800 dark:text-white">Profile updated</p>
+                                <p class="text-xs md:text-sm font-medium text-gray-800 dark:text-white">Profile updated</p>
                                 <p class="text-xs text-gray-600 dark:text-gray-400">Welcome to the portal</p>
                             </div>
                             <span class="text-xs text-gray-500 dark:text-gray-400">Just now</span>
@@ -353,54 +353,54 @@
 
             <!-- Profile Section -->
             <section id="profile" class="content-section hidden">
-                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-                    <div class="p-6 border-b border-gray-200 dark:border-gray-700">
-                        <h2 class="text-xl font-semibold text-gray-800 dark:text-white">Student Profile</h2>
-                        <p class="text-gray-600 dark:text-gray-400 mt-1">Your academic information and details</p>
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                    <div class="p-2 md:p-3 border-b border-gray-200 dark:border-gray-700">
+                        <h2 class="text-base md:text-sm md:text-base font-semibold text-gray-800 dark:text-white">Student Profile</h2>
+                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-0.5">Your academic information and details</p>
                     </div>
-                    <div class="p-6">
-                        <div class="grid md:grid-cols-2 gap-8">
+                    <div class="p-2 md:p-3">
+                        <div class="grid md:grid-cols-2 gap-3">
                             <!-- Profile Info -->
-                            <div class="space-y-6">
-                                <div class="flex items-center gap-4">
-                                    <div class="w-20 h-20 bg-gradient-to-r from-primary to-secondary rounded-full flex items-center justify-center">
-                                        <i class="ri-user-line text-white text-3xl"></i>
+                            <div class="space-y-3">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-r from-primary to-secondary rounded-full flex items-center justify-center">
+                                        <i class="ri-user-line text-white text-lg md:text-2xl"></i>
                                     </div>
                                     <div>
-                                        <h3 class="text-xl font-semibold text-gray-800 dark:text-white student-name">Loading...</h3>
-                                        <p class="text-gray-600 dark:text-gray-400 student-admission">Loading...</p>
+                                        <h3 class="text-sm md:text-base font-semibold text-gray-800 dark:text-white student-name">Loading...</h3>
+                                        <p class="text-xs text-gray-600 dark:text-gray-400 student-admission">Loading...</p>
                                     </div>
                                 </div>
 
-                                <div class="grid grid-cols-1 gap-4">
-                                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                                        <label class="text-sm font-medium text-gray-600 dark:text-gray-400">ID Number</label>
-                                        <p class="text-gray-800 dark:text-white font-medium student-id">Loading...</p>
+                                <div class="grid grid-cols-1 gap-2">
+                                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
+                                        <label class="text-xs font-medium text-gray-600 dark:text-gray-400">ID Number</label>
+                                        <p class="text-xs md:text-sm text-gray-800 dark:text-white font-medium student-id">Loading...</p>
                                     </div>
-                                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                                        <label class="text-sm font-medium text-gray-600 dark:text-gray-400">Phone Number</label>
-                                        <p class="text-gray-800 dark:text-white font-medium student-phone">Loading...</p>
+                                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
+                                        <label class="text-xs font-medium text-gray-600 dark:text-gray-400">Phone Number</label>
+                                        <p class="text-xs md:text-sm text-gray-800 dark:text-white font-medium student-phone">Loading...</p>
                                     </div>
-                                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                                        <label class="text-sm font-medium text-gray-600 dark:text-gray-400">Email Address</label>
+                                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
+                                        <label class="text-xs font-medium text-gray-600 dark:text-gray-400">Email Address</label>
                                         <div class="flex items-center justify-between">
-                                            <p class="text-gray-800 dark:text-white font-medium student-email">Not set</p>
-                                            <button onclick="openEmailUpdateModal()" class="text-primary hover:text-secondary text-sm font-medium">
+                                            <p class="text-xs md:text-sm text-gray-800 dark:text-white font-medium student-email">Not set</p>
+                                            <button onclick="openEmailUpdateModal()" class="text-primary hover:text-secondary text-xs font-medium">
                                                 <i class="ri-edit-line mr-1"></i>Update
                                             </button>
                                         </div>
                                     </div>
-                                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                                        <label class="text-sm font-medium text-gray-600 dark:text-gray-400">KCSE Grade</label>
-                                        <p class="text-gray-800 dark:text-white font-medium student-kcse">Loading...</p>
+                                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
+                                        <label class="text-xs font-medium text-gray-600 dark:text-gray-400">KCSE Grade</label>
+                                        <p class="text-xs md:text-sm text-gray-800 dark:text-white font-medium student-kcse">Loading...</p>
                                     </div>
                                 </div>
                             </div>
 
                             <!-- Academic Info -->
-                            <div class="space-y-6">
-                                <h4 class="text-lg font-semibold text-gray-800 dark:text-white">Academic Information</h4>
-                                <div class="grid grid-cols-1 gap-4">
+                            <div class="space-y-2">
+                                <h4 class="text-sm md:text-base font-semibold text-gray-800 dark:text-white">Academic Information</h4>
+                                <div class="grid grid-cols-1 gap-2">
                                     <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
                                         <label class="text-sm font-medium text-gray-600 dark:text-gray-400">Course</label>
                                         <p class="text-gray-800 dark:text-white font-medium student-course-name">Loading...</p>
@@ -430,15 +430,15 @@
 
             <!-- Financial Section -->
             <section id="financial" class="content-section hidden">
-                <div class="space-y-6">
+                <div class="space-y-2">
                     <!-- Financial Overview -->
                     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                         <div class="p-6 border-b border-gray-200 dark:border-gray-700">
-                            <h2 class="text-xl font-semibold text-gray-800 dark:text-white">Financial Information</h2>
+                            <h2 class="text-base md:text-sm md:text-base font-semibold text-gray-800 dark:text-white">Financial Information</h2>
                             <p class="text-gray-600 dark:text-gray-400 mt-1">Your payment status and program costs</p>
                         </div>
                         <div class="p-6">
-                            <div class="grid md:grid-cols-3 gap-6 mb-6">
+                            <div class="grid md:grid-cols-3 gap-2 mb-3">
                                 <div class="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
                                     <div class="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-3">
                                         <i class="ri-price-tag-3-line text-white text-xl"></i>
@@ -463,9 +463,9 @@
                             </div>
 
                             <!-- Payment Progress Chart -->
-                            <div class="bg-gray-50 dark:bg-gray-700 rounded-xl p-6">
-                                <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Payment Progress</h3>
-                                <div class="flex items-center gap-6">
+                            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-2 md:p-3">
+                                <h3 class="text-sm md:text-base font-semibold text-gray-800 dark:text-white mb-4">Payment Progress</h3>
+                                <div class="flex items-center gap-3">
                                     <div class="flex-1">
                                         <div class="flex justify-between items-center mb-2">
                                             <span class="text-sm text-gray-600 dark:text-gray-400">Progress</span>
@@ -486,11 +486,11 @@
                     <!-- Program Details -->
                     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                         <div class="p-6 border-b border-gray-200 dark:border-gray-700">
-                            <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Program Details</h3>
+                            <h3 class="text-sm md:text-base font-semibold text-gray-800 dark:text-white">Program Details</h3>
                         </div>
                         <div class="p-6">
-                            <div class="grid md:grid-cols-2 gap-6">
-                                <div class="space-y-4">
+                            <div class="grid md:grid-cols-2 gap-3">
+                                <div class="space-y-2">
                                     <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
                                         <span class="text-gray-600 dark:text-gray-400">Program Name:</span>
                                         <span class="font-medium text-gray-800 dark:text-white student-course-name">Loading...</span>
@@ -504,7 +504,7 @@
                                         <span class="font-medium text-gray-800 dark:text-white student-year-text">Loading...</span>
                                     </div>
                                 </div>
-                                <div class="space-y-4">
+                                <div class="space-y-2">
                                     <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
                                         <span class="text-gray-600 dark:text-gray-400">Program Cost:</span>
                                         <span class="font-medium text-primary program-cost">Loading...</span>
@@ -528,11 +528,11 @@
             <section id="payments" class="content-section hidden">
                 <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                     <div class="p-6 border-b border-gray-200 dark:border-gray-700">
-                        <h2 class="text-xl font-semibold text-gray-800 dark:text-white">Payment History</h2>
+                        <h2 class="text-base md:text-sm md:text-base font-semibold text-gray-800 dark:text-white">Payment History</h2>
                         <p class="text-gray-600 dark:text-gray-400 mt-1">Track all your payments and transactions</p>
                     </div>
                     <div class="p-6">
-                        <div id="payment-history" class="space-y-4">
+                        <div id="payment-history" class="space-y-2">
                             <div class="text-center py-8">
                                 <div class="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
                                     <i class="ri-receipt-line text-2xl text-gray-400"></i>
@@ -549,7 +549,7 @@
                 <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md transform transition-all duration-300 scale-95">
                     <div class="p-6 border-b border-gray-200 dark:border-gray-700">
                         <div class="flex items-center justify-between">
-                            <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Payment Receipt</h3>
+                            <h3 class="text-sm md:text-base font-semibold text-gray-800 dark:text-white">Payment Receipt</h3>
                             <button id="close-receipt-modal" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
                                 <i class="ri-close-line text-xl text-gray-600 dark:text-gray-300"></i>
                             </button>
@@ -576,14 +576,14 @@
                 <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md transform transition-all duration-300 scale-95">
                     <div class="p-6 border-b border-gray-200 dark:border-gray-700">
                         <div class="flex items-center justify-between">
-                            <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Update Email Address</h3>
+                            <h3 class="text-sm md:text-base font-semibold text-gray-800 dark:text-white">Update Email Address</h3>
                             <button onclick="closeEmailUpdateModal()" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
                                 <i class="ri-close-line text-xl text-gray-600 dark:text-gray-300"></i>
                             </button>
                         </div>
                     </div>
                     <form id="email-update-form" class="p-6">
-                        <div class="space-y-4">
+                        <div class="space-y-2">
                             <div>
                                 <label for="new-email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     <i class="ri-mail-line mr-2 text-primary"></i>New Email Address
@@ -592,7 +592,7 @@
                                     type="email" 
                                     id="new-email" 
                                     placeholder="Enter your new email address"
-                                    class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                    class="w-full px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                     required
                                 >
                             </div>
@@ -627,15 +627,15 @@
 
             <!-- Uploads Section -->
             <section id="uploads" class="content-section hidden">
-                <div class="space-y-6">
+                <div class="space-y-2">
                     <!-- Page Header -->
                     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                        <h2 class="text-xl font-semibold text-gray-800 dark:text-white">Document Uploads</h2>
+                        <h2 class="text-base md:text-sm md:text-base font-semibold text-gray-800 dark:text-white">Document Uploads</h2>
                         <p class="text-gray-600 dark:text-gray-400 mt-1">Upload your profile photo, certificates, and assessment work</p>
                     </div>
 
                     <!-- Profile & Documents Uploads -->
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                         <!-- Profile Photo Card -->
                         <div id="profile-photo-card" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
                             <div class="flex items-start justify-between mb-4">
@@ -730,12 +730,12 @@
                     <!-- Unit Assessments & Practicals -->
                     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
                         <div class="mb-6">
-                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Unit Assessments & Practical Work</h3>
+                            <h3 class="text-sm md:text-base font-semibold text-gray-900 dark:text-white">Unit Assessments & Practical Work</h3>
                             <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Upload assessments and practical work for your registered units (department units only)</p>
                         </div>
 
                         <!-- Unit Uploads Container -->
-                        <div id="unit-uploads-container" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div id="unit-uploads-container" class="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <!-- Units will be loaded here dynamically -->
                             <div class="col-span-full text-center py-12">
                                 <i class="ri-loader-4-line text-4xl text-gray-400 animate-spin mb-4"></i>
@@ -745,7 +745,7 @@
                     </div>
 
                     <!-- Upload Instructions -->
-                    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6">
+                    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-2 md:p-3">
                         <div class="flex items-start space-x-3">
                             <i class="ri-information-line text-2xl text-blue-600 mt-1"></i>
                             <div>
@@ -771,7 +771,7 @@
                     <div class="p-6 border-b border-gray-200 dark:border-gray-700">
                         <div class="flex items-center justify-between">
                             <div>
-                                <h2 class="text-xl font-semibold text-gray-800 dark:text-white">Notes & Messages</h2>
+                                <h2 class="text-base md:text-sm md:text-base font-semibold text-gray-800 dark:text-white">Notes & Messages</h2>
                                 <p class="text-gray-600 dark:text-gray-400 mt-1">Important notes from the Dean's office</p>
                             </div>
                             <button id="refresh-notes-btn" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
@@ -824,11 +824,11 @@
             <section id="units" class="content-section hidden">
                 <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                     <div class="p-6 border-b border-gray-200 dark:border-gray-700">
-                        <h2 class="text-xl font-semibold text-gray-800 dark:text-white">Units & Courses</h2>
+                        <h2 class="text-base md:text-sm md:text-base font-semibold text-gray-800 dark:text-white">Units & Courses</h2>
                         <p class="text-gray-600 dark:text-gray-400 mt-1">Your enrolled units and course materials</p>
                     </div>
                     <div class="p-6">
-                        <div id="student-units" class="space-y-4">
+                        <div id="student-units" class="space-y-2">
                             <div class="text-center py-8">
                                 <div class="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
                                     <i class="ri-book-open-line text-2xl text-gray-400"></i>
@@ -844,7 +844,7 @@
             <section id="transcript" class="content-section hidden">
                 <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                     <div class="p-6 border-b border-gray-200 dark:border-gray-700">
-                        <h2 class="text-xl font-semibold text-gray-800 dark:text-white">Academic Transcript</h2>
+                        <h2 class="text-base md:text-sm md:text-base font-semibold text-gray-800 dark:text-white">Academic Transcript</h2>
                         <p class="text-gray-600 dark:text-gray-400 mt-1">Your academic records and achievements</p>
                     </div>
                     <div class="p-6">
@@ -862,7 +862,7 @@
             <section id="graduation" class="content-section hidden">
                 <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                     <div class="p-6 border-b border-gray-200 dark:border-gray-700">
-                        <h2 class="text-xl font-semibold text-gray-800 dark:text-white">Apply for Graduation</h2>
+                        <h2 class="text-base md:text-sm md:text-base font-semibold text-gray-800 dark:text-white">Apply for Graduation</h2>
                         <p class="text-gray-600 dark:text-gray-400 mt-1">Submit your graduation application</p>
                     </div>
                     <div class="p-6">
@@ -892,8 +892,8 @@
                             </div>
 
                             <!-- Student Information Display -->
-                            <div class="grid md:grid-cols-2 gap-6 mb-6">
-                                <div class="space-y-4">
+                            <div class="grid md:grid-cols-2 gap-2 mb-3">
+                                <div class="space-y-2">
                                     <h3 class="text-lg font-medium text-gray-800 dark:text-white">Student Information</h3>
                                     <div class="space-y-3">
                                         <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
@@ -926,7 +926,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="space-y-4">
+                                <div class="space-y-2">
                                     <h3 class="text-lg font-medium text-gray-800 dark:text-white">Application Status</h3>
                                     <div id="graduation-status-info" class="space-y-3">
                                         <!-- Status will be populated by JavaScript -->
@@ -936,7 +936,7 @@
 
                             <!-- Application Actions -->
                             <div class="flex justify-end space-x-4">
-                                <button id="submit-graduation" class="px-6 py-3 bg-primary text-white rounded-lg hover:bg-secondary transition-colors font-medium">
+                                <button id="submit-graduation" class="px-3 py-1.5 text-xs md:text-sm bg-primary text-white rounded-lg hover:bg-secondary transition-colors font-medium">
                                     <i class="ri-graduation-cap-line mr-2"></i>Submit Graduation Application
                                 </button>
                             </div>
@@ -973,7 +973,7 @@
             <section id="attachment" class="content-section hidden">
                 <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
                     <div class="p-6 border-b border-gray-200 dark:border-gray-700">
-                        <h2 class="text-xl font-semibold text-gray-800 dark:text-white">Apply for Attachment</h2>
+                        <h2 class="text-base md:text-sm md:text-base font-semibold text-gray-800 dark:text-white">Apply for Attachment</h2>
                         <p class="text-gray-600 dark:text-gray-400 mt-1">Submit your industrial attachment application</p>
                     </div>
                     <div class="p-6">
@@ -1003,8 +1003,8 @@
                             </div>
 
                             <!-- Student Information Display -->
-                            <div class="grid md:grid-cols-2 gap-6 mb-6">
-                                <div class="space-y-4">
+                            <div class="grid md:grid-cols-2 gap-2 mb-3">
+                                <div class="space-y-2">
                                     <h3 class="text-lg font-medium text-gray-800 dark:text-white">Student Information</h3>
                                     <div class="space-y-3">
                                         <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
@@ -1037,9 +1037,9 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="space-y-4">
+                                <div class="space-y-2">
                                     <h3 class="text-lg font-medium text-gray-800 dark:text-white">Attachment Location</h3>
-                                    <div class="space-y-4">
+                                    <div class="space-y-2">
                                         <div>
                                             <label for="attachment-county" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Preferred County</label>
                                             <select id="attachment-county" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white" required>
@@ -1103,7 +1103,7 @@
 
                             <!-- Application Actions -->
                             <div class="flex justify-end space-x-4">
-                                <button id="submit-attachment" class="px-6 py-3 bg-primary text-white rounded-lg hover:bg-secondary transition-colors font-medium">
+                                <button id="submit-attachment" class="px-3 py-1.5 text-xs md:text-sm bg-primary text-white rounded-lg hover:bg-secondary transition-colors font-medium">
                                     <i class="ri-briefcase-line mr-2"></i>Submit Attachment Application
                                 </button>
                             </div>
@@ -1140,7 +1140,7 @@
 
     <!-- Loading Overlay -->
     <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-        <div class="bg-white dark:bg-gray-800 rounded-lg p-6 flex items-center gap-4">
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-6 flex items-center gap-2">
             <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             <span class="text-gray-700 dark:text-gray-300">Loading...</span>
         </div>
@@ -1687,7 +1687,7 @@
                                 <div class="p-2 bg-red-100 dark:bg-red-900 rounded-lg">
                                     <i class="ri-logout-box-line text-red-600 dark:text-red-400 text-xl"></i>
                                 </div>
-                                <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Confirm Logout</h3>
+                                <h3 class="text-sm md:text-base font-semibold text-gray-800 dark:text-white">Confirm Logout</h3>
                             </div>
                             <p class="text-gray-600 dark:text-gray-300 mb-6">Are you sure you want to logout? You will need to login again to access your account.</p>
                             <div class="flex gap-3">

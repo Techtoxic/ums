@@ -820,23 +820,23 @@ async function displayFinancial() {
         }, 0);
 
         container.innerHTML = `
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-6 border border-green-200">
-                    <div class="flex items-center justify-between mb-4">
-                        <h4 class="text-lg font-bold text-green-800">Total Revenue</h4>
-                        <i class="ri-money-dollar-circle-line text-3xl text-green-600"></i>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
+                <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-2 md:p-3 border border-green-200">
+                    <div class="flex items-center justify-between mb-2">
+                        <h4 class="text-xs md:text-sm font-bold text-green-800">Total Revenue</h4>
+                        <i class="ri-money-dollar-circle-line text-lg md:text-xl text-green-600"></i>
                     </div>
-                    <p class="text-3xl font-bold text-green-600">${formatCurrency(totalRevenue)}</p>
-                    <p class="text-sm text-green-700 mt-2">${allPayments.length} transactions</p>
+                    <p class="text-base md:text-lg font-bold text-green-600">${formatCurrency(totalRevenue)}</p>
+                    <p class="text-xs text-green-700 mt-1">${allPayments.length} transactions</p>
                 </div>
                 
-                <div class="bg-gradient-to-br from-red-50 to-orange-50 rounded-lg p-6 border border-red-200">
-                    <div class="flex items-center justify-between mb-4">
-                        <h4 class="text-lg font-bold text-red-800">Outstanding Fees</h4>
-                        <i class="ri-alert-line text-3xl text-red-600"></i>
+                <div class="bg-gradient-to-br from-red-50 to-orange-50 rounded-lg p-2 md:p-3 border border-red-200">
+                    <div class="flex items-center justify-between mb-2">
+                        <h4 class="text-xs md:text-sm font-bold text-red-800">Outstanding Fees</h4>
+                        <i class="ri-alert-line text-lg md:text-xl text-red-600"></i>
                     </div>
-                    <p class="text-3xl font-bold text-red-600">${formatCurrency(totalOutstanding)}</p>
-                    <p class="text-sm text-red-700 mt-2">${allStudents.filter(s => {
+                    <p class="text-base md:text-lg font-bold text-red-600">${formatCurrency(totalOutstanding)}</p>
+                    <p class="text-xs text-red-700 mt-1">${allStudents.filter(s => {
                         const program = allPrograms.find(p => p.programName === getCourseProgram(s.course));
                         const programCost = program ? program.programCost : 67189;
                         const totalFees = programCost * (s.year || 1);
@@ -847,24 +847,24 @@ async function displayFinancial() {
                 </div>
             </div>
 
-            <h3 class="text-lg font-bold text-gray-800 mb-4">Recent Payments</h3>
+            <h3 class="text-sm md:text-base font-bold text-gray-800 dark:text-white mb-2">Recent Payments</h3>
             <div class="overflow-x-auto">
                 <table class="w-full">
-                    <thead class="bg-gray-50">
+                    <thead class="bg-gray-50 dark:bg-gray-700">
                         <tr>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600">Date</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600">Student</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600">Amount</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600">Reference</th>
+                            <th class="px-2 py-1.5 text-left text-xs font-semibold text-gray-600 dark:text-gray-300">Date</th>
+                            <th class="px-2 py-1.5 text-left text-xs font-semibold text-gray-600 dark:text-gray-300">Student</th>
+                            <th class="px-2 py-1.5 text-left text-xs font-semibold text-gray-600 dark:text-gray-300">Amount</th>
+                            <th class="px-2 py-1.5 text-left text-xs font-semibold text-gray-600 dark:text-gray-300">Reference</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-200">
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                         ${allPayments.slice(0, 10).map(payment => `
-                            <tr class="hover:bg-gray-50">
-                                <td class="px-4 py-3 text-sm text-gray-600">${new Date(payment.paymentDate || payment.createdAt).toLocaleDateString()}</td>
-                                <td class="px-4 py-3 text-sm font-medium text-gray-900">${payment.studentId}</td>
-                                <td class="px-4 py-3 text-sm font-semibold text-green-600">${formatCurrency(payment.amount)}</td>
-                                <td class="px-4 py-3 text-sm text-gray-600">${payment.referenceNumber || 'N/A'}</td>
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                <td class="px-2 py-1.5 text-xs text-gray-600 dark:text-gray-400">${new Date(payment.paymentDate || payment.createdAt).toLocaleDateString()}</td>
+                                <td class="px-2 py-1.5 text-xs font-medium text-gray-900 dark:text-white">${payment.studentId}</td>
+                                <td class="px-2 py-1.5 text-xs font-semibold text-green-600">${formatCurrency(payment.amount)}</td>
+                                <td class="px-2 py-1.5 text-xs text-gray-600 dark:text-gray-400">${payment.referenceNumber || 'N/A'}</td>
                             </tr>
                         `).join('')}
                     </tbody>
@@ -881,7 +881,7 @@ async function displayFinancial() {
 // PROGRAMS MODULE
 // ========================================
 
-async function displayPrograms() {
+async function displayPrograms(searchTerm = '') {
     const container = document.getElementById('programs-list');
     if (!container) {
         console.error('programs-list container not found');
@@ -893,26 +893,51 @@ async function displayPrograms() {
             await loadPrograms();
         }
 
+        // Filter programs based on search term
+        const filteredPrograms = allPrograms.filter(program => {
+            const searchLower = searchTerm.toLowerCase();
+            return program.programName.toLowerCase().includes(searchLower) ||
+                   formatDepartmentName(program.department).toLowerCase().includes(searchLower);
+        });
+
         container.innerHTML = `
-            <div class="flex items-center justify-between mb-6">
-                <h3 class="text-lg font-bold text-gray-800">All Programs (${allPrograms.length})</h3>
-                <button class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-secondary transition">
-                    <i class="ri-add-line mr-2"></i>Add Program
-                </button>
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3">
+                <h3 class="text-sm md:text-base font-bold text-gray-800 dark:text-white">All Programs (${filteredPrograms.length})</h3>
+                <div class="flex gap-2 w-full sm:w-auto">
+                    <input type="text" id="program-search" placeholder="Search programs..." 
+                        value="${searchTerm}"
+                        class="flex-1 sm:flex-none sm:w-48 px-2 py-1 text-xs border border-gray-300 rounded-md focus:ring-1 focus:ring-primary focus:border-primary">
+                    <button class="bg-primary text-white px-2 py-1 text-xs rounded-md hover:bg-secondary transition whitespace-nowrap">
+                        <i class="ri-add-line mr-1"></i><span class="hidden xs:inline">Add </span>Program
+                    </button>
+                </div>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                ${allPrograms.map(program => `
-                    <div class="border rounded-lg p-4 hover:shadow-lg transition">
-                        <h4 class="font-bold text-gray-800 mb-2">${program.programName}</h4>
-                        <p class="text-sm text-gray-600 mb-3">${formatDepartmentName(program.department)}</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2" id="programs-grid">
+                ${filteredPrograms.length === 0 ? `
+                    <div class="col-span-full text-center py-8">
+                        <i class="ri-search-line text-3xl text-gray-400 mb-2"></i>
+                        <p class="text-xs text-gray-500">No programs found matching "${searchTerm}"</p>
+                    </div>
+                ` : filteredPrograms.map(program => `
+                    <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-2 hover:shadow-lg transition">
+                        <h4 class="font-semibold text-xs text-gray-800 dark:text-white mb-1">${program.programName}</h4>
+                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-2">${formatDepartmentName(program.department)}</p>
                         <div class="flex items-center justify-between">
-                            <span class="text-lg font-bold text-primary">${formatCurrency(program.programCost)}</span>
+                            <span class="text-sm font-bold text-primary">${formatCurrency(program.programCost)}</span>
                             <span class="text-xs text-gray-500">per year</span>
                         </div>
                     </div>
                 `).join('')}
             </div>
         `;
+        
+        // Add event listener for real-time search
+        const searchInput = document.getElementById('program-search');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                displayPrograms(e.target.value);
+            });
+        }
     } catch (error) {
         console.error('Error displaying programs:', error);
         container.innerHTML = '<p class="text-red-600 text-center py-8">Error loading programs</p>';
