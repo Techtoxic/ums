@@ -657,45 +657,79 @@ async function displayStudents() {
             return { ...student, balance };
         });
 
-        // Create table
+        // Create responsive table - table on desktop, cards on mobile
         container.innerHTML = `
-            <table class="w-full">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Admission No.</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Name</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Course</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Year</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Balance</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200">
-                    ${studentsWithBalance.map(student => `
-                        <tr class="hover:bg-gray-50 transition">
-                            <td class="px-4 py-3 text-sm font-medium text-gray-900">${student.admissionNumber || 'N/A'}</td>
-                            <td class="px-4 py-3">
-                                <div>
-                                    <p class="text-sm font-semibold text-gray-900">${student.name}</p>
-                                    <p class="text-xs text-gray-500">${student.phoneNumber || ''}</p>
-                                </div>
-                            </td>
-                            <td class="px-4 py-3 text-sm text-gray-600">${formatCourseName(student.course)}</td>
-                            <td class="px-4 py-3">
-                                <span class="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">Year ${student.year || 1}</span>
-                            </td>
-                            <td class="px-4 py-3 text-sm font-semibold ${student.balance > 0 ? 'text-red-600' : 'text-green-600'}">
-                                ${formatCurrency(student.balance)}
-                            </td>
-                            <td class="px-4 py-3">
-                                <button onclick="viewStudent('${student._id}')" class="text-primary hover:text-secondary transition">
-                                    <i class="ri-eye-line text-lg"></i>
-                                </button>
-                            </td>
+            <!-- Desktop Table View -->
+            <div class="hidden md:block">
+                <table class="w-full text-xs">
+                    <thead class="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                            <th class="px-2 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Admission</th>
+                            <th class="px-2 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Name</th>
+                            <th class="px-2 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Course</th>
+                            <th class="px-2 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Year</th>
+                            <th class="px-2 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Balance</th>
+                            <th class="px-2 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Actions</th>
                         </tr>
-                    `).join('')}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                        ${studentsWithBalance.map(student => `
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                                <td class="px-2 py-2 text-xs font-medium text-gray-900 dark:text-white">${student.admissionNumber || 'N/A'}</td>
+                                <td class="px-2 py-2">
+                                    <div>
+                                        <p class="text-xs font-semibold text-gray-900 dark:text-white">${student.name}</p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">${student.phoneNumber || ''}</p>
+                                    </div>
+                                </td>
+                                <td class="px-2 py-2 text-xs text-gray-600 dark:text-gray-300">${formatCourseName(student.course)}</td>
+                                <td class="px-2 py-2">
+                                    <span class="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-xs rounded-full">Y${student.year || 1}</span>
+                                </td>
+                                <td class="px-2 py-2 text-xs font-semibold ${student.balance > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}">
+                                    ${formatCurrency(student.balance)}
+                                </td>
+                                <td class="px-2 py-2">
+                                    <button onclick="viewStudent('${student._id}')" class="text-primary hover:text-secondary transition">
+                                        <i class="ri-eye-line text-base"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Mobile Card View -->
+            <div class="md:hidden space-y-2">
+                ${studentsWithBalance.map(student => `
+                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-2 border border-gray-200 dark:border-gray-600">
+                        <div class="flex justify-between items-start mb-1.5">
+                            <div class="flex-1 min-w-0">
+                                <p class="text-xs font-bold text-gray-900 dark:text-white truncate">${student.name}</p>
+                                <p class="text-xs text-gray-600 dark:text-gray-400">${student.admissionNumber || 'N/A'}</p>
+                            </div>
+                            <button onclick="viewStudent('${student._id}')" class="ml-2 text-primary hover:text-secondary p-1">
+                                <i class="ri-eye-line text-sm"></i>
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-2 gap-1.5 text-xs">
+                            <div>
+                                <span class="text-gray-500 dark:text-gray-400">Course:</span>
+                                <p class="font-medium text-gray-900 dark:text-white truncate">${formatCourseName(student.course)}</p>
+                            </div>
+                            <div>
+                                <span class="text-gray-500 dark:text-gray-400">Year:</span>
+                                <p class="font-medium text-gray-900 dark:text-white">${student.year || 1}</p>
+                            </div>
+                            <div class="col-span-2">
+                                <span class="text-gray-500 dark:text-gray-400">Balance:</span>
+                                <p class="font-bold ${student.balance > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}">${formatCurrency(student.balance)}</p>
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
         `;
 
     } catch (error) {
