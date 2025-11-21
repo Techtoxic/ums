@@ -70,10 +70,8 @@ studentSchema.methods.comparePassword = async function(candidatePassword) {
     return await bcrypt.compare(candidatePassword, this.password);
 };
 
-// Register Student model
-mongoose.model('Student', studentSchema);
-// Bind Student model for usage in this file
-const Student = mongoose.model('Student');
+// Register Student model (check if already exists for serverless compatibility)
+const Student = mongoose.models.Student || mongoose.model('Student', studentSchema);
 
 // Import models
 const Unit = require('./src/models/Unit');
@@ -149,10 +147,17 @@ const app = express();
 
 console.log('🔵 Express app created');
 
-// Create uploads directory if it doesn't exist
+// Create uploads directory if it doesn't exist (skip in serverless/Vercel environment)
 const uploadsDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
+if (!process.env.VERCEL && !fs.existsSync(uploadsDir)) {
+    try {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+        console.log('✅ Created uploads directory');
+    } catch (err) {
+        console.warn('⚠️  Could not create uploads directory (using S3):', err.message);
+    }
+} else if (process.env.VERCEL) {
+    console.log('🌐 Running on Vercel - using S3 for file storage');
 }
 
 // Multer configuration for file uploads
@@ -1416,7 +1421,7 @@ const toolRequestSchema = new mongoose.Schema({
     createdAt: { type: Date, default: Date.now }
 });
 
-const ToolRequest = mongoose.model('ToolRequest', toolRequestSchema);
+const ToolRequest = mongoose.models.ToolRequest || mongoose.model('ToolRequest', toolRequestSchema);
 
 // Program Schema
 const programSchema = new mongoose.Schema({
@@ -1451,7 +1456,7 @@ programSchema.pre('save', function(next) {
     next();
 });
 
-const Program = mongoose.model('Program', programSchema);
+const Program = mongoose.models.Program || mongoose.model('Program', programSchema);
 
 // Payment Schema
 const paymentSchema = new mongoose.Schema({
@@ -1500,7 +1505,7 @@ const paymentSchema = new mongoose.Schema({
     }
 });
 
-const Payment = mongoose.model('Payment', paymentSchema);
+const Payment = mongoose.models.Payment || mongoose.model('Payment', paymentSchema);
 
 
 
@@ -5831,19 +5836,27 @@ app.put('/api/payslips/:payslipId/view', async (req, res) => {
     }
 });
 
-console.log('🚀 About to start listening on port', PORT);
-console.log('📍 Routes registered, starting server...');
+// Start server only in non-serverless environments
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+    console.log('🚀 About to start listening on port', PORT);
+    console.log('📍 Routes registered, starting server...');
+    
+    app.listen(PORT, () => {
+        console.log(`✅ Server running on port ${PORT}`);
+        console.log(`🔐 Admin Portal: http://localhost:${PORT}/admin/login`);
+        console.log(`👨‍🎓 Student Portal: http://localhost:${PORT}/student/login`);
+        console.log(`👨‍🏫 Trainer Portal: http://localhost:${PORT}/trainer/login`);
+        console.log(`💰 Finance Portal: http://localhost:${PORT}/finance/dashboard`);
+        console.log(`📝 Registrar Portal: http://localhost:${PORT}/registrar/dashboard`);
+        console.log(`🎓 Dean Portal: http://localhost:${PORT}/dean/dashboard`);
+        console.log(`👔 Deputy Portal: http://localhost:${PORT}/deputy/dashboard`);
+        console.log(`🏢 HOD Portal: http://localhost:${PORT}/hod/dashboard`);
+    });
+    
+    console.log('✅✅✅ SERVER FILE FULLY LOADED - AFTER APP.LISTEN() ✅✅✅');
+} else {
+    console.log('🌐 Running in serverless mode (Vercel)');
+}
 
-app.listen(PORT, () => {
-    console.log(`✅ Server running on port ${PORT}`);
-    console.log(`🔐 Admin Portal: http://localhost:${PORT}/admin/login`);
-    console.log(`👨‍🎓 Student Portal: http://localhost:${PORT}/student/login`);
-    console.log(`👨‍🏫 Trainer Portal: http://localhost:${PORT}/trainer/login`);
-    console.log(`💰 Finance Portal: http://localhost:${PORT}/finance/dashboard`);
-    console.log(`📝 Registrar Portal: http://localhost:${PORT}/registrar/dashboard`);
-    console.log(`🎓 Dean Portal: http://localhost:${PORT}/dean/dashboard`);
-    console.log(`👔 Deputy Portal: http://localhost:${PORT}/deputy/dashboard`);
-    console.log(`🏢 HOD Portal: http://localhost:${PORT}/hod/dashboard`);
-});
-
-console.log('✅✅✅ SERVER FILE FULLY LOADED - AFTER APP.LISTEN() ✅✅✅');
+// Export the Express app for Vercel serverless functions
+module.exports = app;
