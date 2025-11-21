@@ -5831,19 +5831,27 @@ app.put('/api/payslips/:payslipId/view', async (req, res) => {
     }
 });
 
-console.log('🚀 About to start listening on port', PORT);
-console.log('📍 Routes registered, starting server...');
+// Start server only in non-serverless environments
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+    console.log('🚀 About to start listening on port', PORT);
+    console.log('📍 Routes registered, starting server...');
+    
+    app.listen(PORT, () => {
+        console.log(`✅ Server running on port ${PORT}`);
+        console.log(`🔐 Admin Portal: http://localhost:${PORT}/admin/login`);
+        console.log(`👨‍🎓 Student Portal: http://localhost:${PORT}/student/login`);
+        console.log(`👨‍🏫 Trainer Portal: http://localhost:${PORT}/trainer/login`);
+        console.log(`💰 Finance Portal: http://localhost:${PORT}/finance/dashboard`);
+        console.log(`📝 Registrar Portal: http://localhost:${PORT}/registrar/dashboard`);
+        console.log(`🎓 Dean Portal: http://localhost:${PORT}/dean/dashboard`);
+        console.log(`👔 Deputy Portal: http://localhost:${PORT}/deputy/dashboard`);
+        console.log(`🏢 HOD Portal: http://localhost:${PORT}/hod/dashboard`);
+    });
+    
+    console.log('✅✅✅ SERVER FILE FULLY LOADED - AFTER APP.LISTEN() ✅✅✅');
+} else {
+    console.log('🌐 Running in serverless mode (Vercel)');
+}
 
-app.listen(PORT, () => {
-    console.log(`✅ Server running on port ${PORT}`);
-    console.log(`🔐 Admin Portal: http://localhost:${PORT}/admin/login`);
-    console.log(`👨‍🎓 Student Portal: http://localhost:${PORT}/student/login`);
-    console.log(`👨‍🏫 Trainer Portal: http://localhost:${PORT}/trainer/login`);
-    console.log(`💰 Finance Portal: http://localhost:${PORT}/finance/dashboard`);
-    console.log(`📝 Registrar Portal: http://localhost:${PORT}/registrar/dashboard`);
-    console.log(`🎓 Dean Portal: http://localhost:${PORT}/dean/dashboard`);
-    console.log(`👔 Deputy Portal: http://localhost:${PORT}/deputy/dashboard`);
-    console.log(`🏢 HOD Portal: http://localhost:${PORT}/hod/dashboard`);
-});
-
-console.log('✅✅✅ SERVER FILE FULLY LOADED - AFTER APP.LISTEN() ✅✅✅');
+// Export the Express app for Vercel serverless functions
+module.exports = app;
