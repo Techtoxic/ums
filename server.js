@@ -70,10 +70,8 @@ studentSchema.methods.comparePassword = async function(candidatePassword) {
     return await bcrypt.compare(candidatePassword, this.password);
 };
 
-// Register Student model
-mongoose.model('Student', studentSchema);
-// Bind Student model for usage in this file
-const Student = mongoose.model('Student');
+// Register Student model (check if already exists for serverless compatibility)
+const Student = mongoose.models.Student || mongoose.model('Student', studentSchema);
 
 // Import models
 const Unit = require('./src/models/Unit');
@@ -1416,7 +1414,7 @@ const toolRequestSchema = new mongoose.Schema({
     createdAt: { type: Date, default: Date.now }
 });
 
-const ToolRequest = mongoose.model('ToolRequest', toolRequestSchema);
+const ToolRequest = mongoose.models.ToolRequest || mongoose.model('ToolRequest', toolRequestSchema);
 
 // Program Schema
 const programSchema = new mongoose.Schema({
@@ -1451,7 +1449,7 @@ programSchema.pre('save', function(next) {
     next();
 });
 
-const Program = mongoose.model('Program', programSchema);
+const Program = mongoose.models.Program || mongoose.model('Program', programSchema);
 
 // Payment Schema
 const paymentSchema = new mongoose.Schema({
@@ -1500,7 +1498,7 @@ const paymentSchema = new mongoose.Schema({
     }
 });
 
-const Payment = mongoose.model('Payment', paymentSchema);
+const Payment = mongoose.models.Payment || mongoose.model('Payment', paymentSchema);
 
 
 
