@@ -89,6 +89,28 @@ class EmailService {
         }
     }
 
+    // Send login OTP email
+    async sendLoginOTP(email, otp, userName, userType) {
+        try {
+            const mailOptions = {
+                from: {
+                    name: 'EDTTI University Management System',
+                    address: process.env.EMAIL_USER
+                },
+                to: email,
+                subject: 'Login Verification - One Time Password',
+                html: this.generateLoginOTPTemplate(otp, userName, userType)
+            };
+
+            const result = await this.transporter.sendMail(mailOptions);
+            console.log('✅ Login OTP email sent successfully:', result.messageId);
+            return { success: true, messageId: result.messageId };
+        } catch (error) {
+            console.error('❌ Failed to send login OTP email:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
     // Generate OTP email template
     generateOTPEmailTemplate(otp, userName, userType) {
         const userTypeDisplay = userType.charAt(0).toUpperCase() + userType.slice(1);
@@ -344,6 +366,168 @@ class EmailService {
                 
                 <div class="footer">
                     <p>This is an automated message. Please do not reply to this email.</p>
+                    <p>&copy; ${new Date().getFullYear()} EDTTI University Management System. All rights reserved.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        `;
+    }
+
+    // Generate login OTP email template
+    generateLoginOTPTemplate(otp, userName, userType) {
+        const roleNames = {
+            'admin': 'Administrator',
+            'deputy': 'Deputy Principal',
+            'finance': 'Finance Officer',
+            'dean': 'Dean of Students',
+            'ilo': 'Industry Liaison Officer',
+            'registrar': 'Registrar',
+            'hod': 'Head of Department',
+            'trainer': 'Trainer',
+            'student': 'Student'
+        };
+        
+        const userTypeDisplay = roleNames[userType] || userType.charAt(0).toUpperCase() + userType.slice(1);
+        
+        return `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Login Verification OTP</title>
+            <style>
+                body {
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                    line-height: 1.6;
+                    color: #333;
+                    background-color: #f4f4f4;
+                    margin: 0;
+                    padding: 20px;
+                }
+                .container {
+                    max-width: 600px;
+                    margin: 0 auto;
+                    background: white;
+                    border-radius: 10px;
+                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                    overflow: hidden;
+                }
+                .header {
+                    background: linear-gradient(135deg, #2196F3, #1976D2);
+                    color: white;
+                    padding: 30px;
+                    text-align: center;
+                }
+                .header h1 {
+                    margin: 0;
+                    font-size: 24px;
+                }
+                .content {
+                    padding: 40px 30px;
+                }
+                .otp-box {
+                    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+                    border: 3px solid #2196F3;
+                    border-radius: 15px;
+                    padding: 30px;
+                    text-align: center;
+                    margin: 25px 0;
+                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+                }
+                .otp-code {
+                    font-size: 40px;
+                    font-weight: bold;
+                    color: #1976D2;
+                    letter-spacing: 10px;
+                    font-family: 'Courier New', monospace;
+                    margin: 15px 0;
+                }
+                .info-box {
+                    background: #e3f2fd;
+                    border-left: 4px solid #2196F3;
+                    padding: 15px;
+                    margin: 20px 0;
+                    border-radius: 5px;
+                }
+                .warning {
+                    background: #fff3cd;
+                    border: 1px solid #ffeaa7;
+                    border-radius: 5px;
+                    padding: 15px;
+                    margin: 20px 0;
+                }
+                .footer {
+                    background: #f8f9fa;
+                    padding: 20px 30px;
+                    text-align: center;
+                    font-size: 14px;
+                    color: #666;
+                }
+                .security-badge {
+                    display: inline-block;
+                    background: #4CAF50;
+                    color: white;
+                    padding: 5px 15px;
+                    border-radius: 20px;
+                    font-size: 12px;
+                    font-weight: bold;
+                    margin: 10px 0;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>🔐 Login Verification</h1>
+                    <p>EDTTI University Management System</p>
+                    <div class="security-badge">🛡️ SECURE LOGIN</div>
+                </div>
+                
+                <div class="content">
+                    <h2>Hello ${userName},</h2>
+                    <p>You are attempting to sign in to your <strong>${userTypeDisplay}</strong> account. Please use the One Time Password (OTP) below to complete your login.</p>
+                    
+                    <div class="otp-box">
+                        <p style="margin: 0; font-size: 14px; color: #666; text-transform: uppercase; letter-spacing: 2px;">Your Verification Code</p>
+                        <div class="otp-code">${otp}</div>
+                        <p style="margin: 0; font-size: 12px; color: #999;">Enter this code to proceed</p>
+                    </div>
+                    
+                    <div class="info-box">
+                        <strong>📋 Login Details:</strong>
+                        <ul style="margin: 10px 0; padding-left: 20px;">
+                            <li><strong>Account Type:</strong> ${userTypeDisplay}</li>
+                            <li><strong>Email:</strong> ${userName.includes('@') ? userName.split('@')[0] + '@***' : userName}</li>
+                            <li><strong>Time:</strong> ${new Date().toLocaleString()}</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="warning">
+                        <strong>⚠️ Important Security Information:</strong>
+                        <ul style="margin: 10px 0; padding-left: 20px;">
+                            <li>This OTP is valid for <strong>10 minutes only</strong></li>
+                            <li>You have <strong>5 attempts</strong> to enter the correct OTP</li>
+                            <li>Never share this code with anyone</li>
+                            <li>EDTTI staff will never ask for your OTP</li>
+                        </ul>
+                    </div>
+                    
+                    <div style="background: #ffebee; border-left: 4px solid #f44336; padding: 15px; margin: 20px 0; border-radius: 5px;">
+                        <strong>🚨 Didn't Request This?</strong>
+                        <p style="margin: 5px 0;">If you did not attempt to log in, please ignore this email and contact IT Support immediately. Your password remains secure.</p>
+                    </div>
+                    
+                    <p>For security reasons, this verification code will expire after 10 minutes.</p>
+                    
+                    <p>Best regards,<br>
+                    <strong>EDTTI IT Security Team</strong></p>
+                </div>
+                
+                <div class="footer">
+                    <p>This is an automated security message. Please do not reply to this email.</p>
+                    <p>If you need assistance, contact IT Support: support@edtti.ac.ke</p>
                     <p>&copy; ${new Date().getFullYear()} EDTTI University Management System. All rights reserved.</p>
                 </div>
             </div>

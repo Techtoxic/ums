@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>First Login Setup - EDTTI UMS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .step-active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .step-completed {
+            background: #10b981;
+            color: white;
+        }
+        .step-inactive {
+            background: #e5e7eb;
+            color: #9ca3af;
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-8">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <div class="bg-gradient-to-r from-yellow-500 to-orange-600 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-user-lock text-white text-3xl"></i>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-800">Welcome! First Time Setup</h1>
+            <p class="text-gray-600 mt-2">Please update your email and password to secure your account</p>
+        </div>
+
+        <!-- Progress Steps -->
+        <div class="flex justify-between items-center mb-8">
+            <div class="flex items-center">
+                <div id="step1Circle" class="step-active w-10 h-10 rounded-full flex items-center justify-center font-bold">1</div>
+                <span id="step1Text" class="ml-2 font-medium text-gray-700">Update Email</span>
+            </div>
+            <div class="flex-1 h-1 bg-gray-300 mx-4"></div>
+            <div class="flex items-center">
+                <div id="step2Circle" class="step-inactive w-10 h-10 rounded-full flex items-center justify-center font-bold">2</div>
+                <span id="step2Text" class="ml-2 font-medium text-gray-400">Update Password</span>
+            </div>
+        </div>
+
+        <!-- Alert Message -->
+        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+            <div class="flex">
+                <i class="fas fa-exclamation-triangle text-yellow-400 mt-1"></i>
+                <div class="ml-3">
+                    <p class="text-sm text-yellow-700">
+                        <strong>Security Notice:</strong> You must update your email and password before accessing the system.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 1: Update Email -->
+        <div id="step1Form" class="space-y-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                <i class="fas fa-envelope mr-2 text-blue-600"></i>Step 1: Update Your Email
+            </h2>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Current Email
+                </label>
+                <input 
+                    type="email" 
+                    id="currentEmail" 
+                    class="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg"
+                    readonly
+                >
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    New Email Address *
+                </label>
+                <input 
+                    type="email" 
+                    id="newEmail" 
+                    placeholder="your.email@edtti.ac.ke"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                    required
+                >
+                <p class="text-xs text-gray-500 mt-1">
+                    <i class="fas fa-info-circle mr-1"></i>Please use your official work email
+                </p>
+            </div>
+
+            <div id="emailError" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                <i class="fas fa-exclamation-circle mr-2"></i>
+                <span id="emailErrorText"></span>
+            </div>
+
+            <button 
+                onclick="updateEmail()"
+                id="updateEmailBtn"
+                class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
+            >
+                <i class="fas fa-arrow-right mr-2"></i>Continue to Password Update
+            </button>
+        </div>
+
+        <!-- Step 2: Update Password -->
+        <div id="step2Form" class="hidden space-y-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                <i class="fas fa-key mr-2 text-purple-600"></i>Step 2: Update Your Password
+            </h2>
+
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <p class="text-sm font-medium text-blue-900 mb-2">Password Requirements:</p>
+                <ul class="text-xs text-blue-800 space-y-1">
+                    <li><i class="fas fa-check-circle mr-1"></i>Minimum 8 characters</li>
+                    <li><i class="fas fa-check-circle mr-1"></i>At least one uppercase letter</li>
+                    <li><i class="fas fa-check-circle mr-1"></i>At least one lowercase letter</li>
+                    <li><i class="fas fa-check-circle mr-1"></i>At least one number</li>
+                    <li><i class="fas fa-check-circle mr-1"></i>At least one special character (@$!%*?&)</li>
+                </ul>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Current Password *
+                </label>
+                <div class="relative">
+                    <input 
+                        type="password" 
+                        id="currentPassword" 
+                        placeholder="Enter your current password"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition pr-12"
+                        required
+                    >
+                    <button 
+                        type="button" 
+                        onclick="togglePasswordVisibility('currentPassword', 'toggleCurrent')"
+                        class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    >
+                        <i class="fas fa-eye" id="toggleCurrent"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    New Password *
+                </label>
+                <div class="relative">
+                    <input 
+                        type="password" 
+                        id="newPassword" 
+                        placeholder="Enter new password"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition pr-12"
+                        oninput="checkPasswordStrength()"
+                        required
+                    >
+                    <button 
+                        type="button" 
+                        onclick="togglePasswordVisibility('newPassword', 'toggleNew')"
+                        class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    >
+                        <i class="fas fa-eye" id="toggleNew"></i>
+                    </button>
+                </div>
+                <div id="strengthBar" class="hidden mt-2">
+                    <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div id="strengthFill" class="h-full transition-all duration-300"></div>
+                    </div>
+                    <p id="strengthText" class="text-xs mt-1"></p>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Confirm New Password *
+                </label>
+                <div class="relative">
+                    <input 
+                        type="password" 
+                        id="confirmPassword" 
+                        placeholder="Confirm new password"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition pr-12"
+                        oninput="checkPasswordMatch()"
+                        required
+                    >
+                    <button 
+                        type="button" 
+                        onclick="togglePasswordVisibility('confirmPassword', 'toggleConfirm')"
+                        class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    >
+                        <i class="fas fa-eye" id="toggleConfirm"></i>
+                    </button>
+                </div>
+                <p id="matchText" class="hidden text-xs mt-1"></p>
+            </div>
+
+            <div id="passwordError" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                <i class="fas fa-exclamation-circle mr-2"></i>
+                <span id="passwordErrorText"></span>
+            </div>
+
+            <div class="flex space-x-4">
+                <button 
+                    onclick="backToEmail()"
+                    class="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300 transition"
+                >
+                    <i class="fas fa-arrow-left mr-2"></i>Back
+                </button>
+                <button 
+                    onclick="updatePassword()"
+                    id="updatePasswordBtn"
+                    class="flex-1 bg-gradient-to-r from-purple-500 to-pink-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
+                >
+                    <i class="fas fa-check mr-2"></i>Complete Setup
+                </button>
+            </div>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div id="loadingSpinner" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-lg p-6 flex flex-col items-center">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                <p class="mt-4 text-gray-700 font-medium">Updating...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let user = null;
+        let token = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🔍 First Login page loading...');
+            
+            token = localStorage.getItem('adminToken');
+            const userString = localStorage.getItem('adminUser');
+            
+            console.log('📋 Auth check:', {
+                hasToken: !!token,
+                hasUserString: !!userString,
+                userString: userString ? userString.substring(0, 100) + '...' : null
+            });
+            
+            try {
+                user = JSON.parse(userString || '{}');
+                console.log('✅ User data parsed:', {
+                    email: user.email,
+                    name: user.name,
+                    isFirstLogin: user.isFirstLogin
+                });
+            } catch (error) {
+                console.error('❌ Error parsing user data:', error);
+                localStorage.clear();
+                window.location.href = '/admin/login';
+                return;
+            }
+
+            if (!token || !user.email) {
+                console.log('❌ No token or email found, redirecting to login...');
+                window.location.href = '/admin/login';
+                return;
+            }
+
+            console.log('✅ First login page initialized successfully');
+            document.getElementById('currentEmail').value = user.email;
+        });
+
+        function showLoading() {
+            document.getElementById('loadingSpinner').classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingSpinner').classList.add('hidden');
+        }
+
+        function showEmailError(message) {
+            document.getElementById('emailErrorText').textContent = message;
+            document.getElementById('emailError').classList.remove('hidden');
+            setTimeout(() => {
+                document.getElementById('emailError').classList.add('hidden');
+            }, 5000);
+        }
+
+        function showPasswordError(message) {
+            document.getElementById('passwordErrorText').textContent = message;
+            document.getElementById('passwordError').classList.remove('hidden');
+            setTimeout(() => {
+                document.getElementById('passwordError').classList.add('hidden');
+            }, 5000);
+        }
+
+        function togglePasswordVisibility(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        function checkPasswordStrength() {
+            const password = document.getElementById('newPassword').value;
+            const strengthBar = document.getElementById('strengthBar');
+            const strengthFill = document.getElementById('strengthFill');
+            const strengthText = document.getElementById('strengthText');
+
+            if (!password) {
+                strengthBar.classList.add('hidden');
+                return;
+            }
+
+            strengthBar.classList.remove('hidden');
+
+            let strength = 0;
+            if (password.length >= 8) strength++;
+            if (/[a-z]/.test(password)) strength++;
+            if (/[A-Z]/.test(password)) strength++;
+            if (/[0-9]/.test(password)) strength++;
+            if (/[@$!%*?&]/.test(password)) strength++;
+
+            const colors = ['#ef4444', '#f59e0b', '#eab308', '#84cc16', '#10b981'];
+            const texts = ['Very Weak', 'Weak', 'Fair', 'Good', 'Strong'];
+            const widths = ['20%', '40%', '60%', '80%', '100%'];
+
+            strengthFill.style.width = widths[strength];
+            strengthFill.style.backgroundColor = colors[strength];
+            strengthText.textContent = `Password Strength: ${texts[strength]}`;
+            strengthText.style.color = colors[strength];
+        }
+
+        function checkPasswordMatch() {
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const matchText = document.getElementById('matchText');
+
+            if (!confirmPassword) {
+                matchText.classList.add('hidden');
+                return;
+            }
+
+            matchText.classList.remove('hidden');
+
+            if (newPassword === confirmPassword) {
+                matchText.textContent = '✓ Passwords match';
+                matchText.classList.remove('text-red-600');
+                matchText.classList.add('text-green-600');
+            } else {
+                matchText.textContent = '✗ Passwords do not match';
+                matchText.classList.remove('text-green-600');
+                matchText.classList.add('text-red-600');
+            }
+        }
+
+        async function updateEmail() {
+            const newEmail = document.getElementById('newEmail').value.trim();
+
+            if (!newEmail) {
+                showEmailError('Please enter a new email address');
+                return;
+            }
+
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
+                showEmailError('Please enter a valid email address');
+                return;
+            }
+
+            showLoading();
+
+            try {
+                const response = await fetch('/api/admin/auth/update-email', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ newEmail })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Update stored user data
+                    user.email = data.data.email;
+                    localStorage.setItem('adminUser', JSON.stringify(user));
+
+                    // Move to step 2
+                    document.getElementById('step1Form').classList.add('hidden');
+                    document.getElementById('step2Form').classList.remove('hidden');
+
+                    // Update step indicators
+                    document.getElementById('step1Circle').classList.remove('step-active');
+                    document.getElementById('step1Circle').classList.add('step-completed');
+                    document.getElementById('step1Circle').innerHTML = '<i class="fas fa-check"></i>';
+                    
+                    document.getElementById('step2Circle').classList.remove('step-inactive');
+                    document.getElementById('step2Circle').classList.add('step-active');
+                    document.getElementById('step2Text').classList.remove('text-gray-400');
+                    document.getElementById('step2Text').classList.add('text-gray-700');
+                } else {
+                    showEmailError(data.message || 'Failed to update email');
+                }
+            } catch (error) {
+                showEmailError('Network error. Please try again.');
+                console.error('Update email error:', error);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function updatePassword() {
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (!currentPassword || !newPassword || !confirmPassword) {
+                showPasswordError('Please fill in all password fields');
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                showPasswordError('New passwords do not match');
+                return;
+            }
+
+            if (newPassword.length < 8) {
+                showPasswordError('Password must be at least 8 characters long');
+                return;
+            }
+
+            const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/;
+            if (!passwordRegex.test(newPassword)) {
+                showPasswordError('Password must contain uppercase, lowercase, number, and special character');
+                return;
+            }
+
+            showLoading();
+
+            try {
+                const response = await fetch('/api/admin/auth/update-password', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ currentPassword, newPassword, confirmPassword })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Complete first login setup
+                    await completeFirstLogin();
+                } else {
+                    showPasswordError(data.message || 'Failed to update password');
+                    hideLoading();
+                }
+            } catch (error) {
+                showPasswordError('Network error. Please try again.');
+                console.error('Update password error:', error);
+                hideLoading();
+            }
+        }
+
+        async function completeFirstLogin() {
+            try {
+                const response = await fetch('/api/admin/auth/complete-first-login', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Update user data
+                    user.isFirstLogin = false;
+                    localStorage.setItem('adminUser', JSON.stringify(user));
+
+                    // Show success message and redirect
+                    alert('Setup completed successfully! Redirecting to dashboard...');
+                    window.location.href = '/admin/dashboard';
+                } else {
+                    showPasswordError('Failed to complete setup');
+                }
+            } catch (error) {
+                showPasswordError('Network error. Please try again.');
+                console.error('Complete setup error:', error);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function backToEmail() {
+            document.getElementById('step2Form').classList.add('hidden');
+            document.getElementById('step1Form').classList.remove('hidden');
+
+            // Update step indicators
+            document.getElementById('step1Circle').classList.remove('step-completed');
+            document.getElementById('step1Circle').classList.add('step-active');
+            document.getElementById('step1Circle').textContent = '1';
+            
+            document.getElementById('step2Circle').classList.remove('step-active');
+            document.getElementById('step2Circle').classList.add('step-inactive');
+            document.getElementById('step2Text').classList.remove('text-gray-700');
+            document.getElementById('step2Text').classList.add('text-gray-400');
+        }
+    </script>
+</body>
+</html>

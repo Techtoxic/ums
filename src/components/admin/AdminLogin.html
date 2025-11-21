@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Admin Login - EDTTI UMS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .otp-input {
+            width: 50px;
+            height: 50px;
+            font-size: 24px;
+            text-align: center;
+            margin: 0 5px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+        }
+        .otp-input:focus {
+            border-color: #667eea;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8">
+        <!-- Logo/Header -->
+        <div class="text-center mb-8">
+            <div class="bg-gradient-to-r from-blue-500 to-purple-600 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-shield-halved text-white text-3xl"></i>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-800">Admin Login</h1>
+            <p class="text-gray-600 mt-2">EDTTI University Management System</p>
+        </div>
+
+        <!-- Login Form -->
+        <div id="loginForm" class="space-y-6">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-envelope mr-2"></i>Email Address
+                </label>
+                <input 
+                    type="email" 
+                    id="email" 
+                    placeholder="admin@edtti.ac.ke"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                    required
+                >
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-lock mr-2"></i>Password
+                </label>
+                <div class="relative">
+                    <input 
+                        type="password" 
+                        id="password" 
+                        placeholder="Enter your password"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition pr-12"
+                        required
+                    >
+                    <button 
+                        type="button" 
+                        onclick="togglePassword()"
+                        class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    >
+                        <i class="fas fa-eye" id="toggleIcon"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="errorMessage" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                <i class="fas fa-exclamation-circle mr-2"></i>
+                <span id="errorText"></span>
+            </div>
+
+            <button 
+                onclick="login()"
+                id="loginBtn"
+                class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
+            >
+                <i class="fas fa-sign-in-alt mr-2"></i>Sign In
+            </button>
+        </div>
+
+        <!-- Email Update Form (Hidden initially) -->
+        <div id="emailUpdateForm" class="hidden space-y-6">
+            <div class="text-center mb-6">
+                <div class="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-4">
+                    <i class="fas fa-envelope text-yellow-500 text-3xl mb-2"></i>
+                    <h3 class="font-semibold text-gray-800 mb-2">Update Your Email</h3>
+                    <p class="text-sm text-gray-700">
+                        For security reasons, please update your email address.<br>
+                        We'll send a verification code to your new email.
+                    </p>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <label class="block text-sm font-medium text-gray-700">
+                    <i class="fas fa-envelope mr-2"></i>New Email Address
+                </label>
+                <input 
+                    type="email" 
+                    id="newEmail" 
+                    placeholder="Enter your new email address"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                    required
+                >
+            </div>
+
+            <div id="emailUpdateError" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                <i class="fas fa-exclamation-circle mr-2"></i>
+                <span id="emailUpdateErrorText"></span>
+            </div>
+
+            <button 
+                onclick="updateEmailAndSendOTP()"
+                class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
+            >
+                <i class="fas fa-paper-plane mr-2"></i>Update Email & Send OTP
+            </button>
+
+            <button 
+                onclick="backToLoginFromEmail()"
+                class="block w-full text-gray-600 hover:text-gray-800 text-sm"
+            >
+                <i class="fas fa-arrow-left mr-2"></i>Back to Login
+            </button>
+        </div>
+
+        <!-- OTP Verification Form (Hidden initially) -->
+        <div id="otpForm" class="hidden space-y-6">
+            <div class="text-center">
+                <div class="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 mb-6">
+                    <i class="fas fa-envelope-open-text text-blue-500 text-3xl mb-2"></i>
+                    <p class="text-sm text-gray-700">
+                        We've sent a verification code to<br>
+                        <strong id="otpEmail" class="text-blue-600"></strong>
+                    </p>
+                    <p class="text-xs text-gray-500 mt-2">
+                        Code expires in <span id="countdown" class="font-bold text-blue-600">10:00</span>
+                    </p>
+                </div>
+
+                <label class="block text-sm font-medium text-gray-700 mb-3">
+                    Enter 6-Digit Code
+                </label>
+                <div class="flex justify-center mb-4">
+                    <input type="text" maxlength="1" class="otp-input" id="otp1" oninput="moveToNext(this, 'otp2')" onkeydown="handleBackspace(event, this, null)">
+                    <input type="text" maxlength="1" class="otp-input" id="otp2" oninput="moveToNext(this, 'otp3')" onkeydown="handleBackspace(event, this, 'otp1')">
+                    <input type="text" maxlength="1" class="otp-input" id="otp3" oninput="moveToNext(this, 'otp4')" onkeydown="handleBackspace(event, this, 'otp2')">
+                    <input type="text" maxlength="1" class="otp-input" id="otp4" oninput="moveToNext(this, 'otp5')" onkeydown="handleBackspace(event, this, 'otp3')">
+                    <input type="text" maxlength="1" class="otp-input" id="otp5" oninput="moveToNext(this, 'otp6')" onkeydown="handleBackspace(event, this, 'otp4')">
+                    <input type="text" maxlength="1" class="otp-input" id="otp6" oninput="verifyOTP()" onkeydown="handleBackspace(event, this, 'otp5')">
+                </div>
+
+                <div id="otpError" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+                    <i class="fas fa-exclamation-circle mr-2"></i>
+                    <span id="otpErrorText"></span>
+                </div>
+
+                <button 
+                    onclick="resendOTP()"
+                    id="resendBtn"
+                    class="text-sm text-blue-600 hover:text-blue-800 font-medium disabled:text-gray-400"
+                    disabled
+                >
+                    <i class="fas fa-redo mr-1"></i>Resend Code (<span id="resendCountdown">60</span>s)
+                </button>
+
+                <button 
+                    onclick="backToLogin()"
+                    class="block w-full mt-4 text-gray-600 hover:text-gray-800 text-sm"
+                >
+                    <i class="fas fa-arrow-left mr-2"></i>Back to Login
+                </button>
+            </div>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div id="loadingSpinner" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-lg p-6 flex flex-col items-center">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                <p class="mt-4 text-gray-700 font-medium">Processing...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Version check - NEW OTP LOGIN SYSTEM
+        console.log('🔐 Admin Login System v2.0 - OTP Enabled');
+        console.log('📅 Loaded:', new Date().toISOString());
+        
+        let userEmail = '';
+        let countdownTimer = null;
+        let resendTimer = null;
+        let timeLeft = 600; // 10 minutes in seconds
+        let resendTimeLeft = 60;
+
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const toggleIcon = document.getElementById('toggleIcon');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.classList.remove('fa-eye');
+                toggleIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.classList.remove('fa-eye-slash');
+                toggleIcon.classList.add('fa-eye');
+            }
+        }
+
+        function showError(message) {
+            document.getElementById('errorText').textContent = message;
+            document.getElementById('errorMessage').classList.remove('hidden');
+            setTimeout(() => {
+                document.getElementById('errorMessage').classList.add('hidden');
+            }, 5000);
+        }
+
+        function showOTPError(message) {
+            document.getElementById('otpErrorText').textContent = message;
+            document.getElementById('otpError').classList.remove('hidden');
+            setTimeout(() => {
+                document.getElementById('otpError').classList.add('hidden');
+            }, 5000);
+        }
+
+        function showLoading() {
+            document.getElementById('loadingSpinner').classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingSpinner').classList.add('hidden');
+        }
+
+        async function login() {
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+
+            if (!email || !password) {
+                showError('Please enter both email and password');
+                return;
+            }
+
+            showLoading();
+
+            try {
+                const response = await fetch('/api/admin/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    userEmail = email;
+                    
+                    // Check if email update is required for first-time login
+                    if (data.requiresEmailUpdate) {
+                        // Show email update form
+                        document.getElementById('loginForm').classList.add('hidden');
+                        document.getElementById('emailUpdateForm').classList.remove('hidden');
+                        document.getElementById('newEmail').focus();
+                        // Store old credentials for later use
+                        window.oldEmail = email;
+                        window.oldPassword = password;
+                    } else {
+                        // Show OTP form
+                        document.getElementById('loginForm').classList.add('hidden');
+                        document.getElementById('otpForm').classList.remove('hidden');
+                        document.getElementById('otpEmail').textContent = email;
+                        document.getElementById('otp1').focus();
+                        startCountdown();
+                        startResendCountdown();
+                    }
+                } else {
+                    showError(data.message || 'Login failed. Please check your credentials.');
+                }
+            } catch (error) {
+                showError('Network error. Please check your connection.');
+                console.error('Login error:', error);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function moveToNext(current, nextId) {
+            if (current.value.length === 1 && nextId) {
+                document.getElementById(nextId).focus();
+            }
+        }
+
+        function handleBackspace(event, current, prevId) {
+            if (event.key === 'Backspace' && current.value === '' && prevId) {
+                document.getElementById(prevId).focus();
+            }
+        }
+
+        async function verifyOTP() {
+            const otp = Array.from({length: 6}, (_, i) => 
+                document.getElementById(`otp${i + 1}`).value
+            ).join('');
+
+            if (otp.length !== 6) return;
+
+            showLoading();
+
+            try {
+                const response = await fetch('/api/admin/auth/verify-otp', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email: userEmail, otp })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    console.log('✅ OTP verified successfully!');
+                    console.log('📦 Response data:', {
+                        hasToken: !!data.data.token,
+                        tokenLength: data.data.token ? data.data.token.length : 0,
+                        user: data.data.user
+                    });
+                    
+                    // Store token and user data
+                    try {
+                        localStorage.setItem('adminToken', data.data.token);
+                        localStorage.setItem('adminUser', JSON.stringify(data.data.user));
+                        
+                        // Verify storage worked
+                        const storedToken = localStorage.getItem('adminToken');
+                        const storedUser = localStorage.getItem('adminUser');
+                        
+                        console.log('💾 Verification check:', {
+                            tokenSaved: storedToken === data.data.token,
+                            userSaved: !!storedUser,
+                            tokenPreview: storedToken ? storedToken.substring(0, 20) + '...' : null
+                        });
+                        
+                        if (!storedToken || !storedUser) {
+                            throw new Error('LocalStorage failed to save data');
+                        }
+                    } catch (storageError) {
+                        console.error('❌ Storage error:', storageError);
+                        showOTPError('Browser storage error. Please enable cookies/localStorage and try again.');
+                        hideLoading();
+                        return;
+                    }
+
+                    // Clear countdown
+                    if (countdownTimer) clearInterval(countdownTimer);
+                    if (resendTimer) clearInterval(resendTimer);
+
+                    // Delay redirect slightly to ensure localStorage persists
+                    console.log('⏳ Waiting 100ms before redirect...');
+                    setTimeout(() => {
+                        // Redirect based on first login status
+                        if (data.data.user.isFirstLogin) {
+                            console.log('🔄 Redirecting to first-login setup...');
+                            window.location.href = '/admin/first-login';
+                        } else {
+                            console.log('🔄 Redirecting to dashboard...');
+                            window.location.href = '/admin/dashboard';
+                        }
+                    }, 100);
+                } else {
+                    showOTPError(data.message || 'Invalid OTP. Please try again.');
+                    // Clear OTP inputs
+                    for (let i = 1; i <= 6; i++) {
+                        document.getElementById(`otp${i}`).value = '';
+                    }
+                    document.getElementById('otp1').focus();
+                }
+            } catch (error) {
+                showOTPError('Network error. Please try again.');
+                console.error('OTP verification error:', error);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function showEmailUpdateError(message) {
+            document.getElementById('emailUpdateErrorText').textContent = message;
+            document.getElementById('emailUpdateError').classList.remove('hidden');
+            setTimeout(() => {
+                document.getElementById('emailUpdateError').classList.add('hidden');
+            }, 5000);
+        }
+
+        async function updateEmailAndSendOTP() {
+            const newEmail = document.getElementById('newEmail').value.trim();
+
+            if (!newEmail) {
+                showEmailUpdateError('Please enter a valid email address');
+                return;
+            }
+
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(newEmail)) {
+                showEmailUpdateError('Please enter a valid email format');
+                return;
+            }
+
+            showLoading();
+
+            try {
+                const response = await fetch('/api/admin/auth/update-email-send-otp', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        oldEmail: window.oldEmail,
+                        password: window.oldPassword,
+                        newEmail: newEmail
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Update the user email to the new one
+                    userEmail = newEmail;
+                    
+                    // Hide email update form and show OTP form
+                    document.getElementById('emailUpdateForm').classList.add('hidden');
+                    document.getElementById('otpForm').classList.remove('hidden');
+                    document.getElementById('otpEmail').textContent = newEmail;
+                    document.getElementById('otp1').focus();
+                    
+                    // Start timers
+                    startCountdown();
+                    startResendCountdown();
+                } else {
+                    showEmailUpdateError(data.message || 'Failed to update email');
+                }
+            } catch (error) {
+                showEmailUpdateError('Network error. Please try again.');
+                console.error('Email update error:', error);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function backToLoginFromEmail() {
+            document.getElementById('emailUpdateForm').classList.add('hidden');
+            document.getElementById('loginForm').classList.remove('hidden');
+            document.getElementById('newEmail').value = '';
+            window.oldEmail = null;
+            window.oldPassword = null;
+        }
+
+        async function resendOTP() {
+            showLoading();
+
+            try {
+                // Use the stored userEmail (which might be the updated email)
+                const email = userEmail || document.getElementById('email').value.trim();
+                const password = window.oldPassword || document.getElementById('password').value;
+
+                const response = await fetch('/api/admin/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Clear OTP inputs
+                    for (let i = 1; i <= 6; i++) {
+                        document.getElementById(`otp${i}`).value = '';
+                    }
+                    document.getElementById('otp1').focus();
+                    
+                    // Reset timers
+                    timeLeft = 600;
+                    resendTimeLeft = 60;
+                    startResendCountdown();
+                    
+                    showOTPError = () => {}; // Temporarily disable to show success
+                    document.getElementById('otpErrorText').textContent = 'New code sent successfully!';
+                    document.getElementById('otpError').classList.remove('hidden', 'bg-red-50', 'border-red-200', 'text-red-700');
+                    document.getElementById('otpError').classList.add('bg-green-50', 'border-green-200', 'text-green-700');
+                    setTimeout(() => {
+                        document.getElementById('otpError').classList.add('hidden');
+                        document.getElementById('otpError').classList.remove('bg-green-50', 'border-green-200', 'text-green-700');
+                        document.getElementById('otpError').classList.add('bg-red-50', 'border-red-200', 'text-red-700');
+                    }, 3000);
+                } else {
+                    showOTPError(data.message || 'Failed to resend code');
+                }
+            } catch (error) {
+                showOTPError('Network error. Please try again.');
+                console.error('Resend OTP error:', error);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function startCountdown() {
+            countdownTimer = setInterval(() => {
+                timeLeft--;
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                document.getElementById('countdown').textContent = 
+                    `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+                if (timeLeft <= 0) {
+                    clearInterval(countdownTimer);
+                    showOTPError('OTP expired. Please request a new code.');
+                }
+            }, 1000);
+        }
+
+        function startResendCountdown() {
+            const resendBtn = document.getElementById('resendBtn');
+            resendBtn.disabled = true;
+            
+            resendTimer = setInterval(() => {
+                resendTimeLeft--;
+                document.getElementById('resendCountdown').textContent = resendTimeLeft;
+
+                if (resendTimeLeft <= 0) {
+                    clearInterval(resendTimer);
+                    resendBtn.disabled = false;
+                    resendTimeLeft = 60;
+                }
+            }, 1000);
+        }
+
+        function backToLogin() {
+            if (countdownTimer) clearInterval(countdownTimer);
+            if (resendTimer) clearInterval(resendTimer);
+            document.getElementById('otpForm').classList.add('hidden');
+            document.getElementById('loginForm').classList.remove('hidden');
+            // Clear OTP inputs
+            for (let i = 1; i <= 6; i++) {
+                document.getElementById(`otp${i}`).value = '';
+            }
+            timeLeft = 600;
+            resendTimeLeft = 60;
+        }
+
+        // Handle Enter key
+        document.getElementById('email').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') document.getElementById('password').focus();
+        });
+
+        document.getElementById('password').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') login();
+        });
+    </script>
+</body>
+</html>

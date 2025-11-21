@@ -1,4 +1,12 @@
+console.log('🔵 SERVER.JS FILE LOADING - TOP OF FILE');
+
 require('dotenv').config();
+const dns = require('dns');
+// Set DNS resolution order to prioritize IPv4 (Windows fix for MongoDB Atlas)
+dns.setDefaultResultOrder('ipv4first');
+
+console.log('🔵 DNS and dotenv configured');
+
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -8,7 +16,7 @@ const crypto = require('crypto');
 const path = require('path');
 const multer = require('multer');
 const fs = require('fs');
-const config = require('./src/config/config');
+const config = require('./src/config/config') ;
 
 // Student Schema
 const studentSchema = new mongoose.Schema({
@@ -85,6 +93,8 @@ const StudentUpload = require('./src/models/StudentUpload');
 const AuditLog = require('./src/models/AuditLog');
 const StudentNote = require('./src/models/StudentNote');
 const Payslip = require('./src/models/Payslip');
+const AdminStaff = require('./src/models/AdminStaff');
+const LoginOTP = require('./src/models/LoginOTP');
 
 // Import services
 const EmailService = require('./src/utils/emailService');
@@ -131,8 +141,13 @@ try {
     console.warn('Student routes file not found, using inline student endpoints.');
 }
 
+const adminAuthRoutes = require('./src/routes/adminAuth');
+
+console.log('🔵 All imports loaded successfully');
 
 const app = express();
+
+console.log('🔵 Express app created');
 
 // Create uploads directory if it doesn't exist
 const uploadsDir = path.join(__dirname, 'uploads');
@@ -200,6 +215,7 @@ const connectDB = async () => {
         await mongoose.connect(config.mongodbUri, {
             serverSelectionTimeoutMS: 30000, // 30 seconds timeout
             socketTimeoutMS: 45000,
+            family: 4, // Force IPv4 (Windows DNS resolution fix)
         });
         
         console.log('✅ Connected to MongoDB successfully!');
@@ -209,6 +225,7 @@ const connectDB = async () => {
         await initializeSystemSettings();
         await initializeCommonUnits();
         await initializeTrainers();
+        await initializeAdminStaff();
         
     } catch (error) {
         console.error('❌ MongoDB connection error:', error.message);
@@ -241,6 +258,7 @@ mongoose.connection.on('reconnected', () => {
 // Connect to database
 connectDB();
 
+console.log('✅ Past connectDB() call, loading middleware and routes...');
 
 // Middleware
 app.use(cors());
@@ -613,10 +631,41 @@ app.get('/debug', (req, res) => {
     res.sendFile(path.join(__dirname, 'debug.html'));
 });
 
-// Routes
-if (studentRoutes) {
-app.use('/api/students', studentRoutes);
-}
+
+// Admin staff authentication routes
+app.use('/api/admin/auth', adminAuthRoutes);
+
+// Admin portal pages (MUST BE BEFORE GENERIC ROUTES)
+app.get('/admin/login', (req, res) => {
+    const filePath = path.join(__dirname, 'src', 'components', 'admin', 'AdminLogin.html');
+    console.log('🔐 Admin login requested');
+    console.log('📂 File path:', filePath);
+    console.log('📁 File exists:', fs.existsSync(filePath));
+    
+    res.sendFile(filePath, (err) => {
+        if (err) {
+            console.error('❌ Error sending file:', err);
+            res.status(500).send('Error loading login page: ' + err.message);
+        } else {
+            console.log('✅ Login page sent successfully');
+        }
+    });
+});
+
+app.get('/admin/first-login', (req, res) => {
+    console.log('📝 First login page requested');
+    res.sendFile(path.join(__dirname, 'src', 'components', 'admin', 'FirstLogin.html'));
+});
+
+app.get('/admin/dashboard', (req, res) => {
+    console.log('📊 Admin dashboard requested');
+    res.set({
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+    });
+    res.sendFile(path.join(__dirname, 'src', 'components', 'admin', 'AdminDashboard.html'));
+});
 
 // Serve main login page (Student/Trainer combined)
 app.get('/login', (req, res) => {
@@ -650,33 +699,6 @@ app.get('/student/dashboard', (req, res) => {
 app.get('/src/components/registrar/AdmissionLetter.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'src', 'components', 'registrar', 'AdmissionLetter.html'));
 });
-
-
-
-
-
-// MongoDB Connection
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/ums';
-console.log('🔍 Attempting to connect to:', MONGODB_URI.includes('localhost') ? 'LOCAL MongoDB' : 'ATLAS MongoDB Cloud');
-console.log('🔍 Database URL starts with:', MONGODB_URI.substring(0, 30) + '...');
-mongoose.connect(MONGODB_URI)
-    .then(async () => {
-        console.log('✅ Connected to MongoDB successfully!');
-        console.log('🌐 Database type:', MONGODB_URI.includes('localhost') ? 'LOCAL DATABASE' : 'ATLAS CLOUD DATABASE');
-
-        // Initialize programs
-        await initializePrograms();
-        // Initialize units
-        await initializeUnits();
-        // Initialize common units
-        await initializeCommonUnits();
-        // Initialize system settings
-        await initializeSystemSettings();
-        // Initialize trainers and HODs
-        await initializeTrainers();
-        await initializeHODs();
-    })
-    .catch(err => console.error('MongoDB connection error:', err));
 
 // Function to initialize programs in database
 async function initializePrograms() {
@@ -1188,6 +1210,111 @@ async function initializeCommonUnits() {
         
     } catch (error) {
         console.error('❌ Error initializing common units:', error);
+    }
+}
+
+// Initialize admin staff with default accounts
+async function initializeAdminStaff() {
+    try {
+        console.log('🔄 Initializing admin staff...');
+        
+        const existingStaffCount = await AdminStaff.countDocuments();
+        if (existingStaffCount > 0) {
+            console.log(`✅ Admin staff already initialized (${existingStaffCount} accounts found)`);
+            return;
+        }
+        
+        // Default admin staff accounts
+        const defaultStaff = [
+            {
+                role: 'admin',
+                staffId: 'ADMIN001',
+                name: 'System Administrator',
+                email: 'admin@edtti.ac.ke',
+                password: 'Admin@2024', // Will be hashed by the model
+                department: 'Administration',
+                isActive: true,
+                isFirstLogin: true,
+                mustUpdateEmail: true,
+                mustUpdatePassword: true
+            },
+            {
+                role: 'deputy',
+                staffId: 'DEPUTY001',
+                name: 'Deputy Principal',
+                email: 'deputy@edtti.ac.ke',
+                password: 'Admin@2024',
+                department: 'Administration',
+                isActive: true,
+                isFirstLogin: true,
+                mustUpdateEmail: true,
+                mustUpdatePassword: true
+            },
+            {
+                role: 'finance',
+                staffId: 'FINANCE001',
+                name: 'Finance Officer',
+                email: 'finance@edtti.ac.ke',
+                password: 'Admin@2024',
+                department: 'Finance',
+                isActive: true,
+                isFirstLogin: true,
+                mustUpdateEmail: true,
+                mustUpdatePassword: true
+            },
+            {
+                role: 'dean',
+                staffId: 'DEAN001',
+                name: 'Dean of Students',
+                email: 'dean@edtti.ac.ke',
+                password: 'Admin@2024',
+                department: 'Student Affairs',
+                isActive: true,
+                isFirstLogin: true,
+                mustUpdateEmail: true,
+                mustUpdatePassword: true
+            },
+            {
+                role: 'ilo',
+                staffId: 'ILO001',
+                name: 'Industry Liaison Officer',
+                email: 'ilo@edtti.ac.ke',
+                password: 'Admin@2024',
+                department: 'Industry Liaison',
+                isActive: true,
+                isFirstLogin: true,
+                mustUpdateEmail: true,
+                mustUpdatePassword: true
+            },
+            {
+                role: 'registrar',
+                staffId: 'REGISTRAR001',
+                name: 'Registrar',
+                email: 'registrar@edtti.ac.ke',
+                password: 'Admin@2024',
+                department: 'Registry',
+                isActive: true,
+                isFirstLogin: true,
+                mustUpdateEmail: true,
+                mustUpdatePassword: true
+            }
+        ];
+        
+        // Create staff accounts
+        for (const staffData of defaultStaff) {
+            const staff = new AdminStaff(staffData);
+            await staff.save();
+            console.log(`✅ Created ${AdminStaff.getRoleDisplayName(staffData.role)} account: ${staffData.email}`);
+        }
+        
+        console.log('✅ Admin staff initialization completed!');
+        console.log('📧 Default credentials:');
+        console.log('   Email: [role]@edtti.ac.ke (e.g., admin@edtti.ac.ke)');
+        console.log('   Password: Admin@2024');
+        console.log('   ⚠️  Users must update their email and password on first login');
+        
+    } catch (error) {
+        console.error('❌ Error initializing admin staff:', error);
     }
 }
 
@@ -4789,20 +4916,8 @@ app.patch('/api/ilo/applications/:type/:applicationId/status', async (req, res) 
 // CLEAN URL ROUTES (Hide .html extensions)
 // ========================================
 
-// Admin routes
-app.get('/admin/login', (req, res) => {
-    res.sendFile(path.join(__dirname, 'src', 'admin-login.html'));
-});
-
-app.get('/admin/dashboard', (req, res) => {
-    // Prevent caching to ensure latest version is served
-    res.set({
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
-    });
-    res.sendFile(path.join(__dirname, 'src', 'components', 'admin', 'adminDashboard.html'));
-});
+// Admin routes are defined at the top of the file (after API routes)
+// See lines 630-659
 
 // Student routes
 app.get('/student/login', (req, res) => {
@@ -5716,8 +5831,11 @@ app.put('/api/payslips/:payslipId/view', async (req, res) => {
     }
 });
 
+console.log('🚀 About to start listening on port', PORT);
+console.log('📍 Routes registered, starting server...');
+
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log(`✅ Server running on port ${PORT}`);
     console.log(`🔐 Admin Portal: http://localhost:${PORT}/admin/login`);
     console.log(`👨‍🎓 Student Portal: http://localhost:${PORT}/student/login`);
     console.log(`👨‍🏫 Trainer Portal: http://localhost:${PORT}/trainer/login`);
@@ -5727,3 +5845,5 @@ app.listen(PORT, () => {
     console.log(`👔 Deputy Portal: http://localhost:${PORT}/deputy/dashboard`);
     console.log(`🏢 HOD Portal: http://localhost:${PORT}/hod/dashboard`);
 });
+
+console.log('✅✅✅ SERVER FILE FULLY LOADED - AFTER APP.LISTEN() ✅✅✅');

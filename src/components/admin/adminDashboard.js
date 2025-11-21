@@ -16,15 +16,51 @@ let viewMode = 'list';
 // ========================================
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Check authentication
-    const adminData = sessionStorage.getItem('adminData');
-    if (!adminData) {
+    console.log('🔍 Dashboard loading - checking authentication...');
+    
+    // Check authentication (NEW SYSTEM)
+    const adminToken = localStorage.getItem('adminToken');
+    const adminUser = localStorage.getItem('adminUser');
+    
+    console.log('📋 Auth check:', {
+        hasToken: !!adminToken,
+        hasUser: !!adminUser,
+        tokenLength: adminToken ? adminToken.length : 0
+    });
+    
+    if (!adminToken || !adminUser) {
+        console.log('❌ No token or user found, redirecting to login...');
         window.location.href = '/admin/login';
         return;
     }
 
+    // Parse user data
+    let admin;
+    try {
+        admin = JSON.parse(adminUser);
+        console.log('✅ User data parsed:', {
+            name: admin.name,
+            email: admin.email,
+            role: admin.role,
+            isFirstLogin: admin.isFirstLogin
+        });
+    } catch (error) {
+        console.error('❌ Error parsing user data:', error);
+        localStorage.clear();
+        window.location.href = '/admin/login';
+        return;
+    }
+    
+    // Check if first login - redirect to setup if needed
+    if (admin.isFirstLogin === true) {
+        console.log('⚠️ First login detected, redirecting to setup...');
+        window.location.href = '/admin/first-login';
+        return;
+    }
+
+    console.log('✅ Authentication verified, loading dashboard...');
+
     // Set admin name
-    const admin = JSON.parse(adminData);
     const adminNameEl = document.getElementById('admin-name');
     if (adminNameEl) adminNameEl.textContent = admin.name || 'Administrator';
 
