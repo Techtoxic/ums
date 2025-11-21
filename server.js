@@ -147,10 +147,17 @@ const app = express();
 
 console.log('🔵 Express app created');
 
-// Create uploads directory if it doesn't exist
+// Create uploads directory if it doesn't exist (skip in serverless/Vercel environment)
 const uploadsDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
+if (!process.env.VERCEL && !fs.existsSync(uploadsDir)) {
+    try {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+        console.log('✅ Created uploads directory');
+    } catch (err) {
+        console.warn('⚠️  Could not create uploads directory (using S3):', err.message);
+    }
+} else if (process.env.VERCEL) {
+    console.log('🌐 Running on Vercel - using S3 for file storage');
 }
 
 // Multer configuration for file uploads
