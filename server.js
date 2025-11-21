@@ -3171,7 +3171,6 @@ app.post('/api/students/login', async (req, res) => {
         const passwordsToTry = [
             formattedPassword,           // Properly formatted phone
             password,                    // Raw password as entered
-            student.phoneNumber,         // Stored phone number format
             password.replace(/\D/g, ''), // Numbers only
             '254' + password.slice(1),   // Convert 07... to 254...
             '+254' + password.slice(1)   // Convert 07... to +254...
