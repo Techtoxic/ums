@@ -7,7 +7,9 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "node server.js",
+    "vercel-build": "echo 'Vercel build complete'"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.919.0",
