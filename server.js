@@ -59,7 +59,7 @@ studentSchema.pre('save', async function(next) {
 
 // Method to compare passwords
 studentSchema.methods.comparePassword = async function(candidatePassword) {
-    return bcrypt.compare(candidatePassword, this.password);
+    return await bcrypt.compare(candidatePassword, this.password);
 };
 
 // Register Student model
