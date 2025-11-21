@@ -187,6 +187,61 @@ const upload = multer({
     }
 });
 
+// ===============================
+// DATABASE CONNECTION
+// ===============================
+
+// Connect to MongoDB  
+const connectDB = async () => {
+    try {
+        console.log('🔄 Connecting to MongoDB...');
+        console.log(`📍 MongoDB URI: ${config.mongodbUri.replace(/\/\/.*@/, '//***@')}`);
+        
+        await mongoose.connect(config.mongodbUri, {
+            serverSelectionTimeoutMS: 30000, // 30 seconds timeout
+            socketTimeoutMS: 45000,
+        });
+        
+        console.log('✅ Connected to MongoDB successfully!');
+        console.log(`📊 Database: ${mongoose.connection.name}`);
+        
+        // Initialize default data
+        await initializeSystemSettings();
+        await initializeCommonUnits();
+        await initializeTrainers();
+        
+    } catch (error) {
+        console.error('❌ MongoDB connection error:', error.message);
+        console.error('Full error:', error);
+        
+        // In production, try to reconnect after 5 seconds
+        if (config.nodeEnv === 'production') {
+            console.log('🔄 Attempting to reconnect in 5 seconds...');
+            setTimeout(connectDB, 5000);
+        } else {
+            // In development, just log and continue
+            console.warn('⚠️  Running without database connection (development mode)');
+        }
+    }
+};
+
+// Handle MongoDB connection events
+mongoose.connection.on('disconnected', () => {
+    console.log('⚠️  MongoDB disconnected');
+});
+
+mongoose.connection.on('error', (err) => {
+    console.error('❌ MongoDB error:', err);
+});
+
+mongoose.connection.on('reconnected', () => {
+    console.log('✅ MongoDB reconnected');
+});
+
+// Connect to database
+connectDB();
+
+
 // Middleware
 app.use(cors());
 app.use(express.json());
