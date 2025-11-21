@@ -10,7 +10,7 @@ const passwordResetSchema = new mongoose.Schema({
     userType: {
         type: String,
         required: true,
-        enum: ['student', 'trainer', 'hod'],
+        enum: ['student', 'trainer', 'hod', 'admin', 'deputy', 'finance', 'dean', 'ilo', 'registrar'],
         index: true
     },
     email: {
