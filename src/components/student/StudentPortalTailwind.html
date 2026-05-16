@@ -11,7 +11,28 @@
     
     <!-- Frontend Config (Load First!) -->
     <script src="/public/js/config.js"></script>
-    
+
+    <!-- Global fetch interceptor: automatically inject Bearer token for all /api/ calls -->
+    <script>
+        (function() {
+            const _origFetch = window.fetch;
+            window.fetch = function(url, options) {
+                options = options || {};
+                if (typeof url === 'string' && url.includes('/api/')) {
+                    const token = sessionStorage.getItem('studentToken')
+                               || localStorage.getItem('studentToken')
+                               || (window.AUTH && window.AUTH.getToken());
+                    if (token) {
+                        options.headers = Object.assign({}, options.headers, {
+                            'Authorization': 'Bearer ' + token
+                        });
+                    }
+                }
+                return _origFetch(url, options);
+            };
+        })();
+    </script>
+
     <script>
         tailwind.config = {
             theme: {

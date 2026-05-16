@@ -133,7 +133,13 @@ const verifyOwnership = (userIdParam = 'id') => {
                 });
             }
 
-            if (String(requestedUserId) !== String(authenticatedUserId)) {
+            // For students, also allow matching by admissionNumber since URLs use that
+            // rather than the MongoDB _id.
+            const isOwner = String(requestedUserId) === String(authenticatedUserId) ||
+                          (req.user && req.user.admissionNumber &&
+                           String(requestedUserId) === String(req.user.admissionNumber));
+
+            if (!isOwner) {
                 return res.status(403).json({
                     success: false,
                     message: 'You can only access your own data.',

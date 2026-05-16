@@ -3261,7 +3261,7 @@ app.get('/api/students/department/:department', verifyToken, authorize('admin', 
 // Students API Routes
 
 // Get Student Data by Admission Number
-app.get('/api/students/admission/:admissionNumber', verifyToken, authorize('admin', 'registrar', 'finance'), async (req, res) => {
+app.get('/api/students/admission/:admissionNumber', verifyToken, authorize('admin', 'registrar', 'finance', 'student'), async (req, res) => {
     try {
         const { admissionNumber } = req.params;
         console.log('Fetching student data for admission number:', admissionNumber);
@@ -3527,7 +3527,8 @@ app.post('/api/students/login', authLimiter, async (req, res) => {
         const token = signToken({
             userId: String(student._id),
             email: student.email || null,
-            role: 'student'
+            role: 'student',
+            admissionNumber: student.admissionNumber
         });
 
         res.status(200).json({
@@ -3822,7 +3823,7 @@ app.put('/api/students/:studentId/email', verifyToken, authorize('admin', 'regis
 // ========================================
 
 // Get all system settings
-app.get('/api/system-settings', verifyToken, authorize('admin'), async (req, res) => {
+app.get('/api/system-settings', verifyToken, authorize('admin', 'registrar', 'student'), async (req, res) => {
     try {
         const { category } = req.query;
         let settings;
