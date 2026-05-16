@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Admin Dashboard - EDTTI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.0.0/fonts/remixicon.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Auth Utility (Load First!) -->
+    <script src="/public/js/auth.js"></script>
+    
+    <!-- Frontend Config -->
+    <script src="/public/js/config.js"></script>
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#7A0C0C',
+                        secondary: '#8B2A2A',
+                    }
+                }
+            }
+        }
+        
+        // Test dark mode immediately after Tailwind loads
+        console.log('✅ Tailwind darkMode configured as:', tailwind.config.darkMode);
+        
+        // Verify dark mode support
+        window.addEventListener('DOMContentLoaded', () => {
+            const testEl = document.createElement('div');
+            testEl.className = 'bg-white dark:bg-gray-800';
+            document.body.appendChild(testEl);
+            const computed = window.getComputedStyle(testEl);
+            console.log('🧪 Dark mode test element created');
+            document.body.removeChild(testEl);
+        });
+    </script>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+    
+    <!-- Sidebar -->
+    <aside id="sidebar" class="fixed top-0 left-0 z-30 w-16 lg:w-20 h-screen transition-transform -translate-x-full lg:translate-x-0 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
+        <div class="h-full px-1 py-2 overflow-y-auto flex flex-col">
+            <!-- Logo -->
+            <div class="flex items-center justify-center mb-2 p-1 flex-shrink-0">
+                <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                    <i class="ri-shield-star-line text-xl text-white"></i>
+                </div>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="space-y-1 flex-1 overflow-y-auto">
+                <a href="#" onclick="showSection('dashboard')" data-section="dashboard" title="Dashboard" class="nav-link flex items-center justify-center p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-primary dark:hover:bg-primary hover:text-white transition active">
+                    <i class="ri-dashboard-line text-xl"></i>
+                </a>
+                
+                <a href="#" onclick="showSection('students')" data-section="students" title="Students" class="nav-link flex items-center justify-center p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-primary dark:hover:bg-primary hover:text-white transition">
+                    <i class="ri-graduation-cap-line text-xl"></i>
+                </a>
+                
+                <a href="#" onclick="showSection('trainers')" data-section="trainers" title="Trainers" class="nav-link flex items-center justify-center p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-primary dark:hover:bg-primary hover:text-white transition">
+                    <i class="ri-user-star-line text-xl"></i>
+                </a>
+                
+                <a href="#" onclick="showSection('financial')" data-section="financial" title="Financial" class="nav-link flex items-center justify-center p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-primary dark:hover:bg-primary hover:text-white transition">
+                    <i class="ri-money-dollar-circle-line text-xl"></i>
+                </a>
+                
+                <a href="#" onclick="showSection('programs')" data-section="programs" title="Programs" class="nav-link flex items-center justify-center p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-primary dark:hover:bg-primary hover:text-white transition">
+                    <i class="ri-book-line text-xl"></i>
+                </a>
+                
+                <a href="#" onclick="showSection('reports')" data-section="reports" title="Reports" class="nav-link flex items-center justify-center p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-primary dark:hover:bg-primary hover:text-white transition">
+                    <i class="ri-bar-chart-box-line text-xl"></i>
+                </a>
+                
+                <!-- Settings -->
+                <div class="pt-2 flex-shrink-0 border-t border-gray-200 dark:border-gray-700 mt-2">
+                    <a href="#" onclick="showSection('settings')" data-section="settings" title="Settings" class="nav-link flex items-center justify-center p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-primary dark:hover:bg-primary hover:text-white transition">
+                        <i class="ri-settings-line text-xl"></i>
+                    </a>
+                </div>
+            </nav>
+        </div>
+    </aside>
+
+    <!-- Overlay for mobile -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-20 hidden lg:hidden" onclick="toggleSidebar()"></div>
+
+    <!-- Main Content -->
+    <div class="lg:ml-20">
+        <!-- Top Bar -->
+        <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
+            <div class="flex items-center justify-between px-2 md:px-4 py-2">
+                <div class="flex items-center gap-2">
+                    <button onclick="toggleSidebar()" class="lg:hidden text-gray-600 dark:text-gray-300 hover:text-primary p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                        <i class="ri-menu-line text-lg"></i>
+                    </button>
+                    <div>
+                        <h1 class="text-sm md:text-base font-bold text-gray-800 dark:text-white">Admin Dashboard</h1>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 hidden md:block">Welcome, <span id="admin-name">Admin</span></p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-2 md:space-x-3">
+                    <!-- Search -->
+                    <div class="hidden md:block">
+                        <input type="text" id="global-search" placeholder="Search... (Ctrl+K)" class="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent w-48 lg:w-64">
+                    </div>
+                    
+                    <!-- Mobile Search Button -->
+                    <button id="mobile-search-toggle" class="md:hidden text-gray-600 dark:text-gray-300 hover:text-primary p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                        <i class="ri-search-line text-lg"></i>
+                    </button>
+                    
+                    <!-- Dark Mode Toggle -->
+                    <button onclick="toggleDarkMode()" class="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
+                        <i id="dark-mode-icon" class="ri-moon-line text-lg"></i>
+                    </button>
+                    
+                    <!-- Notifications -->
+                    <button class="relative text-gray-600 dark:text-gray-300 hover:text-primary p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg hidden sm:block">
+                        <i class="ri-notification-line text-lg"></i>
+                        <span class="absolute top-1 right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">3</span>
+                    </button>
+                    
+                    <!-- Profile Menu -->
+                    <div class="relative">
+                        <button onclick="toggleProfileMenu()" class="w-8 h-8 md:w-9 md:h-9 bg-primary rounded-full flex items-center justify-center text-white font-semibold hover:bg-secondary transition">
+                            <i class="ri-admin-line text-base md:text-lg"></i>
+                        </button>
+                        <div id="profile-menu" class="hidden absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl py-2 z-50 border border-gray-200 dark:border-gray-700">
+                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                <i class="ri-user-line mr-2"></i>Profile
+                            </a>
+                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                <i class="ri-settings-line mr-2"></i>Settings
+                            </a>
+                            <hr class="my-2 border-gray-200 dark:border-gray-700">
+                            <button onclick="logout()" class="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">
+                                <i class="ri-logout-box-line mr-2"></i>Logout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Mobile Search Modal -->
+        <div id="mobile-search-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden md:hidden">
+            <div class="bg-white dark:bg-gray-800 p-4">
+                <div class="flex items-center gap-2">
+                    <input type="text" id="mobile-search-input" placeholder="Search..." class="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                    <button onclick="closeMobileSearch()" class="text-gray-600 dark:text-gray-300 hover:text-primary p-2">
+                        <i class="ri-close-line text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Area -->
+        <main class="p-3 md:p-4 lg:p-6">
+            <!-- Dashboard Section (Default) -->
+            <div id="dashboard-section" class="content-section active">
+                <!-- Dashboard content from existing code... -->
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-3">
+                    <!-- Stats Cards -->
+                    <div class="bg-white dark:bg-gray-800 rounded-lg p-2 shadow-sm border-l-4 border-blue-500">
+                        <div class="flex items-center justify-between">
+                            <div class="min-w-0 flex-1">
+                                <p class="text-gray-500 dark:text-gray-400 text-xs">Students</p>
+                                <h3 id="stat-students" class="text-lg md:text-xl font-bold text-gray-800 dark:text-white truncate">-</h3>
+                            </div>
+                            <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <i class="ri-graduation-cap-line text-sm text-blue-600 dark:text-blue-400"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white dark:bg-gray-800 rounded-lg p-2 shadow-sm border-l-4 border-green-500">
+                        <div class="flex items-center justify-between">
+                            <div class="min-w-0 flex-1">
+                                <p class="text-gray-500 dark:text-gray-400 text-xs">Trainers</p>
+                                <h3 id="stat-trainers" class="text-lg md:text-xl font-bold text-gray-800 dark:text-white truncate">-</h3>
+                            </div>
+                            <div class="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <i class="ri-user-star-line text-sm text-green-600 dark:text-green-400"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white dark:bg-gray-800 rounded-lg p-2 shadow-sm border-l-4 border-yellow-500">
+                        <div class="flex items-center justify-between">
+                            <div class="min-w-0 flex-1">
+                                <p class="text-gray-500 dark:text-gray-400 text-xs">Revenue</p>
+                                <h3 id="stat-revenue" class="text-lg md:text-xl font-bold text-gray-800 dark:text-white truncate">-</h3>
+                            </div>
+                            <div class="w-8 h-8 bg-yellow-100 dark:bg-yellow-900 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <i class="ri-money-dollar-circle-line text-sm text-yellow-600 dark:text-yellow-400"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white dark:bg-gray-800 rounded-lg p-2 shadow-sm border-l-4 border-red-500">
+                        <div class="flex items-center justify-between">
+                            <div class="min-w-0 flex-1">
+                                <p class="text-gray-500 dark:text-gray-400 text-xs">Outstanding</p>
+                                <h3 id="stat-outstanding" class="text-lg md:text-xl font-bold text-gray-800 dark:text-white truncate">-</h3>
+                            </div>
+                            <div class="w-8 h-8 bg-red-100 dark:bg-red-900 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <i class="ri-alert-line text-sm text-red-600 dark:text-red-400"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-2 mb-3">
+                    <div class="bg-white dark:bg-gray-800 rounded-lg p-2 md:p-3 shadow-sm">
+                        <h3 class="text-xs md:text-sm font-bold text-gray-800 dark:text-white mb-2">Enrollment Trends</h3>
+                        <canvas id="enrollmentChart"></canvas>
+                    </div>
+                    
+                    <div class="bg-white dark:bg-gray-800 rounded-lg p-2 md:p-3 shadow-sm">
+                        <h3 class="text-xs md:text-sm font-bold text-gray-800 dark:text-white mb-2">Revenue Overview</h3>
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                    
+                    <div class="bg-white dark:bg-gray-800 rounded-lg p-2 md:p-3 shadow-sm">
+                        <h3 class="text-xs md:text-sm font-bold text-gray-800 dark:text-white mb-2">Department Distribution</h3>
+                        <canvas id="departmentChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Quick Links -->
+                <div class="grid grid-cols-2 lg:grid-cols-3 gap-2">
+                    <button onclick="showSection('students')" class="bg-primary dark:bg-primary text-white p-3 rounded-lg hover:bg-secondary dark:hover:bg-secondary transition shadow-sm">
+                        <i class="ri-user-add-line text-xl mb-1"></i>
+                        <h4 class="text-xs font-semibold">Manage Students</h4>
+                    </button>
+                    
+                    <button onclick="showSection('financial')" class="bg-green-600 dark:bg-green-700 text-white p-3 rounded-lg hover:bg-green-700 dark:hover:bg-green-800 transition shadow-sm">
+                        <i class="ri-file-list-line text-xl mb-1"></i>
+                        <h4 class="text-xs font-semibold">Financial Reports</h4>
+                    </button>
+                    
+                    <button onclick="openAddTrainerModal()" class="bg-blue-600 dark:bg-blue-700 text-white p-3 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 transition shadow-sm col-span-2 lg:col-span-1">
+                        <i class="ri-user-star-line text-xl mb-1"></i>
+                        <h4 class="text-xs font-semibold">Add Trainer</h4>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Students Section -->
+            <div id="students-section" class="content-section">
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-2 md:p-3">
+                    <!-- Header with buttons -->
+                    <div class="flex items-center justify-between gap-2 mb-2">
+                        <h2 class="text-sm font-bold text-gray-800 dark:text-white">Students</h2>
+                        <div class="flex gap-1">
+                            <button onclick="openAddStudentModal()" class="bg-primary text-white px-2 py-1 text-xs rounded hover:bg-secondary transition flex items-center gap-1">
+                                <i class="ri-user-add-line"></i><span class="hidden xs:inline">Add</span>
+                            </button>
+                            <button onclick="exportStudents()" class="bg-green-600 text-white px-2 py-1 text-xs rounded hover:bg-green-700 transition flex items-center gap-1">
+                                <i class="ri-file-excel-line"></i><span class="hidden xs:inline">Export</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Search and Filters -->
+                    <div class="mb-2 grid grid-cols-12 gap-1">
+                        <input type="text" id="student-search" placeholder="Search..." class="col-span-12 sm:col-span-6 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded focus:ring-1 focus:ring-primary">
+                        <select id="year-filter" class="col-span-6 sm:col-span-3 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded">
+                            <option value="">Year</option>
+                            <option value="1">Y1</option>
+                            <option value="2">Y2</option>
+                            <option value="3">Y3</option>
+                        </select>
+                        <select id="program-filter" class="col-span-6 sm:col-span-3 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded">
+                            <option value="">Program</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Students Table -->
+                    <div id="students-table" class="overflow-x-auto"></div>
+                </div>
+            </div>
+
+            <!-- Trainers Section -->
+            <div id="trainers-section" class="content-section">
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-2 md:p-4">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
+                        <h2 class="text-base md:text-lg font-bold text-gray-800 dark:text-white">Trainer Management</h2>
+                        <button onclick="openAddTrainerModal()" class="bg-primary text-white px-3 py-1.5 text-xs rounded-md hover:bg-secondary transition shadow-sm">
+                            <i class="ri-user-add-line mr-1"></i><span class="hidden sm:inline">Add </span>Trainer
+                        </button>
+                    </div>
+                    
+                    <div id="trainers-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2"></div>
+                </div>
+            </div>
+
+            <!-- Financial Section -->
+            <div id="financial-section" class="content-section">
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-2 md:p-4">
+                    <h2 class="text-base md:text-lg font-bold text-gray-800 dark:text-white mb-3">Financial Overview</h2>
+                    <div id="financial-content"></div>
+                </div>
+            </div>
+
+            <!-- Programs Section -->
+            <div id="programs-section" class="content-section">
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-2 md:p-4">
+                    <h2 class="text-base md:text-lg font-bold text-gray-800 dark:text-white mb-3">Program Management</h2>
+                    <div id="programs-list"></div>
+                </div>
+            </div>
+
+            <!-- Reports Section -->
+            <div id="reports-section" class="content-section">
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-2 md:p-4">
+                    <h2 class="text-base md:text-lg font-bold text-gray-800 dark:text-white mb-3">Reports & Analytics</h2>
+                    <p class="text-xs text-gray-600 dark:text-gray-400">Coming soon: Comprehensive reporting system</p>
+                </div>
+            </div>
+
+            <!-- Settings Section -->
+            <div id="settings-section" class="content-section">
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-2 md:p-4">
+                    <h2 class="text-base md:text-lg font-bold text-gray-800 dark:text-white mb-3">System Settings</h2>
+                    <p class="text-xs text-gray-600 dark:text-gray-400">Coming soon: System configuration</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+    <!-- Load Admin Dashboard JavaScript -->
+    <script src="adminDashboard.js?v=3.3"></script>
+
+    <style>
+        .content-section {
+            display: none;
+        }
+        .content-section.active {
+            display: block;
+        }
+        .nav-link.active {
+            background-color: #7A0C0C;
+            color: white;
+        }
+        
+        /* DARK MODE CSS - Direct styles since Tailwind CDN doesn't fully support dark mode properly */
+        .dark body {
+            background-color: #111827 !important; /* gray-900 */
+        }
+        
+        .dark aside {
+            background-color: #1F2937 !important; /* gray-800 */
+            border-color: #374151 !important; /* gray-700 */
+        }
+        
+        .dark header {
+            background-color: #1F2937 !important; /* gray-800 */
+            border-color: #374151 !important; /* gray-700 */
+        }
+        
+        .dark h1, .dark h2, .dark h3, .dark h4 {
+            color: #FFFFFF !important;
+        }
+        
+        .dark .nav-link {
+            color: #D1D5DB !important; /* gray-300 */
+        }
+        
+        .dark .nav-link:hover {
+            background-color: #7A0C0C !important;
+            color: #FFFFFF !important;
+        }
+        
+        .dark .nav-link.active {
+            background-color: #7A0C0C !important;
+            color: #FFFFFF !important;
+        }
+        
+        .dark .bg-white {
+            background-color: #1F2937 !important; /* gray-800 */
+        }
+        
+        .dark .text-gray-800 {
+            color: #FFFFFF !important;
+        }
+        
+        .dark .text-gray-700 {
+            color: #D1D5DB !important; /* gray-300 */
+        }
+        
+        .dark .text-gray-500 {
+            color: #9CA3AF !important; /* gray-400 */
+        }
+        
+        .dark .text-gray-600 {
+            color: #D1D5DB !important; /* gray-300 */
+        }
+        
+        .dark .border-gray-200 {
+            border-color: #374151 !important; /* gray-700 */
+        }
+        
+        .dark .border-gray-300 {
+            border-color: #4B5563 !important; /* gray-600 */
+        }
+        
+        .dark input, .dark select {
+            background-color: #374151 !important; /* gray-700 */
+            border-color: #4B5563 !important; /* gray-600 */
+            color: #FFFFFF !important;
+        }
+        
+        .dark .bg-gray-100 {
+            background-color: #374151 !important; /* gray-700 */
+        }
+        
+        .dark #profile-menu {
+            background-color: #1F2937 !important; /* gray-800 */
+            border-color: #374151 !important; /* gray-700 */
+        }
+        
+        .dark #profile-menu a, .dark #profile-menu button {
+            color: #D1D5DB !important; /* gray-300 */
+        }
+        
+        .dark #profile-menu a:hover, .dark #profile-menu button:hover {
+            background-color: #374151 !important; /* gray-700 */
+        }
+        
+        .dark .bg-blue-100 {
+            background-color: #1E3A8A !important; /* blue-900 */
+        }
+        
+        .dark .text-blue-600 {
+            color: #60A5FA !important; /* blue-400 */
+        }
+        
+        .dark .bg-green-100 {
+            background-color: #064E3B !important; /* green-900 */
+        }
+        
+        .dark .text-green-600 {
+            color: #4ADE80 !important; /* green-400 */
+        }
+        
+        .dark .bg-yellow-100 {
+            background-color: #78350F !important; /* yellow-900 */
+        }
+        
+        .dark .text-yellow-600 {
+            color: #FCD34D !important; /* yellow-400 */
+        }
+        
+        .dark .bg-red-100 {
+            background-color: #7F1D1D !important; /* red-900 */
+        }
+        
+        .dark .text-red-600 {
+            color: #F87171 !important; /* red-400 */
+        }
+    </style>
+</body>
+</html>

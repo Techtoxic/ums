@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Ace Up</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .register-container {
+            width: 100%;
+            max-width: 400px;
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo {
+            width: 48px;
+            height: 48px;
+            margin: 0 auto 16px;
+            display: block;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 32px;
+        }
+
+        .input-group {
+            margin-bottom: 24px;
+            position: relative;
+        }
+
+        .input-group.with-button {
+            display: flex;
+            gap: 8px;
+        }
+
+        .input-label {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 14px;
+            color: #999;
+            pointer-events: none;
+            transition: 0.3s ease all;
+            background: white;
+            padding: 0 4px;
+            z-index: 1;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.2s ease;
+        }
+
+        .input-field:focus {
+            border-color: #333;
+            outline: none;
+        }
+
+        .input-field:focus ~ .input-label,
+        .input-field:not(:placeholder-shown) ~ .input-label {
+            top: 0;
+            font-size: 12px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .get-code-button {
+            padding: 12px 20px;
+            background: #333;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background-color 0.2s ease;
+        }
+
+        .get-code-button:hover {
+            background: #000;
+        }
+
+        .otp-container {
+            margin-bottom: 24px;
+        }
+
+        .otp-boxes {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .otp-box {
+            width: 40px;
+            height: 40px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        .otp-box:focus {
+            border-color: #333;
+            outline: none;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 12px;
+            top: 14px;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .register-button {
+            width: 100%;
+            padding: 12px;
+            background: #333;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            margin-bottom: 24px;
+            transition: background-color 0.2s ease;
+        }
+
+        .register-button:hover {
+            background: #000;
+        }
+
+        .divider {
+            text-align: center;
+            margin-bottom: 24px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .social-login {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .social-button {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: background-color 0.2s ease, border-color 0.2s ease;
+        }
+
+        .social-button:hover {
+            background: #f5f5f5;
+            border-color: #999;
+        }
+
+        .login-link {
+            text-align: center;
+            margin-top: 24px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .login-link a {
+            color: #2196F3;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="register-container">
+        <svg class="logo" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M2 17L12 22L22 17" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M2 12L12 17L22 12" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <h1>Ace Up</h1>
+        <p class="subtitle">AI study partner for comrades.</p>
+        
+        <form id="registerForm">
+            <div class="input-group">
+                <input type="text" class="input-field" placeholder=" " required>
+                <label class="input-label">Full Name</label>
+            </div>
+            <div class="input-group">
+                <select class="input-field" required>
+                    <option value="" disabled selected></option>
+                    <option value="meru">Meru University</option>
+                    <option value="nairobi">University of Nairobi</option>
+                    <option value="chuka">Chuka University</option>
+                </select>
+                <label class="input-label">University</label>
+            </div>
+            <div class="input-group">
+                <input type="text" class="input-field" id="idNumber" placeholder=" " required>
+                <label class="input-label">ID Number</label>
+            </div>
+            <div class="input-group">
+                <input type="text" class="input-field" id="kcseGrade" placeholder=" " required>
+                <label class="input-label">KCSE Grade</label>
+            </div>
+            <div class="input-group">
+                <input type="text" class="input-field" id="admissionNumber" placeholder=" " required>
+                <label class="input-label">Admission Number</label>
+            </div>
+            <div class="input-group">
+                <input type="text" class="input-field" id="course" placeholder=" " required>
+                <label class="input-label">Course</label>
+            </div>
+            <div class="input-group">
+                <input type="tel" class="input-field" id="phoneNumber" placeholder=" " required pattern="[0-9]{10}">
+                <label class="input-label">Phone Number</label>
+            </div>
+            <div class="input-group with-button">
+                <div style="position: relative; flex: 1;">
+                    <input type="email" class="input-field" placeholder=" " required>
+                    <label class="input-label">Email</label>
+                </div>
+                <button type="button" class="get-code-button" onclick="sendOTP()">Get Code</button>
+            </div>
+            <div class="otp-container" id="otpContainer">
+                <p style="text-align: left; color: #666; font-size: 14px; margin-bottom: 12px;">Enter six digit code sent to your email</p>
+                <div class="otp-boxes">
+                    <input type="text" class="otp-box" maxlength="1" onkeyup="moveToNext(this, 0)">
+                    <input type="text" class="otp-box" maxlength="1" onkeyup="moveToNext(this, 1)">
+                    <input type="text" class="otp-box" maxlength="1" onkeyup="moveToNext(this, 2)">
+                    <input type="text" class="otp-box" maxlength="1" onkeyup="moveToNext(this, 3)">
+                    <input type="text" class="otp-box" maxlength="1" onkeyup="moveToNext(this, 4)">
+                    <input type="text" class="otp-box" maxlength="1" onkeyup="moveToNext(this, 5)">
+                </div>
+            </div>
+            <div class="input-group">
+                <input type="password" class="input-field" placeholder=" " required>
+                <label class="input-label">Password</label>
+                <button type="button" class="password-toggle" onclick="togglePassword(this)">
+                    <i class="fas fa-eye"></i>
+                </button>
+            </div>
+            
+            <button type="submit" class="register-button">Register</button>
+
+            <div class="divider">or continue with</div>
+
+            <div class="social-login">
+                <button type="button" class="social-button">
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285f4"/>
+                        <path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z" fill="#34a853"/>
+                        <path d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.175 0 7.548 0 9s.348 2.825.957 4.039l3.007-2.332z" fill="#fbbc05"/>
+                        <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.293C4.672 5.166 6.656 3.58 9 3.58z" fill="#ea4335"/>
+                    </svg>
+                    Continue with Google
+                </button>
+                <button type="button" class="social-button">
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12.6 8.2C12.6 6.9 13.5 5.9 14.4 5.3C13.9 4.5 13 4 12.1 3.9C11.1 3.8 10.2 4.4 9.7 4.4C9.2 4.4 8.4 3.9 7.6 3.9C6.3 3.9 4.9 4.9 4.9 6.9C4.9 7.9 5.1 8.9 5.5 9.8C6.1 11.1 7.4 13.5 8.8 13.4C9.5 13.4 10 12.9 10.9 12.9C11.8 12.9 12.2 13.4 13 13.4C14.4 13.4 15.5 11.2 16.1 9.9C14.9 9.3 12.6 8.9 12.6 8.2Z" fill="black"/>
+                        <path d="M11.2 3.4C11.7 2.8 12 2 12 1.2C11.3 1.3 10.5 1.6 10 2.2C9.5 2.8 9.2 3.6 9.2 4.4C9.9 4.4 10.7 4 11.2 3.4Z" fill="black"/>
+                    </svg>
+                    Continue with Apple
+                </button>
+            </div>
+            
+            <p class="login-link">Already have an account? <a href="login.html">Login</a></p>
+        </form>
+    </div>
+
+    <script>
+        function togglePassword(button) {
+            const input = button.parentElement.querySelector('input');
+            const icon = button.querySelector('i');
+            const type = input.type === 'password' ? 'text' : 'password';
+            input.type = type;
+            
+            if (type === 'text') {
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        function moveToNext(input, index) {
+            if (input.value.length === input.maxLength) {
+                const boxes = document.querySelectorAll('.otp-box');
+                if (index < boxes.length - 1) {
+                    boxes[index + 1].focus();
+                }
+            } else if (input.value.length === 0 && index > 0) {
+                const boxes = document.querySelectorAll('.otp-box');
+                boxes[index - 1].focus();
+            }
+        }
+        
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            // Add registration logic here
+            console.log('Registration form submitted');
+            // Redirect to login page after successful registration
+            window.location.href = 'login.html';
+        });
+    </script>
+    <script src="otp.js"></script>
+</body>
+</html>
