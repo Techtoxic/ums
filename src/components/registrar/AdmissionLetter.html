@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admission Letter Template</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            body {
+                margin: 0;
+                padding: 20px;
+                font-family: 'Times New Roman', serif;
+            }
+            .letter-content {
+                box-shadow: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+        }
+        
+        .letter-content {
+            max-width: 21cm;
+            min-height: 29.7cm;
+            margin: 0 auto;
+            background: white;
+            padding: 2cm;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            font-family: 'Times New Roman', serif;
+            line-height: 1.6;
+        }
+        
+        .letterhead {
+            text-align: center;
+            border-bottom: 3px solid #2563eb;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 15px;
+            background: #2563eb;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 32px;
+        }
+        
+        .institute-name {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1e40af;
+            margin-bottom: 5px;
+        }
+        
+        .institute-details {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 10px;
+        }
+        
+        .letter-title {
+            font-size: 20px;
+            font-weight: bold;
+            text-transform: uppercase;
+            text-decoration: underline;
+            margin: 30px 0;
+            text-align: center;
+        }
+        
+        .ref-number {
+            text-align: right;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        
+        .date {
+            text-align: right;
+            margin-bottom: 30px;
+        }
+        
+        .letter-body {
+            text-align: justify;
+            font-size: 16px;
+            line-height: 1.8;
+        }
+        
+        .highlight {
+            background-color: #fef3c7;
+            padding: 15px;
+            border-left: 4px solid #f59e0b;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        
+        .portal-instructions {
+            background-color: #eff6ff;
+            border: 2px solid #2563eb;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 25px 0;
+        }
+        
+        .signature-section {
+            margin-top: 50px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .signature-box {
+            text-align: center;
+            width: 200px;
+        }
+        
+        .signature-line {
+            border-bottom: 2px solid #000;
+            margin-bottom: 10px;
+            height: 60px;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            font-size: 12px;
+            color: #6b7280;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <!-- Admission Letter Modal -->
+    <div id="admissionLetterModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <!-- Modal Header -->
+            <div class="flex justify-between items-center p-6 border-b no-print">
+                <h2 class="text-2xl font-bold text-gray-800">
+                    <i class="fas fa-graduation-cap mr-2 text-blue-600"></i>
+                    Admission Letter Generated
+                </h2>
+                <div class="flex space-x-2">
+                    <button onclick="printLetter()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+                        <i class="fas fa-print"></i>
+                        <span>Print</span>
+                    </button>
+                    <button onclick="downloadPDF()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+                        <i class="fas fa-file-pdf"></i>
+                        <span>PDF</span>
+                    </button>
+                    <button onclick="closeModal()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+                        <i class="fas fa-times"></i>
+                        <span>Close</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Letter Content -->
+            <div id="letterContent" class="letter-content">
+                <!-- Letterhead -->
+                <div class="letterhead">
+                    <div class="logo">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
+                    <div class="institute-name">EMURUA DIKIRR TECHNICAL TRAINING INSTITUTE</div>
+                    <div class="institute-details">
+                        P.O. Box 49, Emurua Dikirr - 20500<br>
+                        Tel: +254 729 123 456 | Email: info@emurua-tech.ac.ke<br>
+                        Website: www.emurua-tech.ac.ke
+                    </div>
+                    <div class="institute-details">
+                        <strong>ISO 9001:2015 Certified Institution</strong>
+                    </div>
+                </div>
+
+                <!-- Reference and Date -->
+                <div class="ref-number">
+                    Ref: EDTTI/ADMISSIONS/<span id="refYear">2024</span>/<span id="refNumber">001</span>
+                </div>
+                <div class="date" id="letterDate">
+                    <!-- Date will be inserted here -->
+                </div>
+
+                <!-- Letter Title -->
+                <div class="letter-title">
+                    LETTER OF ADMISSION
+                </div>
+
+                <!-- Letter Body -->
+                <div class="letter-body">
+                    <p><strong>Dear <span id="studentName">[Student Name]</span>,</strong></p>
+
+                    <p>Following your application for admission to <strong>Emurua Dikirr Technical Training Institute</strong>, I am pleased to inform you that you have been <strong>SUCCESSFULLY ADMITTED</strong> to pursue the following course:</p>
+
+                    <div class="highlight">
+                        <p><strong>Course:</strong> <span id="courseName">[Course Name]</span></p>
+                        <p><strong>Admission Number:</strong> <span id="admissionNumber">[Admission Number]</span></p>
+                        <p><strong>Academic Year:</strong> <span id="intakeYear">[Intake Year]</span></p>
+                        <p><strong>Department:</strong> <span id="department">[Department]</span></p>
+                    </div>
+
+                    <p>This admission is subject to:</p>
+                    <ol>
+                        <li>Payment of required fees as per the institute's fee structure</li>
+                        <li>Submission of original academic certificates and other required documents</li>
+                        <li>Compliance with the institute's rules and regulations</li>
+                        <li>Medical examination and fitness certification</li>
+                    </ol>
+
+                    <div class="portal-instructions">
+                        <h3 class="text-lg font-bold mb-3 text-blue-800">
+                            <i class="fas fa-computer mr-2"></i>STUDENT PORTAL ACCESS INSTRUCTIONS
+                        </h3>
+                        <p class="mb-3"><strong>To access your student portal and academic services:</strong></p>
+                        <div class="bg-white p-4 rounded border">
+                            <p><strong>🌐 Website:</strong> <span class="text-blue-600 font-mono">https://ums.emurua-tech.ac.ke/login</span></p>
+                            <p><strong>👤 Username:</strong> <span class="font-mono bg-gray-100 px-2 py-1 rounded" id="portalUsername">[Admission Number]</span></p>
+                            <p><strong>🔑 Initial Password:</strong> <span class="font-mono bg-gray-100 px-2 py-1 rounded" id="portalPassword">[Your Phone Number]</span></p>
+                        </div>
+                        <div class="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
+                            <p class="text-sm"><strong>⚠️ IMPORTANT:</strong> On your first login, you will be required to:</p>
+                            <ul class="list-disc list-inside text-sm mt-2">
+                                <li>Change your password to a secure one</li>
+                                <li>Provide a valid Gmail account for password recovery</li>
+                                <li>Update your profile information</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <p><strong>REPORTING DATE:</strong> You are required to report for registration and orientation on <strong><span id="reportingDate">[Reporting Date]</span></strong> at 8:00 AM.</p>
+
+                    <p>Please bring the following documents when reporting:</p>
+                    <ul>
+                        <li>Original KCSE Certificate and Result Slip</li>
+                        <li>Original Birth Certificate</li>
+                        <li>Copy of National ID</li>
+                        <li>Passport size photographs (4 copies)</li>
+                        <li>Fee payment receipts</li>
+                        <li>Medical certificate of good health</li>
+                    </ul>
+
+                    <p>We congratulate you on this achievement and look forward to welcoming you to our prestigious institution. Should you require any clarification, please do not hesitate to contact our admissions office.</p>
+
+                    <p><strong>Welcome to Emurua Dikirr Technical Training Institute!</strong></p>
+                </div>
+
+                <!-- Signature Section -->
+                <div class="signature-section">
+                    <div class="signature-box">
+                        <div class="signature-line"></div>
+                        <p><strong>REGISTRAR</strong><br>
+                        Emurua Dikirr Technical Training Institute</p>
+                    </div>
+                    <div class="signature-box">
+                        <div class="signature-line"></div>
+                        <p><strong>PRINCIPAL</strong><br>
+                        Emurua Dikirr Technical Training Institute</p>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="footer">
+                    <p><em>This is an official admission letter from Emurua Dikirr Technical Training Institute</em></p>
+                    <p>Generated on <span id="generationDate"></span> | Student Portal: ums.emurua-tech.ac.ke</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Function to show admission letter modal
+        function showAdmissionLetter(studentData) {
+            // Populate student data
+            document.getElementById('studentName').textContent = studentData.name;
+            document.getElementById('courseName').textContent = studentData.course;
+            document.getElementById('admissionNumber').textContent = studentData.admissionNumber;
+            document.getElementById('intakeYear').textContent = studentData.intakeYear;
+            document.getElementById('department').textContent = studentData.department;
+            document.getElementById('portalUsername').textContent = studentData.admissionNumber;
+            document.getElementById('portalPassword').textContent = studentData.phoneNumber;
+            
+            // Set dates
+            const currentDate = new Date();
+            const letterDate = currentDate.toLocaleDateString('en-GB', { 
+                day: '2-digit', 
+                month: 'long', 
+                year: 'numeric' 
+            });
+            document.getElementById('letterDate').textContent = letterDate;
+            document.getElementById('generationDate').textContent = currentDate.toLocaleDateString('en-GB');
+            
+            // Set reference number
+            document.getElementById('refYear').textContent = currentDate.getFullYear();
+            document.getElementById('refNumber').textContent = String(Math.floor(Math.random() * 9999) + 1).padStart(4, '0');
+            
+            // Set reporting date (next Monday after current date)
+            const reportingDate = getNextMonday(currentDate);
+            document.getElementById('reportingDate').textContent = reportingDate.toLocaleDateString('en-GB', { 
+                day: '2-digit', 
+                month: 'long', 
+                year: 'numeric' 
+            });
+            
+            // Show modal
+            document.getElementById('admissionLetterModal').classList.remove('hidden');
+            document.getElementById('admissionLetterModal').classList.add('flex');
+        }
+
+        // Get next Monday after given date
+        function getNextMonday(date) {
+            const nextMonday = new Date(date);
+            nextMonday.setDate(date.getDate() + (1 + 7 - date.getDay()) % 7);
+            return nextMonday;
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('admissionLetterModal').classList.add('hidden');
+            document.getElementById('admissionLetterModal').classList.remove('flex');
+        }
+
+        // Print letter
+        function printLetter() {
+            window.print();
+        }
+
+        // Download as PDF
+        function downloadPDF() {
+            const element = document.getElementById('letterContent');
+            const opt = {
+                margin: [10, 10, 10, 10],
+                filename: `Admission_Letter_${document.getElementById('admissionNumber').textContent}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { 
+                    unit: 'mm', 
+                    format: 'a4', 
+                    orientation: 'portrait',
+                    putOnlyUsedFonts: true
+                }
+            };
+            
+            html2pdf().set(opt).from(element).save();
+        }
+
+        // Make functions globally available
+        window.showAdmissionLetter = showAdmissionLetter;
+        window.closeModal = closeModal;
+        window.printLetter = printLetter;
+        window.downloadPDF = downloadPDF;
+    </script>
+</body>
+</html>
