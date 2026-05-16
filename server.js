@@ -4039,7 +4039,7 @@ app.post('/api/students/register-units', verifyToken, authorize('admin', 'regist
 // Program Routes
 
 // Create a new program
-app.post('/api/programs', async (req, res) => {
+app.post('/api/programs', verifyToken, authorize('admin', 'registrar'), async (req, res) => {
     try {
         const { programName, programCost, department } = req.body;
 
@@ -4096,7 +4096,7 @@ app.get('/api/programs', async (req, res) => {
 });
 
 // Get a specific program
-app.get('/api/programs/:id', async (req, res) => {
+app.get('/api/programs/:id', verifyToken, authorize('admin', 'registrar'), async (req, res) => {
     try {
         const program = await Program.findById(req.params.id);
         
@@ -4112,7 +4112,7 @@ app.get('/api/programs/:id', async (req, res) => {
 });
 
 // Update a program
-app.put('/api/programs/:id', async (req, res) => {
+app.put('/api/programs/:id', verifyToken, authorize('admin', 'registrar'), async (req, res) => {
     try {
         const { programName, programCost, department } = req.body;
         const { id } = req.params;
@@ -4158,7 +4158,7 @@ app.put('/api/programs/:id', async (req, res) => {
 });
 
 // Delete a program
-app.delete('/api/programs/:id', async (req, res) => {
+app.delete('/api/programs/:id', verifyToken, authorize('admin', 'registrar'), async (req, res) => {
     try {
         const program = await Program.findByIdAndDelete(req.params.id);
         
