@@ -7,7 +7,6 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
-const mongoSanitize = require('express-mongo-sanitize');
 const rateLimit = require('express-rate-limit');
 const bcrypt = require('bcryptjs');
 const nodemailer = require('nodemailer');
@@ -317,10 +316,59 @@ app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // Strip MongoDB operator characters from req.body, req.query, req.params to defeat
 // NoSQL injection (e.g. {"$ne": null} as a password).
-app.use(mongoSanitize({
+// Replaces express-mongo-sanitize (incompatible with Express 5 read-only req.query).
+function customMongoSanitize(options) {
+    const replaceWith = options.replaceWith || '_';
+    const onSanitize = options.onSanitize || function () {};
+
+    function sanitize(obj) {
+        if (obj == null || typeof obj !== 'object') {
+            return obj;
+        }
+        if (Array.isArray(obj)) {
+            return obj.map(sanitize);
+        }
+        const result = {};
+        for (const [key, value] of Object.entries(obj)) {
+            let newKey = key;
+            if (key.startsWith('$')) {
+                onSanitize({ req: null, key });
+                newKey = replaceWith + key.slice(1);
+            }
+            if (newKey.includes('.')) {
+                onSanitize({ req: null, key });
+                newKey = newKey.split('.').join(replaceWith);
+            }
+            result[newKey] = sanitize(value);
+        }
+        return result;
+    }
+
+    return function (req, res, next) {
+        if (req.body && typeof req.body === 'object') {
+            req.body = sanitize(req.body);
+        }
+        // Express 5 makes req.query read-only; sanitize the backing _query instead.
+        if (req.query && typeof req.query === 'object') {
+            const clean = sanitize(req.query);
+            req._query = clean;
+            try {
+                req.query = clean;
+            } catch (e) {
+                // read-only in Express 5 — _query fallback above handles it
+            }
+        }
+        if (req.params && typeof req.params === 'object') {
+            req.params = sanitize(req.params);
+        }
+        next();
+    };
+}
+
+app.use(customMongoSanitize({
     replaceWith: '_',
-    onSanitize: ({ req, key }) => {
-        console.warn(`Sanitized prohibited key "${key}" on ${req.method} ${req.path}`);
+    onSanitize: ({ key }) => {
+        console.warn(`Sanitized prohibited key "${key}"`);
     }
 }));
 
