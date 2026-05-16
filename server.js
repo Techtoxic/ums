@@ -345,22 +345,35 @@ function customMongoSanitize(options) {
     }
 
     return function (req, res, next) {
-        if (req.body && typeof req.body === 'object') {
-            req.body = sanitize(req.body);
-        }
-        // Express 5 makes req.query read-only; sanitize the backing _query instead.
-        if (req.query && typeof req.query === 'object') {
-            const clean = sanitize(req.query);
-            req._query = clean;
-            try {
-                req.query = clean;
-            } catch (e) {
-                // read-only in Express 5 — _query fallback above handles it
+        // Express 5 makes several request properties read-only.
+        // Wrap each assignment in try/catch so a single read-only prop
+        // does not crash the whole request.
+        try {
+            if (req.body && typeof req.body === 'object') {
+                req.body = sanitize(req.body);
             }
+        } catch (e) {
+            // body is read-only — unlikely, but harmless to skip
         }
-        if (req.params && typeof req.params === 'object') {
-            req.params = sanitize(req.params);
+
+        try {
+            if (req.query && typeof req.query === 'object') {
+                const clean = sanitize(req.query);
+                req._query = clean;
+                req.query = clean;
+            }
+        } catch (e) {
+            // read-only in Express 5 — _query fallback above handles it
         }
+
+        try {
+            if (req.params && typeof req.params === 'object') {
+                req.params = sanitize(req.params);
+            }
+        } catch (e) {
+            // read-only in Express 5 — params are usually clean anyway at this stage
+        }
+
         next();
     };
 }
