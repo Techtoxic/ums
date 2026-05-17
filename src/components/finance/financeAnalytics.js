@@ -5,42 +5,11 @@ const API_BASE_URL_CONFIG = window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL :
 
 // Authenticated fetch wrapper
 const authFetch = async (url, options = {}) => {
-    const token = localStorage.getItem('adminToken') || 
-                  localStorage.getItem('trainerToken') || 
-                  localStorage.getItem('hodToken') ||
-                  localStorage.getItem('financeToken') ||
-                  localStorage.getItem('authToken') ||
-                  window.AUTH?.getToken();
-    
-    if (!token) {
-        const loginUrls = {
-            admin: '/admin/login',
-            trainer: '/trainer/login',
-            hod: '/hod/login',
-            finance: '/finance/login',
-            registrar: '/registrar/login',
-            dean: '/dean/login'
-        };
-        const role = localStorage.getItem('authRole') || 'admin';
-        window.location.href = loginUrls[role] || '/admin/login';
-        throw new Error('No authentication token');
-    }
-    
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-        ...(options.headers || {})
-    };
-    
-    const response = await window.fetch(url, { ...options, headers });
-    
-    if (response.status === 401) {
-        localStorage.clear();
-        window.location.href = '/admin/login';
-        throw new Error('Session expired');
-    }
-    
-    return response;
+    // Stage 2B-1B: delegate to the single shared auth helper (public/js/auth.js).
+    // It attaches the Authorization header (and a JSON Content-Type for
+    // non-FormData bodies) and handles token-expiry redirects. The wrapper
+    // name is kept so existing call sites are unchanged.
+    return window.AUTH.fetch(url, options);
 };
 
 class FinanceAnalytics {

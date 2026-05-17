@@ -6,27 +6,11 @@ const API_BASE = window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : `${window.
 
 // Authenticated fetch wrapper
 const authFetch = async (url, options = {}) => {
-    const token = localStorage.getItem('adminToken') || window.AUTH?.getToken();
-    if (!token) {
-        window.location.href = '/admin/login';
-        throw new Error('No authentication token');
-    }
-    
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-        ...(options.headers || {})
-    };
-    
-    const response = await fetch(url, { ...options, headers });
-    
-    if (response.status === 401) {
-        localStorage.clear();
-        window.location.href = '/admin/login';
-        throw new Error('Session expired');
-    }
-    
-    return response;
+    // Stage 2B-1B: delegate to the single shared auth helper (public/js/auth.js).
+    // It attaches the Authorization header (and a JSON Content-Type for
+    // non-FormData bodies) and handles token-expiry redirects. The wrapper
+    // name is kept so existing call sites are unchanged.
+    return window.AUTH.fetch(url, options);
 };
 
 // State
@@ -187,7 +171,7 @@ async function loadPayments() {
 
 async function loadPrograms() {
     try {
-        const response = await fetch(`${API_BASE}/programs`);
+        const response = await authFetch(`${API_BASE}/programs`);
         if (!response.ok) throw new Error('Failed to load programs');
         
         allPrograms = await response.json();
@@ -547,7 +531,7 @@ function loadRecentActivity() {
                 <i class="ri-user-add-line"></i>
             </div>
             <div class="flex-1">
-                <p class="text-sm font-semibold text-gray-800">${student.name}</p>
+                <p class="text-sm font-semibold text-gray-800">${escapeHtml(student.name)}</p>
                 <p class="text-xs text-gray-500">New student registered • ${getTimeAgo(student.createdAt)}</p>
             </div>
         </div>
@@ -736,14 +720,14 @@ async function displayStudents() {
                     <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                         ${studentsWithBalance.map(student => `
                             <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
-                                <td class="px-2 py-2 text-xs font-medium text-gray-900 dark:text-white">${student.admissionNumber || 'N/A'}</td>
+                                <td class="px-2 py-2 text-xs font-medium text-gray-900 dark:text-white">${escapeHtml(student.admissionNumber || 'N/A')}</td>
                                 <td class="px-2 py-2">
                                     <div>
-                                        <p class="text-xs font-semibold text-gray-900 dark:text-white">${student.name}</p>
-                                        <p class="text-xs text-gray-500 dark:text-gray-400">${student.phoneNumber || ''}</p>
+                                        <p class="text-xs font-semibold text-gray-900 dark:text-white">${escapeHtml(student.name)}</p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">${escapeHtml(student.phoneNumber || '')}</p>
                                     </div>
                                 </td>
-                                <td class="px-2 py-2 text-xs text-gray-600 dark:text-gray-300">${formatCourseName(student.course)}</td>
+                                <td class="px-2 py-2 text-xs text-gray-600 dark:text-gray-300">${escapeHtml(formatCourseName(student.course))}</td>
                                 <td class="px-2 py-2">
                                     <span class="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-xs rounded-full">Y${student.year || 1}</span>
                                 </td>
@@ -751,7 +735,7 @@ async function displayStudents() {
                                     ${formatCurrency(student.balance)}
                                 </td>
                                 <td class="px-2 py-2">
-                                    <button onclick="viewStudent('${student._id}')" class="text-primary hover:text-secondary transition">
+                                    <button onclick="viewStudent('${escapeAttr(student._id)}')" class="text-primary hover:text-secondary transition">
                                         <i class="ri-eye-line text-base"></i>
                                     </button>
                                 </td>
@@ -767,17 +751,17 @@ async function displayStudents() {
                     <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-2 border border-gray-200 dark:border-gray-600">
                         <div class="flex justify-between items-start mb-1.5">
                             <div class="flex-1 min-w-0">
-                                <p class="text-xs font-bold text-gray-900 dark:text-white truncate">${student.name}</p>
-                                <p class="text-xs text-gray-600 dark:text-gray-400">${student.admissionNumber || 'N/A'}</p>
+                                <p class="text-xs font-bold text-gray-900 dark:text-white truncate">${escapeHtml(student.name)}</p>
+                                <p class="text-xs text-gray-600 dark:text-gray-400">${escapeHtml(student.admissionNumber || 'N/A')}</p>
                             </div>
-                            <button onclick="viewStudent('${student._id}')" class="ml-2 text-primary hover:text-secondary p-1">
+                            <button onclick="viewStudent('${escapeAttr(student._id)}')" class="ml-2 text-primary hover:text-secondary p-1">
                                 <i class="ri-eye-line text-sm"></i>
                             </button>
                         </div>
                         <div class="grid grid-cols-2 gap-1.5 text-xs">
                             <div>
                                 <span class="text-gray-500 dark:text-gray-400">Course:</span>
-                                <p class="font-medium text-gray-900 dark:text-white truncate">${formatCourseName(student.course)}</p>
+                                <p class="font-medium text-gray-900 dark:text-white truncate">${escapeHtml(formatCourseName(student.course))}</p>
                             </div>
                             <div>
                                 <span class="text-gray-500 dark:text-gray-400">Year:</span>
@@ -795,7 +779,7 @@ async function displayStudents() {
 
     } catch (error) {
         console.error('Error displaying students:', error);
-        container.innerHTML = '<p class="text-red-600 text-center py-8">Error loading students: ' + error.message + '</p>';
+        container.innerHTML = '<p class="text-red-600 text-center py-8">Error loading students: ' + escapeHtml(error.message) + '</p>';
     }
 }
 
@@ -805,6 +789,7 @@ function viewStudent(studentId) {
 
     // For now, show an alert with student info
     // In production, this would open a detailed modal
+    // Not a DOM/HTML sink — alert() renders plain text, so no escaping here.
     alert(`Student Details:\n\nName: ${student.name}\nAdmission: ${student.admissionNumber}\nCourse: ${formatCourseName(student.course)}\nYear: ${student.year}\nBalance: ${formatCurrency(student.balance || 0)}`);
 }
 
@@ -834,15 +819,15 @@ async function displayTrainers() {
                         <i class="ri-user-line text-2xl text-green-600"></i>
                     </div>
                     <div>
-                        <h4 class="font-semibold text-gray-800">${trainer.name}</h4>
-                        <p class="text-xs text-gray-500">${trainer.email}</p>
+                        <h4 class="font-semibold text-gray-800">${escapeHtml(trainer.name)}</h4>
+                        <p class="text-xs text-gray-500">${escapeHtml(trainer.email)}</p>
                     </div>
                 </div>
                 <div class="space-y-2 text-sm">
                     <p class="text-gray-600">
-                        <i class="ri-building-line mr-2"></i>${formatDepartmentName(trainer.department)}
+                        <i class="ri-building-line mr-2"></i>${escapeHtml(formatDepartmentName(trainer.department))}
                     </p>
-                    ${trainer.specialization ? `<p class="text-gray-600"><i class="ri-star-line mr-2"></i>${trainer.specialization}</p>` : ''}
+                    ${trainer.specialization ? `<p class="text-gray-600"><i class="ri-star-line mr-2"></i>${escapeHtml(trainer.specialization)}</p>` : ''}
                     <span class="inline-block px-2 py-1 ${trainer.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'} text-xs rounded-full">
                         ${trainer.isActive ? 'Active' : 'Inactive'}
                     </span>
@@ -851,7 +836,7 @@ async function displayTrainers() {
         `).join('');
     } catch (error) {
         console.error('Error displaying trainers:', error);
-        container.innerHTML = '<p class="text-red-600 text-center py-8">Error loading trainers: ' + error.message + '</p>';
+        container.innerHTML = '<p class="text-red-600 text-center py-8">Error loading trainers: ' + escapeHtml(error.message) + '</p>';
     }
 }
 
@@ -923,9 +908,9 @@ async function displayFinancial() {
                         ${allPayments.slice(0, 10).map(payment => `
                             <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
                                 <td class="px-2 py-1.5 text-xs text-gray-600 dark:text-gray-400">${new Date(payment.paymentDate || payment.createdAt).toLocaleDateString()}</td>
-                                <td class="px-2 py-1.5 text-xs font-medium text-gray-900 dark:text-white">${payment.studentId}</td>
+                                <td class="px-2 py-1.5 text-xs font-medium text-gray-900 dark:text-white">${escapeHtml(payment.studentId)}</td>
                                 <td class="px-2 py-1.5 text-xs font-semibold text-green-600">${formatCurrency(payment.amount)}</td>
-                                <td class="px-2 py-1.5 text-xs text-gray-600 dark:text-gray-400">${payment.referenceNumber || 'N/A'}</td>
+                                <td class="px-2 py-1.5 text-xs text-gray-600 dark:text-gray-400">${escapeHtml(payment.referenceNumber || 'N/A')}</td>
                             </tr>
                         `).join('')}
                     </tbody>
@@ -934,7 +919,7 @@ async function displayFinancial() {
         `;
     } catch (error) {
         console.error('Error displaying financial data:', error);
-        container.innerHTML = '<p class="text-red-600 text-center py-8">Error loading financial data: ' + error.message + '</p>';
+        container.innerHTML = '<p class="text-red-600 text-center py-8">Error loading financial data: ' + escapeHtml(error.message) + '</p>';
     }
 }
 
@@ -966,7 +951,7 @@ async function displayPrograms(searchTerm = '') {
                 <h3 class="text-sm md:text-base font-bold text-gray-800 dark:text-white">All Programs (${filteredPrograms.length})</h3>
                 <div class="flex gap-2 w-full sm:w-auto">
                     <input type="text" id="program-search" placeholder="Search programs..." 
-                        value="${searchTerm}"
+                        value="${escapeAttr(searchTerm)}"
                         class="flex-1 sm:flex-none sm:w-48 px-2 py-1 text-xs border border-gray-300 rounded-md focus:ring-1 focus:ring-primary focus:border-primary">
                     <button class="bg-primary text-white px-2 py-1 text-xs rounded-md hover:bg-secondary transition whitespace-nowrap">
                         <i class="ri-add-line mr-1"></i><span class="hidden xs:inline">Add </span>Program
@@ -977,12 +962,12 @@ async function displayPrograms(searchTerm = '') {
                 ${filteredPrograms.length === 0 ? `
                     <div class="col-span-full text-center py-8">
                         <i class="ri-search-line text-3xl text-gray-400 mb-2"></i>
-                        <p class="text-xs text-gray-500">No programs found matching "${searchTerm}"</p>
+                        <p class="text-xs text-gray-500">No programs found matching "${escapeHtml(searchTerm)}"</p>
                     </div>
                 ` : filteredPrograms.map(program => `
                     <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-2 hover:shadow-lg transition">
-                        <h4 class="font-semibold text-xs text-gray-800 dark:text-white mb-1">${program.programName}</h4>
-                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-2">${formatDepartmentName(program.department)}</p>
+                        <h4 class="font-semibold text-xs text-gray-800 dark:text-white mb-1">${escapeHtml(program.programName)}</h4>
+                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-2">${escapeHtml(formatDepartmentName(program.department))}</p>
                         <div class="flex items-center justify-between">
                             <span class="text-sm font-bold text-primary">${formatCurrency(program.programCost)}</span>
                             <span class="text-xs text-gray-500">per year</span>
@@ -1121,7 +1106,7 @@ function showToast(message, type = 'info') {
     toast.className = `${colors[type]} text-white px-6 py-4 rounded-lg shadow-xl flex items-center space-x-3 transform transition-all duration-300`;
     toast.innerHTML = `
         <i class="${icons[type]} text-2xl"></i>
-        <span>${message}</span>
+        <span>${escapeHtml(message)}</span>
     `;
 
     container.appendChild(toast);

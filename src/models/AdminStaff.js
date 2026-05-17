@@ -35,10 +35,13 @@ const adminStaffSchema = new mongoose.Schema({
     password: {
         type: String,
         required: true,
-        default: function() {
-            // Default password is 'Admin@2024' for all roles
-            return 'Admin@2024';
-        }
+        select: false // SEV-H-018: never returned by default queries
+        // SEV-C-004: no default. A document cannot be saved without an
+        // explicitly-set password; the pre-save hook hashes it.
+    },
+    tokenVersion: {
+        type: Number,
+        default: 0 // SEV-H-013: bumped on password/email/role change to revoke JWTs
     },
     phone: {
         type: String,
@@ -74,10 +77,11 @@ const adminStaffSchema = new mongoose.Schema({
     lastPasswordChange: {
         type: Date
     },
-    passwordHistory: [{
-        password: String,
-        changedAt: Date
-    }],
+    passwordHistory: {
+        type: [{ password: String, changedAt: Date }],
+        select: false, // SEV-H-018: never returned by default queries
+        default: []
+    },
     loginAttempts: {
         type: Number,
         default: 0
@@ -127,6 +131,20 @@ adminStaffSchema.pre('save', async function(next) {
     } catch (error) {
         next(error);
     }
+});
+
+// SEV-H-013: bump tokenVersion (revoking all existing JWTs) whenever the
+// password, email or role changes on an EXISTING, fully-onboarded account.
+// During first-login setup the email and password are changed in sequence
+// using a single token (FirstLogin.html, not editable in this pass), so
+// bumping mid-setup would lock the user out. The account has no real session
+// to protect until setup completes, so the bump is deferred until then.
+adminStaffSchema.pre('save', function(next) {
+    if (!this.isNew && !this.isFirstLogin &&
+        (this.isModified('password') || this.isModified('email') || this.isModified('role'))) {
+        this.tokenVersion = (this.tokenVersion || 0) + 1;
+    }
+    next();
 });
 
 // Compare password method
@@ -228,8 +246,17 @@ adminStaffSchema.statics.getAllRoles = function() {
     ];
 };
 
-// Ensure virtuals are included in JSON
-adminStaffSchema.set('toJSON', { virtuals: true });
-adminStaffSchema.set('toObject', { virtuals: true });
+// SEV-H-018: strip secret-like fields from any serialised output, even if a
+// query explicitly selected them.
+function stripSecrets(doc, ret) {
+    delete ret.password;
+    delete ret.passwordHistory;
+    delete ret.tokenVersion;
+    delete ret.otpHash;
+    delete ret.tokenHash;
+    return ret;
+}
+adminStaffSchema.set('toJSON', { virtuals: true, transform: stripSecrets });
+adminStaffSchema.set('toObject', { virtuals: true, transform: stripSecrets });
 
 module.exports = mongoose.model('AdminStaff', adminStaffSchema);

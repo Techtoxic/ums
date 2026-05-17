@@ -61,10 +61,8 @@ const transcriptSchema = new mongoose.Schema({
         default: 0
     },
     totalMarks: {
-        type: Number,
-        min: 0,
-        max: 100,
-        default: 0
+        type: mongoose.Schema.Types.Decimal128, // SEV-H-016: exact grade total
+        default: mongoose.Types.Decimal128.fromString('0')
     },
     grade: {
         type: String,
@@ -91,36 +89,50 @@ const transcriptSchema = new mongoose.Schema({
 
 // Pre-save middleware to calculate total marks and grade
 transcriptSchema.pre('save', function(next) {
-    // Calculate total marks (assuming weights: assignments 30%, CAT 20%, final exam 50%)
-    this.totalMarks = (this.assignments * 0.3) + (this.catExam * 0.2) + (this.finalExam * 0.5);
-    
-    // Determine grade based on total marks
-    if (this.totalMarks >= 80) {
+    // SEV-H-016: compute in Number space, round to 2dp, store as Decimal128.
+    const total = Math.round(
+        ((this.assignments * 0.3) + (this.catExam * 0.2) + (this.finalExam * 0.5)) * 100
+    ) / 100;
+    this.totalMarks = mongoose.Types.Decimal128.fromString(total.toFixed(2));
+
+    // Determine grade based on the numeric total
+    if (total >= 80) {
         this.grade = 'A';
         this.remarks = 'Excellent';
-    } else if (this.totalMarks >= 70) {
+    } else if (total >= 70) {
         this.grade = 'B';
         this.remarks = 'Very Good';
-    } else if (this.totalMarks >= 60) {
+    } else if (total >= 60) {
         this.grade = 'C';
         this.remarks = 'Good';
-    } else if (this.totalMarks >= 50) {
+    } else if (total >= 50) {
         this.grade = 'D';
         this.remarks = 'Satisfactory';
-    } else if (this.totalMarks >= 40) {
+    } else if (total >= 40) {
         this.grade = 'E';
         this.remarks = 'Pass';
     } else {
         this.grade = 'F';
         this.remarks = 'Fail';
     }
-    
-    // Mark as complete if all components have been graded
-    this.isComplete = (this.assignments > 0 || this.catExam > 0 || this.finalExam > 0);
+
+    // SEV-H-016: a transcript is complete only when ALL components are entered
+    // (was an OR bug that flagged completion on any single non-zero score).
+    this.isComplete = (this.assignments > 0 && this.catExam > 0 && this.finalExam > 0);
     
     // Update the updatedAt field
     this.updatedAt = new Date();
     next();
+});
+
+// SEV-H-016: emit totalMarks as a plain string, not the raw {$numberDecimal}.
+transcriptSchema.set('toJSON', {
+    transform: function(doc, ret) {
+        if (ret.totalMarks !== undefined && ret.totalMarks !== null && typeof ret.totalMarks === 'object') {
+            ret.totalMarks = ret.totalMarks.toString();
+        }
+        return ret;
+    }
 });
 
 const Transcript = mongoose.model('Transcript', transcriptSchema);

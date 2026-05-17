@@ -258,7 +258,7 @@
         // Function to fetch and display students
         async function fetchAndDisplayStudents() {
             try {
-                const response = await fetch(`${API_BASE_URL}/students`);
+                const response = await window.AUTH.fetch(`${API_BASE_URL}/students`);
                 if (!response.ok) {
                     let errorMessage = 'Failed to fetch students';
                     try {
@@ -335,18 +335,18 @@
                 const departmentDisplay = departmentMapping[student.department] || 'Not Assigned';
 
                 tr.innerHTML = `
-                    <td class="px-3 py-4 text-sm">${student.admissionNumber || ''}</td>
-                    <td class="px-3 py-4 text-sm">${student.name || ''}</td>
+                    <td class="px-3 py-4 text-sm">${escapeHtml(student.admissionNumber || '')}</td>
+                    <td class="px-3 py-4 text-sm">${escapeHtml(student.name || '')}</td>
                     <td class="px-3 py-4 text-sm">${departmentDisplay}</td>
                     <td class="px-3 py-4 text-sm">${student.year || ''}</td>
                     <td class="px-3 py-4 text-sm">
                         <span class="px-2 py-1 text-xs font-medium ${student.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'} rounded-full">
-                            ${student.status || 'Active'}
+                            ${escapeHtml(student.status || 'Active')}
                         </span>
                     </td>
                     <td class="px-3 py-4 text-sm space-x-2">
-                        <button onclick="viewStudent('${student._id}')" class="text-primary hover:text-secondary">View</button>
-                        <button onclick="editStudent('${student._id}')" class="text-primary hover:text-secondary">Edit</button>
+                        <button onclick="viewStudent('${escapeAttr(student._id)}')" class="text-primary hover:text-secondary">View</button>
+                        <button onclick="editStudent('${escapeAttr(student._id)}')" class="text-primary hover:text-secondary">Edit</button>
                     </td>
                 `;
                 
@@ -510,7 +510,7 @@
         // Function to view student details
         async function viewStudent(studentId) {
             try {
-                const response = await fetch(`${API_BASE_URL}/students/${studentId}`);
+                const response = await window.AUTH.fetch(`${API_BASE_URL}/students/${studentId}`);
                 if (!response.ok) throw new Error('Failed to fetch student details');
                 const student = await response.json();
                 
@@ -596,10 +596,10 @@
                                 <i class="ri-user-line mr-1"></i>Personal Information
                             </h4>
                             <div class="space-y-1 text-sm">
-                                <div class="flex justify-between"><span class="text-gray-600 dark:text-gray-400">Name:</span> <span class="font-medium">${student.name}</span></div>
-                                <div class="flex justify-between"><span class="text-gray-600 dark:text-gray-400">ID Number:</span> <span class="font-medium">${student.idNumber}</span></div>
-                                <div class="flex justify-between"><span class="text-gray-600 dark:text-gray-400">Phone:</span> <span class="font-medium">${student.phoneNumber}</span></div>
-                                <div class="flex justify-between"><span class="text-gray-600 dark:text-gray-400">KCSE Grade:</span> <span class="font-medium">${student.kcseGrade}</span></div>
+                                <div class="flex justify-between"><span class="text-gray-600 dark:text-gray-400">Name:</span> <span class="font-medium">${escapeHtml(student.name)}</span></div>
+                                <div class="flex justify-between"><span class="text-gray-600 dark:text-gray-400">ID Number:</span> <span class="font-medium">${escapeHtml(student.idNumber)}</span></div>
+                                <div class="flex justify-between"><span class="text-gray-600 dark:text-gray-400">Phone:</span> <span class="font-medium">${escapeHtml(student.phoneNumber)}</span></div>
+                                <div class="flex justify-between"><span class="text-gray-600 dark:text-gray-400">KCSE Grade:</span> <span class="font-medium">${escapeHtml(student.kcseGrade)}</span></div>
                             </div>
                         </div>
                         <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
@@ -607,9 +607,9 @@
                                 <i class="ri-graduation-cap-line mr-1"></i>Academic Information
                             </h4>
                             <div class="space-y-1 text-sm">
-                                <div class="flex justify-between"><span class="text-gray-600 dark:text-gray-400">Admission Number:</span> <span class="font-medium">${student.admissionNumber}</span></div>
-                                <div class="flex justify-between"><span class="text-gray-600 dark:text-gray-400">Course:</span> <span class="font-medium">${courseName}</span></div>
-                                <div class="flex justify-between"><span class="text-gray-600 dark:text-gray-400">Department:</span> <span class="font-medium">${departmentMapping[student.department] || student.department}</span></div>
+                                <div class="flex justify-between"><span class="text-gray-600 dark:text-gray-400">Admission Number:</span> <span class="font-medium">${escapeHtml(student.admissionNumber)}</span></div>
+                                <div class="flex justify-between"><span class="text-gray-600 dark:text-gray-400">Course:</span> <span class="font-medium">${escapeHtml(courseName)}</span></div>
+                                <div class="flex justify-between"><span class="text-gray-600 dark:text-gray-400">Department:</span> <span class="font-medium">${escapeHtml(departmentMapping[student.department] || student.department)}</span></div>
                                 <div class="flex justify-between"><span class="text-gray-600 dark:text-gray-400">Year:</span> <span class="font-medium">Year ${student.year}</span></div>
                                 <div class="flex justify-between"><span class="text-gray-600 dark:text-gray-400">Registered:</span> <span class="font-medium">${new Date(student.createdAt).toLocaleDateString()}</span></div>
                             </div>
@@ -634,7 +634,7 @@
         // Function to edit student details
         async function editStudent(studentId) {
             try {
-                const response = await fetch(`${API_BASE_URL}/students/${studentId}`);
+                const response = await window.AUTH.fetch(`${API_BASE_URL}/students/${studentId}`);
                 if (!response.ok) throw new Error('Failed to fetch student details');
                 const student = await response.json();
                 
@@ -698,7 +698,7 @@
             };
 
             try {
-                const response = await fetch(`${API_BASE_URL}/students/${studentId}`, {
+                const response = await window.AUTH.fetch(`${API_BASE_URL}/students/${studentId}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -723,7 +723,7 @@
         // Function to load dashboard stats
         async function loadDashboardStats() {
             try {
-                const response = await fetch(`${API_BASE_URL}/students`);
+                const response = await window.AUTH.fetch(`${API_BASE_URL}/students`);
                 if (!response.ok) throw new Error('Failed to fetch students');
                 const students = await response.json();
                 
@@ -777,7 +777,7 @@
                 const card = document.createElement('div');
                 card.className = 'bg-gray-50 dark:bg-gray-700 p-6 rounded-xl hover:shadow-md transition-shadow';
                 card.innerHTML = `
-                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">${stats.name}</h3>
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">${escapeHtml(stats.name)}</h3>
                     <p class="text-gray-600 dark:text-gray-400 mb-4">Various programs and levels</p>
                     <div class="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
                         <span class="flex items-center gap-1">
@@ -853,7 +853,7 @@
                 
                 console.log('Filters:', { levelFilter, deptFilter });
                 
-                const response = await fetch(`${API_BASE_URL}/students`);
+                const response = await window.AUTH.fetch(`${API_BASE_URL}/students`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch students');
                 }
@@ -933,7 +933,7 @@
                 return `
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <input type="checkbox" class="student-checkbox rounded border-gray-300" value="${student._id}" ${isEligible ? '' : 'disabled'}>
+                            <input type="checkbox" class="student-checkbox rounded border-gray-300" value="${escapeAttr(student._id)}" ${isEligible ? '' : 'disabled'}>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center">
@@ -1014,7 +1014,7 @@
                 progressText.textContent = `${i + 1} of ${studentsToPromote.length} students processed`;
                 
                 try {
-                    const response = await fetch(`${API_BASE_URL}/students/${student._id}`, {
+                    const response = await window.AUTH.fetch(`${API_BASE_URL}/students/${student._id}`, {
                         method: 'PATCH',
                         headers: {
                             'Content-Type': 'application/json',
@@ -1054,11 +1054,8 @@
         }
 
         // Escape HTML function
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
+        // Stage 2B-2A: local escapeHtml removed — uses the centralized, stricter
+        // window.escapeHtml from public/js/auth.js (also escapes " ' /).
 
         // Load students when the page loads
         document.addEventListener('DOMContentLoaded', () => {
@@ -1135,7 +1132,7 @@
                 
                 console.log('Modal Filters:', { levelFilter, deptFilter });
                 
-                const response = await fetch(`${API_BASE_URL}/students`);
+                const response = await window.AUTH.fetch(`${API_BASE_URL}/students`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch students');
                 }
@@ -1201,23 +1198,23 @@
                 return `
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <input type="checkbox" class="student-checkbox rounded border-gray-300" value="${student._id}" ${isEligible ? '' : 'disabled'}>
+                            <input type="checkbox" class="student-checkbox rounded border-gray-300" value="${escapeAttr(student._id)}" ${isEligible ? '' : 'disabled'}>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center">
                                 <div class="flex-shrink-0 h-10 w-10">
                                     <div class="h-10 w-10 rounded-full bg-primary flex items-center justify-center">
-                                        <span class="text-sm font-medium text-white">${student.name.charAt(0)}</span>
+                                        <span class="text-sm font-medium text-white">${escapeHtml(student.name.charAt(0))}</span>
                                     </div>
                                 </div>
                                 <div class="ml-4">
-                                    <div class="text-sm font-medium text-gray-900 dark:text-white">${student.name}</div>
-                                    <div class="text-sm text-gray-500 dark:text-gray-400">${student.admissionNumber}</div>
+                                    <div class="text-sm font-medium text-gray-900 dark:text-white">${escapeHtml(student.name)}</div>
+                                    <div class="text-sm text-gray-500 dark:text-gray-400">${escapeHtml(student.admissionNumber)}</div>
                                 </div>
                             </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                            ${courseCode.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                            ${escapeHtml(courseCode.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()))}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                             Year ${student.year}
@@ -1266,14 +1263,14 @@
 
                 try {
                     // First get the current student data
-                    const getResponse = await fetch(`${API_BASE_URL}/students/${studentId}`);
+                    const getResponse = await window.AUTH.fetch(`${API_BASE_URL}/students/${studentId}`);
                     if (!getResponse.ok) {
                         throw new Error('Failed to fetch student data');
                     }
                     const student = await getResponse.json();
                     
                     // Update with the new year
-                    const response = await fetch(`${API_BASE_URL}/students/${studentId}`, {
+                    const response = await window.AUTH.fetch(`${API_BASE_URL}/students/${studentId}`, {
                         method: 'PATCH',
                         headers: {
                             'Content-Type': 'application/json',
@@ -1317,7 +1314,7 @@
             toast.innerHTML = `
                 <div class="flex items-center gap-2">
                     <i class="${type === 'success' ? 'ri-checkbox-circle-line' : 'ri-error-warning-line'}"></i>
-                    <span>${message}</span>
+                    <span>${escapeHtml(message)}</span>
                 </div>
             `;
             
@@ -1469,7 +1466,7 @@
                 const intakeCode = generateIntakeCode(intake, intakeYear);
 
                 // Fetch the latest admission number for this course and intake
-                const response = await fetch(`${API_BASE_URL}/students/latest-admission/${courseInfo.code}/${intake}/${intakeYear}`);
+                const response = await window.AUTH.fetch(`${API_BASE_URL}/students/latest-admission/${courseInfo.code}/${intake}/${intakeYear}`);
                 if (!response.ok) {
                     throw new Error(`Server error: ${response.status}`);
                 }
@@ -1554,7 +1551,7 @@
             console.log('Student data to submit:', studentData);
 
             try {
-                const response = await fetch(`${API_BASE_URL}/students/register`, {
+                const response = await window.AUTH.fetch(`${API_BASE_URL}/students/register`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

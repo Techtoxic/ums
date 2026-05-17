@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
+const rateLimit = require('express-rate-limit');
 const AdminStaff = require('../models/AdminStaff');
 const LoginOTP = require('../models/LoginOTP');
 const EmailService = require('../utils/emailService');
@@ -8,6 +9,21 @@ const config = require('../config/config');
 const { signToken } = require('../middleware/auth');
 
 const emailService = new EmailService();
+
+// SEV-C-001: strict per-IP rate limiter for the entire admin auth surface
+// (login, OTP verification, email-change OTP, etc.). Mounted on the router so
+// every current and future route under /api/admin/auth is throttled.
+const adminAuthLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 10,                  // 10 requests per IP per window
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+        success: false,
+        message: 'Too many authentication attempts. Please try again later.'
+    }
+});
+router.use(adminAuthLimiter);
 
 // JWT secret sourced from validated config (server refuses to boot if missing)
 const JWT_SECRET = config.jwt.secret;
@@ -51,10 +67,12 @@ router.post('/login', async (req, res) => {
         }
         
         // Find admin staff
-        const staff = await AdminStaff.findOne({ 
+        // SEV-H-018: password/passwordHistory are select:false; load them for
+        // comparePassword and the login-attempt lockout helpers.
+        const staff = await AdminStaff.findOne({
             email: email.toLowerCase(),
-            isActive: true 
-        });
+            isActive: true
+        }).select('+password +passwordHistory');
         
         if (!staff) {
             return res.status(401).json({ 
@@ -172,10 +190,12 @@ router.post('/update-email-send-otp', async (req, res) => {
         }
         
         // Find staff by old email
-        const staff = await AdminStaff.findOne({ 
+        // SEV-H-018: load select:false password for comparePassword and the
+        // subsequent staff.save() (required-field validation).
+        const staff = await AdminStaff.findOne({
             email: oldEmail.toLowerCase(),
-            isActive: true 
-        });
+            isActive: true
+        }).select('+password');
         
         if (!staff) {
             return res.status(401).json({ 
@@ -273,29 +293,56 @@ router.post('/verify-otp', async (req, res) => {
             });
         }
         
-        // Find valid OTP
-        const loginOTP = await LoginOTP.findValidOTP({
+        // SEV-C-001: Look up the OTP by email ONLY (most recent unconsumed,
+        // unexpired record). Never query by the supplied OTP value, otherwise a
+        // wrong guess simply returns null and the attempt is never counted.
+        const loginOTP = await LoginOTP.findOne({
             email: email.toLowerCase(),
-            otp: otp
-        });
-        
+            isUsed: false,
+            isVerified: false,
+            expiresAt: { $gt: new Date() }
+        }).sort({ createdAt: -1 });
+
         if (!loginOTP) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Invalid or expired OTP' 
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid or expired OTP'
             });
         }
-        
+
+        // If the attempt cap is already reached (or the record is locked/used),
+        // consume it so no further guesses - correct or not - can succeed.
         if (!loginOTP.canAttempt()) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Maximum OTP attempts exceeded' 
+            if (!loginOTP.isUsed) {
+                loginOTP.isUsed = true;
+                await loginOTP.save();
+            }
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid or expired OTP'
             });
         }
-        
+
+        // Compare the supplied OTP against the stored hash (SEV-H-017). On
+        // mismatch, atomically count the failed attempt and lock the record
+        // once the 5-attempt cap is hit.
+        if (!loginOTP.verifyOtp(String(otp).trim())) {
+            await loginOTP.incrementAttempts();
+            if (loginOTP.otpAttempts >= 5) {
+                loginOTP.isUsed = true;
+                await loginOTP.save();
+            }
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid or expired OTP'
+            });
+        }
+
         // Get staff details
-        const staff = await AdminStaff.findById(loginOTP.userId);
-        
+        // SEV-H-018: load select:false password so updateLastLogin().save()
+        // passes required-field validation.
+        const staff = await AdminStaff.findById(loginOTP.userId).select('+password');
+
         if (!staff || !staff.isActive) {
             return res.status(401).json({ 
                 success: false, 
@@ -316,12 +363,13 @@ router.post('/verify-otp', async (req, res) => {
                 email: staff.email,
                 role: staff.role,
                 staffId: staff.staffId,
-                isFirstLogin: staff.isFirstLogin
+                isFirstLogin: staff.isFirstLogin,
+                tokenVersion: staff.tokenVersion || 0 // SEV-H-013
             },
             JWT_SECRET,
             { expiresIn: JWT_EXPIRES_IN }
         );
-        
+
         res.json({
             success: true,
             message: 'Login successful',
@@ -388,12 +436,14 @@ router.put('/update-email', verifyToken, async (req, res) => {
         }
         
         // Update email
-        const staff = await AdminStaff.findById(req.user.userId);
-        
+        // SEV-H-018: load select:false password so staff.save() passes
+        // required-field validation; the email change bumps tokenVersion.
+        const staff = await AdminStaff.findById(req.user.userId).select('+password');
+
         if (!staff) {
-            return res.status(404).json({ 
-                success: false, 
-                message: 'User not found' 
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
             });
         }
         
@@ -457,11 +507,13 @@ router.put('/update-password', verifyToken, async (req, res) => {
         }
         
         // Get staff
-        const staff = await AdminStaff.findById(req.user.userId);
-        
+        // SEV-H-018: password & passwordHistory are select:false; load both so
+        // comparePassword, isPasswordReused and the history push all work.
+        const staff = await AdminStaff.findById(req.user.userId).select('+password +passwordHistory');
+
         if (!staff) {
-            return res.status(404).json({ 
-                success: false, 
+            return res.status(404).json({
+                success: false,
                 message: 'User not found' 
             });
         }
@@ -532,8 +584,10 @@ router.put('/update-password', verifyToken, async (req, res) => {
 // ===============================
 router.post('/complete-first-login', verifyToken, async (req, res) => {
     try {
-        const staff = await AdminStaff.findById(req.user.userId);
-        
+        // SEV-H-018: load select:false password so completeFirstLogin()'s
+        // save() passes required-field validation.
+        const staff = await AdminStaff.findById(req.user.userId).select('+password');
+
         if (!staff) {
             return res.status(404).json({ 
                 success: false, 
@@ -634,7 +688,8 @@ router.post('/refresh-token', verifyToken, async (req, res) => {
                 email: staff.email,
                 role: staff.role,
                 staffId: staff.staffId,
-                isFirstLogin: staff.isFirstLogin
+                isFirstLogin: staff.isFirstLogin,
+                tokenVersion: staff.tokenVersion || 0 // SEV-H-013
             },
             JWT_SECRET,
             { expiresIn: JWT_EXPIRES_IN }

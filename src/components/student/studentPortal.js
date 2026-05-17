@@ -3,29 +3,10 @@ const API_BASE_URL = window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : `${win
 
 // Authenticated fetch wrapper for student
 const authFetch = async (url, options = {}) => {
-    const token = sessionStorage.getItem('studentToken') || localStorage.getItem('studentToken') || window.AUTH?.getToken();
-    
-    if (!token) {
-        window.location.href = '/student/login';
-        throw new Error('No authentication token');
-    }
-    
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-        ...(options.headers || {})
-    };
-    
-    const response = await fetch(url, { ...options, headers });
-    
-    if (response.status === 401) {
-        sessionStorage.clear();
-        localStorage.clear();
-        window.location.href = '/student/login';
-        throw new Error('Session expired');
-    }
-    
-    return response;
+    // Stage 2B-1B: delegate to the single shared auth helper (public/js/auth.js).
+    // It attaches the Authorization header (and a JSON Content-Type for
+    // non-FormData bodies) and handles token-expiry redirects.
+    return window.AUTH.fetch(url, options);
 };
 
 // Get student data from session storage
@@ -125,7 +106,7 @@ async function fetchStudentData() {
             return null;
         }
 
-        const response = await fetch(`${API_BASE_URL}/students/admission/${encodeURIComponent(studentData.admissionNumber)}`, {
+        const response = await authFetch(`${API_BASE_URL}/students/admission/${encodeURIComponent(studentData.admissionNumber)}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'
@@ -162,7 +143,7 @@ async function fetchProgramCost(courseKey) {
         console.log(`Fetching cost for program: ${programName} (from course: ${courseKey})`);
         
         // Fetch programs data from the API
-        const response = await fetch(`${API_BASE_URL}/programs`, {
+        const response = await authFetch(`${API_BASE_URL}/programs`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'
@@ -207,7 +188,7 @@ async function fetchStudentPayments(admissionNumber) {
         }
         
         const encodedAdmissionNumber = encodeURIComponent(admissionNumber);
-        const response = await fetch(`${API_BASE_URL}/payments/student/${encodedAdmissionNumber}`, {
+        const response = await authFetch(`${API_BASE_URL}/payments/student/${encodedAdmissionNumber}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'
@@ -448,7 +429,7 @@ function updatePaymentHistory(payments) {
     }
     
     const paymentHTML = payments.map((payment, index) => `
-        <div class="payment-item flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer transition-colors" data-payment='${JSON.stringify(payment)}'>
+        <div class="payment-item flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer transition-colors" data-payment='${escapeAttr(JSON.stringify(payment))}'>
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
                     <i class="ri-check-line text-green-600"></i>
@@ -560,7 +541,7 @@ async function fetchStudentUnits(studentCourse) {
             `${API_BASE_URL}/units/course/${encodeURIComponent(studentCourse)}?studentId=${encodeURIComponent(studentId)}` :
             `${API_BASE_URL}/units/course/${encodeURIComponent(studentCourse)}`;
 
-        const response = await fetch(url);
+        const response = await authFetch(url);
         if (!response.ok) {
             if (response.status === 404) {
                 console.log('No units found for course:', studentCourse);
@@ -691,7 +672,7 @@ function renderUnitsPage() {
         <div class="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-lg p-4 mb-6">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                 <div>
-                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white">${courseName}</h3>
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white">${escapeHtml(courseName)}</h3>
                     <div class="flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-400 mt-1">
                         <span>Total Units: ${totalUnits}</span>
                         <span>Department: ${departmentUnits || 0}</span>
@@ -743,13 +724,13 @@ function renderUnitsPage() {
                                     <div class="flex-1">
                                         <div class="flex items-center gap-2 mb-1">
                                             <h4 class="font-medium text-gray-800 dark:text-white group-hover:text-primary transition-colors text-sm leading-tight">
-                                                ${unit.unitName}
+                                                ${escapeHtml(unit.unitName)}
                                             </h4>
                                             ${unit.type === 'common' ? '<span class="px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full">Common</span>' : ''}
                                         </div>
                                         <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
                                             <span class="font-mono bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded text-xs">
-                                                ${unit.unitCode}
+                                                ${escapeHtml(unit.unitCode)}
                                             </span>
                                         </p>
                                     </div>
@@ -765,7 +746,7 @@ function renderUnitsPage() {
                                                 Not Registered
                                             </span>
                                             ${registrationEligibility?.canRegister ? `
-                                                <button onclick="registerSingleUnit('${unit._id}', '${unit.unitCode}', '${unit.unitName}', '${unit.type}')" 
+                                                <button onclick="registerSingleUnit('${escapeAttr(unit._id)}', '${escapeAttr(unit.unitCode)}', '${escapeAttr(unit.unitName)}', '${escapeAttr(unit.type)}')" 
                                                         class="px-2 py-1 bg-primary hover:bg-primary/80 text-white text-xs rounded transition-colors">
                                                     <i class="ri-add-line mr-1"></i>
                                                     Register
@@ -896,11 +877,11 @@ function showPaymentReceipt(payment) {
             <div class="space-y-3">
                 <div class="flex justify-between">
                     <span class="text-gray-600 dark:text-gray-400">Student:</span>
-                    <span class="font-medium text-gray-800 dark:text-white">${studentData.name || 'N/A'}</span>
+                    <span class="font-medium text-gray-800 dark:text-white">${escapeHtml(studentData.name || 'N/A')}</span>
                 </div>
                 <div class="flex justify-between">
                     <span class="text-gray-600 dark:text-gray-400">Admission Number:</span>
-                    <span class="font-medium text-gray-800 dark:text-white">${studentData.admissionNumber || 'N/A'}</span>
+                    <span class="font-medium text-gray-800 dark:text-white">${escapeHtml(studentData.admissionNumber || 'N/A')}</span>
                 </div>
                 <div class="flex justify-between">
                     <span class="text-gray-600 dark:text-gray-400">Amount Paid:</span>
@@ -912,7 +893,7 @@ function showPaymentReceipt(payment) {
                 </div>
                 <div class="flex justify-between">
                     <span class="text-gray-600 dark:text-gray-400">Reference:</span>
-                    <span class="font-medium text-gray-800 dark:text-white">${payment.reference || 'N/A'}</span>
+                    <span class="font-medium text-gray-800 dark:text-white">${escapeHtml(payment.reference || 'N/A')}</span>
                 </div>
                 <div class="flex justify-between">
                     <span class="text-gray-600 dark:text-gray-400">Date:</span>
@@ -927,12 +908,12 @@ function showPaymentReceipt(payment) {
                 ${payment.paymentMode === 'bank' && payment.bankName ? `
                 <div class="flex justify-between">
                     <span class="text-gray-600 dark:text-gray-400">Bank:</span>
-                    <span class="font-medium text-gray-800 dark:text-white">${payment.bankName}</span>
+                    <span class="font-medium text-gray-800 dark:text-white">${escapeHtml(payment.bankName)}</span>
                 </div>` : ''}
                 ${payment.receiptNumber ? `
                 <div class="flex justify-between">
                     <span class="text-gray-600 dark:text-gray-400">Receipt Number:</span>
-                    <span class="font-medium text-gray-800 dark:text-white">${payment.receiptNumber}</span>
+                    <span class="font-medium text-gray-800 dark:text-white">${escapeHtml(payment.receiptNumber)}</span>
                 </div>` : ''}
             </div>
             
@@ -1172,7 +1153,7 @@ async function registerSingleUnit(unitId, unitCode, unitName, unitType) {
         const unitIds = unitType === 'common' ? [] : [unitId];
         const commonUnitIds = unitType === 'common' ? [unitId] : [];
         
-        const response = await fetch(`${API_BASE_URL}/students/register-units`, {
+        const response = await authFetch(`${API_BASE_URL}/students/register-units`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -1227,16 +1208,16 @@ function showBulkRegistrationModal() {
                     <div class="space-y-3">
                         ${unregisteredUnits.map(unit => `
                             <div class="flex items-center gap-3 p-3 border border-gray-200 dark:border-gray-600 rounded-lg">
-                                <input type="checkbox" id="unit_${unit._id}" value="${unit._id}" 
-                                       data-type="${unit.type}" data-code="${unit.unitCode}" data-name="${unit.unitName}"
+                                <input type="checkbox" id="unit_${escapeAttr(unit._id)}" value="${escapeAttr(unit._id)}" 
+                                       data-type="${escapeAttr(unit.type)}" data-code="${escapeAttr(unit.unitCode)}" data-name="${escapeAttr(unit.unitName)}"
                                        class="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2">
-                                <label for="unit_${unit._id}" class="flex-1 cursor-pointer">
+                                <label for="unit_${escapeAttr(unit._id)}" class="flex-1 cursor-pointer">
                                     <div class="flex items-center gap-2">
-                                        <span class="font-medium text-gray-800 dark:text-white text-sm">${unit.unitName}</span>
+                                        <span class="font-medium text-gray-800 dark:text-white text-sm">${escapeHtml(unit.unitName)}</span>
                                         ${unit.type === 'common' ? '<span class="px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full">Common</span>' : ''}
                                     </div>
                                     <div class="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                                        <span class="font-mono bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded">${unit.unitCode}</span>
+                                        <span class="font-mono bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded">${escapeHtml(unit.unitCode)}</span>
                                     </div>
                                 </label>
                             </div>
@@ -1311,7 +1292,7 @@ async function processBulkRegistration() {
             }
         });
         
-        const response = await fetch(url, {
+        const response = await authFetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -1366,7 +1347,7 @@ function showToast(message, type = 'info') {
                 type === 'warning' ? 'alert' :
                 'information'
             }-line"></i>
-            <span>${message}</span>
+            <span>${escapeHtml(message)}</span>
         </div>
     `;
     
@@ -1397,7 +1378,7 @@ async function loadPublicNotes() {
     try {
         showNotesLoading();
         
-        const response = await fetch(`${API_BASE_URL}/students/${encodeURIComponent(studentData.admissionNumber)}/public-notes`);
+        const response = await authFetch(`${API_BASE_URL}/students/${encodeURIComponent(studentData.admissionNumber)}/public-notes`);
         if (!response.ok) throw new Error('Failed to load notes');
         
         const data = await response.json();
@@ -1466,25 +1447,25 @@ function createNoteCard(note) {
     
     return `
         <div class="note-card relative bg-white dark:bg-gray-800 border ${!note.isRead ? 'border-primary' : 'border-gray-200 dark:border-gray-700'} rounded-lg p-4 hover:shadow-md transition-all cursor-pointer"
-             onclick="viewNote('${note._id}')">
+             onclick="viewNote('${escapeAttr(note._id)}')">
             ${unreadIndicator}
             <div class="flex items-start justify-between mb-2">
                 <div class="flex items-center space-x-2">
                     <i class="${categoryIcon} text-xl text-gray-600 dark:text-gray-400"></i>
-                    <h3 class="font-semibold text-gray-900 dark:text-white ${!note.isRead ? 'font-bold' : ''}">${note.title}</h3>
+                    <h3 class="font-semibold text-gray-900 dark:text-white ${!note.isRead ? 'font-bold' : ''}">${escapeHtml(note.title)}</h3>
                 </div>
                 <span class="px-2 py-1 text-xs font-medium rounded-full ${priorityColor}">
-                    ${note.priority}
+                    ${escapeHtml(note.priority)}
                 </span>
             </div>
-            <p class="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">${note.content}</p>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">${escapeHtml(note.content)}</p>
             <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-500">
                 <div class="flex items-center space-x-3">
                     <span class="flex items-center">
                         <i class="ri-calendar-line mr-1"></i>
                         ${new Date(note.createdAt).toLocaleDateString()}
                     </span>
-                    <span class="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded capitalize">${note.category}</span>
+                    <span class="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded capitalize">${escapeHtml(note.category)}</span>
                 </div>
                 ${!note.isRead ? '<span class="text-primary font-medium">New</span>' : ''}
             </div>
@@ -1523,7 +1504,7 @@ function showNoteModal(note) {
             <div class="${priorityColors[note.priority]} text-white p-6">
                 <div class="flex items-center justify-between">
                     <div>
-                        <h2 class="text-2xl font-bold">${note.title}</h2>
+                        <h2 class="text-2xl font-bold">${escapeHtml(note.title)}</h2>
                         <p class="text-blue-100 mt-1 text-sm">From Dean's Office</p>
                     </div>
                     <button onclick="closeNoteModal()" class="p-2 hover:bg-white/20 rounded-full transition-colors">
@@ -1535,13 +1516,13 @@ function showNoteModal(note) {
                         <i class="ri-calendar-line mr-2"></i>
                         ${new Date(note.createdAt).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                     </span>
-                    <span class="px-3 py-1 bg-white/20 rounded-full capitalize">${note.category}</span>
-                    <span class="px-3 py-1 bg-white/20 rounded-full capitalize">${note.priority} Priority</span>
+                    <span class="px-3 py-1 bg-white/20 rounded-full capitalize">${escapeHtml(note.category)}</span>
+                    <span class="px-3 py-1 bg-white/20 rounded-full capitalize">${escapeHtml(note.priority)} Priority</span>
                 </div>
             </div>
             <div class="p-6 overflow-y-auto max-h-[60vh]">
                 <div class="prose dark:prose-invert max-w-none">
-                    <p class="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">${note.content}</p>
+                    <p class="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">${escapeHtml(note.content)}</p>
                 </div>
             </div>
             <div class="bg-gray-50 dark:bg-gray-900 p-4 flex items-center justify-between">
@@ -1569,7 +1550,7 @@ window.closeNoteModal = function() {
 // Mark note as read
 async function markNoteAsRead(noteId) {
     try {
-        const response = await fetch(`${API_BASE_URL}/students/${encodeURIComponent(studentData.admissionNumber)}/notes/${noteId}/read`, {
+        const response = await authFetch(`${API_BASE_URL}/students/${encodeURIComponent(studentData.admissionNumber)}/notes/${noteId}/read`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' }
         });

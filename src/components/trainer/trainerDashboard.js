@@ -2,42 +2,10 @@
 
 // Authenticated fetch wrapper
 const authFetch = async (url, options = {}) => {
-    const token = localStorage.getItem('adminToken') || 
-                  localStorage.getItem('trainerToken') || 
-                  localStorage.getItem('hodToken') ||
-                  localStorage.getItem('financeToken') ||
-                  localStorage.getItem('authToken') ||
-                  window.AUTH?.getToken();
-    
-    if (!token) {
-        const loginUrls = {
-            admin: '/admin/login',
-            trainer: '/trainer/login',
-            hod: '/hod/login',
-            finance: '/finance/login',
-            registrar: '/registrar/login',
-            dean: '/dean/login'
-        };
-        const role = localStorage.getItem('authRole') || 'admin';
-        window.location.href = loginUrls[role] || '/admin/login';
-        throw new Error('No authentication token');
-    }
-    
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-        ...(options.headers || {})
-    };
-    
-    const response = await fetch(url, { ...options, headers });
-    
-    if (response.status === 401) {
-        localStorage.clear();
-        window.location.href = '/admin/login';
-        throw new Error('Session expired');
-    }
-    
-    return response;
+    // Stage 2B-1B: delegate to the single shared auth helper (public/js/auth.js).
+    // It attaches the Authorization header (and a JSON Content-Type for
+    // non-FormData bodies) and handles token-expiry redirects.
+    return window.AUTH.fetch(url, options);
 };
 
 const API_BASE_URL = window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : `${window.location.protocol}//${window.location.host}/api`;
@@ -53,12 +21,8 @@ let bulkFiles = [];
 let currentSection = 'dashboard';
 
 // Utility function to escape HTML and prevent XSS
-function escapeHtml(text) {
-    if (text === null || text === undefined) return '';
-    const div = document.createElement('div');
-    div.textContent = text.toString();
-    return div.innerHTML;
-}
+// Stage 2B-2A: local escapeHtml removed — now uses the centralized, stricter
+// window.escapeHtml from public/js/auth.js (also escapes ' " /).
 
 // Initialize dashboard on page load
 document.addEventListener('DOMContentLoaded', function() {
@@ -269,7 +233,7 @@ async function loadAssignments() {
             showLoadingState();
         }
         
-        const response = await fetch(`${API_BASE_URL}/trainers/${currentTrainer._id}/assignments`);
+        const response = await authFetch(`${API_BASE_URL}/trainers/${currentTrainer._id}/assignments`);
         
         if (!response.ok) {
             const errorData = await response.json();
@@ -308,7 +272,7 @@ async function loadStudents() {
     try {
         console.log('🔄 Loading students...');
         
-        const response = await fetch(`${API_BASE_URL}/trainers/${currentTrainer._id}/students`);
+        const response = await authFetch(`${API_BASE_URL}/trainers/${currentTrainer._id}/students`);
         
         if (!response.ok) {
             const errorData = await response.json();
@@ -540,7 +504,7 @@ function createAssignmentCard(assignment) {
                 <div class="text-xs text-gray-500 dark:text-gray-500">
                     Assigned by: ${escapeHtml(assignedBy)}
                 </div>
-                <button onclick="viewUnitDetails('${assignment._id}')" class="text-primary hover:text-secondary text-sm font-medium transition-colors">
+                <button onclick="viewUnitDetails('${escapeAttr(assignment._id)}')" class="text-primary hover:text-secondary text-sm font-medium transition-colors">
                     <i class="ri-eye-line mr-1"></i>View Details
                 </button>
                 </div>
@@ -731,7 +695,7 @@ async function handlePhoneUpdate(event) {
     }
     
     try {
-        const response = await fetch(`${API_BASE_URL}/trainers/${currentTrainer._id}/profile`, {
+        const response = await authFetch(`${API_BASE_URL}/trainers/${currentTrainer._id}/profile`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json'
@@ -768,7 +732,7 @@ async function handleProfileUpdate(event) {
     const phone = document.getElementById('profilePhone').value.trim();
     
     try {
-        const response = await fetch(`${API_BASE_URL}/trainers/${currentTrainer._id}/profile`, {
+        const response = await authFetch(`${API_BASE_URL}/trainers/${currentTrainer._id}/profile`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json'
@@ -891,7 +855,7 @@ async function loadToolsOfTrade() {
         await loadUnitsForTools();
         
         // Load submitted tools
-        const response = await fetch(`${API_BASE_URL}/tools/trainer/${currentTrainer._id}`);
+        const response = await authFetch(`${API_BASE_URL}/tools/trainer/${currentTrainer._id}`);
         
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -913,7 +877,7 @@ async function loadToolsOfTrade() {
 // Load units for tools dropdown
 async function loadUnitsForTools() {
     try {
-        const response = await fetch(`${API_BASE_URL}/trainers/${currentTrainer._id}/assignments`);
+        const response = await authFetch(`${API_BASE_URL}/trainers/${currentTrainer._id}/assignments`);
         
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -1031,7 +995,7 @@ async function uploadTool() {
         uploadBtn.disabled = true;
         uploadBtn.innerHTML = '<i class="ri-loader-4-line animate-spin mr-2"></i>Uploading...';
         
-        const response = await fetch(`${API_BASE_URL}/tools/upload`, {
+        const response = await authFetch(`${API_BASE_URL}/tools/upload`, {
             method: 'POST',
             body: formData
         });
@@ -1156,10 +1120,10 @@ function createToolCard(tool) {
                     ${escapeHtml(tool.academicYear)} - Semester ${escapeHtml(tool.semester)}
                 </div>
                 <div class="flex space-x-2">
-                    <button onclick="downloadTool('${tool._id}')" class="text-primary hover:text-secondary text-sm font-medium transition-colors">
+                    <button onclick="downloadTool('${escapeAttr(tool._id)}')" class="text-primary hover:text-secondary text-sm font-medium transition-colors">
                         <i class="ri-download-line mr-1"></i>Download
                     </button>
-                    <button onclick="deleteTool('${tool._id}')" class="text-red-500 hover:text-red-700 text-sm font-medium transition-colors">
+                    <button onclick="deleteTool('${escapeAttr(tool._id)}')" class="text-red-500 hover:text-red-700 text-sm font-medium transition-colors">
                         <i class="ri-delete-bin-line mr-1"></i>Delete
                     </button>
                 </div>
@@ -1172,7 +1136,7 @@ function createToolCard(tool) {
 async function downloadTool(toolId) {
     try {
         // Get download URL from API (supports both S3 and local storage)
-        const response = await fetch(`${API_BASE_URL}/tools/${toolId}/download`);
+        const response = await authFetch(`${API_BASE_URL}/tools/${toolId}/download`);
         
         if (!response.ok) {
             throw new Error(`Failed to get download URL: ${response.status}`);
@@ -1209,7 +1173,7 @@ async function deleteTool(toolId) {
     }
     
     try {
-        const response = await fetch(`${API_BASE_URL}/tools/${toolId}`, {
+        const response = await authFetch(`${API_BASE_URL}/tools/${toolId}`, {
             method: 'DELETE'
         });
         
@@ -1434,7 +1398,7 @@ async function uploadBulkTools() {
                 formData.append('academicYear', '2024/2025');
                 formData.append('semester', '1');
                 
-                const response = await fetch(`${API_BASE_URL}/tools/upload`, {
+                const response = await authFetch(`${API_BASE_URL}/tools/upload`, {
                     method: 'POST',
                     body: formData
                 });
@@ -1492,7 +1456,7 @@ async function loadNotifications() {
 
         showNotificationsLoadingState();
 
-        const response = await fetch(`${API_BASE_URL}/notifications/${currentTrainer._id}`);
+        const response = await authFetch(`${API_BASE_URL}/notifications/${currentTrainer._id}`);
         
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -1553,7 +1517,7 @@ function createNotificationCard(notification) {
                 </div>
                 <div class="flex items-center space-x-2 ml-4">
                     ${!isRead ? `
-                        <button onclick="markAsRead('${notification._id}')" class="text-primary hover:text-secondary text-sm font-medium transition-colors">
+                        <button onclick="markAsRead('${escapeAttr(notification._id)}')" class="text-primary hover:text-secondary text-sm font-medium transition-colors">
                             Mark as Read
                         </button>
                     ` : ''}
@@ -1566,7 +1530,7 @@ function createNotificationCard(notification) {
 // Mark notification as read
 async function markAsRead(notificationId) {
     try {
-        const response = await fetch(`${API_BASE_URL}/notifications/${notificationId}/read`, {
+        const response = await authFetch(`${API_BASE_URL}/notifications/${notificationId}/read`, {
             method: 'PATCH'
         });
 
@@ -1592,7 +1556,7 @@ async function markAllAsRead() {
             return;
         }
 
-        const response = await fetch(`${API_BASE_URL}/notifications/${currentTrainer._id}/read-all`, {
+        const response = await authFetch(`${API_BASE_URL}/notifications/${currentTrainer._id}/read-all`, {
             method: 'PATCH'
         });
 
@@ -1674,7 +1638,7 @@ async function loadTrainerPayslips() {
             return;
         }
         
-        const response = await fetch(`${API_BASE_URL}/trainers/${currentTrainer._id}/payslips`);
+        const response = await authFetch(`${API_BASE_URL}/trainers/${currentTrainer._id}/payslips`);
         if (!response.ok) throw new Error('Failed to load payslips');
         
         const data = await response.json();
@@ -1714,7 +1678,7 @@ function displayTrainerPayslips() {
         const isUnread = !payslip.isViewed;
         
         return `
-            <div class="px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${isUnread ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}" onclick="viewPayslip('${payslip._id}')">
+            <div class="px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${isUnread ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}" onclick="viewPayslip('${escapeAttr(payslip._id)}')">
                 <div class="flex items-center justify-between cursor-pointer">
                     <div class="flex-1">
                         <div class="flex items-center space-x-3">
@@ -1729,7 +1693,7 @@ function displayTrainerPayslips() {
                                 <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
                                     Amount: <span class="font-semibold text-gray-900 dark:text-white">KES ${payslip.amount.toLocaleString()}</span>
                                 </p>
-                                ${payslip.description ? `<p class="text-xs text-gray-500 dark:text-gray-500 mt-1">${payslip.description}</p>` : ''}
+                                ${payslip.description ? `<p class="text-xs text-gray-500 dark:text-gray-500 mt-1">${escapeHtml(payslip.description)}</p>` : ''}
                             </div>
                         </div>
                     </div>
@@ -1787,11 +1751,11 @@ function showPayslipModal(payslip) {
                 <div class="grid grid-cols-2 gap-4 mb-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                     <div>
                         <p class="text-xs text-gray-500 dark:text-gray-400">Trainer Name</p>
-                        <p class="font-semibold text-gray-900 dark:text-white">${payslip.trainerName}</p>
+                        <p class="font-semibold text-gray-900 dark:text-white">${escapeHtml(payslip.trainerName)}</p>
                     </div>
                     <div>
                         <p class="text-xs text-gray-500 dark:text-gray-400">Department</p>
-                        <p class="font-semibold text-gray-900 dark:text-white">${formatDepartmentName(payslip.department)}</p>
+                        <p class="font-semibold text-gray-900 dark:text-white">${escapeHtml(formatDepartmentName(payslip.department))}</p>
                     </div>
                     <div>
                         <p class="text-xs text-gray-500 dark:text-gray-400">Period</p>
@@ -1805,7 +1769,7 @@ function showPayslipModal(payslip) {
                 
                 ${payslip.description ? `
                     <div class="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                        <p class="text-sm text-gray-700 dark:text-gray-300">${payslip.description}</p>
+                        <p class="text-sm text-gray-700 dark:text-gray-300">${escapeHtml(payslip.description)}</p>
                     </div>
                 ` : ''}
                 
@@ -1835,7 +1799,7 @@ function showPayslipModal(payslip) {
                         ` : ''}
                     </div>
                     <div class="flex space-x-3">
-                        <button onclick="downloadPayslipPDF('${payslip._id}')" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center">
+                        <button onclick="downloadPayslipPDF('${escapeAttr(payslip._id)}')" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center">
                             <i class="ri-download-line mr-2"></i>Download PDF
                         </button>
                         <button onclick="this.closest('.fixed').remove()" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
@@ -2022,7 +1986,7 @@ function downloadPayslipPDF(payslipId) {
 // Mark payslip as viewed
 async function markPayslipAsViewed(payslipId) {
     try {
-        const response = await fetch(`${API_BASE_URL}/payslips/${payslipId}/view`, {
+        const response = await authFetch(`${API_BASE_URL}/payslips/${payslipId}/view`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' }
         });

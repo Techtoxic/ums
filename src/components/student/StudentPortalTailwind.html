@@ -1257,7 +1257,7 @@
                     return;
                 }
 
-                const response = await fetch(`${API_BASE_URL}/students/${encodeURIComponent(studentId)}/graduation-eligibility`);
+                const response = await window.AUTH.fetch(`${API_BASE_URL}/students/${encodeURIComponent(studentId)}/graduation-eligibility`);
                 const data = await response.json();
 
                 const eligibilityDiv = document.getElementById('graduation-eligibility');
@@ -1275,10 +1275,10 @@
                     const app = data.existingApplication;
                     detailsDiv.innerHTML = `
                         <p><strong>Application Date:</strong> ${new Date(app.applicationDate).toLocaleDateString()}</p>
-                        <p><strong>Status:</strong> <span class="capitalize">${app.status.replace('_', ' ')}</span></p>
-                        <p><strong>Academic Year:</strong> ${app.academicYear}</p>
-                        <p><strong>Semester:</strong> ${app.semester}</p>
-                        ${app.comments ? `<p><strong>Comments:</strong> ${app.comments}</p>` : ''}
+                        <p><strong>Status:</strong> <span class="capitalize">${escapeHtml(app.status.replace('_', ' '))}</span></p>
+                        <p><strong>Academic Year:</strong> ${escapeHtml(app.academicYear)}</p>
+                        <p><strong>Semester:</strong> ${escapeHtml(app.semester)}</p>
+                        ${app.comments ? `<p><strong>Comments:</strong> ${escapeHtml(app.comments)}</p>` : ''}
                     `;
                 } else if (!data.canApply) {
                     // Show ineligible
@@ -1295,7 +1295,7 @@
                 eligibilityDiv.innerHTML = 
                     `<div class="text-center py-4 text-red-600">
                         <i class="ri-error-warning-line text-2xl mb-2"></i>
-                        <p>Error checking eligibility: ${error.message}</p>
+                        <p>Error checking eligibility: ${escapeHtml(error.message)}</p>
                         <button onclick="checkGraduationEligibility()" class="mt-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors">
                             Try Again
                         </button>
@@ -1335,7 +1335,7 @@
                 console.log('🌐 API_BASE_URL:', API_BASE_URL);
                 console.log('🌐 Fetching URL:', url);
                 
-                const response = await fetch(url);
+                const response = await window.AUTH.fetch(url);
                 const data = await response.json();
 
                 const eligibilityDiv = document.getElementById('attachment-eligibility');
@@ -1353,11 +1353,11 @@
                     const app = data.existingApplication;
                     detailsDiv.innerHTML = `
                         <p><strong>Application Date:</strong> ${new Date(app.applicationDate).toLocaleDateString()}</p>
-                        <p><strong>Status:</strong> <span class="capitalize">${app.status.replace('_', ' ')}</span></p>
-                        <p><strong>Location:</strong> ${app.county}, ${app.nearestTown}</p>
-                        <p><strong>Academic Year:</strong> ${app.academicYear}</p>
-                        <p><strong>Semester:</strong> ${app.semester}</p>
-                        ${app.comments ? `<p><strong>Comments:</strong> ${app.comments}</p>` : ''}
+                        <p><strong>Status:</strong> <span class="capitalize">${escapeHtml(app.status.replace('_', ' '))}</span></p>
+                        <p><strong>Location:</strong> ${escapeHtml(app.county)}, ${escapeHtml(app.nearestTown)}</p>
+                        <p><strong>Academic Year:</strong> ${escapeHtml(app.academicYear)}</p>
+                        <p><strong>Semester:</strong> ${escapeHtml(app.semester)}</p>
+                        ${app.comments ? `<p><strong>Comments:</strong> ${escapeHtml(app.comments)}</p>` : ''}
                     `;
                 } else if (!data.canApply) {
                     // Show ineligible
@@ -1374,7 +1374,7 @@
                 eligibilityDiv.innerHTML = 
                     `<div class="text-center py-4 text-red-600">
                         <i class="ri-error-warning-line text-2xl mb-2"></i>
-                        <p>Error checking eligibility: ${error.message}</p>
+                        <p>Error checking eligibility: ${escapeHtml(error.message)}</p>
                         <button onclick="checkAttachmentEligibility()" class="mt-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors">
                             Try Again
                         </button>
@@ -1434,7 +1434,7 @@
             statusInfo.innerHTML = `
                 <div class="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
                     <p class="text-sm text-green-700 dark:text-green-300">✓ Eligible to apply for graduation</p>
-                    <p class="text-xs text-green-600 dark:text-green-400 mt-1">Level ${data.level} students can apply in Year ${data.yearOfStudy}</p>
+                    <p class="text-xs text-green-600 dark:text-green-400 mt-1">Level ${escapeHtml(data.level)} students can apply in Year ${escapeHtml(data.yearOfStudy)}</p>
                 </div>
             `;
         }
@@ -1502,7 +1502,7 @@
                 showLoading('Submitting graduation application...');
                 
                 const studentId = studentData.admissionNumber;
-                const response = await fetch(`${API_BASE_URL}/students/${encodeURIComponent(studentId)}/graduation-application`, {
+                const response = await window.AUTH.fetch(`${API_BASE_URL}/students/${encodeURIComponent(studentId)}/graduation-application`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -1544,7 +1544,7 @@
                 showLoading('Submitting attachment application...');
                 
                 const studentId = studentData.admissionNumber;
-                const response = await fetch(`${API_BASE_URL}/students/${encodeURIComponent(studentId)}/attachment-application`, {
+                const response = await window.AUTH.fetch(`${API_BASE_URL}/students/${encodeURIComponent(studentId)}/attachment-application`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -1867,7 +1867,7 @@
                 submitBtn.textContent = 'Updating...';
                 
                 const studentData = JSON.parse(sessionStorage.getItem('studentData'));
-                const response = await fetch(`${API_BASE_URL}/students/${encodeURIComponent(studentData.admissionNumber)}/email`, {
+                const response = await window.AUTH.fetch(`${API_BASE_URL}/students/${encodeURIComponent(studentData.admissionNumber)}/email`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json'

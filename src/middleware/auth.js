@@ -2,11 +2,25 @@
 // JWT-based authentication with role-based access control (RBAC)
 
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 const config = require('../config/config');
 
 // Sourced from validated config (config will refuse to boot in prod without it)
 const JWT_SECRET = config.jwt.secret;
 const JWT_EXPIRES_IN = config.jwt.expiresIn;
+
+/**
+ * SEV-H-013: Resolve the Mongoose model that owns the account for a given role.
+ * Models are looked up lazily via mongoose.models so this file does not need to
+ * require server.js (the Student model is registered inline there).
+ */
+function modelForRole(role) {
+    if (role === 'student') return mongoose.models.Student;
+    if (role === 'hod') return mongoose.models.HOD;
+    if (role === 'trainer') return mongoose.models.Trainer;
+    // admin, deputy, finance, dean, ilo, registrar, cibec all live in AdminStaff
+    return mongoose.models.AdminStaff;
+}
 
 /**
  * Sign a JWT for any user type. Centralised so we can change expiry, claims,
@@ -38,7 +52,7 @@ function extractToken(req) {
  * Verify JWT and attach minimal user info to req.user.
  * Do NOT log the token or full headers anywhere.
  */
-const verifyToken = (req, res, next) => {
+const verifyToken = async (req, res, next) => {
     try {
         const token = extractToken(req);
         if (!token) {
@@ -51,12 +65,58 @@ const verifyToken = (req, res, next) => {
 
         const decoded = jwt.verify(token, JWT_SECRET);
 
+        // SEV-H-006: carry identifier claims (admissionNumber etc.) and the
+        // tokenVersion through to req.user so ownership checks and revocation work.
         req.user = {
             userId: decoded.userId,
             email: decoded.email,
             role: decoded.role,
-            userType: decoded.userType || decoded.role
+            userType: decoded.userType || decoded.role,
+            admissionNumber: decoded.admissionNumber,
+            staffId: decoded.staffId,
+            tokenVersion: decoded.tokenVersion
         };
+
+        // SEV-H-013: revoke tokens on credential/role change and block disabled
+        // accounts. One indexed _id read per authenticated request.
+        const Model = modelForRole(decoded.role);
+        if (Model && decoded.userId) {
+            let userDoc;
+            try {
+                userDoc = await Model.findById(decoded.userId).select('tokenVersion isActive');
+            } catch (dbErr) {
+                console.error('verifyToken account lookup failed:', dbErr.message);
+                return res.status(401).json({
+                    success: false,
+                    message: 'Authentication failed.',
+                    code: 'AUTH_FAILED'
+                });
+            }
+            if (!userDoc) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Session is no longer valid. Please log in again.',
+                    code: 'TOKEN_REVOKED'
+                });
+            }
+            if (userDoc.isActive === false) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'This account has been disabled.',
+                    code: 'ACCOUNT_DISABLED'
+                });
+            }
+            const currentVersion = userDoc.tokenVersion || 0;
+            const claimVersion = decoded.tokenVersion || 0;
+            if (currentVersion !== claimVersion) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Session is no longer valid. Please log in again.',
+                    code: 'TOKEN_REVOKED'
+                });
+            }
+        }
+
         next();
     } catch (error) {
         if (error.name === 'TokenExpiredError') {
@@ -119,8 +179,11 @@ const verifyOwnership = (userIdParam = 'id') => {
             const requestedUserId = req.params[userIdParam] || req.query[userIdParam];
             const authenticatedUserId = req.user && req.user.userId;
 
-            // Admin-level roles can access any resource (but their actions are still logged)
-            const adminRoles = ['admin', 'registrar', 'dean', 'finance', 'deputy', 'cibec', 'ilo'];
+            // SEV-H-006: only admin and registrar may bypass ownership. Other
+            // back-office roles (dean, finance, deputy, cibec, ilo) must reach
+            // other users' data through routes that explicitly authorize them,
+            // never by silently skipping the ownership check.
+            const adminRoles = ['admin', 'registrar'];
             if (adminRoles.includes(req.user && req.user.role)) {
                 return next();
             }
@@ -181,6 +244,39 @@ const optionalAuth = (req, res, next) => {
 };
 
 /**
+ * SEV-H-014: while a student still has the forced-change flag set, every
+ * authenticated request is rejected except the first-login password change.
+ * Decodes the bearer token only; never blocks anonymous/non-student traffic.
+ * Mounted globally under /api so it covers all student routes.
+ */
+const enforceStudentFirstLogin = (req, res, next) => {
+    try {
+        const token = extractToken(req);
+        if (!token) return next(); // no token -> let the route's verifyToken decide
+        let decoded;
+        try {
+            decoded = jwt.verify(token, JWT_SECRET);
+        } catch (e) {
+            return next(); // invalid/expired -> verifyToken will reject properly
+        }
+        if (decoded && decoded.role === 'student' && decoded.firstLoginRequired) {
+            const isPasswordChange =
+                req.method === 'POST' && req.path.endsWith('/first-login-password-change');
+            if (!isPasswordChange) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'You must change your initial password before continuing.',
+                    code: 'FIRST_LOGIN_REQUIRED'
+                });
+            }
+        }
+        next();
+    } catch (error) {
+        next();
+    }
+};
+
+/**
  * NOTE: the in-memory rate limiter that used to live here was removed.
  * It did not work on serverless (state was lost on every cold start) and was
  * easy to bypass behind a proxy. Use the express-rate-limit middleware
@@ -192,6 +288,7 @@ module.exports = {
     authorize,
     verifyOwnership,
     optionalAuth,
+    enforceStudentFirstLogin,
     signToken,
     // Backward-compatible aliases
     authenticateToken: verifyToken,

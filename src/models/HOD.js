@@ -24,7 +24,13 @@ const hodSchema = new mongoose.Schema({
     password: {
         type: String,
         required: true,
-        default: 'HOD' // Default password
+        select: false // SEV-H-018: never returned by default queries
+        // SEV-C-004: no default. Callers must set an explicit password;
+        // the pre-save hook hashes it.
+    },
+    tokenVersion: {
+        type: Number,
+        default: 0 // SEV-H-013: bumped on password/email change to revoke JWTs
     },
     phone: {
         type: String,
@@ -59,6 +65,14 @@ hodSchema.pre('save', async function(next) {
     } catch (error) {
         next(error);
     }
+});
+
+// SEV-H-013: bump tokenVersion (revoking existing JWTs) on credential change.
+hodSchema.pre('save', function(next) {
+    if (!this.isNew && (this.isModified('password') || this.isModified('email'))) {
+        this.tokenVersion = (this.tokenVersion || 0) + 1;
+    }
+    next();
 });
 
 // Compare password method
@@ -102,6 +116,15 @@ hodSchema.statics.getAllDepartments = function() {
         { code: 'computing_informatics', name: 'Computing & Informatics' }
     ];
 };
+
+// SEV-H-018: strip secret-like fields from any serialised output.
+function stripHodSecrets(doc, ret) {
+    delete ret.password;
+    delete ret.tokenVersion;
+    return ret;
+}
+hodSchema.set('toJSON', { transform: stripHodSecrets });
+hodSchema.set('toObject', { transform: stripHodSecrets });
 
 module.exports = mongoose.model('HOD', hodSchema);
 

@@ -1043,7 +1043,7 @@
                 departmentHTML += `
                     <div class="flex justify-between items-center p-4 bg-slate-50 dark:bg-slate-700 rounded-lg">
                         <div>
-                            <h4 class="font-medium text-slate-800 dark:text-white">${deptName}</h4>
+                            <h4 class="font-medium text-slate-800 dark:text-white">${escapeHtml(deptName)}</h4>
                             <p class="text-sm text-slate-500 dark:text-slate-400">${stats.studentCount} students</p>
                         </div>
                         <div class="text-right">
@@ -1206,7 +1206,7 @@
                 modal.innerHTML = `
                     <div class="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-sm">
                         <div class="p-6 border-b border-gray-200 dark:border-gray-700">
-                            <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Export ${reportType}</h3>
+                            <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Export ${escapeHtml(reportType)}</h3>
                         </div>
                         <div class="p-6">
                             <p class="text-gray-600 dark:text-gray-300 mb-4">Choose export format:</p>
@@ -1411,7 +1411,7 @@
         async function loadSystemSettings() {
             try {
                 const API_BASE_URL = window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : `${window.location.protocol}//${window.location.host}/api`;
-                const response = await fetch(`${API_BASE_URL}/system-settings`);
+                const response = await window.AUTH.fetch(`${API_BASE_URL}/system-settings`);
                 if (!response.ok) {
                     throw new Error('Failed to load system settings');
                 }
@@ -1456,7 +1456,7 @@
                 }
                 
                 const API_BASE_URL = window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : `${window.location.protocol}//${window.location.host}/api`;
-                const response = await fetch(`${API_BASE_URL}/system-settings/fee_threshold`, {
+                const response = await window.AUTH.fetch(`${API_BASE_URL}/system-settings/fee_threshold`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json'
@@ -1502,7 +1502,7 @@
                 <div class="flex items-center gap-2">
                     <i class="ri-${type === 'success' ? 'check' : 'error-warning'}-line text-${type === 'success' ? 'green' : 'red'}-600"></i>
                     <span class="text-sm font-medium text-${type === 'success' ? 'green' : 'red'}-800 dark:text-${type === 'success' ? 'green' : 'red'}-200">
-                        ${message}
+                        ${escapeHtml(message)}
                     </span>
                 </div>
             `;

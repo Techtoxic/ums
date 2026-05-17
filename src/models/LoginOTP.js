@@ -1,4 +1,10 @@
 const mongoose = require('mongoose');
+const crypto = require('crypto');
+
+// SEV-H-017: deterministic SHA-256 hex hash used for OTP storage + verification.
+function hashOtpValue(raw) {
+    return crypto.createHash('sha256').update(String(raw)).digest('hex');
+}
 
 // Login OTP Schema for two-factor authentication
 const loginOTPSchema = new mongoose.Schema({
@@ -20,7 +26,8 @@ const loginOTPSchema = new mongoose.Schema({
         trim: true,
         index: true
     },
-    otp: {
+    // SEV-H-017: only the SHA-256 hash of the OTP is ever stored at rest.
+    otpHash: {
         type: String,
         required: true
     },
@@ -64,13 +71,26 @@ const loginOTPSchema = new mongoose.Schema({
     }
 });
 
-// Compound indexes
+// Compound indexes (SEV-H-017: no index references the raw OTP - it no
+// longer exists at rest. Lookups are by email + recency.)
 loginOTPSchema.index({ userId: 1, userType: 1, isUsed: 1 });
-loginOTPSchema.index({ email: 1, otp: 1, isUsed: 1 });
-loginOTPSchema.index({ otp: 1, isVerified: 1 });
+loginOTPSchema.index({ email: 1, createdAt: -1 });
 
 // TTL index to automatically delete expired documents
 loginOTPSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+
+loginOTPSchema.statics.hashValue = hashOtpValue;
+
+// Virtual setter so existing callers can keep doing `new LoginOTP({ otp })`
+// or `doc.otp = value`; only the hash is persisted.
+loginOTPSchema.virtual('otp').set(function(raw) {
+    this.otpHash = hashOtpValue(raw);
+});
+
+// Compare a supplied raw OTP against the stored hash.
+loginOTPSchema.methods.verifyOtp = function(raw) {
+    return !!this.otpHash && this.otpHash === hashOtpValue(raw);
+};
 
 // Instance methods
 loginOTPSchema.methods.isExpired = function() {
@@ -81,9 +101,17 @@ loginOTPSchema.methods.canAttempt = function() {
     return this.otpAttempts < 5 && !this.isUsed && !this.isExpired();
 };
 
-loginOTPSchema.methods.incrementAttempts = function() {
-    this.otpAttempts += 1;
-    return this.save();
+loginOTPSchema.methods.incrementAttempts = async function() {
+    // Atomic increment so concurrent guesses cannot race past the cap.
+    const updated = await this.constructor.findOneAndUpdate(
+        { _id: this._id },
+        { $inc: { otpAttempts: 1 } },
+        { new: true }
+    );
+    if (updated) {
+        this.otpAttempts = updated.otpAttempts;
+    }
+    return this;
 };
 
 loginOTPSchema.methods.markAsVerified = function() {
@@ -95,8 +123,14 @@ loginOTPSchema.methods.markAsVerified = function() {
 
 // Static methods
 loginOTPSchema.statics.findValidOTP = function(criteria) {
+    const query = { ...criteria };
+    // SEV-H-017: translate a raw otp lookup into a hash lookup.
+    if (query.otp !== undefined) {
+        query.otpHash = hashOtpValue(query.otp);
+        delete query.otp;
+    }
     return this.findOne({
-        ...criteria,
+        ...query,
         isUsed: false,
         isVerified: false,
         expiresAt: { $gt: new Date() }
@@ -116,15 +150,15 @@ loginOTPSchema.statics.invalidateUserOTPs = function(userId, userType) {
     );
 };
 
-// Generate secure 6-digit OTP
+// Generate secure 6-digit OTP using a cryptographically secure RNG
 loginOTPSchema.statics.generateOTP = function() {
-    return Math.floor(100000 + Math.random() * 900000).toString();
+    return crypto.randomInt(100000, 1000000).toString();
 };
 
-// Security: Prevent OTP from being returned in queries
+// Security: never return the OTP hash in serialised output.
 loginOTPSchema.methods.toJSON = function() {
     const otpObj = this.toObject();
-    delete otpObj.otp;
+    delete otpObj.otpHash;
     return otpObj;
 };
 

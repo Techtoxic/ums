@@ -75,9 +75,14 @@
                 throw new Error('No authentication token found');
             }
             
-            // Add Authorization header
+            // Add Authorization header. Default the JSON Content-Type only for
+            // non-FormData bodies — for multipart uploads the browser must set
+            // its own Content-Type (with the boundary), so we must NOT force
+            // application/json. (Stage 2B-1B: required so upload calls can be
+            // normalized through this helper without breaking multipart.)
+            const isFormData = (typeof FormData !== 'undefined') && (options.body instanceof FormData);
             const headers = {
-                'Content-Type': 'application/json',
+                ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
                 'Authorization': `Bearer ${token}`,
                 ...(options.headers || {})
             };
@@ -181,8 +186,59 @@
     
     // Auto-migrate legacy tokens on load
     AUTH_UTILS.migrateLegacyTokens();
-    
+
     // Expose globally
     window.AUTH = AUTH_UTILS;
-    
+
+    // ==========================================================================
+    // Stage 2B-2A: centralized output-encoding helpers (XSS escaping).
+    // One source of truth, loaded by every dashboard (they all load auth.js).
+    // Strictness >= every former local escapeHtml (those escaped at most
+    // & < > " ' ; this also escapes / ). Do not loosen.
+    // ==========================================================================
+
+    // HTML text context (and safe for double-quoted attribute values too,
+    // since " is escaped). Escapes & < > " ' /.
+    function escapeHtml(value) {
+        if (value === null || value === undefined) return '';
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+            .replace(/\//g, '&#47;');
+    }
+
+    // HTML attribute context: escapeHtml plus backtick and space, so the value
+    // is safe even in an unquoted attribute. Browsers decode &#32;/&#96; back
+    // to space/backtick, so display is unaffected inside quoted attributes.
+    function escapeAttr(value) {
+        if (value === null || value === undefined) return '';
+        return escapeHtml(value)
+            .replace(/`/g, '&#96;')
+            .replace(/ /g, '&#32;');
+    }
+
+    // JavaScript string context. Returns the escaped INNER content WITHOUT
+    // surrounding quotes — the caller wraps it in quotes. Also neutralizes
+    // </script>, HTML metacharacters and the JS line separators so it is safe
+    // inside inline <script>/event-handler contexts.
+    function escapeJs(value) {
+        if (value === null || value === undefined) return '';
+        const json = JSON.stringify(String(value));
+        return json
+            .slice(1, -1)
+            .replace(/</g, '\\u003C')
+            .replace(/>/g, '\\u003E')
+            .replace(/&/g, '\\u0026')
+            .replace(/\u2028/g, '\\u2028')
+            .replace(/\u2029/g, '\\u2029');
+    }
+
+    window.escapeHtml = escapeHtml;
+    window.escapeAttr = escapeAttr;
+    window.escapeJs = escapeJs;
+    window.ESC = { escapeHtml: escapeHtml, escapeAttr: escapeAttr, escapeJs: escapeJs };
+
 })(window);

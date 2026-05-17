@@ -17,7 +17,13 @@ const trainerSchema = new mongoose.Schema({
     password: {
         type: String,
         required: true,
-        default: 'trainer123' // Default password
+        select: false
+        // SEV-C-004/SEV-C-005: no default, never returned by default queries.
+        // Hashed by the pre-save hook below.
+    },
+    tokenVersion: {
+        type: Number,
+        default: 0 // SEV-H-013: bumped on password/email change to revoke JWTs
     },
     phone: {
         type: String,
@@ -54,20 +60,33 @@ const trainerSchema = new mongoose.Schema({
     }
 });
 
-// Note: Password is stored as plain text as per requirements
-// Update timestamp when password is modified
+// SEV-C-005: Hash password with bcrypt (cost 12) before saving.
+// Only re-hash when the password field was actually modified.
 trainerSchema.pre('save', async function(next) {
-    if (this.isModified('password')) {
+    if (!this.isModified('password')) return next();
+
+    try {
+        const salt = await bcrypt.genSalt(12);
+        this.password = await bcrypt.hash(this.password, salt);
         this.updatedAt = new Date();
+        next();
+    } catch (error) {
+        next(error);
+    }
+});
+
+// SEV-H-013: bump tokenVersion (revoking existing JWTs) on credential change.
+trainerSchema.pre('save', function(next) {
+    if (!this.isNew && (this.isModified('password') || this.isModified('email'))) {
+        this.tokenVersion = (this.tokenVersion || 0) + 1;
     }
     next();
 });
 
-// Compare password method (plain text comparison)
+// Compare password method (bcrypt)
 trainerSchema.methods.comparePassword = async function(candidatePassword) {
     try {
-        // Plain text comparison as per requirements
-        return this.password === candidatePassword;
+        return await bcrypt.compare(candidatePassword, this.password);
     } catch (error) {
         throw error;
     }
@@ -108,5 +127,14 @@ trainerSchema.methods.getAssignedUnitsCount = async function() {
         return 0;
     }
 };
+
+// SEV-H-018: strip secret-like fields from any serialised output.
+function stripTrainerSecrets(doc, ret) {
+    delete ret.password;
+    delete ret.tokenVersion;
+    return ret;
+}
+trainerSchema.set('toJSON', { transform: stripTrainerSecrets });
+trainerSchema.set('toObject', { transform: stripTrainerSecrets });
 
 module.exports = mongoose.model('Trainer', trainerSchema);

@@ -38,7 +38,7 @@
             toolsContainer.innerHTML = '<div class="col-span-full text-center py-4"><i class="ri-loader-4-line animate-spin text-2xl text-primary"></i></div>';
 
             try {
-                const response = await fetch(`${API_BASE_URL}/tools`);
+                const response = await window.AUTH.fetch(`${API_BASE_URL}/tools`);
                 if (!response.ok) {
                     throw new Error(`Failed to fetch tools: ${response.status} ${response.statusText}`);
                 }
@@ -99,15 +99,15 @@
                 const toolCard = `
                     <div class="p-4 border border-slate-200 dark:border-gray-700 rounded-lg hover:border-primary/50 transition-colors">
                         <div class="flex items-center justify-between mb-2">
-                            <h4 class="font-medium">${toolTypeNames[tool.toolType] || tool.toolType}</h4>
-                            <span class="px-3 py-1 rounded-full text-xs ${statusClass}">${tool.status.replace('_', ' ').toUpperCase()}</span>
+                            <h4 class="font-medium">${escapeHtml(toolTypeNames[tool.toolType] || tool.toolType)}</h4>
+                            <span class="px-3 py-1 rounded-full text-xs ${statusClass}">${escapeHtml(tool.status.replace('_', ' ').toUpperCase())}</span>
                         </div>
-                        <p class="text-sm text-slate-500 dark:text-slate-400 mb-2">${trainerName} - ${unitName}</p>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mb-2">${escapeHtml(trainerName)} - ${escapeHtml(unitName)}</p>
                         <p class="text-xs text-slate-400 dark:text-slate-500 mb-3">Submitted: ${submittedAt}</p>
                         <div class="flex items-center gap-2">
-                            <button onclick="reviewTool('${tool._id}')" class="text-sm text-primary hover:text-secondary transition-colors">Review</button>
+                            <button onclick="reviewTool('${escapeAttr(tool._id)}')" class="text-sm text-primary hover:text-secondary transition-colors">Review</button>
                             <span class="text-slate-300 dark:text-slate-600">|</span>
-                            <button onclick="downloadTool('${tool._id}')" class="text-sm text-slate-500 hover:text-slate-600 transition-colors">Download</button>
+                            <button onclick="downloadTool('${escapeAttr(tool._id)}')" class="text-sm text-slate-500 hover:text-slate-600 transition-colors">Download</button>
                         </div>
                     </div>
                 `;
@@ -167,7 +167,7 @@
                 let response;
                 if (sendTo === 'all_trainers') {
                     // Send to all trainers
-                    response = await fetch(`${API_BASE_URL}/notifications/broadcast`, {
+                    response = await window.AUTH.fetch(`${API_BASE_URL}/notifications/broadcast`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -177,7 +177,7 @@
                 } else if (sendTo === 'by_department') {
                     // Send to department trainers
                     notification.message = `Please submit your ${toolType} for ${department} department by ${dueDate}. Instructions: ${instructions}`;
-                    response = await fetch(`${API_BASE_URL}/notifications/broadcast`, {
+                    response = await window.AUTH.fetch(`${API_BASE_URL}/notifications/broadcast`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -188,7 +188,7 @@
                     // Send to specific trainer
                     notification.recipientId = trainerSelection;
                     
-                    response = await fetch(`${API_BASE_URL}/notifications`, {
+                    response = await window.AUTH.fetch(`${API_BASE_URL}/notifications`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -238,7 +238,7 @@
         async function downloadTool(toolId) {
             try {
                 // Get download URL from API (supports both S3 and local storage)
-                const response = await fetch(`${API_BASE_URL}/tools/${toolId}/download`);
+                const response = await window.AUTH.fetch(`${API_BASE_URL}/tools/${toolId}/download`);
                 if (!response.ok) {
                     throw new Error(`Failed to get download URL: ${response.status}`);
                 }
@@ -335,10 +335,10 @@
                         <!-- Action Buttons -->
                         <div class="flex justify-end space-x-2">
                             <button onclick="closeReviewModal()" class="px-3 py-1 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">Cancel</button>
-                            <button onclick="downloadTool('${tool._id}')" class="px-3 py-1 text-sm bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors">
+                            <button onclick="downloadTool('${escapeAttr(tool._id)}')" class="px-3 py-1 text-sm bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors">
                                 <i class="ri-download-line mr-1"></i>Download
                             </button>
-                            <button onclick="updateToolStatus('${tool._id}')" class="px-3 py-1 text-sm bg-primary text-white rounded-lg hover:bg-secondary transition-colors">
+                            <button onclick="updateToolStatus('${escapeAttr(tool._id)}')" class="px-3 py-1 text-sm bg-primary text-white rounded-lg hover:bg-secondary transition-colors">
                                 <i class="ri-check-line mr-1"></i>Update Status
                             </button>
                         </div>
@@ -396,7 +396,7 @@
                 
                 console.log('Updating tool status:', toolId, updateData);
                 
-                const response = await fetch(`${API_BASE_URL}/tools/${toolId}/status`, {
+                const response = await window.AUTH.fetch(`${API_BASE_URL}/tools/${toolId}/status`, {
                     method: 'PATCH',
                     headers: {
                         'Content-Type': 'application/json',
@@ -452,7 +452,7 @@
             toast.innerHTML = `
                 <div class="flex items-center gap-2">
                     <i class="${type === 'success' ? 'ri-checkbox-circle-line' : 'ri-error-warning-line'}"></i>
-                    <span>${message}</span>
+                    <span>${escapeHtml(message)}</span>
                 </div>
             `;
             
@@ -1184,7 +1184,7 @@
 <script>
         async function viewToolRequest(requestId) {
             try {
-                const response = await fetch(`${API_BASE_URL}/tools/requests/${requestId}`);
+                const response = await window.AUTH.fetch(`${API_BASE_URL}/tools/requests/${requestId}`);
                 if (!response.ok) throw new Error('Failed to fetch tool request details');
                 
                 const request = await response.json();
@@ -1197,7 +1197,7 @@
 
         async function updateToolRequestStatus(requestId, newStatus) {
             try {
-                const response = await fetch(`${API_BASE_URL}/tools/${requestId}/status`, {
+                const response = await window.AUTH.fetch(`${API_BASE_URL}/tools/${requestId}/status`, {
                     method: 'PATCH',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1240,7 +1240,7 @@
             if (!department) return;
             
             try {
-                const response = await fetch(`${API_BASE_URL}/trainers/department/${department}`);
+                const response = await window.AUTH.fetch(`${API_BASE_URL}/trainers/department/${department}`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch trainers');
                 }
@@ -1264,7 +1264,7 @@
         // Load all trainers for specific trainer selection
         async function loadAllTrainers() {
             try {
-                const response = await fetch(`${API_BASE_URL}/trainers/all-departments`);
+                const response = await window.AUTH.fetch(`${API_BASE_URL}/trainers/all-departments`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch trainers');
                 }
@@ -1288,7 +1288,7 @@
         // Load trainers for dropdown
         async function loadTrainers() {
             try {
-                const response = await fetch(`${API_BASE_URL}/trainers/all-departments`);
+                const response = await window.AUTH.fetch(`${API_BASE_URL}/trainers/all-departments`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch trainers');
                 }
@@ -1314,14 +1314,14 @@
         async function loadDashboardStats() {
             try {
                 // Load students count
-                const studentsResponse = await fetch(`${API_BASE_URL}/students`);
+                const studentsResponse = await window.AUTH.fetch(`${API_BASE_URL}/students`);
                 if (studentsResponse.ok) {
                     const students = await studentsResponse.json();
                     document.getElementById('totalStudents').textContent = students.length;
                 }
 
                 // Load trainers count
-                const trainersResponse = await fetch(`${API_BASE_URL}/trainers/all-departments`);
+                const trainersResponse = await window.AUTH.fetch(`${API_BASE_URL}/trainers/all-departments`);
                 if (trainersResponse.ok) {
                     const data = await trainersResponse.json();
                     const trainers = data.trainers || [];
@@ -1329,14 +1329,14 @@
                 }
 
                 // Load courses count
-                const coursesResponse = await fetch(`${API_BASE_URL}/courses`);
+                const coursesResponse = await window.AUTH.fetch(`${API_BASE_URL}/courses`);
                 if (coursesResponse.ok) {
                     const courses = await coursesResponse.json();
                     document.getElementById('totalCourses').textContent = courses.length;
                 }
 
                 // Load units count
-                const unitsResponse = await fetch(`${API_BASE_URL}/units`);
+                const unitsResponse = await window.AUTH.fetch(`${API_BASE_URL}/units`);
                 if (unitsResponse.ok) {
                     const data = await unitsResponse.json();
                     const totalUnits = data.pagination?.totalUnits || data.units?.length || 0;
@@ -1344,7 +1344,7 @@
                 }
 
                 // Load tools count
-                const toolsResponse = await fetch(`${API_BASE_URL}/tools`);
+                const toolsResponse = await window.AUTH.fetch(`${API_BASE_URL}/tools`);
                 if (toolsResponse.ok) {
                     const tools = await toolsResponse.json();
                     console.log('Tools loaded for dashboard:', tools);
@@ -1362,7 +1362,7 @@
                 document.getElementById('totalDepartments').textContent = departments.length;
 
                 // Load notifications count
-                const notificationsResponse = await fetch(`${API_BASE_URL}/notifications`);
+                const notificationsResponse = await window.AUTH.fetch(`${API_BASE_URL}/notifications`);
                 if (notificationsResponse.ok) {
                     const notifications = await notificationsResponse.json();
                     document.getElementById('totalNotifications').textContent = notifications.length;
@@ -1379,7 +1379,7 @@
         async function loadCharts() {
             try {
                 // Students by Department Chart
-                const studentsResponse = await fetch(`${API_BASE_URL}/students`);
+                const studentsResponse = await window.AUTH.fetch(`${API_BASE_URL}/students`);
                 if (studentsResponse.ok) {
                     const students = await studentsResponse.json();
                     const studentsByDept = {};
@@ -1426,7 +1426,7 @@
                 }
 
                 // Tools Status Chart
-                const toolsResponse = await fetch(`${API_BASE_URL}/tools`);
+                const toolsResponse = await window.AUTH.fetch(`${API_BASE_URL}/tools`);
                 if (toolsResponse.ok) {
                     const tools = await toolsResponse.json();
                     const statusCounts = {};
@@ -1496,7 +1496,7 @@
         // Load students data
         async function loadStudents() {
             try {
-                const response = await fetch(`${API_BASE_URL}/students`);
+                const response = await window.AUTH.fetch(`${API_BASE_URL}/students`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch students');
                 }
@@ -1600,7 +1600,7 @@
             for (let i = 1; i <= totalPages; i++) {
                 if (i === currentPage || i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
                     paginationHTML += `
-                        <button onclick="changePage('${type}', ${i})" 
+                        <button onclick="changePage('${escapeAttr(type)}', ${i})" 
                                 class="px-3 py-1 text-sm border rounded-lg ${i === currentPage ? 'bg-primary text-white border-primary' : 'hover:bg-gray-50 dark:hover:bg-gray-700'}">
                             ${i}
                         </button>
@@ -1694,7 +1694,7 @@
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         <div class="text-sm">Year ${student.year}</div>
-                        <div class="text-sm text-slate-500 dark:text-slate-400">${student.intake} ${student.intakeYear}</div>
+                        <div class="text-sm text-slate-500 dark:text-slate-400">${escapeHtml(student.intake)} ${student.intakeYear}</div>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-success/10 text-success">
@@ -1706,16 +1706,14 @@
         }
 
         // Escape HTML function
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
+        // Stage 2B-2A: local escapeHtml removed — uses the centralized, stricter
+        // window.escapeHtml from public/js/auth.js (also escapes " ' /).
+        // escapeHtml / escapeAttr resolve to the globals on window.
 
         // Load trainers data
         async function loadTrainersData() {
             try {
-                const response = await fetch(`${API_BASE_URL}/trainers/all-departments`);
+                const response = await window.AUTH.fetch(`${API_BASE_URL}/trainers/all-departments`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch trainers data');
                 }
@@ -1727,7 +1725,7 @@
                 const trainersWithData = await Promise.all(trainers.map(async (trainer) => {
                     try {
                         // Get students for this trainer
-                        const studentsResponse = await fetch(`${API_BASE_URL}/trainers/${trainer._id}/students`);
+                        const studentsResponse = await window.AUTH.fetch(`${API_BASE_URL}/trainers/${trainer._id}/students`);
                         let studentCount = 0;
                         if (studentsResponse.ok) {
                             const studentsData = await studentsResponse.json();
@@ -1735,7 +1733,7 @@
                         }
                         
                         // Get assignments for this trainer
-                        const assignmentsResponse = await fetch(`${API_BASE_URL}/trainers/${trainer._id}/assignments`);
+                        const assignmentsResponse = await window.AUTH.fetch(`${API_BASE_URL}/trainers/${trainer._id}/assignments`);
                         let assignedUnits = 0;
                         if (assignmentsResponse.ok) {
                             const assignmentsData = await assignmentsResponse.json();
@@ -1880,7 +1878,7 @@
         // Load courses data
         async function loadCoursesData() {
             try {
-                const response = await fetch(`${API_BASE_URL}/courses`);
+                const response = await window.AUTH.fetch(`${API_BASE_URL}/courses`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch courses');
                 }
@@ -1895,7 +1893,7 @@
         // Load units data
         async function loadUnitsData() {
             try {
-                const response = await fetch(`${API_BASE_URL}/units`);
+                const response = await window.AUTH.fetch(`${API_BASE_URL}/units`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch units');
                 }
@@ -1911,7 +1909,7 @@
         // Load notifications data
         async function loadNotificationsData() {
             try {
-                const response = await fetch(`${API_BASE_URL}/notifications`);
+                const response = await window.AUTH.fetch(`${API_BASE_URL}/notifications`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch notifications');
                 }
@@ -1942,12 +1940,12 @@
                         <h2 class="text-xl font-semibold mb-6">All Courses by Department</h2>
                         ${Object.keys(coursesByDept).map(dept => `
                             <div class="mb-8">
-                                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 capitalize">${dept.replace('_', ' ')}</h3>
+                                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 capitalize">${escapeHtml(dept.replace('_', ' '))}</h3>
                                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                     ${coursesByDept[dept].map(course => `
                                         <div class="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-primary/50 transition-colors">
                                             <h4 class="font-medium text-gray-900 dark:text-white">${escapeHtml(course.name)}</h4>
-                                            <p class="text-sm text-gray-500 dark:text-gray-400">Level ${course.level}</p>
+                                            <p class="text-sm text-gray-500 dark:text-gray-400">Level ${escapeHtml(course.level)}</p>
                                             <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">${escapeHtml(course.code)}</p>
                                         </div>
                                     `).join('')}

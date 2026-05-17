@@ -108,6 +108,39 @@ class EmailService {
         }
     }
 
+    // SEV-H-014: send a student their one-time initial password.
+    async sendStudentCredentials(email, userName, admissionNumber, tempPassword) {
+        try {
+            const mailOptions = {
+                from: {
+                    name: 'EDTTI University Management System',
+                    address: process.env.EMAIL_USER
+                },
+                to: email,
+                subject: 'Your Student Portal Account - Initial Password',
+                html: `
+                <div style="font-family: 'Segoe UI', Tahoma, sans-serif; max-width:600px; margin:0 auto; color:#333;">
+                    <h2>Welcome to EDTTI, ${userName}</h2>
+                    <p>Your student portal account has been created.</p>
+                    <p><strong>Admission Number:</strong> ${admissionNumber}</p>
+                    <p><strong>Temporary Password:</strong>
+                       <code style="font-size:16px; background:#f4f4f4; padding:4px 8px;">${tempPassword}</code></p>
+                    <p style="color:#c0392b;"><strong>You must change this password the first time you log in.</strong>
+                       This temporary password will not work for anything except setting your own password.</p>
+                    <p>If you did not expect this email, contact the registrar's office.</p>
+                </div>`
+            };
+
+            const result = await this.transporter.sendMail(mailOptions);
+            console.log('✅ Student credentials email sent successfully:', result.messageId);
+            return { success: true, messageId: result.messageId };
+        } catch (error) {
+            // Never log the password or recipient.
+            console.error('❌ Failed to send student credentials email:', error.message);
+            return { success: false, error: error.message };
+        }
+    }
+
     // Generate OTP email template
     generateOTPEmailTemplate(otp, userName, userType) {
         const userTypeDisplay = userType.charAt(0).toUpperCase() + userType.slice(1);

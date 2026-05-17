@@ -9,7 +9,8 @@ const auditLogSchema = new mongoose.Schema({
     userType: {
         type: String,
         required: true,
-        enum: ['student', 'cibec', 'admin', 'trainer', 'hod', 'deputy', 'registrar'],
+        // SEV-H-008 / SEV-M-033: every role that can act, plus 'system' for jobs/seeds
+        enum: ['admin', 'deputy', 'finance', 'dean', 'ilo', 'registrar', 'cibec', 'hod', 'trainer', 'student', 'system'],
         index: true
     },
     action: {

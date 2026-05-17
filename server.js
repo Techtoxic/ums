@@ -15,6 +15,7 @@ const path = require('path');
 const multer = require('multer');
 const fs = require('fs');
 const config = require('./src/config/config');
+const csp = require('./src/config/csp'); // SEV-M-025: CSP (Report-Only by default)
 
 // Student Schema
 const studentSchema = new mongoose.Schema({
@@ -50,15 +51,21 @@ const studentSchema = new mongoose.Schema({
         enum: ['walk-in', 'KUCCPS'],
         default: 'walk-in'
     },
-    password: { type: String, required: true },
+    password: { type: String, required: true, select: false }, // SEV-H-018: never returned by default queries
     role: { type: String, default: 'student' },
+    tokenVersion: { type: Number, default: 0 }, // SEV-H-013: bumped on password/email change to revoke JWTs
+    isFirstLogin: { type: Boolean, default: true }, // SEV-H-014
+    mustUpdatePassword: { type: Boolean, default: true }, // SEV-H-014: forced change of the random initial password
     createdAt: { type: Date, default: Date.now }
 });
 
-// Hash password before saving
+// Hash password before saving + SEV-H-013 tokenVersion bump
 studentSchema.pre('save', async function(next) {
     if (this.isModified('password')) {
         this.password = await bcrypt.hash(this.password, 10);
+    }
+    if (!this.isNew && (this.isModified('password') || this.isModified('email'))) {
+        this.tokenVersion = (this.tokenVersion || 0) + 1;
     }
     next();
 });
@@ -67,6 +74,15 @@ studentSchema.pre('save', async function(next) {
 studentSchema.methods.comparePassword = async function(candidatePassword) {
     return await bcrypt.compare(candidatePassword, this.password);
 };
+
+// SEV-H-018: strip secret-like fields from any serialised output.
+function stripStudentSecrets(doc, ret) {
+    delete ret.password;
+    delete ret.tokenVersion;
+    return ret;
+}
+studentSchema.set('toJSON', { transform: stripStudentSecrets });
+studentSchema.set('toObject', { transform: stripStudentSecrets });
 
 // Register Student model (check if already exists for serverless compatibility)
 const Student = mongoose.models.Student || mongoose.model('Student', studentSchema);
@@ -97,7 +113,7 @@ const EmailService = require('./src/utils/emailService');
 const { uploadToS3, getPresignedUrl, deleteFromS3, isS3Configured } = require('./src/utils/s3Service');
 
 // Import authentication middleware
-const { verifyToken, authorize, verifyOwnership, optionalAuth, signToken } = require('./src/middleware/auth');
+const { verifyToken, authorize, verifyOwnership, optionalAuth, enforceStudentFirstLogin, signToken } = require('./src/middleware/auth');
 
 // Initialize email service
 let emailService;
@@ -110,12 +126,34 @@ try {
     emailService = {
         sendOTPEmail: async () => console.log('📧 Email stub: sendOTPEmail'),
         sendResetLinkEmail: async () => console.log('📧 Email stub: sendResetLinkEmail'),
-        sendPassword: async () => console.log('📧 Email stub: sendPassword')
+        sendPassword: async () => console.log('📧 Email stub: sendPassword'),
+        sendStudentCredentials: async () => console.log('📧 Email stub: sendStudentCredentials')
     };
 }
 
 // Import data parsers
 const { getAllTrainers, parseTrainersFile } = require('./src/data/trainerData');
+
+// SEV-H-019: escape user/DB-supplied values before using them inside a RegExp
+// or a Mongoose $regex, to prevent regex injection and ReDoS.
+function escapeRegex(value) {
+    return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// SEV-H-016: money is stored as Decimal128 for exactness. These helpers
+// convert at the boundary. Choice (documented in STAGE2A_REPORT.md):
+// arithmetic/comparisons are done in Number space via parseFloat(String(...));
+// KES amounts are well within JS safe-integer range, and storage stays exact.
+function toMoneyNumber(v) {
+    if (v === null || v === undefined) return 0;
+    if (typeof v === 'number') return v;
+    const n = parseFloat(v.toString());
+    return Number.isFinite(n) ? n : 0;
+}
+function toDecimal128(v) {
+    const n = toMoneyNumber(v);
+    return mongoose.Types.Decimal128.fromString(n.toFixed(2));
+}
 
 // Utility function to format course names
 function formatCourseNameServer(courseCode) {
@@ -173,52 +211,136 @@ if (!process.env.VERCEL && !fs.existsSync(uploadsDir)) {
     console.log('🌐 Running on Vercel - using S3 for file storage');
 }
 
-// Multer configuration for file uploads
-// Use memory storage for S3 uploads, or disk storage as fallback
-const storage = isS3Configured() 
-    ? multer.memoryStorage() // Store in memory for S3 upload
-    : multer.diskStorage({
-        destination: function (req, file, cb) {
-            // Fallback: local storage if S3 not configured
-            const uploadPath = path.join(uploadsDir, 'tools-of-trade', 'general');
-            if (!fs.existsSync(uploadPath)) {
-                fs.mkdirSync(uploadPath, { recursive: true });
-            }
-            cb(null, uploadPath);
-        },
-        filename: function (req, file, cb) {
-            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-            const extension = path.extname(file.originalname);
-            cb(null, file.fieldname + '-' + uniqueSuffix + extension);
-        }
-    });
-
-const fileFilter = (req, file, cb) => {
-    const allowedTypes = [
-        'application/pdf', 
-        'application/msword', 
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'image/jpeg',
-        'image/jpg', 
-        'image/png',
-        'video/mp4',
-        'video/mpeg',
-        'video/quicktime'
-    ];
-    if (allowedTypes.includes(file.mimetype)) {
-        cb(null, true);
-    } else {
-        cb(new Error('Invalid file type. Allowed: PDF, DOC, DOCX, JPG, PNG, MP4'), false);
-    }
-};
-
+// SEV-H-011: Multer always writes to MEMORY so the bytes can be inspected
+// before anything is persisted. The client-supplied mimetype is informational
+// only — magic-byte inspection (validateUploadBuffer) is authoritative.
+// `file-type` is not installed and its current major is ESM-only (this code
+// base is CommonJS); a self-contained magic-byte sniffer is used instead.
 const upload = multer({
-    storage: storage,
-    fileFilter: fileFilter,
+    storage: multer.memoryStorage(),
     limits: {
-        fileSize: 10 * 1024 * 1024 // 10MB limit (increased for images and videos)
+        fileSize: 10 * 1024 * 1024 // 10MB hard cap; multer rejects larger before the full read. Images further capped to 5MB in validateUploadBuffer.
     }
 });
+
+// Image types are additionally capped at 5MB (SEV-H-011 #6).
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+
+// Per-endpoint allowlist of accepted extensions (SEV-H-011 #3).
+const UPLOAD_ALLOWLIST = {
+    'student-upload': new Set(['pdf', 'jpg', 'png', 'webp', 'docx']),
+    'tool':           new Set(['pdf', 'docx', 'xlsx', 'pptx'])
+};
+const IMAGE_EXTS = new Set(['jpg', 'png', 'webp']);
+// OOXML documents are all ZIP containers; their first bytes are identical.
+const OOXML_EXTS = new Set(['docx', 'xlsx', 'pptx']);
+
+// Inspect the leading bytes and return the authoritative kind, or null.
+// kinds: 'pdf' | 'jpg' | 'png' | 'webp' | 'zip' (OOXML container)
+function sniffMagic(buf) {
+    if (!buf || buf.length < 4) return null;
+    if (buf[0] === 0x25 && buf[1] === 0x50 && buf[2] === 0x44 && buf[3] === 0x46) return 'pdf';      // %PDF
+    if (buf[0] === 0xFF && buf[1] === 0xD8 && buf[2] === 0xFF) return 'jpg';                          // JPEG
+    if (buf.length >= 8 && buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4E && buf[3] === 0x47
+        && buf[4] === 0x0D && buf[5] === 0x0A && buf[6] === 0x1A && buf[7] === 0x0A) return 'png';
+    if (buf.length >= 12 && buf[0] === 0x52 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x46  // RIFF
+        && buf[8] === 0x57 && buf[9] === 0x45 && buf[10] === 0x42 && buf[11] === 0x50) return 'webp'; // WEBP
+    if (buf[0] === 0x50 && buf[1] === 0x4B && buf[2] === 0x03 && buf[3] === 0x04) return 'zip';       // PK.. (OOXML)
+    return null;
+}
+
+// SEV-H-011: sanitize the original filename for safe display/metadata only.
+function sanitizeDisplayName(name) {
+    let base = path.basename(String(name || '')); // strip any path components
+    base = base.replace(/[\x00-\x1f\x7f]/g, ''); // strip control chars (incl. null byte)
+    base = base.replace(/[^A-Za-z0-9._ ()\-]/g, '_'); // conservative display charset
+    base = base.replace(/\.{2,}/g, '.').replace(/^\.+/, '').trim();
+    if (!base) base = 'file';
+    return base.slice(0, 255);
+}
+
+// SEV-H-011: authoritative post-multer validation. Returns
+// { ok, ext, displayName, isImage } or { ok:false, status, message }.
+function validateUploadBuffer(file, category) {
+    const allow = UPLOAD_ALLOWLIST[category];
+    if (!allow) return { ok: false, status: 500, message: 'Unknown upload category' };
+    if (!file || !file.buffer || file.buffer.length === 0) {
+        return { ok: false, status: 400, message: 'No file uploaded' };
+    }
+    const kind = sniffMagic(file.buffer);
+    if (!kind) {
+        return { ok: false, status: 400, message: 'Unsupported or unrecognised file content. Allowed: ' + [...allow].join(', ') };
+    }
+
+    let ext;
+    if (kind === 'zip') {
+        // OOXML container — first bytes cannot distinguish docx/xlsx/pptx.
+        // The security boundary (no executables/scripts) is enforced by the
+        // ZIP signature; pick the concrete type from the claimed extension,
+        // constrained to the OOXML types this endpoint allows.
+        const claimed = path.extname(String(file.originalname || '')).slice(1).toLowerCase();
+        if (!OOXML_EXTS.has(claimed) || !allow.has(claimed)) {
+            return { ok: false, status: 400, message: 'Office document type not allowed here. Allowed: ' + [...allow].join(', ') };
+        }
+        ext = claimed;
+    } else {
+        ext = kind === 'jpg' ? 'jpg' : kind; // pdf/png/webp/jpg
+        if (!allow.has(ext)) {
+            return { ok: false, status: 400, message: 'File type ".' + ext + '" not allowed here. Allowed: ' + [...allow].join(', ') };
+        }
+    }
+
+    const isImage = IMAGE_EXTS.has(ext);
+    if (isImage && file.buffer.length > MAX_IMAGE_BYTES) {
+        return { ok: false, status: 400, message: 'Image files must be 5MB or smaller.' };
+    }
+    return { ok: true, ext, displayName: sanitizeDisplayName(file.originalname), isImage };
+}
+
+// ============================================================
+// SEV-H-012: short-lived HMAC capability token for file download
+// ============================================================
+// Lets the existing authFetch -> {url} -> window.open flow keep working for
+// LOCAL files (which a browser navigation cannot send a Bearer header for)
+// without exposing them unauthenticated. S3 files use presigned URLs instead.
+const FILE_GRANT_TTL_MS = 15 * 60 * 1000;
+function b64url(buf) {
+    return Buffer.from(buf).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function signFileGrant(grant) {
+    const payload = b64url(JSON.stringify({ cat: grant.cat, id: String(grant.id), exp: Date.now() + FILE_GRANT_TTL_MS }));
+    const sig = b64url(crypto.createHmac('sha256', config.jwt.secret).update(payload).digest());
+    return `${payload}.${sig}`;
+}
+function verifyFileGrant(token) {
+    try {
+        const [payload, sig] = String(token).split('.');
+        if (!payload || !sig) return null;
+        const expected = b64url(crypto.createHmac('sha256', config.jwt.secret).update(payload).digest());
+        const a = Buffer.from(sig);
+        const b = Buffer.from(expected);
+        if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+        const data = JSON.parse(Buffer.from(payload.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString());
+        if (!data || typeof data.exp !== 'number' || Date.now() > data.exp) return null;
+        return data;
+    } catch (e) {
+        return null;
+    }
+}
+const FILE_IMAGE_EXT_RE = /\.(jpg|jpeg|png|webp)$/i;
+// Auth for the download route: a valid capability token (?t=) OR a Bearer session.
+function fileDownloadAuth(req, res, next) {
+    const t = req.query.t;
+    if (t) {
+        const g = verifyFileGrant(t);
+        if (g && g.cat === req.params.category && String(g.id) === String(req.params.id)) {
+            req.fileGrant = g;
+            return next();
+        }
+        return res.status(403).json({ success: false, message: 'Forbidden' });
+    }
+    return verifyToken(req, res, next);
+}
 
 // ===============================
 // DATABASE CONNECTION
@@ -288,13 +410,27 @@ app.set('trust proxy', 1);
 // SECURITY MIDDLEWARE
 // ===============================
 
-// helmet sets a reasonable baseline of security headers (HSTS, CSP defaults, no-sniff, etc).
-// CSP is left at the default permissive baseline because the frontend currently loads
-// from several CDNs (Tailwind, Chart.js, etc). Tighten this once the frontend is consolidated.
+// helmet sets the baseline security headers (HSTS, X-Content-Type-Options,
+// X-Frame-Options, Referrer-Policy, etc). helmet's OWN CSP stays disabled here
+// so this call — and therefore every other helmet header — is unchanged by
+// Stage 2B-2B; CSP is emitted by the dedicated middleware below (full control
+// of report-uri/report-to and the Report-Only vs enforce toggle). See src/config/csp.js.
 app.use(helmet({
-    contentSecurityPolicy: false,        // TODO: enable with explicit allowlist once frontend is consolidated
+    contentSecurityPolicy: false,        // CSP emitted separately (Report-Only) — see csp middleware below
     crossOriginEmbedderPolicy: false      // PDFs and external assets need this off for now
 }));
+
+// SEV-M-025: emit Content-Security-Policy-Report-Only (or Content-Security-Policy
+// when CSP_ENFORCE=true). Report-Only NEVER blocks — it only reports to
+// /api/csp-report. Default is Report-Only; do not flip to enforce here.
+const CSP_HEADER_NAME = csp.headerName();
+const CSP_HEADER_VALUE = csp.buildCspString(config.isProduction);
+const CSP_REPORT_TO = csp.reportToHeaderValue();
+app.use((req, res, next) => {
+    res.setHeader(CSP_HEADER_NAME, CSP_HEADER_VALUE);
+    res.setHeader('Report-To', CSP_REPORT_TO);
+    next();
+});
 
 // CORS: in production, only allow configured origins. In development, allow any.
 const corsOptions = {
@@ -309,6 +445,97 @@ const corsOptions = {
     credentials: true
 };
 app.use(cors(corsOptions));
+
+// ===============================
+// CSP VIOLATION REPORT ENDPOINT (SEV-M-025)
+// ===============================
+// Registered BEFORE the global body parser / ensureDB / generalApiLimiter / auth
+// so: (a) its own 64KB parser is authoritative for this route (the global 1mb
+// JSON parser never sees it), (b) it needs no DB and no auth (browsers post
+// these unauthenticated, cross-context), (c) it has its own dedicated limiter.
+// It NEVER blocks anything and ALWAYS returns 204 — it is pure telemetry.
+
+// Dedicated, generous per-IP limiter. A misconfigured page can emit a violation
+// per blocked subresource per navigation, so this is intentionally high; it only
+// exists to cap a hostile flood, not to shape normal reporting volume.
+const cspReportLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,          // 1 hour
+    max: 1000,                          // 1000 reports per IP per hour
+    standardHeaders: true,
+    legacyHeaders: false,
+    // A rate-limited report is dropped silently with 204 (don't leak limiter state
+    // to the browser; a 429 here would just generate console noise client-side).
+    handler: (req, res) => res.status(204).end()
+});
+
+// Body size capped at 64KB: real CSP reports are a few hundred bytes; 64KB is
+// generous headroom while still bounding memory if someone posts garbage.
+// `type` matches all three content-types browsers use for violation reports:
+//   - application/csp-report      (legacy report-uri)
+//   - application/reports+json    (Reporting API / report-to)
+//   - application/json            (some browsers / manual testing)
+const cspReportParser = express.json({
+    limit: '64kb',
+    type: ['application/csp-report', 'application/reports+json', 'application/json']
+});
+
+app.post('/api/csp-report', cspReportLimiter, cspReportParser,
+    // Body-parser rejections (PayloadTooLargeError when > 64KB, SyntaxError on
+    // malformed JSON) arrive here via next(err). This route must never 4xx/5xx
+    // on a bad report — log and still 204. (4-arg arity = Express error handler.)
+    (err, req, res, next) => {
+        if (res.headersSent) return next(err);
+        console.log(`[CSP-REPORT] body rejected: ${err && err.message}`);
+        return res.status(204).end();
+    },
+    (req, res) => {
+    try {
+        const ip = req.ip || req.connection?.remoteAddress || 'unknown';
+        const ts = new Date().toISOString();
+        const body = req.body || {};
+
+        // Normalize the two wire formats into a flat list of violation records.
+        // Legacy report-uri:  { "csp-report": { ... } }  (single object)
+        // Reporting API:      [ { type, body: { ... } }, ... ]  (array)
+        let reports = [];
+        if (Array.isArray(body)) {
+            reports = body
+                .filter(r => r && (r.type === 'csp-violation' || r.body))
+                .map(r => r.body || r);
+        } else if (body['csp-report']) {
+            reports = [body['csp-report']];
+        } else if (Object.keys(body).length > 0) {
+            // Unknown shape — log it raw rather than dropping the signal.
+            reports = [body];
+        }
+
+        for (const r of reports) {
+            // Field names differ between the legacy (kebab-case) and Reporting
+            // API (camelCase) schemas — read both.
+            const violated = r['violated-directive'] || r['effective-directive'] ||
+                r.effectiveDirective || r.violatedDirective || 'unknown';
+            const blocked = r['blocked-uri'] || r.blockedURL || 'unknown';
+            const docUri = r['document-uri'] || r.documentURL || 'unknown';
+            const sourceFile = r['source-file'] || r.sourceFile || '';
+            const line = r['line-number'] ?? r.lineNumber ?? '';
+            const col = r['column-number'] ?? r.columnNumber ?? '';
+            const loc = sourceFile ? ` source=${sourceFile}:${line}:${col}` : '';
+
+            console.log(
+                `[CSP-REPORT] ${ts} ip=${ip} ` +
+                `violated-directive="${violated}" ` +
+                `blocked-uri="${blocked}" ` +
+                `document-uri="${docUri}"${loc}`
+            );
+        }
+    } catch (err) {
+        // Never let a malformed report turn into a 5xx — this endpoint must be
+        // boring and unkillable. Swallow and still 204.
+        console.log(`[CSP-REPORT] parse error: ${err && err.message}`);
+    }
+    // Always 204 No Content, regardless of outcome.
+    res.status(204).end();
+});
 
 // Body parser with explicit size limits (defends against memory-exhaustion via huge payloads)
 app.use(express.json({ limit: '1mb' }));
@@ -451,12 +678,17 @@ const authLimiter = rateLimit({
 
 app.use('/api', generalApiLimiter);
 
+// SEV-H-014: block a student with the forced-change flag from doing anything
+// except changing their initial password.
+app.use('/api', enforceStudentFirstLogin);
+
 // ===============================
 // STATIC FILE SERVING
 // ===============================
 
-// User-uploaded files (when not using S3)
-app.use('/uploads', express.static('uploads'));
+// SEV-H-012: the unauthenticated `app.use('/uploads', express.static('uploads'))`
+// mount was REMOVED. User-uploaded files are now served only through the
+// authenticated, ownership-checked route GET /api/files/:category/:id/download.
 
 // Public assets (favicon, public JS config, etc.)
 app.use('/public', express.static(path.join(__dirname, 'public')));
@@ -1158,7 +1390,9 @@ async function initializeTrainers() {
             
             for (const trainerData of trainers) {
                 // Check if trainer already exists by email (unique identifier)
-                const existingTrainer = await Trainer.findOne({ email: trainerData.email });
+                // SEV-C-005: Trainer.password is select:false; load it so a
+                // later .save() does not fail the required-field validation.
+                const existingTrainer = await Trainer.findOne({ email: trainerData.email }).select('+password');
                 
                 if (existingTrainer) {
                     // Update existing trainer if needed
@@ -1182,7 +1416,13 @@ async function initializeTrainers() {
                 } else {
                     // Create new trainer
                     console.log(`  ➕ Adding new trainer: ${trainerData.name} to department: ${trainerData.department}`);
-                const trainer = new Trainer(trainerData);
+                // SEV-C-004: Trainer.password is now required with no default.
+                // Seed each new trainer with a unique strong random password
+                // (hashed by the model pre-save hook). It is intentionally not
+                // logged - operators must set/communicate trainer credentials
+                // via the password-reset flow.
+                const seededTrainerPassword = `Aa1!${crypto.randomBytes(18).toString('base64').replace(/[+/=]/g, 'A')}`;
+                const trainer = new Trainer({ ...trainerData, password: seededTrainerPassword });
                 await trainer.save();
                     newTrainersAdded++;
                 }
@@ -1517,17 +1757,30 @@ async function initializeAdminStaff() {
             await staff.save();
         }
 
-        // Print credentials ONCE. Capture this from the deployment logs immediately, then rotate.
-        console.log('==========================================================');
-        console.log('Initial admin staff accounts created. Capture and rotate.');
-        console.log('Default emails: [role]@edtti.ac.ke');
+        // SEV-H-015: never log the initial password (logs persist in cloud
+        // aggregators). If sourced from env, just say so. If generated, write it
+        // to a local 0600 file the operator reads once and deletes.
         if (passwordWasGenerated) {
-            console.log(`GENERATED initial password (visible ONCE): ${initialPassword}`);
-            console.log('Log in immediately, set a real email + password, then this output is no longer valid.');
+            const seedFile = path.join(__dirname, '.seed-credentials.txt');
+            try {
+                fs.writeFileSync(
+                    seedFile,
+                    `Initial admin accounts seeded ${new Date().toISOString()}\n` +
+                    `Emails: [role]@edtti.ac.ke (admin, deputy, finance, dean, ilo, registrar)\n` +
+                    `Initial password: ${initialPassword}\n` +
+                    `Log in immediately, change email + password, then DELETE this file.\n`,
+                    { mode: 0o600 }
+                );
+                try { fs.chmodSync(seedFile, 0o600); } catch (_) { /* best effort on non-POSIX */ }
+                console.log('Seeded admin accounts; initial password written to .seed-credentials.txt — read it, then delete it.');
+            } catch (writeErr) {
+                // Do not fall back to logging the password. Surface the failure only.
+                console.error('Seeded admin accounts but failed to write .seed-credentials.txt:', writeErr.message);
+                console.error('Set INITIAL_ADMIN_PASSWORD in the environment and re-seed on a fresh database.');
+            }
         } else {
-            console.log('Password sourced from INITIAL_ADMIN_PASSWORD env var.');
+            console.log('Seeded admin accounts; password sourced from INITIAL_ADMIN_PASSWORD env.');
         }
-        console.log('==========================================================');
 
     } catch (error) {
         console.error('Error initializing admin staff:', error.message);
@@ -1637,10 +1890,9 @@ const programSchema = new mongoose.Schema({
         trim: true,
         unique: true
     },
-    programCost: { 
-        type: Number, 
-        required: [true, 'Program cost is required'],
-        min: [0, 'Program cost cannot be negative']
+    programCost: {
+        type: mongoose.Schema.Types.Decimal128, // SEV-H-016: exact money
+        required: [true, 'Program cost is required']
     },
     department: {
         type: String,
@@ -1662,6 +1914,17 @@ programSchema.pre('save', function(next) {
     next();
 });
 
+// SEV-H-016: emit programCost as a plain string, not the raw {$numberDecimal}.
+function decToStringTransform(field) {
+    return function(doc, ret) {
+        if (ret[field] !== undefined && ret[field] !== null && typeof ret[field] === 'object') {
+            ret[field] = ret[field].toString();
+        }
+        return ret;
+    };
+}
+programSchema.set('toJSON', { transform: decToStringTransform('programCost') });
+
 const Program = mongoose.models.Program || mongoose.model('Program', programSchema);
 
 // Payment Schema
@@ -1671,10 +1934,9 @@ const paymentSchema = new mongoose.Schema({
         required: [true, 'Student ID is required'],
         trim: true
     },
-    amount: { 
-        type: Number, 
-        required: [true, 'Payment amount is required'],
-        min: [1, 'Payment amount must be positive']
+    amount: {
+        type: mongoose.Schema.Types.Decimal128, // SEV-H-016: exact money
+        required: [true, 'Payment amount is required']
     },
     paymentMode: {
         type: String,
@@ -1710,6 +1972,9 @@ const paymentSchema = new mongoose.Schema({
         default: Date.now 
     }
 });
+
+// SEV-H-016: emit amount as a plain string, not the raw {$numberDecimal}.
+paymentSchema.set('toJSON', { transform: decToStringTransform('amount') });
 
 const Payment = mongoose.models.Payment || mongoose.model('Payment', paymentSchema);
 
@@ -1886,9 +2151,28 @@ app.post('/api/tool-requests', verifyToken, authorize('admin', 'trainer', 'hod')
 // Student Routes
 
 // Registration Endpoint
+// SEV-H-014: generate a strong random initial password (>=12 chars, with
+// lowercase, uppercase, digit and symbol). Uses crypto, not Math.random.
+function generateStudentInitialPassword() {
+    const lower = 'abcdefghijkmnpqrstuvwxyz';
+    const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+    const digits = '23456789';
+    const symbols = '@$!%*?&#';
+    const all = lower + upper + digits + symbols;
+    const pick = (set) => set[crypto.randomInt(0, set.length)];
+    const chars = [pick(lower), pick(upper), pick(digits), pick(symbols)];
+    while (chars.length < 14) chars.push(pick(all));
+    // Fisher-Yates shuffle so the required classes are not always in front.
+    for (let i = chars.length - 1; i > 0; i--) {
+        const j = crypto.randomInt(0, i + 1);
+        [chars[i], chars[j]] = [chars[j], chars[i]];
+    }
+    return chars.join('');
+}
+
 app.post('/api/students/register', verifyToken, authorize('admin', 'registrar'), async (req, res) => {
     try {
-        const { name, idNumber, kcseGrade, admissionNumber, course, department, phoneNumber, year, intake, intakeYear, admissionType } = req.body;
+        const { name, idNumber, kcseGrade, admissionNumber, course, department, phoneNumber, year, intake, intakeYear, admissionType, email } = req.body;
 
         const normalizedPhone = phoneNumber.replace(/\D/g, '');
 
@@ -1922,6 +2206,10 @@ app.post('/api/students/register', verifyToken, authorize('admin', 'registrar'),
             });
         }
 
+        // SEV-H-014: never use the phone number as the credential. Generate a
+        // strong random one-time password; the pre-save hook hashes it.
+        const initialPassword = generateStudentInitialPassword();
+
         const student = new Student({
             name,
             idNumber,
@@ -1933,12 +2221,28 @@ app.post('/api/students/register', verifyToken, authorize('admin', 'registrar'),
             intake: intake || 'september',
             intakeYear: intakeYear || new Date().getFullYear(),
             phoneNumber: formattedPhone,
+            email: email ? String(email).toLowerCase() : undefined,
             admissionType: admissionType || 'walk-in',  // Default to walk-in if not provided
-            password: formattedPhone,  // Let the pre-save hook hash this
+            password: initialPassword,  // hashed by the pre-save hook
+            isFirstLogin: true,
+            mustUpdatePassword: true,
             role: 'student'
         });
 
         await student.save();
+
+        // SEV-H-014: deliver the one-time password out-of-band via email.
+        let credentialsEmailed = false;
+        if (student.email) {
+            try {
+                await emailService.sendStudentCredentials(
+                    student.email, student.name, student.admissionNumber, initialPassword
+                );
+                credentialsEmailed = true;
+            } catch (mailErr) {
+                console.error('Failed to send student credentials email:', mailErr.message);
+            }
+        }
 
         // Prepare admission letter data
         const admissionLetterData = {
@@ -1951,16 +2255,26 @@ app.post('/api/students/register', verifyToken, authorize('admin', 'registrar'),
             intake: student.intake
         };
 
-        res.status(201).json({
-            message: 'Student registered successfully',
+        // SEV-H-014: if the student has no email on file (or delivery failed),
+        // return the one-time password ONCE so the registrar can hand it over
+        // securely. When it was emailed, never echo it back.
+        const response = {
+            message: credentialsEmailed
+                ? 'Student registered successfully. Initial password emailed to the student.'
+                : 'Student registered successfully. No email on file — give the student the initial password below; they must change it on first login.',
             student: {
                 name: student.name,
                 admissionNumber: student.admissionNumber,
                 course: student.course
             },
+            credentialsEmailed,
             admissionLetter: admissionLetterData,
             showAdmissionLetter: true
-        });
+        };
+        if (!credentialsEmailed) {
+            response.initialPassword = initialPassword;
+        }
+        res.status(201).json(response);
 
     } catch (error) {
         console.error('Registration error:', error);
@@ -2316,7 +2630,7 @@ app.get('/api/common-unit-assignments', verifyToken, authorize('admin', 'registr
 });
 
 // Get common unit assignments by trainer
-app.get('/api/common-unit-assignments/trainer/:trainerId', verifyToken, authorize('admin', 'registrar', 'hod', 'trainer'), async (req, res) => {
+app.get('/api/common-unit-assignments/trainer/:trainerId', verifyToken, authorize('admin', 'registrar', 'hod', 'trainer'), verifyOwnership('trainerId'), async (req, res) => {
     try {
         const { trainerId } = req.params;
         const { status = 'active' } = req.query;
@@ -2561,7 +2875,9 @@ app.post('/api/hod/login', authLimiter, async (req, res) => {
 
         const genericFail = { message: 'Invalid department or password' };
 
-        const hod = await HOD.findOne({ department: String(department), isActive: true });
+        // SEV-H-018: password is select:false; load it for comparePassword
+        // and the subsequent updateLastLogin().save().
+        const hod = await HOD.findOne({ department: String(department), isActive: true }).select('+password');
         if (!hod) {
             return res.status(401).json(genericFail);
         }
@@ -2576,7 +2892,8 @@ app.post('/api/hod/login', authLimiter, async (req, res) => {
         const token = signToken({
             userId: String(hod._id),
             email: hod.email,
-            role: 'hod'
+            role: 'hod',
+            tokenVersion: hod.tokenVersion || 0 // SEV-H-013
         });
 
         res.json({
@@ -2608,7 +2925,9 @@ app.put('/api/hod/:hodId/profile', verifyToken, authorize('admin', 'hod'), verif
         }
 
         // Find HOD
-        const hod = await HOD.findById(hodId);
+        // SEV-H-018: load select:false password so the hod.save() below does
+        // not fail required-field validation on profile update.
+        const hod = await HOD.findById(hodId).select('+password');
         if (!hod) {
             return res.status(404).json({ message: 'HOD not found' });
         }
@@ -2758,7 +3077,9 @@ app.post('/api/trainers/login', authLimiter, async (req, res) => {
 
         const genericFail = { message: 'Invalid email or password' };
 
-        const trainer = await Trainer.findOne({ email: String(email).toLowerCase(), isActive: true });
+        // SEV-C-005: explicitly select the (now select:false) password so the
+        // bcrypt comparePassword and the subsequent updateLastLogin().save() work.
+        const trainer = await Trainer.findOne({ email: String(email).toLowerCase(), isActive: true }).select('+password');
         if (!trainer) {
             return res.status(401).json(genericFail);
         }
@@ -2774,7 +3095,8 @@ app.post('/api/trainers/login', authLimiter, async (req, res) => {
         const token = signToken({
             userId: String(trainer._id),
             email: trainer.email,
-            role: 'trainer'
+            role: 'trainer',
+            tokenVersion: trainer.tokenVersion || 0 // SEV-H-013
         });
 
         res.json({
@@ -2988,14 +3310,16 @@ app.put('/api/trainers/:trainerId/profile', verifyToken, authorize('admin', 'tra
         }
         
         // Find trainer
-        const trainer = await Trainer.findById(trainerId);
+        // SEV-C-005: load select:false password so the trainer.save() below
+        // does not fail required-field validation on profile update.
+        const trainer = await Trainer.findById(trainerId).select('+password');
         if (!trainer) {
-            return res.status(404).json({ 
-                success: false, 
-                message: 'Trainer not found' 
+            return res.status(404).json({
+                success: false,
+                message: 'Trainer not found'
             });
         }
-        
+
         // Update fields if provided
         if (email && email !== trainer.email) {
             // Check if email is already in use
@@ -3227,7 +3551,7 @@ app.get('/api/students/department/:department', verifyToken, authorize('admin', 
         if (students.length === 0) {
             console.log(`No exact matches found. Trying partial matching for department ${department}...`);
             const partialStudents = await Student.find({
-                course: { $regex: new RegExp(courseCodes.map(code => code.replace(/_/g, '.*')).join('|'), 'i') }
+                course: { $regex: new RegExp(courseCodes.map(code => escapeRegex(code).replace(/_/g, '.*')).join('|'), 'i') }
             }).select('name admissionNumber course intake year email phone totalPaid balance');
             console.log(`Found ${partialStudents.length} students with partial matching:`, partialStudents.map(s => ({ name: s.name, course: s.course })));
         }
@@ -3261,7 +3585,7 @@ app.get('/api/students/department/:department', verifyToken, authorize('admin', 
 // Students API Routes
 
 // Get Student Data by Admission Number
-app.get('/api/students/admission/:admissionNumber', verifyToken, authorize('admin', 'registrar', 'finance', 'student'), async (req, res) => {
+app.get('/api/students/admission/:admissionNumber', verifyToken, authorize('admin', 'registrar', 'finance', 'student'), verifyOwnership('admissionNumber'), async (req, res) => {
     try {
         const { admissionNumber } = req.params;
         console.log('Fetching student data for admission number:', admissionNumber);
@@ -3290,8 +3614,9 @@ app.get('/api/students/latest-admission/:courseCode/:intake/:intakeYear', verify
         const intakeCode = generateIntakeCode(intake, parseInt(intakeYear));
         
         // Find latest admission number for this course and intake combination
+        // SEV-H-019: courseCode comes from req.params; escape regex metachars.
         const latestStudent = await Student.findOne({
-            admissionNumber: { $regex: `^${courseCode}/\\d{4}/${intakeCode}$` }
+            admissionNumber: { $regex: `^${escapeRegex(courseCode)}/\\d{4}/${escapeRegex(intakeCode)}$` }
         }).sort({ admissionNumber: -1 });
 
         if (latestStudent) {
@@ -3320,9 +3645,10 @@ app.get('/api/students/latest-admission/:courseCode', verifyToken, authorize('ad
         const currentYear = new Date().getFullYear();
         const defaultIntake = 'september';
         const intakeCode = generateIntakeCode(defaultIntake, currentYear);
-        
+
+        // SEV-H-019: courseCode comes from req.params; escape regex metachars.
         const latestStudent = await Student.findOne({
-            admissionNumber: { $regex: `^${courseCode}/\\d{4}/${intakeCode}$` }
+            admissionNumber: { $regex: `^${escapeRegex(courseCode)}/\\d{4}/${escapeRegex(intakeCode)}$` }
         }).sort({ admissionNumber: -1 });
 
         if (latestStudent) {
@@ -3354,7 +3680,7 @@ app.get('/api/students', verifyToken, authorize('admin', 'registrar', 'dean', 'f
 });
 
 // Update student
-app.patch('/api/students/:id', async (req, res) => {
+app.patch('/api/students/:id', verifyToken, authorize('admin', 'registrar'), async (req, res) => {
     try {
         const { id } = req.params;
         const updates = req.body;
@@ -3408,15 +3734,21 @@ app.patch('/api/students/:id', async (req, res) => {
                     const program = programName ? await Program.findOne({ programName }) : null;
                     
                     if (program) {
-                        console.log(`✅ Program found: ${program.programName}, Cost: KES ${program.programCost}`);
-                        
-                        if (program.programCost && program.programCost > 0) {
-                            // Add the new year's cost to their existing balance
-                            const existingBalance = currentStudent.balance || 0;
-                            const newBalance = existingBalance + program.programCost;
+                        const programCostNum = toMoneyNumber(program.programCost); // SEV-H-016
+                        console.log(`✅ Program found: ${program.programName}, Cost: KES ${programCostNum}`);
+
+                        if (programCostNum > 0) {
+                            // SEV-H-016 TODO: `balance` is NOT a field on the Student
+                            // schema, so this write is dropped by Mongoose strict mode
+                            // and is not persisted today. A correct fix (a Decimal128
+                            // Student.balance updated via an atomic $inc inside a
+                            // replica-set transaction) needs a data-model decision and
+                            // is deferred to Stage 3 — see STAGE2A_REPORT.md.
+                            const existingBalance = toMoneyNumber(currentStudent.balance || 0);
+                            const newBalance = existingBalance + programCostNum;
                             updates.balance = newBalance;
-                            
-                            console.log(`💰 Adding program cost KES ${program.programCost.toLocaleString()} to existing balance KES ${existingBalance.toLocaleString()}`);
+
+                            console.log(`💰 Adding program cost KES ${programCostNum.toLocaleString()} to existing balance KES ${existingBalance.toLocaleString()}`);
                             console.log(`💳 New balance will be: KES ${newBalance.toLocaleString()}`);
                         } else {
                             console.warn(`⚠️ Program cost is not set or is zero for ${program.programName}`);
@@ -3498,42 +3830,51 @@ app.post('/api/students/login', authLimiter, async (req, res) => {
         // to prevent user enumeration. Do NOT log the password or the matched phone number.
         const genericFail = { message: 'Invalid admission number or password' };
 
-        const student = await Student.findOne({ admissionNumber: String(admissionNumber) });
+        // SEV-H-018: password is select:false; load it for comparePassword.
+        const student = await Student.findOne({ admissionNumber: String(admissionNumber) }).select('+password');
         if (!student) {
             return res.status(401).json(genericFail);
         }
 
-        // Normalise the user-supplied password into a single canonical Kenyan phone format
-        // (0XXXXXXXXX). The stored password is the normalised phone number at registration time,
-        // and is hashed via the pre-save hook on the Student model.
-        const digits = String(password).replace(/\D/g, '');
-        let candidate;
-        if (digits.length === 9 && digits[0] === '7') {
-            candidate = '0' + digits;
-        } else if (digits.length === 10 && digits[0] === '0') {
-            candidate = digits;
-        } else if (digits.length === 12 && digits.startsWith('254')) {
-            candidate = '0' + digits.slice(3);
-        } else {
-            candidate = digits; // Fallback: comparePassword will fail and we'll return generic
+        // SEV-H-014 transition: new students have a strong random password
+        // (compared as-is). Existing students still have the legacy phone-number
+        // password until the follow-up migration runs, so fall back to the
+        // canonical Kenyan phone normalisation if the raw value does not match.
+        let isValid = await student.comparePassword(String(password));
+        if (!isValid) {
+            const digits = String(password).replace(/\D/g, '');
+            let candidate;
+            if (digits.length === 9 && digits[0] === '7') {
+                candidate = '0' + digits;
+            } else if (digits.length === 10 && digits[0] === '0') {
+                candidate = digits;
+            } else if (digits.length === 12 && digits.startsWith('254')) {
+                candidate = '0' + digits.slice(3);
+            } else {
+                candidate = digits;
+            }
+            isValid = await student.comparePassword(candidate);
         }
-
-        const isValid = await student.comparePassword(candidate);
         if (!isValid) {
             return res.status(401).json(genericFail);
         }
+
+        const firstLoginRequired = !!student.mustUpdatePassword;
 
         // Issue a JWT so subsequent API calls can be authenticated and authorised.
         const token = signToken({
             userId: String(student._id),
             email: student.email || null,
             role: 'student',
-            admissionNumber: student.admissionNumber
+            admissionNumber: student.admissionNumber,
+            tokenVersion: student.tokenVersion || 0, // SEV-H-013
+            firstLoginRequired // SEV-H-014: gates all routes except the password-change endpoint
         });
 
         res.status(200).json({
             message: 'Login successful',
             token,
+            firstLoginRequired,
             user: {
                 id: student._id,
                 name: student.name,
@@ -3546,6 +3887,63 @@ app.post('/api/students/login', authLimiter, async (req, res) => {
     } catch (error) {
         console.error('Student login error:', error.message);
         res.status(500).json({ message: 'Error during login' });
+    }
+});
+
+// SEV-H-014: forced first-login password change. The enforceStudentFirstLogin
+// guard only lets a flagged student reach this route. Verifies the old
+// password, enforces complexity, clears the flag, bumps tokenVersion (the
+// pre-save hook does this) and returns a fresh token.
+app.post('/api/students/:studentId/first-login-password-change', verifyToken, authorize('student'), async (req, res) => {
+    try {
+        const { oldPassword, newPassword } = req.body;
+        if (!oldPassword || !newPassword) {
+            return res.status(400).json({ message: 'oldPassword and newPassword are required' });
+        }
+
+        const complexity = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+        if (!complexity.test(newPassword)) {
+            return res.status(400).json({
+                message: 'New password must be at least 8 characters and include an uppercase letter, a lowercase letter, a digit and a special character.'
+            });
+        }
+
+        // SEV-H-018: password is select:false; load it for comparePassword.
+        const student = await Student.findById(req.user.userId).select('+password');
+        if (!student) {
+            return res.status(404).json({ message: 'Student not found' });
+        }
+
+        const ok = await student.comparePassword(String(oldPassword));
+        if (!ok) {
+            return res.status(401).json({ message: 'Current password is incorrect' });
+        }
+        if (String(newPassword) === String(oldPassword)) {
+            return res.status(400).json({ message: 'New password must be different from the current password' });
+        }
+
+        student.password = String(newPassword); // pre-save hook hashes + bumps tokenVersion
+        student.mustUpdatePassword = false;
+        student.isFirstLogin = false;
+        await student.save();
+
+        const token = signToken({
+            userId: String(student._id),
+            email: student.email || null,
+            role: 'student',
+            admissionNumber: student.admissionNumber,
+            tokenVersion: student.tokenVersion || 0,
+            firstLoginRequired: false
+        });
+
+        res.json({
+            success: true,
+            message: 'Password updated successfully',
+            token
+        });
+    } catch (error) {
+        console.error('Student first-login password change error:', error.message);
+        res.status(500).json({ message: 'Error updating password' });
     }
 });
 
@@ -3566,7 +3964,7 @@ app.get('/api/students/:studentId/can-register', verifyToken, authorize('admin',
         
         // Calculate outstanding balance using the same method as the dashboard
         const payments = await Payment.find({ studentId: studentId }).sort({ date: -1 });
-        const paidAmount = payments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
+        const paidAmount = payments.reduce((sum, payment) => sum + toMoneyNumber(payment.amount), 0); // SEV-H-016
         
         // Get program cost using the same mapping as frontend
         const courseToProgram = {
@@ -3604,7 +4002,7 @@ app.get('/api/students/:studentId/can-register', verifyToken, authorize('admin',
         
         const programName = courseToProgram[student.course];
         const program = programName ? await Program.findOne({ programName: programName }) : null;
-        const totalFees = program ? program.programCost : 67189; // Default to standard program cost
+        const totalFees = program ? toMoneyNumber(program.programCost) : 67189; // SEV-H-016: numeric for comparison
         
         const outstandingBalance = totalFees - paidAmount;
         const canRegister = outstandingBalance < feeThreshold;
@@ -3714,15 +4112,21 @@ app.put('/api/students/:id', verifyToken, authorize('admin', 'registrar'), async
                     const program = programName ? await Program.findOne({ programName }) : null;
                     
                     if (program) {
-                        console.log(`✅ Program found: ${program.programName}, Cost: KES ${program.programCost}`);
-                        
-                        if (program.programCost && program.programCost > 0) {
-                            // Add the new year's cost to their existing balance
-                            const existingBalance = currentStudent.balance || 0;
-                            const newBalance = existingBalance + program.programCost;
+                        const programCostNum = toMoneyNumber(program.programCost); // SEV-H-016
+                        console.log(`✅ Program found: ${program.programName}, Cost: KES ${programCostNum}`);
+
+                        if (programCostNum > 0) {
+                            // SEV-H-016 TODO: `balance` is NOT a field on the Student
+                            // schema, so this write is dropped by Mongoose strict mode
+                            // and is not persisted today. A correct fix (a Decimal128
+                            // Student.balance updated via an atomic $inc inside a
+                            // replica-set transaction) needs a data-model decision and
+                            // is deferred to Stage 3 — see STAGE2A_REPORT.md.
+                            const existingBalance = toMoneyNumber(currentStudent.balance || 0);
+                            const newBalance = existingBalance + programCostNum;
                             updateData.balance = newBalance;
-                            
-                            console.log(`💰 Adding program cost KES ${program.programCost.toLocaleString()} to existing balance KES ${existingBalance.toLocaleString()}`);
+
+                            console.log(`💰 Adding program cost KES ${programCostNum.toLocaleString()} to existing balance KES ${existingBalance.toLocaleString()}`);
                             console.log(`💳 New balance will be: KES ${newBalance.toLocaleString()}`);
                         } else {
                             console.warn(`⚠️ Program cost is not set or is zero for ${program.programName}`);
@@ -3899,7 +4303,15 @@ app.post('/api/students/register-units', verifyToken, authorize('admin', 'regist
     try {
         const { studentId } = req.body;
         const { unitIds, commonUnitIds, academicYear, semester } = req.body;
-        
+
+        // SEV-H-007: a student may only register units for themselves. studentId
+        // here is an admission number; trust the verified token, not the body.
+        if (!['admin', 'registrar'].includes(req.user.role)) {
+            if (!studentId || String(studentId) !== String(req.user.admissionNumber)) {
+                return res.status(403).json({ message: 'You can only register units for your own account.' });
+            }
+        }
+
         // Get fee threshold
         const feeThreshold = await SystemSettings.getSetting('fee_threshold', 50000);
         
@@ -3911,7 +4323,7 @@ app.post('/api/students/register-units', verifyToken, authorize('admin', 'regist
         
         // Calculate outstanding balance using the same method as the dashboard
         const payments = await Payment.find({ studentId: studentId }).sort({ date: -1 });
-        const paidAmount = payments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
+        const paidAmount = payments.reduce((sum, payment) => sum + toMoneyNumber(payment.amount), 0); // SEV-H-016
         
         // Get program cost using the same mapping as frontend
         const courseToProgram = {
@@ -3949,7 +4361,7 @@ app.post('/api/students/register-units', verifyToken, authorize('admin', 'regist
         
         const programName = courseToProgram[student.course];
         const program = programName ? await Program.findOne({ programName: programName }) : null;
-        const totalFees = program ? program.programCost : 67189; // Default to standard program cost
+        const totalFees = program ? toMoneyNumber(program.programCost) : 67189; // SEV-H-016: numeric for comparison
         
         const outstandingBalance = totalFees - paidAmount;
         
@@ -3958,7 +4370,7 @@ app.post('/api/students/register-units', verifyToken, authorize('admin', 'regist
             studentCourse: student.course,
             programName: programName,
             programFound: !!program,
-            actualProgramCost: program?.programCost,
+            actualProgramCost: toMoneyNumber(program?.programCost),
             finalProgramCost: totalFees,
             paidAmount,
             outstandingBalance,
@@ -4072,7 +4484,7 @@ app.post('/api/programs', verifyToken, authorize('admin', 'registrar'), async (r
 
         const program = new Program({
             programName,
-            programCost,
+            programCost: toDecimal128(programCost), // SEV-H-016: store exact money
             department
         });
 
@@ -4151,7 +4563,7 @@ app.put('/api/programs/:id', verifyToken, authorize('admin', 'registrar'), async
 
         const updatedProgram = await Program.findByIdAndUpdate(
             id,
-            { programName, programCost, department },
+            { programName, programCost: toDecimal128(programCost), department }, // SEV-H-016
             { new: true, runValidators: true }
         );
 
@@ -4225,7 +4637,7 @@ app.post('/api/payments', verifyToken, authorize('admin', 'finance'), async (req
 
         const payment = new Payment({
             studentId,
-            amount,
+            amount: toDecimal128(amount), // SEV-H-016: store exact money
             paymentMode,
             bankName,
             receiptNumber,
@@ -4302,51 +4714,58 @@ app.post('/api/tools/upload', verifyToken, authorize('admin', 'trainer', 'hod'),
             return res.status(400).json({ message: 'Missing required fields' });
         }
 
+        // SEV-H-007: a trainer may only upload as themselves. Trust the token,
+        // not the body trainerId, unless the caller is admin or hod.
+        if (!['admin', 'hod'].includes(req.user.role)) {
+            if (String(trainerId) !== String(req.user.userId)) {
+                return res.status(403).json({ message: 'You can only upload tools for your own account.' });
+            }
+        }
+
         if (!unitId && !commonUnitId) {
             return res.status(400).json({ message: 'Either unitId or commonUnitId is required' });
         }
 
-        let filePath, s3Key, s3Bucket, storageType;
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const extension = path.extname(req.file.originalname);
-        const fileName = `file-${uniqueSuffix}${extension}`;
+        // SEV-H-011: authoritative magic-byte validation of the in-memory buffer.
+        const v = validateUploadBuffer(req.file, 'tool');
+        if (!v.ok) {
+            return res.status(v.status).json({ message: v.message });
+        }
 
-        // Check if S3 is configured
+        // SEV-H-011: storage name is a server-generated UUID; the original name
+        // is kept only as sanitised display metadata. toolType is a server-side
+        // enum-ish path segment — sanitised defensively, never the user filename.
+        const safeToolType = String(toolType).replace(/[^A-Za-z0-9._-]/g, '_');
+        const fileName = `${crypto.randomUUID()}.${v.ext}`;
+        let filePath = null, s3Key = null, s3Bucket = null, storageType;
+
         if (isS3Configured()) {
-            // Upload to S3
-            console.log('📤 Uploading to S3...');
-            const folder = `tools-of-trade/${toolType}`;
+            console.log('📤 Uploading tool to S3...');
+            const folder = `tools-of-trade/${safeToolType}`;
             const s3Result = await uploadToS3(
-                req.file.buffer, 
-                fileName, 
-                req.file.mimetype, 
-                folder
+                req.file.buffer,
+                fileName,
+                req.file.mimetype,
+                folder,
+                { displayName: v.displayName, inlineImage: v.isImage }
             );
-            
             s3Key = s3Result.key;
             s3Bucket = s3Result.bucket;
-            filePath = s3Result.location; // Store S3 URL as filePath for backward compatibility
+            filePath = s3Result.location;
             storageType = 's3';
-            
-            console.log('✅ File uploaded to S3:', s3Key);
+            console.log('✅ Tool uploaded to S3:', s3Key);
         } else {
-            // Fallback to local storage
             console.log('💾 S3 not configured, using local storage...');
-            const correctFolder = path.join(uploadsDir, 'tools-of-trade', toolType);
+            const correctFolder = path.join(uploadsDir, 'tools-of-trade', safeToolType);
             if (!fs.existsSync(correctFolder)) {
                 fs.mkdirSync(correctFolder, { recursive: true });
             }
-            
-            const oldPath = req.file.path;
             const newPath = path.join(correctFolder, fileName);
-            
-            // Move file to correct location
-            fs.renameSync(oldPath, newPath);
-            
+            // memoryStorage: persist the validated buffer ourselves.
+            fs.writeFileSync(newPath, req.file.buffer);
             filePath = newPath;
             storageType = 'local';
-            
-            console.log('✅ File saved locally:', filePath);
+            console.log('✅ Tool saved locally:', fileName);
         }
 
         const toolSubmission = new ToolsOfTrade({
@@ -4355,7 +4774,7 @@ app.post('/api/tools/upload', verifyToken, authorize('admin', 'trainer', 'hod'),
             commonUnitId: commonUnitId || null,
             toolType,
             fileName: fileName,
-            originalFileName: req.file.originalname,
+            originalFileName: v.displayName,
             filePath: filePath,
             s3Key: s3Key || null,
             s3Bucket: s3Bucket || null,
@@ -4461,12 +4880,12 @@ app.get('/api/tools', verifyToken, authorize('admin', 'trainer', 'hod', 'registr
 });
 
 // Update tool status (for Deputy only)
-app.patch('/api/tools/:toolId/status', async (req, res) => {
+app.patch('/api/tools/:toolId/status', verifyToken, authorize('admin', 'deputy'), async (req, res) => {
     try {
         const { toolId } = req.params;
         const { status, feedback } = req.body;
 
-        console.log('Status update request:', { toolId, status, feedback, reviewedBy: 'deputy_academics' });
+        console.log('Status update request:', { toolId, status, feedback, reviewedBy: req.user.userId });
 
         const tool = await ToolsOfTrade.findById(toolId);
         if (!tool) {
@@ -4485,7 +4904,7 @@ app.patch('/api/tools/:toolId/status', async (req, res) => {
         }
         
         if (feedback) tool.feedback = feedback;
-        tool.reviewedBy = 'deputy_academics'; // Only deputy can review tools
+        tool.reviewedBy = req.user.userId; // Actor sourced from the verified token, never the client body
         tool.reviewedAt = new Date();
 
         const savedTool = await tool.save();
@@ -4531,34 +4950,109 @@ app.get('/api/tools/:toolId/download', verifyToken, authorize('admin', 'trainer'
         const { toolId } = req.params;
 
         const tool = await ToolsOfTrade.findById(toolId);
+        // SEV-H-007 pattern: 403 for both not-found and not-owner.
         if (!tool) {
-            return res.status(404).json({ message: 'Tool not found' });
+            return res.status(403).json({ message: 'Forbidden' });
+        }
+        // SEV-H-012: ownership — admin/hod may access any tool; otherwise the
+        // requester must be the owning trainer.
+        if (!['admin', 'hod'].includes(req.user.role) &&
+            String(tool.trainerId) !== String(req.user.userId)) {
+            return res.status(403).json({ message: 'Forbidden' });
         }
 
-        // If stored in S3, generate presigned URL
+        const isImg = FILE_IMAGE_EXT_RE.test(tool.fileName || '');
         if (tool.storageType === 's3' && tool.s3Key) {
-            const presignedUrl = await getPresignedUrl(tool.s3Key, 3600); // 1 hour expiry
-            res.json({
-                success: true,
-                url: presignedUrl,
-                fileName: tool.originalFileName,
-                storageType: 's3'
+            // SEV-H-011: 15-min cap + safe disposition are enforced in s3Service.
+            const presignedUrl = await getPresignedUrl(tool.s3Key, 900, {
+                displayName: tool.originalFileName, inlineImage: isImg, contentType: tool.mimeType
             });
+            res.json({ success: true, url: presignedUrl, fileName: tool.originalFileName, storageType: 's3' });
         } else {
-            // Return local file path for local storage
+            // SEV-H-012: no more /uploads/ static path. Hand back a short-lived
+            // signed capability URL to the authenticated streaming route so the
+            // existing window.open flow still works for local storage.
+            const grant = signFileGrant({ cat: 'tool', id: String(tool._id) });
             res.json({
                 success: true,
-                url: `/uploads/${path.relative(uploadsDir, tool.filePath).replace(/\\/g, '/')}`,
+                url: `/api/files/tool/${tool._id}/download?t=${encodeURIComponent(grant)}`,
                 fileName: tool.originalFileName,
                 storageType: 'local'
             });
         }
     } catch (error) {
         console.error('❌ Error getting download URL:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             message: 'Error getting download URL',
-            error: error.message 
+            error: error.message
         });
+    }
+});
+
+// SEV-H-012: authenticated, ownership-checked file streaming. Replaces the
+// removed unauthenticated /uploads static mount. Accepts either a Bearer
+// session or a short-lived signed ?t= capability token (see fileDownloadAuth).
+app.get('/api/files/:category/:id/download', fileDownloadAuth, async (req, res) => {
+    try {
+        const { category, id } = req.params;
+        if (!/^[0-9a-fA-F]{24}$/.test(String(id))) {
+            return res.status(403).json({ success: false, message: 'Forbidden' });
+        }
+
+        if (category === 'student-upload') {
+            const up = await StudentUpload.findById(id);
+            if (!up) return res.status(403).json({ success: false, message: 'Forbidden' });
+            if (!req.fileGrant) {
+                const role = req.user && req.user.role;
+                if (!['admin', 'registrar', 'cibec'].includes(role) &&
+                    String(up.studentId) !== String(req.user && req.user.admissionNumber)) {
+                    return res.status(403).json({ success: false, message: 'Forbidden' });
+                }
+            }
+            if (!up.s3Key) return res.status(404).json({ success: false, message: 'File unavailable' });
+            const isImg = FILE_IMAGE_EXT_RE.test(up.fileName || '');
+            const url = await getPresignedUrl(up.s3Key, 900, {
+                displayName: up.originalFileName, inlineImage: isImg, contentType: up.mimeType
+            });
+            res.set('X-Content-Type-Options', 'nosniff');
+            return res.redirect(url);
+        }
+
+        if (category === 'tool') {
+            const tool = await ToolsOfTrade.findById(id);
+            if (!tool) return res.status(403).json({ success: false, message: 'Forbidden' });
+            if (!req.fileGrant) {
+                const role = req.user && req.user.role;
+                if (!['admin', 'hod'].includes(role) &&
+                    String(tool.trainerId) !== String(req.user && req.user.userId)) {
+                    return res.status(403).json({ success: false, message: 'Forbidden' });
+                }
+            }
+            const isImg = FILE_IMAGE_EXT_RE.test(tool.fileName || '');
+            if (tool.storageType === 's3' && tool.s3Key) {
+                const url = await getPresignedUrl(tool.s3Key, 900, {
+                    displayName: tool.originalFileName, inlineImage: isImg, contentType: tool.mimeType
+                });
+                res.set('X-Content-Type-Options', 'nosniff');
+                return res.redirect(url);
+            }
+            // Local storage: stream from disk after a path-traversal check that
+            // the resolved path is inside the uploads directory.
+            const abs = path.resolve(tool.filePath || '');
+            const root = path.resolve(uploadsDir) + path.sep;
+            if (!abs.startsWith(root) || !fs.existsSync(abs)) {
+                return res.status(403).json({ success: false, message: 'Forbidden' });
+            }
+            res.set('X-Content-Type-Options', 'nosniff');
+            res.set('Content-Type', 'application/octet-stream');
+            res.set('Content-Disposition', `attachment; filename="${sanitizeDisplayName(tool.originalFileName)}"`);
+            return res.sendFile(abs);
+        }
+
+        return res.status(400).json({ success: false, message: 'Unknown file category' });
+    } catch (err) {
+        console.error('❌ File download error:', err.message);
+        return res.status(500).json({ success: false, message: 'Error serving file' });
     }
 });
 
@@ -4633,7 +5127,7 @@ app.get('/api/notifications/:userId', verifyToken, authorize('admin', 'student',
 });
 
 // Mark notification as read
-app.patch('/api/notifications/:notificationId/read', async (req, res) => {
+app.patch('/api/notifications/:notificationId/read', verifyToken, authorize('admin', 'student', 'trainer', 'hod', 'registrar', 'finance', 'dean', 'deputy', 'ilo', 'cibec'), async (req, res) => {
     try {
         const { notificationId } = req.params;
 
@@ -4657,7 +5151,7 @@ app.patch('/api/notifications/:notificationId/read', async (req, res) => {
 });
 
 // Mark all notifications as read for a user
-app.patch('/api/notifications/:userId/read-all', async (req, res) => {
+app.patch('/api/notifications/:userId/read-all', verifyToken, authorize('admin', 'student', 'trainer', 'hod', 'registrar', 'finance', 'dean', 'deputy', 'ilo', 'cibec'), verifyOwnership('userId'), async (req, res) => {
     try {
         const { userId } = req.params;
 
@@ -5070,7 +5564,7 @@ app.get('/api/ilo/attachment-applications', verifyToken, authorize('admin', 'ilo
 });
 
 // Update application status
-app.patch('/api/ilo/applications/:type/:applicationId/status', async (req, res) => {
+app.patch('/api/ilo/applications/:type/:applicationId/status', verifyToken, authorize('admin', 'ilo', 'registrar'), async (req, res) => {
     try {
         const { type, applicationId } = req.params;
         const { status, comments } = req.body;
@@ -5088,7 +5582,7 @@ app.patch('/api/ilo/applications/:type/:applicationId/status', async (req, res) 
         
         application.status = status;
         if (comments) application.comments = comments;
-        application.reviewedBy = 'ilo_office';
+        application.reviewedBy = req.user.userId; // Actor sourced from the verified token, never the client body
         application.reviewedAt = new Date();
         
         await application.save();
@@ -5224,7 +5718,10 @@ app.use(express.static(path.join(__dirname, 'src', 'components'), {
         }
     }
 }));
-app.use(express.static('.'));
+// SEV-C-003: `app.use(express.static('.'))` was removed. Serving the project
+// root exposed source, configs and temp_diff.txt to anonymous download. Client
+// assets are served by the explicit mounts above (/src/components, /public,
+// /uploads) and the src/components static mount; the repo root is never served.
 
 const PORT = config.port;
 // ========================================
@@ -5253,6 +5750,12 @@ app.post('/api/student-uploads', verifyToken, authorize('admin', 'registrar', 's
         // Validate required fields
         if (!studentId || !uploadType || !academicYear || !semester) {
             return res.status(400).json({ message: 'Missing required fields' });
+        }
+
+        // SEV-H-011: authoritative magic-byte validation before anything is stored.
+        const v = validateUploadBuffer(req.file, 'student-upload');
+        if (!v.ok) {
+            return res.status(v.status).json({ message: v.message });
         }
 
         // Get student details
@@ -5300,12 +5803,12 @@ app.post('/api/student-uploads', verifyToken, authorize('admin', 'registrar', 's
                 return res.status(400).json({ message: 'Invalid practical number (must be 1-3)' });
             }
             
-            // Validate file type for practical uploads
-            // Practical 1, 2, 3 should be PDF only
+            // SEV-H-011: practicals must be PDF — checked by magic bytes, not
+            // the client-supplied mimetype.
             if (practicalNumber >= 1 && practicalNumber <= 3) {
-                if (req.file.mimetype !== 'application/pdf') {
-                    return res.status(400).json({ 
-                        message: 'Practical documents must be PDF files. Please upload a PDF file.' 
+                if (v.ext !== 'pdf') {
+                    return res.status(400).json({
+                        message: 'Practical documents must be PDF files. Please upload a PDF file.'
                     });
                 }
             }
@@ -5350,25 +5853,26 @@ app.post('/api/student-uploads', verifyToken, authorize('admin', 'registrar', 's
             console.log('✅ Marked old upload as replaced:', existingUpload._id);
         }
 
-        // Upload to S3
-        const timestamp = Date.now();
+        // SEV-H-011: server-generated UUID storage name (no user input in the
+        // key); identifier path segments sanitised; original kept as display.
         const month = new Date().getMonth() + 1;
         const year = new Date().getFullYear();
-        const extension = path.extname(req.file.originalname);
-        const fileName = `${timestamp}_${req.file.originalname}`;
+        const seg = (s) => String(s).replace(/[^A-Za-z0-9._-]/g, '_');
+        const fileName = `${crypto.randomUUID()}.${v.ext}`;
 
         let folderPath;
         if (['profile_photo', 'kcse_results', 'kcpe_results'].includes(uploadType)) {
-            folderPath = `cibec/${uploadType}/${studentId}/${year}/${month.toString().padStart(2, '0')}`;
+            folderPath = `cibec/${seg(uploadType)}/${seg(studentId)}/${year}/${month.toString().padStart(2, '0')}`;
         } else {
-            folderPath = `cibec/${unitId}/${studentId}/${uploadType}/${year}/${month.toString().padStart(2, '0')}`;
+            folderPath = `cibec/${seg(unitId)}/${seg(studentId)}/${seg(uploadType)}/${year}/${month.toString().padStart(2, '0')}`;
         }
 
         const s3Result = await uploadToS3(
             req.file.buffer,
             fileName,
             req.file.mimetype,
-            folderPath
+            folderPath,
+            { displayName: v.displayName, inlineImage: v.isImage }
         );
 
         // Create new upload record
@@ -5386,7 +5890,7 @@ app.post('/api/student-uploads', verifyToken, authorize('admin', 'registrar', 's
             assessmentNumber: assessmentNumber || null,
             practicalNumber: practicalNumber || null,
             fileName: fileName,
-            originalFileName: req.file.originalname,
+            originalFileName: v.displayName,
             s3Key: s3Result.key,
             s3Bucket: s3Result.bucket,
             fileSize: req.file.size,
@@ -5403,8 +5907,8 @@ app.post('/api/student-uploads', verifyToken, authorize('admin', 'registrar', 's
 
         // Create audit log
         await AuditLog.logAction({
-            userId: studentId,
-            userType: 'student',
+            userId: req.user.userId, // SEV-H-008: actor from verified token
+            userType: req.user.role,
             action: existingUpload ? 'replace' : 'upload',
             fileId: newUpload._id,
             studentId,
@@ -5413,7 +5917,7 @@ app.post('/api/student-uploads', verifyToken, authorize('admin', 'registrar', 's
                 unitCode,
                 assessmentNumber,
                 practicalNumber,
-                fileName: req.file.originalname,
+                fileName: v.displayName,
                 fileSize: req.file.size,
                 replaced: !!existingUpload
             }
@@ -5467,8 +5971,8 @@ app.get('/api/student-uploads/:studentId', verifyToken, authorize('admin', 'regi
 
         // Log view action
         await AuditLog.logAction({
-            userId: studentId,
-            userType: 'student',
+            userId: req.user.userId, // SEV-H-008: actor from verified token
+            userType: req.user.role,
             action: 'view',
             studentId,
             details: { uploadType, status, count: uploads.length }
@@ -5503,20 +6007,30 @@ app.get('/api/student-uploads/:studentId/unit/:unitId', verifyToken, authorize('
 app.get('/api/student-uploads/:uploadId/download', verifyToken, authorize('admin', 'registrar', 'student', 'trainer', 'cibec'), async (req, res) => {
     try {
         const { uploadId } = req.params;
-        const { userId, userType } = req.query;
 
         const upload = await StudentUpload.findById(uploadId);
+        // SEV-H-007: do not leak existence. Return 403 for both not-found and
+        // not-owner. Owner is the student (by admission number); admin,
+        // registrar and cibec may access any upload.
         if (!upload) {
-            return res.status(404).json({ message: 'Upload not found' });
+            return res.status(403).json({ message: 'Forbidden' });
+        }
+        if (!['admin', 'registrar', 'cibec'].includes(req.user.role)) {
+            if (String(upload.studentId) !== String(req.user.admissionNumber)) {
+                return res.status(403).json({ message: 'Forbidden' });
+            }
         }
 
-        // Generate presigned URL
-        const presignedUrl = await getPresignedUrl(upload.s3Key, 3600);
+        // SEV-H-011: 15-min cap + safe Content-Disposition/Type enforced in s3Service.
+        const isImg = FILE_IMAGE_EXT_RE.test(upload.fileName || '');
+        const presignedUrl = await getPresignedUrl(upload.s3Key, 900, {
+            displayName: upload.originalFileName, inlineImage: isImg, contentType: upload.mimeType
+        });
 
         // Log download action
         await AuditLog.logAction({
-            userId: userId || upload.studentId,
-            userType: userType || 'student',
+            userId: req.user.userId, // SEV-H-008: actor from verified token
+            userType: req.user.role,
             action: 'download',
             fileId: upload._id,
             studentId: upload.studentId,
@@ -5545,16 +6059,18 @@ app.get('/api/student-uploads/:uploadId/download', verifyToken, authorize('admin
 app.delete('/api/student-uploads/:uploadId', verifyToken, authorize('admin', 'registrar', 'student', 'cibec'), async (req, res) => {
     try {
         const { uploadId } = req.params;
-        const { studentId } = req.query;
 
         const upload = await StudentUpload.findById(uploadId);
+        // SEV-H-007: ownership from the verified token, never req.query. Do not
+        // leak existence: 403 for both not-found and not-owner. admin,
+        // registrar and cibec may delete any upload.
         if (!upload) {
-            return res.status(404).json({ message: 'Upload not found' });
+            return res.status(403).json({ message: 'Forbidden' });
         }
-
-        // Verify ownership
-        if (upload.studentId !== studentId) {
-            return res.status(403).json({ message: 'Unauthorized' });
+        if (!['admin', 'registrar', 'cibec'].includes(req.user.role)) {
+            if (String(upload.studentId) !== String(req.user.admissionNumber)) {
+                return res.status(403).json({ message: 'Forbidden' });
+            }
         }
 
         // Delete from S3
@@ -5567,11 +6083,11 @@ app.delete('/api/student-uploads/:uploadId', verifyToken, authorize('admin', 're
 
         // Log delete action
         await AuditLog.logAction({
-            userId: studentId,
-            userType: 'student',
+            userId: req.user.userId, // SEV-H-008: actor from verified token
+            userType: req.user.role,
             action: 'delete',
             fileId: upload._id,
-            studentId,
+            studentId: upload.studentId,
             details: {
                 fileName: upload.originalFileName,
                 uploadType: upload.uploadType
@@ -5616,8 +6132,8 @@ app.get('/api/cibec/uploads', verifyToken, authorize('admin', 'cibec', 'registra
 
         // Log search action
         await AuditLog.logAction({
-            userId: req.query.cibecUserId || 'cibec',
-            userType: 'cibec',
+            userId: req.user.userId, // SEV-H-008: actor from verified token
+            userType: req.user.role,
             action: 'search',
             details: { filters, resultCount: uploads.length }
         });
@@ -5704,8 +6220,8 @@ app.get('/api/cibec/student/:studentId/uploads', verifyToken, authorize('admin',
 
         // Log view action
         await AuditLog.logAction({
-            userId: cibecUserId || 'cibec',
-            userType: 'cibec',
+            userId: req.user.userId, // SEV-H-008: actor from verified token
+            userType: req.user.role,
             action: 'view',
             studentId,
             details: {
@@ -5778,11 +6294,13 @@ app.get('/api/dean/students', verifyToken, authorize('admin', 'dean', 'registrar
         if (intake) query.intake = intake;
         
         if (search) {
+            // SEV-H-019: search comes from req.query; escape regex metachars.
+            const safeSearch = escapeRegex(search);
             query.$or = [
-                { name: { $regex: search, $options: 'i' } },
-                { admissionNumber: { $regex: search, $options: 'i' } },
-                { idNumber: { $regex: search, $options: 'i' } },
-                { email: { $regex: search, $options: 'i' } }
+                { name: { $regex: safeSearch, $options: 'i' } },
+                { admissionNumber: { $regex: safeSearch, $options: 'i' } },
+                { idNumber: { $regex: safeSearch, $options: 'i' } },
+                { email: { $regex: safeSearch, $options: 'i' } }
             ];
         }
         
@@ -5910,9 +6428,15 @@ app.put('/api/students/:studentId/notes/:noteId/read', verifyToken, authorize('a
 // Generate payslips (Finance admin)
 app.post('/api/payslips/generate', verifyToken, authorize('admin', 'finance'), async (req, res) => {
     try {
-        const { trainerIds, month, year, amount, description, generatedBy } = req.body;
-        
-        if (!trainerIds || !month || !year || !amount || !generatedBy) {
+        const { trainerIds, month, year, amount, description } = req.body;
+
+        // SEV-H-008: actor identity comes from the verified token, never the body.
+        const generatedBy = {
+            userId: String(req.user.userId),
+            userName: req.user.email || req.user.role
+        };
+
+        if (!trainerIds || !month || !year || !amount) {
             return res.status(400).json({ message: 'Missing required fields' });
         }
         
@@ -5944,7 +6468,7 @@ app.post('/api/payslips/generate', verifyToken, authorize('admin', 'finance'), a
                 department: trainer.department,
                 month,
                 year,
-                amount,
+                amount: toDecimal128(amount), // SEV-H-016: store exact money
                 period,
                 description: description || 'Monthly Salary',
                 generatedBy
@@ -6019,12 +6543,20 @@ app.get('/api/payslips', verifyToken, authorize('admin', 'finance'), async (req,
 app.put('/api/payslips/:payslipId/view', verifyToken, authorize('admin', 'finance', 'trainer'), async (req, res) => {
     try {
         const { payslipId } = req.params;
-        
+
         const payslip = await Payslip.findById(payslipId);
+        // SEV-H-007: payslip.trainerId is the trainer's email. A trainer may
+        // only mark their own payslip viewed; admin and finance may view any.
+        // Do not leak existence: 403 for both not-found and not-owner.
         if (!payslip) {
-            return res.status(404).json({ message: 'Payslip not found' });
+            return res.status(403).json({ message: 'Forbidden' });
         }
-        
+        if (!['admin', 'finance'].includes(req.user.role)) {
+            if (String(payslip.trainerId) !== String(req.user.email)) {
+                return res.status(403).json({ message: 'Forbidden' });
+            }
+        }
+
         payslip.isViewed = true;
         payslip.viewedAt = new Date();
         payslip.status = 'viewed';

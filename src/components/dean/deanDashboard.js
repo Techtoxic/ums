@@ -2,42 +2,11 @@
 const API_BASE = '/api';
 // Authenticated fetch wrapper
 const authFetch = async (url, options = {}) => {
-    const token = localStorage.getItem('adminToken') || 
-                  localStorage.getItem('trainerToken') || 
-                  localStorage.getItem('hodToken') ||
-                  localStorage.getItem('financeToken') ||
-                  localStorage.getItem('authToken') ||
-                  window.AUTH?.getToken();
-    
-    if (!token) {
-        const loginUrls = {
-            admin: '/admin/login',
-            trainer: '/trainer/login',
-            hod: '/hod/login',
-            finance: '/finance/login',
-            registrar: '/registrar/login',
-            dean: '/dean/login'
-        };
-        const role = localStorage.getItem('authRole') || 'admin';
-        window.location.href = loginUrls[role] || '/admin/login';
-        throw new Error('No authentication token');
-    }
-    
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-        ...(options.headers || {})
-    };
-    
-    const response = await fetch(url, { ...options, headers });
-    
-    if (response.status === 401) {
-        localStorage.clear();
-        window.location.href = '/admin/login';
-        throw new Error('Session expired');
-    }
-    
-    return response;
+    // Stage 2B-1B: delegate to the single shared auth helper (public/js/auth.js).
+    // It attaches the Authorization header (and a JSON Content-Type for
+    // non-FormData bodies) and handles token-expiry redirects. The wrapper
+    // name is kept so existing call sites are unchanged.
+    return window.AUTH.fetch(url, options);
 };
 
 let currentStudent = null;
@@ -120,7 +89,7 @@ async function loadStudents() {
         if (year) url += `year=${year}&`;
         if (intake) url += `intake=${intake}&`;
         
-        const response = await fetch(url);
+        const response = await authFetch(url);
         if (!response.ok) throw new Error('Failed to load students');
         
         const students = await response.json();
@@ -155,31 +124,31 @@ function displayStudents(students) {
                         <i class="ri-user-line text-purple-600"></i>
                     </div>
                     <div>
-                        <div class="font-medium text-gray-900">${student.name}</div>
-                        <div class="text-sm text-gray-500">${student.idNumber}</div>
+                        <div class="font-medium text-gray-900">${escapeHtml(student.name)}</div>
+                        <div class="text-sm text-gray-500">${escapeHtml(student.idNumber)}</div>
                     </div>
                 </div>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${student.admissionNumber}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(student.admissionNumber)}</td>
             <td class="px-6 py-4">
-                <div class="text-sm text-gray-900">${formatCourseName(student.course)}</div>
-                <div class="text-xs text-gray-500">${student.department}</div>
+                <div class="text-sm text-gray-900">${escapeHtml(formatCourseName(student.course))}</div>
+                <div class="text-xs text-gray-500">${escapeHtml(student.department)}</div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
                 <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                    Year ${student.year}
+                    Year ${escapeHtml(student.year)}
                 </span>
             </td>
             <td class="px-6 py-4">
-                <div class="text-sm text-gray-900">${student.phoneNumber}</div>
-                <div class="text-xs text-gray-500">${student.email || 'No email'}</div>
+                <div class="text-sm text-gray-900">${escapeHtml(student.phoneNumber)}</div>
+                <div class="text-xs text-gray-500">${escapeHtml(student.email || 'No email')}</div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                <button onclick='openAddNoteModal(${JSON.stringify(student)})' 
+                <button onclick='openAddNoteModal(${escapeAttr(JSON.stringify(student))})'
                     class="px-3 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 transition">
                     <i class="ri-add-line mr-1"></i>Add Note
                 </button>
-                <button onclick='viewStudentNotes("${student.admissionNumber}")' 
+                <button onclick='viewStudentNotes("${escapeAttr(student.admissionNumber)}")'
                     class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
                     <i class="ri-eye-line mr-1"></i>View Notes
                 </button>
@@ -328,21 +297,21 @@ function displayStudentNotes() {
                 <div class="flex justify-between items-start mb-2">
                     <div class="flex items-center space-x-2">
                         <span class="px-2 py-1 text-xs font-semibold rounded ${note.noteType === 'private' ? 'bg-purple-100 text-purple-700' : 'bg-green-100 text-green-700'}">
-                            ${note.noteType.toUpperCase()}
+                            ${escapeHtml(String(note.noteType).toUpperCase())}
                         </span>
                         <span class="px-2 py-1 text-xs font-semibold rounded ${priorityColors[note.priority]}">
-                            ${note.priority.toUpperCase()}
+                            ${escapeHtml(String(note.priority).toUpperCase())}
                         </span>
                         <span class="text-xs text-gray-500">
-                            <i class="${categoryIcons[note.category]} mr-1"></i>${note.category}
+                            <i class="${categoryIcons[note.category]} mr-1"></i>${escapeHtml(note.category)}
                         </span>
                     </div>
-                    <span class="text-xs text-gray-500">${formatDate(note.createdAt)}</span>
+                    <span class="text-xs text-gray-500">${escapeHtml(formatDate(note.createdAt))}</span>
                 </div>
-                <h4 class="font-semibold text-gray-900 mb-2">${note.title}</h4>
-                <p class="text-sm text-gray-700 mb-2">${note.content}</p>
+                <h4 class="font-semibold text-gray-900 mb-2">${escapeHtml(note.title)}</h4>
+                <p class="text-sm text-gray-700 mb-2">${escapeHtml(note.content)}</p>
                 <div class="text-xs text-gray-500">
-                    By: ${note.createdBy.userName} | ${note.isRead ? `Read on ${formatDate(note.readAt)}` : 'Unread'}
+                    By: ${escapeHtml(note.createdBy.userName)} | ${note.isRead ? `Read on ${escapeHtml(formatDate(note.readAt))}` : 'Unread'}
                 </div>
             </div>
         `;
@@ -412,7 +381,7 @@ function showNotification(message, type = 'info') {
     notification.innerHTML = `
         <div class="flex items-center space-x-2">
             <i class="ri-${type === 'success' ? 'check' : type === 'error' ? 'close' : 'information'}-circle-line text-xl"></i>
-            <span>${message}</span>
+            <span>${escapeHtml(message)}</span>
         </div>
     `;
     

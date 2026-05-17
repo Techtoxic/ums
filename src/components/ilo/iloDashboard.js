@@ -1,42 +1,10 @@
 
 // Authenticated fetch wrapper
 const authFetch = async (url, options = {}) => {
-    const token = localStorage.getItem('adminToken') || 
-                  localStorage.getItem('trainerToken') || 
-                  localStorage.getItem('hodToken') ||
-                  localStorage.getItem('financeToken') ||
-                  localStorage.getItem('authToken') ||
-                  window.AUTH?.getToken();
-    
-    if (!token) {
-        const loginUrls = {
-            admin: '/admin/login',
-            trainer: '/trainer/login',
-            hod: '/hod/login',
-            finance: '/finance/login',
-            registrar: '/registrar/login',
-            dean: '/dean/login'
-        };
-        const role = localStorage.getItem('authRole') || 'admin';
-        window.location.href = loginUrls[role] || '/admin/login';
-        throw new Error('No authentication token');
-    }
-    
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-        ...(options.headers || {})
-    };
-    
-    const response = await fetch(url, { ...options, headers });
-    
-    if (response.status === 401) {
-        localStorage.clear();
-        window.location.href = '/admin/login';
-        throw new Error('Session expired');
-    }
-    
-    return response;
+    // Stage 2B-1B: delegate to the single shared auth helper (public/js/auth.js).
+    // It attaches the Authorization header (and a JSON Content-Type for
+    // non-FormData bodies) and handles token-expiry redirects.
+    return window.AUTH.fetch(url, options);
 };
 
 console.log('🚀 ILO Dashboard JavaScript loading...');
@@ -172,7 +140,7 @@ function setupFilterEventListeners() {
 async function loadGraduationApplications() {
     try {
         console.log('🎓 Loading graduation applications from:', API_BASE_URL + '/ilo/graduation-applications');
-        const response = await fetch(API_BASE_URL + '/ilo/graduation-applications');
+        const response = await authFetch(API_BASE_URL + '/ilo/graduation-applications');
         console.log('🎓 Response status:', response.status);
         
         if (!response.ok) {
@@ -194,7 +162,7 @@ async function loadGraduationApplications() {
 async function loadAttachmentApplications() {
     try {
         console.log('📎 Loading attachment applications from:', API_BASE_URL + '/ilo/attachment-applications');
-        const response = await fetch(API_BASE_URL + '/ilo/attachment-applications');
+        const response = await authFetch(API_BASE_URL + '/ilo/attachment-applications');
         console.log('📎 Response status:', response.status);
         
         if (!response.ok) {
@@ -241,21 +209,21 @@ function displayGraduationApplications(applications) {
             '<div class="flex justify-between items-start">' +
                 '<div class="flex-1">' +
                     '<div class="flex items-center mb-2">' +
-                        '<h4 class="text-lg font-semibold text-gray-900">' + app.name + '</h4>' +
-                        '<span class="ml-3 px-2 py-1 text-xs font-medium rounded-full ' + getStatusClass(app.status) + '">' + app.status.replace('_', ' ') + '</span>' +
+                        '<h4 class="text-lg font-semibold text-gray-900">' + escapeHtml(app.name) + '</h4>' +
+                        '<span class="ml-3 px-2 py-1 text-xs font-medium rounded-full ' + getStatusClass(app.status) + '">' + escapeHtml(app.status.replace('_', ' ')) + '</span>' +
                     '</div>' +
                     '<div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600">' +
-                        '<div><strong>Admission:</strong> ' + app.admissionNumber + '</div>' +
-                        '<div><strong>Course:</strong> ' + formatCourseName(app.course) + '</div>' +
-                        '<div><strong>Level:</strong> ' + app.level + '</div>' +
-                        '<div><strong>Year:</strong> ' + app.yearOfStudy + '</div>' +
-                        '<div><strong>Department:</strong> ' + app.department.replace('_', ' ') + '</div>' +
+                        '<div><strong>Admission:</strong> ' + escapeHtml(app.admissionNumber) + '</div>' +
+                        '<div><strong>Course:</strong> ' + escapeHtml(formatCourseName(app.course)) + '</div>' +
+                        '<div><strong>Level:</strong> ' + escapeHtml(app.level) + '</div>' +
+                        '<div><strong>Year:</strong> ' + escapeHtml(app.yearOfStudy) + '</div>' +
+                        '<div><strong>Department:</strong> ' + escapeHtml(app.department.replace('_', ' ')) + '</div>' +
                         '<div><strong>Applied:</strong> ' + new Date(app.applicationDate).toLocaleDateString() + '</div>' +
-                        '<div><strong>Academic Year:</strong> ' + app.academicYear + '</div>' +
+                        '<div><strong>Academic Year:</strong> ' + escapeHtml(app.academicYear) + '</div>' +
                     '</div>' +
                 '</div>' +
                 '<div class="ml-4 flex space-x-2">' +
-                    '<button onclick="reviewApplication(\'graduation\', \'' + app._id + '\')" class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">' +
+                    '<button onclick="reviewApplication(\'graduation\', \'' + escapeAttr(app._id) + '\')" class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">' +
                         '<i class="ri-eye-line mr-1"></i>Review' +
                     '</button>' +
                 '</div>' +
@@ -293,21 +261,21 @@ function displayAttachmentApplications(applications) {
             '<div class="flex justify-between items-start">' +
                 '<div class="flex-1">' +
                     '<div class="flex items-center mb-2">' +
-                        '<h4 class="text-lg font-semibold text-gray-900">' + app.name + '</h4>' +
-                        '<span class="ml-3 px-2 py-1 text-xs font-medium rounded-full ' + getStatusClass(app.status) + '">' + app.status.replace('_', ' ') + '</span>' +
+                        '<h4 class="text-lg font-semibold text-gray-900">' + escapeHtml(app.name) + '</h4>' +
+                        '<span class="ml-3 px-2 py-1 text-xs font-medium rounded-full ' + getStatusClass(app.status) + '">' + escapeHtml(app.status.replace('_', ' ')) + '</span>' +
                     '</div>' +
                     '<div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600">' +
-                        '<div><strong>Admission:</strong> ' + app.admissionNumber + '</div>' +
-                        '<div><strong>Course:</strong> ' + formatCourseName(app.course) + '</div>' +
-                        '<div><strong>Location:</strong> ' + app.county + ', ' + app.nearestTown + '</div>' +
-                        '<div><strong>Year:</strong> ' + app.yearOfStudy + '</div>' +
-                        '<div><strong>Department:</strong> ' + app.department.replace('_', ' ') + '</div>' +
+                        '<div><strong>Admission:</strong> ' + escapeHtml(app.admissionNumber) + '</div>' +
+                        '<div><strong>Course:</strong> ' + escapeHtml(formatCourseName(app.course)) + '</div>' +
+                        '<div><strong>Location:</strong> ' + escapeHtml(app.county) + ', ' + escapeHtml(app.nearestTown) + '</div>' +
+                        '<div><strong>Year:</strong> ' + escapeHtml(app.yearOfStudy) + '</div>' +
+                        '<div><strong>Department:</strong> ' + escapeHtml(app.department.replace('_', ' ')) + '</div>' +
                         '<div><strong>Applied:</strong> ' + new Date(app.applicationDate).toLocaleDateString() + '</div>' +
-                        '<div><strong>Academic Year:</strong> ' + app.academicYear + '</div>' +
+                        '<div><strong>Academic Year:</strong> ' + escapeHtml(app.academicYear) + '</div>' +
                     '</div>' +
                 '</div>' +
                 '<div class="ml-4 flex space-x-2">' +
-                    '<button onclick="reviewApplication(\'attachment\', \'' + app._id + '\')" class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">' +
+                    '<button onclick="reviewApplication(\'attachment\', \'' + escapeAttr(app._id) + '\')" class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">' +
                         '<i class="ri-eye-line mr-1"></i>Review' +
                     '</button>' +
                 '</div>' +
@@ -360,24 +328,24 @@ function reviewApplication(type, applicationId) {
     modalContent.innerHTML = 
         '<div class="space-y-4">' +
             '<div class="grid grid-cols-2 gap-4">' +
-                '<div><strong>Name:</strong> ' + app.name + '</div>' +
-                '<div><strong>Admission Number:</strong> ' + app.admissionNumber + '</div>' +
-                '<div><strong>ID Number:</strong> ' + app.idNumber + '</div>' +
-                '<div><strong>Phone:</strong> ' + app.phoneNumber + '</div>' +
-                '<div><strong>Course:</strong> ' + formatCourseName(app.course) + '</div>' +
-                '<div><strong>Department:</strong> ' + app.department.replace('_', ' ') + '</div>' +
-                '<div><strong>Level:</strong> ' + app.level + '</div>' +
-                '<div><strong>Year of Study:</strong> ' + app.yearOfStudy + '</div>' +
-                '<div><strong>KCSE Grade:</strong> ' + app.kcseGrade + '</div>' +
-                '<div><strong>Admission Type:</strong> ' + app.admissionType + '</div>' +
+                '<div><strong>Name:</strong> ' + escapeHtml(app.name) + '</div>' +
+                '<div><strong>Admission Number:</strong> ' + escapeHtml(app.admissionNumber) + '</div>' +
+                '<div><strong>ID Number:</strong> ' + escapeHtml(app.idNumber) + '</div>' +
+                '<div><strong>Phone:</strong> ' + escapeHtml(app.phoneNumber) + '</div>' +
+                '<div><strong>Course:</strong> ' + escapeHtml(formatCourseName(app.course)) + '</div>' +
+                '<div><strong>Department:</strong> ' + escapeHtml(app.department.replace('_', ' ')) + '</div>' +
+                '<div><strong>Level:</strong> ' + escapeHtml(app.level) + '</div>' +
+                '<div><strong>Year of Study:</strong> ' + escapeHtml(app.yearOfStudy) + '</div>' +
+                '<div><strong>KCSE Grade:</strong> ' + escapeHtml(app.kcseGrade) + '</div>' +
+                '<div><strong>Admission Type:</strong> ' + escapeHtml(app.admissionType) + '</div>' +
                 (type === 'attachment' ? 
-                    '<div><strong>County:</strong> ' + app.county + '</div>' +
-                    '<div><strong>Nearest Town:</strong> ' + app.nearestTown + '</div>'
+                    '<div><strong>County:</strong> ' + escapeHtml(app.county) + '</div>' +
+                    '<div><strong>Nearest Town:</strong> ' + escapeHtml(app.nearestTown) + '</div>'
                 : '') +
                 '<div><strong>Application Date:</strong> ' + new Date(app.applicationDate).toLocaleDateString() + '</div>' +
-                '<div><strong>Status:</strong> <span class="px-2 py-1 text-xs rounded-full ' + getStatusClass(app.status) + '">' + app.status.replace('_', ' ') + '</span></div>' +
+                '<div><strong>Status:</strong> <span class="px-2 py-1 text-xs rounded-full ' + getStatusClass(app.status) + '">' + escapeHtml(app.status.replace('_', ' ')) + '</span></div>' +
             '</div>' +
-            (app.comments ? '<div class="mt-4"><strong>Comments:</strong><br>' + app.comments + '</div>' : '') +
+            (app.comments ? '<div class="mt-4"><strong>Comments:</strong><br>' + escapeHtml(app.comments) + '</div>' : '') +
             '<div class="mt-4">' +
                 '<label class="block text-sm font-medium text-gray-700 mb-2">Add Comments:</label>' +
                 '<textarea id="review-comments" class="w-full px-3 py-2 border border-gray-300 rounded-lg" rows="3" placeholder="Enter your review comments..."></textarea>' +
@@ -398,7 +366,7 @@ async function updateApplicationStatus(status) {
     try {
         const comments = document.getElementById('review-comments').value;
         
-        const response = await fetch(API_BASE_URL + '/ilo/applications/' + currentApplicationType + '/' + currentApplicationId + '/status', {
+        const response = await authFetch(API_BASE_URL + '/ilo/applications/' + currentApplicationType + '/' + currentApplicationId + '/status', {
             method: 'PATCH',
             headers: {
                 'Content-Type': 'application/json'
@@ -455,12 +423,12 @@ function printGraduationList() {
 
     const tableRows = applications.map(app => 
         '<tr>' +
-            '<td>' + app.name + '</td>' +
-            '<td>' + app.admissionNumber + '</td>' +
-            '<td>' + formatCourseName(app.course) + '</td>' +
-            '<td>' + app.level + '</td>' +
-            '<td>' + app.yearOfStudy + '</td>' +
-            '<td>' + app.status + '</td>' +
+            '<td>' + escapeHtml(app.name) + '</td>' +
+            '<td>' + escapeHtml(app.admissionNumber) + '</td>' +
+            '<td>' + escapeHtml(formatCourseName(app.course)) + '</td>' +
+            '<td>' + escapeHtml(app.level) + '</td>' +
+            '<td>' + escapeHtml(app.yearOfStudy) + '</td>' +
+            '<td>' + escapeHtml(app.status) + '</td>' +
             '<td>' + new Date(app.applicationDate).toLocaleDateString() + '</td>' +
         '</tr>'
     ).join('');
@@ -513,11 +481,11 @@ function printAttachmentList() {
 
     const tableRows = applications.map(app => 
         '<tr>' +
-            '<td>' + app.name + '</td>' +
-            '<td>' + app.admissionNumber + '</td>' +
-            '<td>' + formatCourseName(app.course) + '</td>' +
-            '<td>' + app.county + ', ' + app.nearestTown + '</td>' +
-            '<td>' + app.status + '</td>' +
+            '<td>' + escapeHtml(app.name) + '</td>' +
+            '<td>' + escapeHtml(app.admissionNumber) + '</td>' +
+            '<td>' + escapeHtml(formatCourseName(app.course)) + '</td>' +
+            '<td>' + escapeHtml(app.county) + ', ' + escapeHtml(app.nearestTown) + '</td>' +
+            '<td>' + escapeHtml(app.status) + '</td>' +
             '<td>' + new Date(app.applicationDate).toLocaleDateString() + '</td>' +
         '</tr>'
     ).join('');

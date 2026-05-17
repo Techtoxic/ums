@@ -2,6 +2,11 @@
 
 const API_BASE_URL = window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : `${window.location.protocol}//${window.location.host}/api`;
 
+// Stage 2B-1B: authenticated fetch via the shared helper. The /students/auth
+// credential-verify call below stays a bare fetch (it is the unauthenticated
+// login step, exempt by scope).
+const authFetch = async (url, options = {}) => window.AUTH.fetch(url, options);
+
 // Data refresh interval in milliseconds (5 minutes)
 const REFRESH_INTERVAL = 5 * 60 * 1000;
 
@@ -35,7 +40,7 @@ async function fetchStudentData(admissionNumber, password) {
         }
 
         // After successful authentication, fetch student data
-        const response = await fetch(`${API_BASE_URL}/students/${admissionNumber}`);
+        const response = await authFetch(`${API_BASE_URL}/students/${admissionNumber}`);
         if (response.status === 404) {
             throw new Error('Student not found. Please check the admission number.');
         }
@@ -73,7 +78,7 @@ async function fetchStudentData(admissionNumber, password) {
 // Function to fetch student's financial information
 async function fetchStudentFinances(admissionNumber) {
     try {
-        const response = await fetch(`${API_BASE_URL}/students/${admissionNumber}/finances`);
+        const response = await authFetch(`${API_BASE_URL}/students/${admissionNumber}/finances`);
         if (!response.ok) {
             throw new Error('Failed to fetch financial data');
         }
@@ -88,7 +93,7 @@ async function fetchStudentFinances(admissionNumber) {
 // Function to fetch student's course information
 async function fetchStudentCourses(admissionNumber) {
     try {
-        const response = await fetch(`${API_BASE_URL}/students/${admissionNumber}/courses`);
+        const response = await authFetch(`${API_BASE_URL}/students/${admissionNumber}/courses`);
         if (!response.ok) {
             throw new Error('Failed to fetch course data');
         }

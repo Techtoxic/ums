@@ -4,52 +4,11 @@
 
 // Authenticated fetch wrapper
 const authFetch = async (url, options = {}) => {
-    const token = localStorage.getItem('adminToken') || 
-                  localStorage.getItem('trainerToken') || 
-                  localStorage.getItem('hodToken') ||
-                  localStorage.getItem('financeToken') ||
-                  localStorage.getItem('authToken') ||
-                  window.AUTH?.getToken();
-    
-    console.log('🔐 authFetch called:', {
-        url,
-        hasToken: !!token,
-        tokenLength: token?.length,
-        tokenSource: localStorage.getItem('adminToken') ? 'adminToken' : 
-                     localStorage.getItem('financeToken') ? 'financeToken' :
-                     localStorage.getItem('authToken') ? 'authToken' : 'none'
-    });
-    
-    if (!token) {
-        console.log('❌ No token found in localStorage');
-        const loginUrls = {
-            admin: '/admin/login',
-            trainer: '/trainer/login',
-            hod: '/hod/login',
-            finance: '/finance/login',
-            registrar: '/registrar/login',
-            dean: '/dean/login'
-        };
-        const role = localStorage.getItem('authRole') || 'admin';
-        window.location.href = loginUrls[role] || '/admin/login';
-        throw new Error('No authentication token');
-    }
-    
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-        ...(options.headers || {})
-    };
-    
-    const response = await window.fetch(url, { ...options, headers });
-    
-    if (response.status === 401) {
-        localStorage.clear();
-        window.location.href = '/admin/login';
-        throw new Error('Session expired');
-    }
-    
-    return response;
+    // Stage 2B-1B: delegate to the single shared auth helper (public/js/auth.js).
+    // It attaches the Authorization header (and a JSON Content-Type for
+    // non-FormData bodies) and handles token-expiry redirects. The wrapper
+    // name is kept so existing call sites are unchanged.
+    return window.AUTH.fetch(url, options);
 };
 
 const courseToProgram = {
@@ -223,7 +182,7 @@ async function loadStudents() {
         displayStudents(students, programs, payments);
     } catch (error) {
         console.error('Error loading data:', error);
-        studentTable.innerHTML = `<tr><td colspan="6" class="px-6 py-4 text-center text-red-500">Error loading student data. ${error.message}</td></tr>`;
+        studentTable.innerHTML = `<tr><td colspan="6" class="px-6 py-4 text-center text-red-500">Error loading student data. ${escapeHtml(error.message)}</td></tr>`;
     }
 }
 
@@ -286,12 +245,12 @@ function renderStudentTable(students, programs, payments) {
             (student.intake.charAt(0).toUpperCase() + student.intake.slice(1) + ' ' + (student.intakeYear || '')) : 'N/A';
             
         row.innerHTML = `
-            <td class="px-3 py-2 text-sm">${student.admissionNumber || 'N/A'}</td>
-            <td class="px-3 py-2 text-sm">${student.name || 'N/A'}</td>
-            <td class="px-3 py-2 text-sm">${formatCourseName(student.course)}</td>
-            <td class="px-3 py-2 text-sm">${departmentName}</td>
+            <td class="px-3 py-2 text-sm">${escapeHtml(student.admissionNumber || 'N/A')}</td>
+            <td class="px-3 py-2 text-sm">${escapeHtml(student.name || 'N/A')}</td>
+            <td class="px-3 py-2 text-sm">${escapeHtml(formatCourseName(student.course))}</td>
+            <td class="px-3 py-2 text-sm">${escapeHtml(departmentName)}</td>
             <td class="px-3 py-2 text-sm">Year ${student.year || 'N/A'}</td>
-            <td class="px-3 py-2 text-sm">${intakeText}</td>
+            <td class="px-3 py-2 text-sm">${escapeHtml(intakeText)}</td>
             <td class="px-3 py-2 text-sm font-semibold">${formatCurrency(totalFees)}</td>
             <td class="px-3 py-2 text-sm">${formatCurrency(totalPaid)}</td>
             <td class="px-3 py-2 text-sm ${balance > 0 ? 'text-red-600' : 'text-green-600'} font-semibold">${formatCurrency(balance)}</td>
@@ -299,8 +258,8 @@ function renderStudentTable(students, programs, payments) {
                 <div class="flex space-x-1">
                     <button 
                         class="add-payment-btn bg-primary text-white px-2 py-1 rounded hover:bg-secondary transition-colors text-xs"
-                        data-student-id="${student.admissionNumber}"
-                        data-student-name="${student.name}"
+                        data-student-id="${escapeAttr(student.admissionNumber)}"
+                        data-student-name="${escapeAttr(student.name)}"
                         data-balance="${balance}"
                         data-total-fees="${totalFees}"
                     >
@@ -309,9 +268,9 @@ function renderStudentTable(students, programs, payments) {
                     ${studentPayments.length > 0 ? `
                     <button 
                         class="view-receipts-btn bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 transition-colors text-xs"
-                        data-student-id="${student.admissionNumber}"
-                        data-student-name="${student.name}"
-                        data-student-course="${student.course || ''}"
+                        data-student-id="${escapeAttr(student.admissionNumber)}"
+                        data-student-name="${escapeAttr(student.name)}"
+                        data-student-course="${escapeAttr(student.course || '')}"
                     >
                         Receipts
                     </button>
@@ -410,13 +369,13 @@ function showPaymentSelectionModal(payments, student) {
         <div class="bg-white rounded-lg max-w-2xl w-full max-h-[600px] overflow-hidden flex flex-col">
             <div class="p-4 border-b">
                 <h3 class="text-lg font-semibold">All Payment Receipts</h3>
-                <p class="text-sm text-gray-600">Student: ${student.name} | Total Payments: ${payments.length}</p>
+                <p class="text-sm text-gray-600">Student: ${escapeHtml(student.name)} | Total Payments: ${payments.length}</p>
             </div>
             <div class="p-4 overflow-y-auto flex-1">
                 <div class="space-y-2">
                     ${payments.map((payment, index) => `
                         <button class="w-full text-left p-3 border rounded hover:bg-gray-50 payment-receipt-btn transition-colors" 
-                                data-payment='${JSON.stringify(payment)}'>
+                                data-payment='${escapeAttr(JSON.stringify(payment))}'>
                             <div class="flex justify-between items-start">
                                 <div class="flex-1">
                                     <div class="flex items-center gap-2 mb-1">
@@ -424,8 +383,8 @@ function showPaymentSelectionModal(payments, student) {
                                         <span class="text-sm text-gray-500">Date: ${payment.paymentDate ? new Date(payment.paymentDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A'}</span>
                                     </div>
                                     <div class="text-sm text-gray-600">
-                                        Mode: ${formatPaymentModeForDisplay(payment.paymentMode)}
-                                        ${payment.reference ? ` | Ref: ${payment.reference}` : ''}
+                                        Mode: ${escapeHtml(formatPaymentModeForDisplay(payment.paymentMode))}
+                                        ${payment.reference ? ` | Ref: ${escapeHtml(payment.reference)}` : ''}
                                     </div>
                                 </div>
                                 <div class="text-right">
@@ -803,7 +762,7 @@ async function loadPrograms() {
     } catch (error) {
         console.error('Error loading programs:', error);
         if (programsTable) {
-            programsTable.innerHTML = `<tr><td colspan="4" class="px-4 py-3 text-center text-red-500">Error loading programs. ${error.message}</td></tr>`;
+            programsTable.innerHTML = `<tr><td colspan="4" class="px-4 py-3 text-center text-red-500">Error loading programs. ${escapeHtml(error.message)}</td></tr>`;
         }
         if (selectProgramDropdown) {
             selectProgramDropdown.innerHTML = '<option value="">Error loading programs</option>';
@@ -855,8 +814,8 @@ function displayPrograms(programs) {
         const row = document.createElement('tr');
         row.className = 'hover:bg-slate-50';
         row.innerHTML = `
-            <td class="px-3 py-2 text-sm">${program.programName}</td>
-            <td class="px-3 py-2 text-sm">${departmentName}</td>
+            <td class="px-3 py-2 text-sm">${escapeHtml(program.programName)}</td>
+            <td class="px-3 py-2 text-sm">${escapeHtml(departmentName)}</td>
             <td class="px-3 py-2 text-sm">${formatCurrency(program.programCost)}</td>
         `;
         
@@ -1111,7 +1070,7 @@ function showNotification(message, type = 'info') {
     toast.innerHTML = `
         <div class="flex items-center space-x-2">
             <i class="ri-${type === 'success' ? 'check' : type === 'error' ? 'error-warning' : 'information'}-line"></i>
-            <span>${message}</span>
+            <span>${escapeHtml(message)}</span>
         </div>
     `;
     
@@ -1181,7 +1140,7 @@ async function handleGeneratePayslips(e) {
         // Extract trainer IDs (use MongoDB _id)
         const trainerIds = trainers.map(trainer => trainer._id);
         
-        const financeData = getFinanceUserData();
+        // SEV-H-008: actor identity is sourced server-side from the JWT.
         showNotification(`Generating payslips for ${trainerIds.length} trainers...`, 'info');
         
         const response = await authFetch(`${API_BASE_URL}/payslips/generate`, {
@@ -1192,11 +1151,7 @@ async function handleGeneratePayslips(e) {
                 month,
                 year: parseInt(year),
                 amount: parseFloat(amount),
-                description,
-                generatedBy: {
-                    userId: financeData.userId || 'finance-admin',
-                    userName: financeData.userName || 'Finance Admin'
-                }
+                description
             })
         });
         
@@ -1294,7 +1249,7 @@ function displayPayslips() {
                 <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-300">${monthName} ${group.year}</td>
                 <td class="px-4 py-3 text-sm font-semibold text-slate-900 dark:text-white">KES ${group.amount.toLocaleString()}</td>
                 <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-300">${totalCount} trainers</td>
-                <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-300">${generatedByName}</td>
+                <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-300">${escapeHtml(generatedByName)}</td>
                 <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">${new Date(group.createdAt).toLocaleDateString()}</td>
                 <td class="px-4 py-3">
                     <span class="px-2 py-1 text-xs font-medium rounded-full ${viewedCount === totalCount ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}">

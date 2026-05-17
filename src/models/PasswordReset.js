@@ -1,4 +1,10 @@
 const mongoose = require('mongoose');
+const crypto = require('crypto');
+
+// SEV-H-017: deterministic SHA-256 hex hash for OTP/token storage + lookup.
+function hashResetValue(raw) {
+    return crypto.createHash('sha256').update(String(raw)).digest('hex');
+}
 
 // Password Reset Schema for OTP and Token-based resets
 const passwordResetSchema = new mongoose.Schema({
@@ -26,20 +32,20 @@ const passwordResetSchema = new mongoose.Schema({
         enum: ['otp', 'token'],
         index: true
     },
-    // For OTP method
-    otp: {
+    // For OTP method (SEV-H-017: only the SHA-256 hash is stored)
+    otpHash: {
         type: String,
-        sparse: true // Only required for OTP type
+        sparse: true
     },
     otpAttempts: {
         type: Number,
         default: 0,
         max: 5 // Maximum 5 attempts to prevent brute force
     },
-    // For Token method
-    resetToken: {
+    // For Token method (SEV-H-017: only the SHA-256 hash is stored)
+    tokenHash: {
         type: String,
-        sparse: true // Only required for token type
+        sparse: true
     },
     // Security fields
     ipAddress: {
@@ -69,11 +75,13 @@ const passwordResetSchema = new mongoose.Schema({
     }
 });
 
-// Compound indexes for better query performance
+// Compound indexes (SEV-H-017: no index references a raw OTP/token; those no
+// longer exist at rest. Lookups are by hash or by email + recency.)
 passwordResetSchema.index({ userId: 1, userType: 1, resetType: 1 });
 passwordResetSchema.index({ email: 1, resetType: 1, isUsed: 1 });
-passwordResetSchema.index({ resetToken: 1, isUsed: 1 });
-passwordResetSchema.index({ otp: 1, email: 1, isUsed: 1 });
+passwordResetSchema.index({ email: 1, createdAt: -1 });
+passwordResetSchema.index({ tokenHash: 1, isUsed: 1 });
+passwordResetSchema.index({ otpHash: 1, isUsed: 1 });
 
 // TTL index to automatically delete expired documents
 passwordResetSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
@@ -98,10 +106,30 @@ passwordResetSchema.methods.markAsUsed = function() {
     return this.save();
 };
 
+// SEV-H-017: virtual setters so existing callers keep using `otp` /
+// `resetToken`; only the hash is ever persisted.
+passwordResetSchema.statics.hashValue = hashResetValue;
+passwordResetSchema.virtual('otp').set(function(raw) {
+    this.otpHash = hashResetValue(raw);
+});
+passwordResetSchema.virtual('resetToken').set(function(raw) {
+    this.tokenHash = hashResetValue(raw);
+});
+
 // Static methods
 passwordResetSchema.statics.findValidReset = function(criteria) {
+    const query = { ...criteria };
+    // SEV-H-017: translate raw otp/resetToken lookups into hash lookups.
+    if (query.otp !== undefined) {
+        query.otpHash = hashResetValue(query.otp);
+        delete query.otp;
+    }
+    if (query.resetToken !== undefined) {
+        query.tokenHash = hashResetValue(query.resetToken);
+        delete query.resetToken;
+    }
     return this.findOne({
-        ...criteria,
+        ...query,
         isUsed: false,
         expiresAt: { $gt: new Date() }
     });
@@ -121,14 +149,13 @@ passwordResetSchema.statics.invalidateUserResets = function(userId, userType) {
     );
 };
 
-// Generate secure OTP
+// Generate secure OTP using a cryptographically secure RNG
 passwordResetSchema.statics.generateOTP = function() {
-    return Math.floor(100000 + Math.random() * 900000).toString();
+    return crypto.randomInt(100000, 1000000).toString();
 };
 
 // Generate secure reset token
 passwordResetSchema.statics.generateResetToken = function() {
-    const crypto = require('crypto');
     return crypto.randomBytes(32).toString('hex');
 };
 
@@ -152,11 +179,11 @@ passwordResetSchema.pre('validate', function(next) {
     next();
 });
 
-// Security: Prevent sensitive data from being returned in queries
+// Security: never return the OTP/token hashes in serialised output.
 passwordResetSchema.methods.toJSON = function() {
     const resetObj = this.toObject();
-    delete resetObj.otp;
-    delete resetObj.resetToken;
+    delete resetObj.otpHash;
+    delete resetObj.tokenHash;
     return resetObj;
 };
 

@@ -3,6 +3,9 @@
 
 const API_BASE_URL = window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : `${window.location.protocol}//${window.location.host}/api`;
 
+// Stage 2B-1B: authenticated fetch via the shared helper.
+const authFetch = async (url, options = {}) => window.AUTH.fetch(url, options);
+
 class StudentExporter {
     constructor() {
         this.students = [];
@@ -20,7 +23,7 @@ class StudentExporter {
     // Load students data
     async loadStudents() {
         try {
-            const response = await fetch(`${API_BASE_URL}/students`);
+            const response = await authFetch(`${API_BASE_URL}/students`);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }

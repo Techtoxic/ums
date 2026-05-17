@@ -40,7 +40,7 @@ const config = {
     // JWT Configuration - secret is mandatory in production
     jwt: {
         secret: readSecret('JWT_SECRET', 'dev-only-not-for-production-' + Date.now()),
-        expiresIn: process.env.JWT_EXPIRES_IN || '24h'
+        expiresIn: process.env.JWT_EXPIRES_IN || '2h' // SEV-H-013: short window; refresh tokens are a Stage 3 item
     },
 
     // Session Configuration

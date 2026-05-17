@@ -2,42 +2,11 @@
 
 // Authenticated fetch wrapper
 const authFetch = async (url, options = {}) => {
-    const token = localStorage.getItem('adminToken') || 
-                  localStorage.getItem('trainerToken') || 
-                  localStorage.getItem('hodToken') ||
-                  localStorage.getItem('financeToken') ||
-                  localStorage.getItem('authToken') ||
-                  window.AUTH?.getToken();
-    
-    if (!token) {
-        const loginUrls = {
-            admin: '/admin/login',
-            trainer: '/trainer/login',
-            hod: '/hod/login',
-            finance: '/finance/login',
-            registrar: '/registrar/login',
-            dean: '/dean/login'
-        };
-        const role = localStorage.getItem('authRole') || 'admin';
-        window.location.href = loginUrls[role] || '/admin/login';
-        throw new Error('No authentication token');
-    }
-    
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-        ...(options.headers || {})
-    };
-    
-    const response = await fetch(url, { ...options, headers });
-    
-    if (response.status === 401) {
-        localStorage.clear();
-        window.location.href = '/admin/login';
-        throw new Error('Session expired');
-    }
-    
-    return response;
+    // Stage 2B-1B: delegate to the single shared auth helper (public/js/auth.js).
+    // It attaches the Authorization header (and a JSON Content-Type for
+    // non-FormData bodies) and handles token-expiry redirects. The wrapper
+    // name is kept so existing call sites are unchanged.
+    return window.AUTH.fetch(url, options);
 };
 
 let currentHOD = null;
@@ -165,7 +134,7 @@ function showProfileUpdateModal(needsEmailUpdate, needsPhoneUpdate) {
         <div class="bg-white rounded-xl shadow-xl w-full max-w-md transform transition-all duration-300 scale-95">
             <div class="p-6 border-b border-gray-200">
                 <div class="flex items-center justify-between">
-                    <h3 class="text-lg font-semibold text-gray-800">${title}</h3>
+                    <h3 class="text-lg font-semibold text-gray-800">${escapeHtml(title)}</h3>
                     <button onclick="closeProfileUpdateModal()" class="p-2 hover:bg-gray-100 rounded-lg">
                         <i class="ri-close-line text-xl text-gray-600"></i>
                     </button>
@@ -173,7 +142,7 @@ function showProfileUpdateModal(needsEmailUpdate, needsPhoneUpdate) {
             </div>
             <form id="profile-update-form" class="p-6">
                 <div class="space-y-4">
-                    <p class="text-gray-600 text-sm">${description}</p>
+                    <p class="text-gray-600 text-sm">${escapeHtml(description)}</p>
                     
                     <div>
                         <label for="hod-email" class="block text-sm font-medium text-gray-700 mb-2">
@@ -556,11 +525,11 @@ function populateCoursesDisplay() {
         <div class="border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
             <div class="flex justify-between items-start mb-4">
                 <div>
-                    <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">${course.courseName}</h3>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">Level ${course.level} • ${course.units.length} units</p>
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">${escapeHtml(course.courseName)}</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Level ${escapeHtml(course.level)} • ${course.units.length} units</p>
                 </div>
                 <span class="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full text-sm font-medium">
-                    ${course.courseCode.toUpperCase()}
+                    ${escapeHtml(course.courseCode.toUpperCase())}
                 </span>
             </div>
             
@@ -570,19 +539,19 @@ function populateCoursesDisplay() {
                     return `
                         <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                             <div>
-                                <p class="font-medium text-gray-800">${unit.unitCode}</p>
-                                <p class="text-sm text-gray-600">${unit.unitName}</p>
+                                <p class="font-medium text-gray-800">${escapeHtml(unit.unitCode)}</p>
+                                <p class="text-sm text-gray-600">${escapeHtml(unit.unitName)}</p>
                             </div>
                             <div class="flex items-center space-x-3">
                                 ${assignment && assignment.trainerId ? `
                                     <span class="text-sm text-green-600 font-medium">
-                                        <i class="fas fa-user mr-1"></i>${assignment.trainerId.name || 'Unknown Trainer'}
+                                        <i class="fas fa-user mr-1"></i>${escapeHtml(assignment.trainerId.name || 'Unknown Trainer')}
                                     </span>
                                 ` : `
                                     <span class="text-sm text-gray-500">Unassigned</span>
                                 `}
                                 <button 
-                                    onclick="assignUnitToTrainer('${unit._id}')" 
+                                    onclick="assignUnitToTrainer('${escapeAttr(unit._id)}')" 
                                     class="text-blue-600 hover:text-blue-700 transition-colors"
                                     title="Assign Trainer"
                                 >
@@ -606,7 +575,7 @@ function populateCourseFilter() {
     
     courseFilter.innerHTML = '<option value="">All Courses</option>' +
         coursesData.map(course => `
-            <option value="${course.courseCode}">${course.courseName}</option>
+            <option value="${escapeAttr(course.courseCode)}">${escapeHtml(course.courseName)}</option>
         `).join('');
     
     courseFilter.addEventListener('change', populateCoursesDisplay);
@@ -627,11 +596,11 @@ function populateTrainersDisplay() {
             <div class="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-6">
                 <div class="flex items-center mb-4">
                     <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                        ${trainer.name.charAt(0)}
+                        ${escapeHtml(trainer.name.charAt(0))}
                     </div>
                     <div class="ml-4">
-                        <h3 class="font-semibold text-gray-800 dark:text-gray-200">${trainer.name}</h3>
-                        <p class="text-sm text-gray-600 dark:text-gray-400">${trainer.email}</p>
+                        <h3 class="font-semibold text-gray-800 dark:text-gray-200">${escapeHtml(trainer.name)}</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">${escapeHtml(trainer.email)}</p>
                     </div>
                 </div>
                 
@@ -645,7 +614,7 @@ function populateTrainersDisplay() {
                         <div class="space-y-1">
                             ${trainerAssignments.slice(0, 3).map(assignment => `
                                 <div class="text-xs bg-gray-50 rounded px-2 py-1">
-                                    ${assignment.unitId ? assignment.unitId.unitCode : 'Unknown'} - ${assignment.unitId ? assignment.unitId.unitName : 'Unknown Unit'}
+                                    ${escapeHtml(assignment.unitId ? assignment.unitId.unitCode : 'Unknown')} - ${escapeHtml(assignment.unitId ? assignment.unitId.unitName : 'Unknown Unit')}
                                 </div>
                             `).join('')}
                             ${trainerAssignments.length > 3 ? `
@@ -661,7 +630,7 @@ function populateTrainersDisplay() {
                 
                 <div class="mt-4 pt-4 border-t border-gray-100">
                     <button 
-                        onclick="assignUnitsToSpecificTrainer('${trainer._id}')" 
+                        onclick="assignUnitsToSpecificTrainer('${escapeAttr(trainer._id)}')" 
                         class="w-full bg-blue-50 hover:bg-blue-100 text-blue-600 py-2 px-4 rounded-lg transition-colors text-sm font-medium"
                     >
                         <i class="fas fa-plus mr-2"></i>Assign Units
@@ -678,7 +647,7 @@ function populateTrainerSelect() {
     
     trainerSelect.innerHTML = '<option value="">Choose a trainer...</option>' +
         trainersData.map(trainer => `
-            <option value="${trainer._id}">${trainer.name}</option>
+            <option value="${escapeAttr(trainer._id)}">${escapeHtml(trainer.name)}</option>
         `).join('');
     
     trainerSelect.addEventListener('change', updateAssignButtonState);
@@ -702,16 +671,16 @@ function populateAssignmentsDisplay() {
         tableBody.innerHTML = unassignedUnits.map(unit => `
             <tr>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <input type="checkbox" class="assignment-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500" value="${unit._id}">
+                    <input type="checkbox" class="assignment-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500" value="${escapeAttr(unit._id)}">
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div>
-                        <div class="text-sm font-medium text-gray-900">${unit.unitCode}</div>
-                        <div class="text-sm text-gray-500">${unit.unitName}</div>
+                        <div class="text-sm font-medium text-gray-900">${escapeHtml(unit.unitCode)}</div>
+                        <div class="text-sm text-gray-500">${escapeHtml(unit.unitName)}</div>
                     </div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    ${formatCourseName(unit.courseCode)}
+                    ${escapeHtml(formatCourseName(unit.courseCode))}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
@@ -721,7 +690,7 @@ function populateAssignmentsDisplay() {
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">-</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <button 
-                        onclick="assignUnitToTrainer('${unit._id}')" 
+                        onclick="assignUnitToTrainer('${escapeAttr(unit._id)}')" 
                         class="text-blue-600 hover:text-blue-900"
                     >
                         Assign
@@ -735,27 +704,27 @@ function populateAssignmentsDisplay() {
     tableBody.innerHTML = displayAssignments.map(assignment => `
         <tr>
             <td class="px-6 py-4 whitespace-nowrap">
-                <input type="checkbox" class="assignment-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500" value="${assignment.unitId ? assignment.unitId._id : ''}">
+                <input type="checkbox" class="assignment-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500" value="${escapeAttr(assignment.unitId ? assignment.unitId._id : '')}">
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
                 <div>
-                    <div class="text-sm font-medium text-gray-900">${assignment.unitId ? assignment.unitId.unitCode : 'Unknown Unit'}</div>
-                    <div class="text-sm text-gray-500">${assignment.unitId ? assignment.unitId.unitName : 'No unit name'}</div>
+                    <div class="text-sm font-medium text-gray-900">${escapeHtml(assignment.unitId ? assignment.unitId.unitCode : 'Unknown Unit')}</div>
+                    <div class="text-sm text-gray-500">${escapeHtml(assignment.unitId ? assignment.unitId.unitName : 'No unit name')}</div>
                 </div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                ${assignment.unitId ? formatCourseName(assignment.unitId.courseCode) : 'Unknown Course'}
+                ${escapeHtml(assignment.unitId ? formatCourseName(assignment.unitId.courseCode) : 'Unknown Course')}
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm text-gray-900">${assignment.trainerId ? assignment.trainerId.name : 'Unknown Trainer'}</div>
-                <div class="text-sm text-gray-500">${assignment.trainerId ? assignment.trainerId.email : 'No email'}</div>
+                <div class="text-sm text-gray-900">${escapeHtml(assignment.trainerId ? assignment.trainerId.name : 'Unknown Trainer')}</div>
+                <div class="text-sm text-gray-500">${escapeHtml(assignment.trainerId ? assignment.trainerId.email : 'No email')}</div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 ${new Date(assignment.assignedAt).toLocaleDateString()}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                 <button 
-                    onclick="unassignUnit('${assignment.unitId ? assignment.unitId._id : ''}')" 
+                    onclick="unassignUnit('${escapeAttr(assignment.unitId ? assignment.unitId._id : '')}')" 
                     class="text-red-600 hover:text-red-900"
                     ${!assignment.unitId ? 'disabled' : ''}
                 >
@@ -984,11 +953,11 @@ function populateModalUnits() {
     
     unitsList.innerHTML = unassignedUnits.map(unit => `
         <label class="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded">
-            <input type="checkbox" class="modal-unit-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500" value="${unit._id}">
+            <input type="checkbox" class="modal-unit-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500" value="${escapeAttr(unit._id)}">
             <div class="flex-1">
-                <div class="text-sm font-medium text-gray-900">${unit.unitCode}</div>
-                <div class="text-sm text-gray-500">${unit.unitName}</div>
-                <div class="text-xs text-gray-400">${formatCourseName(unit.courseCode)}</div>
+                <div class="text-sm font-medium text-gray-900">${escapeHtml(unit.unitCode)}</div>
+                <div class="text-sm text-gray-500">${escapeHtml(unit.unitName)}</div>
+                <div class="text-xs text-gray-400">${escapeHtml(formatCourseName(unit.courseCode))}</div>
             </div>
         </label>
     `).join('');
@@ -1019,7 +988,7 @@ async function assignSelectedUnits() {
     }
     
     try {
-        const response = await fetch('/api/assignments/assign', {
+        const response = await authFetch('/api/assignments/assign', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -1077,7 +1046,7 @@ async function unassignUnit(unitId) {
     if (!confirm('Are you sure you want to unassign this unit?')) return;
     
     try {
-        const response = await fetch('/api/assignments/unassign', {
+        const response = await authFetch('/api/assignments/unassign', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -1114,7 +1083,7 @@ async function bulkUnassignUnits() {
     if (!confirm(`Are you sure you want to unassign ${selectedUnits.length} unit(s)?`)) return;
     
     try {
-        const response = await fetch('/api/assignments/unassign', {
+        const response = await authFetch('/api/assignments/unassign', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -1352,17 +1321,9 @@ function hideToast() {
 }
 
 // Utility function to escape HTML
-function escapeHtml(text) {
-    if (typeof text !== 'string') return text;
-    const map = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;'
-    };
-    return text.replace(/[&<>"']/g, function(m) { return map[m]; });
-}
+// Stage 2B-2A: local escapeHtml removed — use the centralized window.escapeHtml
+// (defined in public/js/auth.js, stricter: also escapes '/'). escapeHtml/
+// escapeAttr resolve to the globals on window.
 
 function getStatusBadge(status) {
     const statusClasses = {
@@ -1391,7 +1352,7 @@ function getStatusBadge(status) {
 async function loadCommonUnits() {
     try {
         console.log('Loading common units...');
-        const response = await fetch('/api/common-units');
+        const response = await authFetch('/api/common-units');
         
         if (response.ok) {
             const data = await response.json();
@@ -1430,7 +1391,7 @@ async function loadCommonUnitAssignments() {
 async function loadAllTrainers() {
     try {
         console.log('Loading all trainers...');
-        const response = await fetch('/api/trainers/all-departments');
+        const response = await authFetch('/api/trainers/all-departments');
         
         if (response.ok) {
             const data = await response.json();
@@ -1512,7 +1473,7 @@ function populateCommonUnitAssignmentsDisplay() {
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <span class="text-sm text-gray-900 dark:text-gray-100">
-                        ${formatDepartmentName(assignment.trainerDepartment)}
+                        ${escapeHtml(formatDepartmentName(assignment.trainerDepartment))}
                     </span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
@@ -1523,7 +1484,7 @@ function populateCommonUnitAssignmentsDisplay() {
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <button 
-                        onclick="removeCommonUnitAssignment('${assignment._id}')"
+                        onclick="removeCommonUnitAssignment('${escapeAttr(assignment._id)}')"
                         class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                         title="Remove Assignment"
                     >
@@ -1663,12 +1624,12 @@ function populateTrainersForCommonUnit() {
     
     const trainersHtml = filteredTrainers.map(trainer => `
         <div class="trainer-item p-3 border-b border-gray-200 dark:border-gray-600 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 ${selectedTrainerForCommonUnit?.id === trainer._id ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800' : ''}"
-             onclick="selectTrainerForCommonUnit('${trainer._id}', '${escapeHtml(trainer.name)}', '${escapeHtml(trainer.department)}')">
+             onclick="selectTrainerForCommonUnit('${escapeAttr(trainer._id)}', '${escapeAttr(trainer.name)}', '${escapeAttr(trainer.department)}')">
             <div class="flex items-center justify-between">
                 <div class="flex-1">
                     <h4 class="font-medium text-gray-800 dark:text-gray-200 text-sm">${escapeHtml(trainer.name)}</h4>
                     <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">${escapeHtml(trainer.email)}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">${formatDepartmentName(trainer.department)}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">${escapeHtml(formatDepartmentName(trainer.department))}</p>
                 </div>
                 <div class="text-right">
                     <i class="ri-user-line text-gray-400 dark:text-gray-500"></i>
@@ -1765,7 +1726,7 @@ async function assignCommonUnit() {
         console.log('Current HOD:', currentHOD);
         console.log('Selected Trainer:', selectedTrainerForCommonUnit);
         
-        const response = await fetch('/api/common-unit-assignments', {
+        const response = await authFetch('/api/common-unit-assignments', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

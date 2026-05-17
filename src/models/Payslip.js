@@ -30,9 +30,8 @@ const payslipSchema = new mongoose.Schema({
         index: true
     },
     amount: {
-        type: Number,
-        required: true,
-        min: 0
+        type: mongoose.Schema.Types.Decimal128, // SEV-H-016: exact money
+        required: true
     },
     period: {
         type: String,
@@ -78,6 +77,16 @@ payslipSchema.statics.getTrainerPayslips = function(trainerId) {
 payslipSchema.statics.getPayslipsByPeriod = function(month, year) {
     return this.find({ month, year }).sort({ trainerName: 1 });
 };
+
+// SEV-H-016: emit amount as a plain string, not the raw {$numberDecimal}.
+payslipSchema.set('toJSON', {
+    transform: function(doc, ret) {
+        if (ret.amount !== undefined && ret.amount !== null && typeof ret.amount === 'object') {
+            ret.amount = ret.amount.toString();
+        }
+        return ret;
+    }
+});
 
 module.exports = mongoose.model('Payslip', payslipSchema);
 

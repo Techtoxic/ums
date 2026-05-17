@@ -43,3 +43,10 @@ build/
 # Temporary files
 tmp/
 temp/
+
+# Scratch diffs / audit artifacts (must never be committed - see SEV-C-003)
+temp_diff.txt
+*.diff
+
+# SEV-H-015: one-time seeded admin credentials file (read once, then delete)
+.seed-credentials.txt

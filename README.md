@@ -132,7 +132,7 @@ node server.js
 - **Works for all user types**: Students, Trainers, HODs
 
 ### Portal Access
-- **Students**: Admission number as username, phone as initial password
+- **Students**: Admission number as username. A randomly-generated initial password is emailed to the student at registration and must be changed on first login.
 - **Trainers**: Staff ID as username
 - **HODs**: Email as username
 - **Password change required** on first login

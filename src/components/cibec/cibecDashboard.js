@@ -2,45 +2,15 @@
 const API_BASE = window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : `${window.location.protocol}//${window.location.host}/api`;
 // Authenticated fetch wrapper
 const authFetch = async (url, options = {}) => {
-    const token = localStorage.getItem('adminToken') || 
-                  localStorage.getItem('trainerToken') || 
-                  localStorage.getItem('hodToken') ||
-                  localStorage.getItem('financeToken') ||
-                  localStorage.getItem('authToken') ||
-                  window.AUTH?.getToken();
-    
-    if (!token) {
-        const loginUrls = {
-            admin: '/admin/login',
-            trainer: '/trainer/login',
-            hod: '/hod/login',
-            finance: '/finance/login',
-            registrar: '/registrar/login',
-            dean: '/dean/login'
-        };
-        const role = localStorage.getItem('authRole') || 'admin';
-        window.location.href = loginUrls[role] || '/admin/login';
-        throw new Error('No authentication token');
-    }
-    
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-        ...(options.headers || {})
-    };
-    
-    const response = await fetch(url, { ...options, headers });
-    
-    if (response.status === 401) {
-        localStorage.clear();
-        window.location.href = '/admin/login';
-        throw new Error('Session expired');
-    }
-    
-    return response;
+    // Stage 2B-1B: delegate to the single shared auth helper (public/js/auth.js).
+    // It attaches the Authorization header (and a JSON Content-Type for
+    // non-FormData bodies) and handles token-expiry redirects. The wrapper
+    // name is kept so existing call sites are unchanged.
+    return window.AUTH.fetch(url, options);
 };
 
-const CIBEC_USER_ID = 'cibec_admin'; // This should come from login
+// SEV-H-008: actor identity is sourced server-side from the verified JWT.
+// No client-asserted CIBEC user id is sent in requests.
 
 // State management
 let currentFilters = {};
@@ -150,8 +120,7 @@ async function loadUploads(filters = {}) {
         if (filters.courseLevel) queryParams.append('courseLevel', filters.courseLevel);
         if (filters.studentId) queryParams.append('studentId', filters.studentId);
         if (filters.admissionNumber) queryParams.append('admissionNumber', filters.admissionNumber);
-        queryParams.append('cibecUserId', CIBEC_USER_ID);
-        
+
         const response = await authFetch(`${API_BASE}/cibec/uploads?${queryParams}`);
         if (!response.ok) throw new Error('Failed to load uploads');
         
@@ -238,25 +207,25 @@ function createUploadCard(upload) {
                     </div>
                     <div class="flex-1">
                         <div class="flex items-center space-x-2 mb-1">
-                            <h3 class="font-semibold text-gray-900">${upload.studentName}</h3>
-                            <span class="px-2 py-0.5 bg-gray-100 text-gray-700 text-xs rounded-full">${upload.admissionNumber}</span>
+                            <h3 class="font-semibold text-gray-900">${escapeHtml(upload.studentName)}</h3>
+                            <span class="px-2 py-0.5 bg-gray-100 text-gray-700 text-xs rounded-full">${escapeHtml(upload.admissionNumber)}</span>
                             ${levelBadge}
                         </div>
-                        <p class="text-sm text-gray-600 mb-2">${courseName}</p>
+                        <p class="text-sm text-gray-600 mb-2">${escapeHtml(courseName)}</p>
                         <div class="flex items-center flex-wrap gap-2 text-xs">
                             <span class="px-2 py-1 ${uploadTypeColors[upload.uploadType]} rounded-full font-medium">
                                 ${uploadTypeLabels[upload.uploadType]}
                             </span>
-                            <span class="text-gray-500">${departmentName}</span>
+                            <span class="text-gray-500">${escapeHtml(departmentName)}</span>
                             <span class="text-gray-500">•</span>
-                            <span class="text-gray-500">Year ${upload.year}</span>
+                            <span class="text-gray-500">Year ${escapeHtml(upload.year)}</span>
                             ${upload.unitName ? `
                                 <span class="text-gray-500">•</span>
-                                <span class="text-gray-500">${upload.unitName}</span>
+                                <span class="text-gray-500">${escapeHtml(upload.unitName)}</span>
                             ` : ''}
                         </div>
                         <div class="mt-2 flex items-center space-x-4 text-xs text-gray-500">
-                            <span><i class="ri-file-line mr-1"></i>${upload.originalFileName}</span>
+                            <span><i class="ri-file-line mr-1"></i>${escapeHtml(upload.originalFileName)}</span>
                             <span><i class="ri-calendar-line mr-1"></i>${new Date(upload.uploadedAt).toLocaleDateString()}</span>
                             <span><i class="ri-folder-line mr-1"></i>${(upload.fileSize / 1024).toFixed(1)} KB</span>
                             ${upload.version > 1 ? `<span class="text-orange-600"><i class="ri-refresh-line mr-1"></i>v${upload.version}</span>` : ''}
@@ -264,13 +233,13 @@ function createUploadCard(upload) {
                     </div>
                 </div>
                 <div class="flex items-center space-x-2">
-                    <button onclick="viewFile('${upload._id}')" class="p-2 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors" title="View File">
+                    <button onclick="viewFile('${escapeAttr(upload._id)}')" class="p-2 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors" title="View File">
                         <i class="ri-eye-line text-lg"></i>
                     </button>
-                    <button onclick="downloadFile('${upload._id}')" class="p-2 hover:bg-green-50 text-green-600 rounded-lg transition-colors" title="Download">
+                    <button onclick="downloadFile('${escapeAttr(upload._id)}')" class="p-2 hover:bg-green-50 text-green-600 rounded-lg transition-colors" title="Download">
                         <i class="ri-download-line text-lg"></i>
                     </button>
-                    <button onclick="viewStudentDetails('${upload.studentId}')" class="p-2 hover:bg-purple-50 text-purple-600 rounded-lg transition-colors" title="Student Details">
+                    <button onclick="viewStudentDetails('${escapeAttr(upload.studentId)}')" class="p-2 hover:bg-purple-50 text-purple-600 rounded-lg transition-colors" title="Student Details">
                         <i class="ri-user-search-line text-lg"></i>
                     </button>
                 </div>
@@ -309,9 +278,9 @@ function updatePagination() {
 // View file
 async function viewFile(uploadId) {
     try {
-        const response = await authFetch(`${API_BASE}/student-uploads/${uploadId}/download?userId=${CIBEC_USER_ID}&userType=cibec`);
+        const response = await authFetch(`${API_BASE}/student-uploads/${uploadId}/download`);
         if (!response.ok) throw new Error('Failed to get download URL');
-        
+
         const data = await response.json();
         window.open(data.url, '_blank');
         
@@ -325,11 +294,11 @@ async function viewFile(uploadId) {
 // Download file
 async function downloadFile(uploadId) {
     try {
-        const response = await authFetch(`${API_BASE}/student-uploads/${uploadId}/download?userId=${CIBEC_USER_ID}&userType=cibec`);
+        const response = await authFetch(`${API_BASE}/student-uploads/${uploadId}/download`);
         if (!response.ok) throw new Error('Failed to get download URL');
-        
+
         const data = await response.json();
-        
+
         // Create download link
         const a = document.createElement('a');
         a.href = data.url;
@@ -351,7 +320,7 @@ async function viewStudentDetails(studentId) {
     try {
         showLoading();
         
-        const response = await authFetch(`${API_BASE}/cibec/student/${studentId}/uploads?cibecUserId=${CIBEC_USER_ID}`);
+        const response = await authFetch(`${API_BASE}/cibec/student/${studentId}/uploads`);
         if (!response.ok) throw new Error('Failed to load student details');
         
         const data = await response.json();
@@ -405,17 +374,17 @@ function createModalUploadItem(upload) {
         <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
             <div class="flex-1">
                 <div class="flex items-center space-x-2 mb-1">
-                    <span class="font-medium text-gray-900">${uploadTypeLabels[upload.uploadType]}</span>
-                    ${upload.unitName ? `<span class="text-sm text-gray-500">• ${upload.unitName}</span>` : ''}
+                    <span class="font-medium text-gray-900">${escapeHtml(uploadTypeLabels[upload.uploadType])}</span>
+                    ${upload.unitName ? `<span class="text-sm text-gray-500">• ${escapeHtml(upload.unitName)}</span>` : ''}
                 </div>
-                <p class="text-sm text-gray-600">${upload.originalFileName}</p>
-                <p class="text-xs text-gray-500 mt-1">Uploaded: ${new Date(upload.uploadedAt).toLocaleString()}</p>
+                <p class="text-sm text-gray-600">${escapeHtml(upload.originalFileName)}</p>
+                <p class="text-xs text-gray-500 mt-1">Uploaded: ${escapeHtml(new Date(upload.uploadedAt).toLocaleString())}</p>
             </div>
             <div class="flex items-center space-x-2">
-                <button onclick="viewFile('${upload._id}')" class="p-2 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors">
+                <button onclick="viewFile('${escapeAttr(upload._id)}')" class="p-2 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors">
                     <i class="ri-eye-line"></i>
                 </button>
-                <button onclick="downloadFile('${upload._id}')" class="p-2 hover:bg-green-100 text-green-600 rounded-lg transition-colors">
+                <button onclick="downloadFile('${escapeAttr(upload._id)}')" class="p-2 hover:bg-green-100 text-green-600 rounded-lg transition-colors">
                     <i class="ri-download-line"></i>
                 </button>
             </div>
@@ -531,8 +500,8 @@ function updateActiveFilters() {
     
     chipsContainer.innerHTML = Object.entries(currentFilters).map(([key, value]) => `
         <span class="filter-chip px-3 py-1 bg-blue-100 text-blue-700 text-sm rounded-full flex items-center space-x-2">
-            <span>${filterLabels[key]}: ${value}</span>
-            <button onclick="removeFilter('${key}')" class="hover:bg-blue-200 rounded-full p-0.5">
+            <span>${filterLabels[key]}: ${escapeHtml(value)}</span>
+            <button onclick="removeFilter('${escapeAttr(key)}')" class="hover:bg-blue-200 rounded-full p-0.5">
                 <i class="ri-close-line text-sm"></i>
             </button>
         </span>

@@ -5,6 +5,9 @@
 // API Base - use relative URL to avoid hardcoding port
 const UPLOAD_API_BASE = '/api';
 
+// Stage 2B-1B: authenticated fetch via the shared helper.
+const authFetch = async (url, options = {}) => window.AUTH.fetch(url, options);
+
 // Get current student data
 function getStudentData() {
     const data = JSON.parse(sessionStorage.getItem('studentData')) || {};
@@ -52,7 +55,7 @@ window.initializeUploadsSection = async function initializeUploadsSection() {
 // Fetch academic settings
 async function fetchAcademicSettings() {
     try {
-        const response = await fetch(`${UPLOAD_API_BASE}/system-settings`);
+        const response = await authFetch(`${UPLOAD_API_BASE}/system-settings`);
         if (response.ok) {
             const settings = await response.json();
             return {
@@ -78,7 +81,7 @@ async function loadStudentUploads() {
 
         // URL encode the studentId to handle slashes
         const encodedStudentId = encodeURIComponent(studentId);
-        const response = await fetch(`${UPLOAD_API_BASE}/student-uploads/${encodedStudentId}`);
+        const response = await authFetch(`${UPLOAD_API_BASE}/student-uploads/${encodedStudentId}`);
         if (!response.ok) throw new Error('Failed to load uploads');
 
         const uploads = await response.json();
@@ -127,7 +130,7 @@ async function loadRegisteredUnitsForUploads() {
         console.log('Fetching registrations for student:', studentId);
         // URL encode the studentId to handle slashes
         const encodedStudentId = encodeURIComponent(studentId);
-        const response = await fetch(`${UPLOAD_API_BASE}/students/${encodedStudentId}/registrations?status=registered`);
+        const response = await authFetch(`${UPLOAD_API_BASE}/students/${encodedStudentId}/registrations?status=registered`);
         if (!response.ok) {
             throw new Error(`Failed to load registrations: ${response.status}`);
         }
@@ -148,7 +151,7 @@ async function loadRegisteredUnitsForUploads() {
             container.innerHTML = `
                 <div class="col-span-full text-center py-12">
                     <i class="ri-error-warning-line text-4xl text-red-400 mb-4"></i>
-                    <p class="text-red-600 dark:text-red-400">Failed to load units: ${error.message}</p>
+                    <p class="text-red-600 dark:text-red-400">Failed to load units: ${escapeHtml(error.message)}</p>
                 </div>
             `;
         }
@@ -185,7 +188,7 @@ function updateUploadCard(cardId, uploadData) {
         if (uploadInfo) {
             uploadInfo.innerHTML = `
                 <p class="text-xs text-gray-600 dark:text-gray-400">
-                    ${uploadData.originalFileName}<br>
+                    ${escapeHtml(uploadData.originalFileName)}<br>
                     Uploaded: ${new Date(uploadData.uploadedAt).toLocaleDateString()}<br>
                     Version: ${uploadData.version}
                 </p>
@@ -234,8 +237,8 @@ function createUnitUploadCard(unit) {
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 border border-gray-200 dark:border-gray-700">
             <div class="flex items-start justify-between mb-4">
                 <div class="flex-1">
-                    <h3 class="font-semibold text-gray-900 dark:text-white">${unit.unitName}</h3>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">${unit.unitCode}</p>
+                    <h3 class="font-semibold text-gray-900 dark:text-white">${escapeHtml(unit.unitName)}</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">${escapeHtml(unit.unitCode)}</p>
                 </div>
                 <span class="px-2 py-1 ${unit.unitType === 'common' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'} text-xs rounded-full">${unit.unitType === 'common' ? 'Common Unit' : 'Department Unit'}</span>
             </div>
@@ -264,20 +267,20 @@ function createAssessmentUploadSlot(unitId, assessmentNum, uploadData) {
                 </div>
                 ${uploadData ? `
                     <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        ${uploadData.originalFileName} • ${new Date(uploadData.uploadedAt).toLocaleDateString()}
+                        ${escapeHtml(uploadData.originalFileName)} • ${new Date(uploadData.uploadedAt).toLocaleDateString()}
                     </p>
                 ` : ''}
             </div>
             <div class="flex items-center gap-2">
                 ${uploadData ? `
-                    <button onclick="viewUpload('${uploadData._id}')" class="text-blue-600 hover:text-blue-700 text-sm">
+                    <button onclick="viewUpload('${escapeAttr(uploadData._id)}')" class="text-blue-600 hover:text-blue-700 text-sm">
                         <i class="ri-eye-line"></i>
                     </button>
-                    <button onclick="replaceUpload('${unitId}', 'assessment', ${assessmentNum}, '${uploadData._id}')" class="text-orange-600 hover:text-orange-700 text-sm">
+                    <button onclick="replaceUpload('${escapeAttr(unitId)}', 'assessment', ${assessmentNum}, '${escapeAttr(uploadData._id)}')" class="text-orange-600 hover:text-orange-700 text-sm">
                         <i class="ri-refresh-line"></i>
                     </button>
                 ` : `
-                    <button onclick="uploadFile('${unitId}', 'assessment', ${assessmentNum})" class="px-3 py-1 bg-primary hover:bg-primary/80 text-white text-xs rounded transition-colors">
+                    <button onclick="uploadFile('${escapeAttr(unitId)}', 'assessment', ${assessmentNum})" class="px-3 py-1 bg-primary hover:bg-primary/80 text-white text-xs rounded transition-colors">
                         <i class="ri-upload-line mr-1"></i>Upload
                     </button>
                 `}
@@ -302,20 +305,20 @@ function createPracticalUploadSlot(unitId, practicalNum, uploadData) {
                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">PDF Document</p>
                 ${uploadData ? `
                     <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        ${uploadData.originalFileName} • ${new Date(uploadData.uploadedAt).toLocaleDateString()}
+                        ${escapeHtml(uploadData.originalFileName)} • ${new Date(uploadData.uploadedAt).toLocaleDateString()}
                     </p>
                 ` : ''}
             </div>
             <div class="flex items-center gap-2">
                 ${uploadData ? `
-                    <button onclick="viewUpload('${uploadData._id}')" class="text-blue-600 hover:text-blue-700 text-sm">
+                    <button onclick="viewUpload('${escapeAttr(uploadData._id)}')" class="text-blue-600 hover:text-blue-700 text-sm">
                         <i class="ri-eye-line"></i>
                     </button>
-                    <button onclick="replaceUpload('${unitId}', 'practical', ${practicalNum}, '${uploadData._id}')" class="text-orange-600 hover:text-orange-700 text-sm">
+                    <button onclick="replaceUpload('${escapeAttr(unitId)}', 'practical', ${practicalNum}, '${escapeAttr(uploadData._id)}')" class="text-orange-600 hover:text-orange-700 text-sm">
                         <i class="ri-refresh-line"></i>
                     </button>
                 ` : `
-                    <button onclick="uploadFile('${unitId}', 'practical', ${practicalNum})" class="px-3 py-1 bg-primary hover:bg-primary/80 text-white text-xs rounded transition-colors">
+                    <button onclick="uploadFile('${escapeAttr(unitId)}', 'practical', ${practicalNum})" class="px-3 py-1 bg-primary hover:bg-primary/80 text-white text-xs rounded transition-colors">
                         <i class="ri-upload-line mr-1"></i>Upload
                     </button>
                 `}
@@ -340,20 +343,20 @@ function createCombinedVideoUploadSlot(unitId, uploadData) {
                 <p class="text-xs text-purple-600 dark:text-purple-400 mt-1">Video or Image</p>
                 ${uploadData ? `
                     <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        ${uploadData.originalFileName} • ${new Date(uploadData.uploadedAt).toLocaleDateString()}
+                        ${escapeHtml(uploadData.originalFileName)} • ${new Date(uploadData.uploadedAt).toLocaleDateString()}
                     </p>
                 ` : ''}
             </div>
             <div class="flex items-center gap-2">
                 ${uploadData ? `
-                    <button onclick="viewUpload('${uploadData._id}')" class="text-blue-600 hover:text-blue-700 text-sm">
+                    <button onclick="viewUpload('${escapeAttr(uploadData._id)}')" class="text-blue-600 hover:text-blue-700 text-sm">
                         <i class="ri-eye-line"></i>
                     </button>
-                    <button onclick="replaceUpload('${unitId}', 'combined_video', null, '${uploadData._id}')" class="text-orange-600 hover:text-orange-700 text-sm">
+                    <button onclick="replaceUpload('${escapeAttr(unitId)}', 'combined_video', null, '${escapeAttr(uploadData._id)}')" class="text-orange-600 hover:text-orange-700 text-sm">
                         <i class="ri-refresh-line"></i>
                     </button>
                 ` : `
-                    <button onclick="uploadFile('${unitId}', 'combined_video', null)" class="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded transition-colors">
+                    <button onclick="uploadFile('${escapeAttr(unitId)}', 'combined_video', null)" class="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded transition-colors">
                         <i class="ri-upload-line mr-1"></i>Upload
                     </button>
                 `}
@@ -417,7 +420,7 @@ async function processUpload(file, unitId, uploadType, assessmentNumber, oldUplo
         if (unitId) {
             // Get unit details from registrations
             const encodedStudentId = encodeURIComponent(studentData.admissionNumber);
-            const registrations = await fetch(`${UPLOAD_API_BASE}/students/${encodedStudentId}/registrations?status=registered`);
+            const registrations = await authFetch(`${UPLOAD_API_BASE}/students/${encodedStudentId}/registrations?status=registered`);
             const regs = await registrations.json();
             const unitReg = regs.find(r => (r.unitId?._id || r.unitId) === unitId);
 
@@ -436,7 +439,7 @@ async function processUpload(file, unitId, uploadType, assessmentNumber, oldUplo
             }
         }
 
-        const response = await fetch(`${UPLOAD_API_BASE}/student-uploads`, {
+        const response = await authFetch(`${UPLOAD_API_BASE}/student-uploads`, {
             method: 'POST',
             body: formData
         });
@@ -469,7 +472,7 @@ async function viewUpload(uploadId) {
         showLoading('Loading file...');
 
         const encodedStudentId = encodeURIComponent(studentData.admissionNumber);
-        const response = await fetch(`${UPLOAD_API_BASE}/student-uploads/${uploadId}/download?userId=${encodedStudentId}&userType=student`);
+        const response = await authFetch(`${UPLOAD_API_BASE}/student-uploads/${uploadId}/download?userId=${encodedStudentId}&userType=student`);
         if (!response.ok) throw new Error('Failed to get download URL');
 
         const data = await response.json();
@@ -530,7 +533,7 @@ async function processProfileUpload(file, uploadType) {
         formData.append('academicYear', currentAcademicYear);
         formData.append('semester', currentSemester);
 
-        const response = await fetch(`${UPLOAD_API_BASE}/student-uploads`, {
+        const response = await authFetch(`${UPLOAD_API_BASE}/student-uploads`, {
             method: 'POST',
             body: formData
         });
