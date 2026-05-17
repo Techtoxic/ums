@@ -9,7 +9,6 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const bcrypt = require('bcryptjs');
-const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 const path = require('path');
 const multer = require('multer');
@@ -1844,32 +1843,6 @@ async function initializeSystemSettings() {
     }
 }
 
-// Email transporter (uses env vars already loaded at the top of the file)
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_APP_PASSWORD
-    },
-    pool: true, // Use pooled connections
-    maxConnections: 5, // Maximum number of simultaneous connections
-    rateDelta: 1000, // How many messages to send in rateDelta time
-    rateLimit: 5 // How many messages in rateDelta time
-});
-
-// Verify email configuration
-transporter.verify((error, success) => {
-    if (error) {
-        console.error('Email configuration error:', error);
-        if (error.code === 'EAUTH') {
-            console.error('Please check your EMAIL_USER and EMAIL_APP_PASSWORD in .env file');
-            console.error('Make sure to use an App Password from your Google Account settings');
-        }
-    } else {
-        console.log('Email server is ready to send messages');
-    }
-});
-
 // Tool Request Schema
 const toolRequestSchema = new mongoose.Schema({
     toolType: { type: String, required: true },
@@ -2081,58 +2054,16 @@ app.post('/api/tool-requests', verifyToken, authorize('admin', 'trainer', 'hod')
                 emailList.push(process.env.EMAIL_USER); // Fallback to admin email
             }
 
-            const mailOptions = {
-                from: process.env.EMAIL_USER,
-                to: emailList.join(','),
-                subject: `New Tool Request: ${toolType}`,
-                html: `
-                    <h2>New Tool Request</h2>
-                    <p>Dear Trainer,</p>
-                    <p>I trust this email finds you well. A new tool request has been submitted with the following details:</p>
-                    <p><strong>Tool Type:</strong> ${toolType}</p>
-                    <p><strong>Course:</strong> ${course}</p>
-                    <p><strong>Due Date:</strong> ${new Date(dueDate).toLocaleDateString()}</p>
-                    ${instructions ? `<p><strong>Special Instructions:</strong> ${instructions}</p>` : ''}
-                    <p>Please log in to the Staff Portal to view and process this request at your earliest convenience.</p>
-                    <p>Best regards,</p>
-                    <p><strong>Dr. James Kiprop</strong><br>
-                    Deputy Principal (Academics)<br>
-                    EMURUA DIKIRR TTI<br>
-                    <em>Excellence in Technical Education</em></p>
-                `,
-                // Enable delivery status notifications
-                dsn: {
-                    id: newRequest._id.toString(),
-                    return: 'headers',
-                    notify: ['success', 'failure', 'delay'],
-                    recipient: process.env.EMAIL_USER
-                }
-            };
+            const info = await emailService.sendToolRequestNotification(emailList, toolType, course, dueDate, instructions);
 
-            const info = await transporter.sendMail(mailOptions);
-            console.log('Email notification details:');
-            console.log('Message ID:', info.messageId);
-            console.log('Accepted recipients:', info.accepted);
-            console.log('Rejected recipients:', info.rejected);
-            console.log('Pending recipients:', info.pending);
-            console.log('Response:', info.response);
-            
-            if (info.accepted.length > 0) {
-                console.log('Email notification sent successfully to:', info.accepted.join(', '));
-            }
-            if (info.rejected.length > 0) {
-                console.error('Failed to send to some recipients:', info.rejected.join(', '));
+            if (info.success) {
+                console.log('Email notification sent successfully');
+            } else {
+                console.error('Failed to send email notification:', info.error);
             }
         } catch (emailError) {
             console.error('Failed to send email notification:');
-            console.error('Error code:', emailError.code);
             console.error('Error message:', emailError.message);
-            if (emailError.response) {
-                console.error('SMTP response:', emailError.response);
-            }
-            if (Array.isArray(emailError.rejected)) {
-                console.error('Rejected recipients:', emailError.rejected.join(', '));
-            }
         }
 
         res.status(201).json({

@@ -37,15 +37,20 @@ async function brevoFetch(url, { apiKey, method = 'GET', body }) {
 // so callers can keep awaiting without try/catch obligations.
 // Logging never includes the api key, request body, recipient address,
 // OTP value, or reset token.
-async function sendEmail(service, { subject, htmlContent, textContent, recipientEmail, recipientName }) {
+async function sendEmail(service, { subject, htmlContent, textContent, recipientEmail, recipientName, recipients }) {
     if (!service.apiKey) {
         console.log('📧 email skipped: BREVO_API_KEY not set');
         return { success: true, skipped: true };
     }
 
+    // Single recipient (recipientEmail) or many (recipients: array of addresses).
+    const to = Array.isArray(recipients) && recipients.length
+        ? recipients.map((email) => ({ email }))
+        : [{ email: recipientEmail, name: recipientName || recipientEmail }];
+
     const payload = {
         sender: { name: service.senderName, email: service.senderEmail },
-        to: [{ email: recipientEmail, name: recipientName || recipientEmail }],
+        to,
         subject,
         htmlContent
     };
@@ -60,7 +65,7 @@ async function sendEmail(service, { subject, htmlContent, textContent, recipient
 
         if (ok && json && json.messageId) {
             console.log(`✅ Email sent: ${subject} [${json.messageId}]`);
-            return { success: true, messageId: json.messageId, recipient: recipientEmail };
+            return { success: true, messageId: json.messageId, recipient: recipientEmail || recipients };
         }
 
         const code = (json && json.code) ? json.code : 'unknown';
@@ -160,6 +165,32 @@ class EmailService {
             htmlContent,
             recipientEmail: email,
             recipientName: userName
+        });
+    }
+
+    // Tool request notification to trainers. Migrated verbatim from the
+    // old nodemailer transporter in server.js; sends to many recipients.
+    async sendToolRequestNotification(recipients, toolType, course, dueDate, instructions) {
+        const htmlContent = `
+                    <h2>New Tool Request</h2>
+                    <p>Dear Trainer,</p>
+                    <p>I trust this email finds you well. A new tool request has been submitted with the following details:</p>
+                    <p><strong>Tool Type:</strong> ${toolType}</p>
+                    <p><strong>Course:</strong> ${course}</p>
+                    <p><strong>Due Date:</strong> ${new Date(dueDate).toLocaleDateString()}</p>
+                    ${instructions ? `<p><strong>Special Instructions:</strong> ${instructions}</p>` : ''}
+                    <p>Please log in to the Staff Portal to view and process this request at your earliest convenience.</p>
+                    <p>Best regards,</p>
+                    <p><strong>Dr. James Kiprop</strong><br>
+                    Deputy Principal (Academics)<br>
+                    EMURUA DIKIRR TTI<br>
+                    <em>Excellence in Technical Education</em></p>
+                `;
+
+        return sendEmail(this, {
+            subject: `New Tool Request: ${toolType}`,
+            htmlContent,
+            recipients
         });
     }
 
