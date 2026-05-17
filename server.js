@@ -713,6 +713,17 @@ const serveHTML = (res, filePath) => {
     }
 };
 
+// Auth pages (login, OTP step, password reset, first-login) must never be
+// cached by the browser — otherwise the back button can re-display the OTP
+// page with the code still visible. Applied per-route, NOT globally, so
+// static assets (CSS/JS/images) keep their normal caching.
+function noCacheAuthPages(req, res, next) {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    next();
+}
+
 // Minimal request logger - method, path, status only. Never log headers or bodies.
 app.use((req, res, next) => {
     const start = Date.now();
@@ -1110,12 +1121,12 @@ app.get('/api/auth/validate-reset-token/:token', async (req, res) => {
 });
 
 // Forgot password page route
-app.get('/forgot-password', (req, res) => {
+app.get('/forgot-password', noCacheAuthPages, (req, res) => {
     res.sendFile(path.join(__dirname, 'src', 'components', 'auth', 'ForgotPassword.html'));
 });
 
 // Reset password page route
-app.get('/reset-password', (req, res) => {
+app.get('/reset-password', noCacheAuthPages, (req, res) => {
     res.sendFile(path.join(__dirname, 'src', 'components', 'auth', 'ResetPassword.html'));
 });
 
@@ -1129,7 +1140,7 @@ app.get('/debug', (req, res) => {
 app.use('/api/admin/auth', adminAuthRoutes);
 
 // Admin portal pages (MUST BE BEFORE GENERIC ROUTES)
-app.get('/admin/login', (req, res) => {
+app.get('/admin/login', noCacheAuthPages, (req, res) => {
     const filePath = path.join(__dirname, 'src', 'components', 'admin', 'AdminLogin.html');
     console.log('🔐 Admin login requested');
     console.log('📂 File path:', filePath);
@@ -1138,7 +1149,7 @@ app.get('/admin/login', (req, res) => {
     serveHTML(res, filePath);
 });
 
-app.get('/admin/first-login', (req, res) => {
+app.get('/admin/first-login', noCacheAuthPages, (req, res) => {
     console.log('📝 First login page requested');
     serveHTML(res, path.join(__dirname, 'src', 'components', 'admin', 'FirstLogin.html'));
 });
@@ -1154,12 +1165,12 @@ app.get('/admin/dashboard', (req, res) => {
 });
 
 // Serve main login page (Student/Trainer combined)
-app.get('/login', (req, res) => {
+app.get('/login', noCacheAuthPages, (req, res) => {
     serveHTML(res, path.join(__dirname, 'src', 'login.html'));
 });
 
 // Serve HOD pages
-app.get('/hod/login', (req, res) => {
+app.get('/hod/login', noCacheAuthPages, (req, res) => {
     serveHTML(res, path.join(__dirname, 'src', 'components', 'hod', 'HODLogin.html'));
 });
 
@@ -1168,7 +1179,7 @@ app.get('/hod/dashboard', (req, res) => {
 });
 
 // Serve trainer pages
-app.get('/trainer/login', (req, res) => {
+app.get('/trainer/login', noCacheAuthPages, (req, res) => {
     serveHTML(res, path.join(__dirname, 'src', 'components', 'trainer', 'TrainerLogin.html'));
 });
 
@@ -5551,7 +5562,7 @@ app.patch('/api/ilo/applications/:type/:applicationId/status', verifyToken, auth
 // See lines 630-659
 
 // Student routes
-app.get('/student/login', (req, res) => {
+app.get('/student/login', noCacheAuthPages, (req, res) => {
     res.sendFile(path.join(__dirname, 'src', 'login.html'));
 });
 
@@ -5560,7 +5571,7 @@ app.get('/student/portal', (req, res) => {
 });
 
 // Trainer routes
-app.get('/trainer/login', (req, res) => {
+app.get('/trainer/login', noCacheAuthPages, (req, res) => {
     res.sendFile(path.join(__dirname, 'src', 'components', 'trainer', 'TrainerLogin.html'));
 });
 
@@ -5569,7 +5580,7 @@ app.get('/trainer/dashboard', (req, res) => {
 });
 
 // Finance routes
-app.get('/finance/login', (req, res) => {
+app.get('/finance/login', noCacheAuthPages, (req, res) => {
     serveHTML(res, path.join(__dirname, 'src', 'components', 'admin', 'AdminStaffLogin.html'));
 });
 
@@ -5578,7 +5589,7 @@ app.get('/finance/dashboard', (req, res) => {
 });
 
 // Registrar routes
-app.get('/registrar/login', (req, res) => {
+app.get('/registrar/login', noCacheAuthPages, (req, res) => {
     serveHTML(res, path.join(__dirname, 'src', 'components', 'admin', 'AdminStaffLogin.html'));
 });
 
@@ -5587,7 +5598,7 @@ app.get('/registrar/dashboard', (req, res) => {
 });
 
 // Dean routes
-app.get('/dean/login', (req, res) => {
+app.get('/dean/login', noCacheAuthPages, (req, res) => {
     serveHTML(res, path.join(__dirname, 'src', 'components', 'admin', 'AdminStaffLogin.html'));
 });
 
@@ -5596,7 +5607,7 @@ app.get('/dean/dashboard', (req, res) => {
 });
 
 // Deputy routes
-app.get('/deputy/login', (req, res) => {
+app.get('/deputy/login', noCacheAuthPages, (req, res) => {
     serveHTML(res, path.join(__dirname, 'src', 'components', 'admin', 'AdminStaffLogin.html'));
 });
 
@@ -5605,7 +5616,7 @@ app.get('/deputy/dashboard', (req, res) => {
 });
 
 // HOD routes
-app.get('/hod/login', (req, res) => {
+app.get('/hod/login', noCacheAuthPages, (req, res) => {
     res.sendFile(path.join(__dirname, 'src', 'components', 'hod', 'HODLogin.html'));
 });
 
@@ -5614,7 +5625,7 @@ app.get('/hod/dashboard', (req, res) => {
 });
 
 // ILO routes (Industrial Liaison Office)
-app.get('/ilo/login', (req, res) => {
+app.get('/ilo/login', noCacheAuthPages, (req, res) => {
     serveHTML(res, path.join(__dirname, 'src', 'components', 'admin', 'AdminStaffLogin.html'));
 });
 
@@ -5623,7 +5634,7 @@ app.get('/ilo/dashboard', (req, res) => {
 });
 
 // CIBEC routes (Competency-Based Education & Training Center)
-app.get('/cibec/login', (req, res) => {
+app.get('/cibec/login', noCacheAuthPages, (req, res) => {
     serveHTML(res, path.join(__dirname, 'src', 'components', 'admin', 'AdminStaffLogin.html'));
 });
 
