@@ -1,124 +1,149 @@
-const nodemailer = require('nodemailer');
+// Transactional email via Brevo's HTTP API (https://api.brevo.com).
+// Replaces the previous nodemailer/Gmail SMTP transport: the staging
+// droplet blocks outbound SMTP (465/587), so we send over HTTPS (443).
+// Uses Node 20's built-in global fetch + AbortController — no extra deps.
 const config = require('../config/config');
+
+const BREVO_SEND_URL = 'https://api.brevo.com/v3/smtp/email';
+const BREVO_ACCOUNT_URL = 'https://api.brevo.com/v3/account';
+const REQUEST_TIMEOUT_MS = 15000;
+
+// Single point of HTTP contact with Brevo. Always clears its timeout.
+// Returns { ok, status, json } and never throws on non-2xx; only network
+// failures / aborts reject (callers handle those).
+async function brevoFetch(url, { apiKey, method = 'GET', body }) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    try {
+        const res = await fetch(url, {
+            method,
+            signal: controller.signal,
+            headers: {
+                'api-key': apiKey,
+                'content-type': 'application/json',
+                'accept': 'application/json'
+            },
+            body: body ? JSON.stringify(body) : undefined
+        });
+        let json = null;
+        try { json = await res.json(); } catch (_) { json = null; }
+        return { ok: res.ok, status: res.status, json };
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
+// Shared send path for every public send* method. Resolves (never throws)
+// so callers can keep awaiting without try/catch obligations.
+// Logging never includes the api key, request body, recipient address,
+// OTP value, or reset token.
+async function sendEmail(service, { subject, htmlContent, textContent, recipientEmail, recipientName }) {
+    if (!service.apiKey) {
+        console.log('📧 email skipped: BREVO_API_KEY not set');
+        return { success: true, skipped: true };
+    }
+
+    const payload = {
+        sender: { name: service.senderName, email: service.senderEmail },
+        to: [{ email: recipientEmail, name: recipientName || recipientEmail }],
+        subject,
+        htmlContent
+    };
+    if (textContent) payload.textContent = textContent;
+
+    try {
+        const { ok, status, json } = await brevoFetch(BREVO_SEND_URL, {
+            apiKey: service.apiKey,
+            method: 'POST',
+            body: payload
+        });
+
+        if (ok && json && json.messageId) {
+            console.log(`✅ Email sent: ${subject} [${json.messageId}]`);
+            return { success: true, messageId: json.messageId, recipient: recipientEmail };
+        }
+
+        const code = (json && json.code) ? json.code : 'unknown';
+        console.error(`❌ Email failed: ${subject} | status=${status} code=${code}`);
+        return { success: false, error: `brevo responded ${status}` };
+    } catch (err) {
+        const isTimeout = err && err.name === 'AbortError';
+        const status = isTimeout ? 'timeout' : 'network';
+        const code = isTimeout ? 'TIMEOUT' : ((err && err.code) ? err.code : 'NETWORK');
+        console.error(`❌ Email failed: ${subject} | status=${status} code=${code}`);
+        return { success: false, error: isTimeout ? 'request timeout' : 'network error' };
+    }
+}
 
 class EmailService {
     constructor() {
-        this.transporter = null;
+        this.apiKey = process.env.BREVO_API_KEY || null;
+        this.senderEmail = process.env.BREVO_SENDER_EMAIL || null;
+        this.senderName = process.env.BREVO_SENDER_NAME || null;
         this.initializeTransporter();
     }
 
     initializeTransporter() {
-        try {
-            // Try port 465 with SSL for better compatibility on cloud platforms like Render
-            this.transporter = nodemailer.createTransport({
-                service: 'gmail',
-                host: 'smtp.gmail.com',
-                port: 465,
-                secure: true,
-                auth: {
-                    user: process.env.EMAIL_USER,
-                    pass: process.env.EMAIL_APP_PASSWORD
-                },
-                connectionTimeout: 30000,
-                greetingTimeout: 20000,
-                socketTimeout: 30000,
-                pool: true,
-                maxConnections: 5,
-                maxMessages: 100
-            });
-
-            // Verify connection
-            this.transporter.verify((error, success) => {
-                if (error) {
-                    console.error('❌ Email service initialization failed:', error);
-                } else {
-                    console.log('✅ Email service initialized successfully');
-                }
-            });
-        } catch (error) {
-            console.error('❌ Failed to create email transporter:', error);
+        if (!this.apiKey) {
+            console.warn('⚠️ BREVO_API_KEY not set — email service running in degraded mode (emails will be skipped)');
+            return;
         }
+        if (!this.senderEmail || !this.senderName) {
+            console.warn('⚠️ BREVO_SENDER_EMAIL / BREVO_SENDER_NAME not set — Brevo sends will fail until configured');
+        }
+
+        // Replaces the old transporter.verify(): a single /v3/account GET
+        // confirms the API key works. Non-blocking and never throws — the
+        // app must not crash when email is misconfigured.
+        brevoFetch(BREVO_ACCOUNT_URL, { apiKey: this.apiKey, method: 'GET' })
+            .then(({ ok, status }) => {
+                if (ok) {
+                    console.log('✅ Email service initialized successfully (Brevo)');
+                } else {
+                    console.error(`❌ Email service initialization failed: Brevo /v3/account returned status=${status}`);
+                }
+            })
+            .catch((error) => {
+                const isTimeout = error && error.name === 'AbortError';
+                console.error(`❌ Email service initialization failed: ${isTimeout ? 'timeout' : 'network error'}`);
+            });
     }
 
     // Send OTP email
     async sendOTPEmail(email, otp, userName, userType) {
-        try {
-            const mailOptions = {
-                from: {
-                    name: 'EDTTI University Management System',
-                    address: process.env.EMAIL_USER
-                },
-                to: email,
-                subject: 'Password Reset - One Time Password',
-                html: this.generateOTPEmailTemplate(otp, userName, userType)
-            };
-
-            const result = await this.transporter.sendMail(mailOptions);
-            console.log('✅ OTP email sent successfully:', result.messageId);
-            return { success: true, messageId: result.messageId };
-        } catch (error) {
-            console.error('❌ Failed to send OTP email:', error);
-            return { success: false, error: error.message };
-        }
+        return sendEmail(this, {
+            subject: 'Password Reset - One Time Password',
+            htmlContent: this.generateOTPEmailTemplate(otp, userName, userType),
+            recipientEmail: email,
+            recipientName: userName
+        });
     }
 
     // Send reset link email
     async sendResetLinkEmail(email, resetToken, userName, userType, baseUrl) {
-        try {
-            const resetLink = `${baseUrl || config.baseUrl}/reset-password?token=${resetToken}&type=${userType}`;
-            
-            const mailOptions = {
-                from: {
-                    name: 'EDTTI University Management System',
-                    address: process.env.EMAIL_USER
-                },
-                to: email,
-                subject: 'Password Reset - Reset Link',
-                html: this.generateResetLinkEmailTemplate(resetLink, userName, userType)
-            };
+        const resetLink = `${baseUrl || config.baseUrl}/reset-password?token=${resetToken}&type=${userType}`;
 
-            const result = await this.transporter.sendMail(mailOptions);
-            console.log('✅ Reset link email sent successfully:', result.messageId);
-            return { success: true, messageId: result.messageId };
-        } catch (error) {
-            console.error('❌ Failed to send reset link email:', error);
-            return { success: false, error: error.message };
-        }
+        return sendEmail(this, {
+            subject: 'Password Reset - Reset Link',
+            htmlContent: this.generateResetLinkEmailTemplate(resetLink, userName, userType),
+            recipientEmail: email,
+            recipientName: userName
+        });
     }
 
     // Send login OTP email
     async sendLoginOTP(email, otp, userName, userType) {
-        try {
-            const mailOptions = {
-                from: {
-                    name: 'EDTTI University Management System',
-                    address: process.env.EMAIL_USER
-                },
-                to: email,
-                subject: 'Login Verification - One Time Password',
-                html: this.generateLoginOTPTemplate(otp, userName, userType)
-            };
-
-            const result = await this.transporter.sendMail(mailOptions);
-            console.log('✅ Login OTP email sent successfully:', result.messageId);
-            return { success: true, messageId: result.messageId };
-        } catch (error) {
-            console.error('❌ Failed to send login OTP email:', error);
-            return { success: false, error: error.message };
-        }
+        return sendEmail(this, {
+            subject: 'Login Verification - One Time Password',
+            htmlContent: this.generateLoginOTPTemplate(otp, userName, userType),
+            recipientEmail: email,
+            recipientName: userName
+        });
     }
 
     // SEV-H-014: send a student their one-time initial password.
     async sendStudentCredentials(email, userName, admissionNumber, tempPassword) {
-        try {
-            const mailOptions = {
-                from: {
-                    name: 'EDTTI University Management System',
-                    address: process.env.EMAIL_USER
-                },
-                to: email,
-                subject: 'Your Student Portal Account - Initial Password',
-                html: `
+        const htmlContent = `
                 <div style="font-family: 'Segoe UI', Tahoma, sans-serif; max-width:600px; margin:0 auto; color:#333;">
                     <h2>Welcome to EDTTI, ${userName}</h2>
                     <p>Your student portal account has been created.</p>
@@ -128,23 +153,20 @@ class EmailService {
                     <p style="color:#c0392b;"><strong>You must change this password the first time you log in.</strong>
                        This temporary password will not work for anything except setting your own password.</p>
                     <p>If you did not expect this email, contact the registrar's office.</p>
-                </div>`
-            };
+                </div>`;
 
-            const result = await this.transporter.sendMail(mailOptions);
-            console.log('✅ Student credentials email sent successfully:', result.messageId);
-            return { success: true, messageId: result.messageId };
-        } catch (error) {
-            // Never log the password or recipient.
-            console.error('❌ Failed to send student credentials email:', error.message);
-            return { success: false, error: error.message };
-        }
+        return sendEmail(this, {
+            subject: 'Your Student Portal Account - Initial Password',
+            htmlContent,
+            recipientEmail: email,
+            recipientName: userName
+        });
     }
 
     // Generate OTP email template
     generateOTPEmailTemplate(otp, userName, userType) {
         const userTypeDisplay = userType.charAt(0).toUpperCase() + userType.slice(1);
-        
+
         return `
         <!DOCTYPE html>
         <html lang="en">
@@ -225,16 +247,16 @@ class EmailService {
                     <h1>🔐 Password Reset Request</h1>
                     <p>EDTTI University Management System</p>
                 </div>
-                
+
                 <div class="content">
                     <h2>Hello ${userName},</h2>
                     <p>We received a request to reset your password for your ${userTypeDisplay} account. Please use the One Time Password (OTP) below to proceed with your password reset.</p>
-                    
+
                     <div class="otp-box">
                         <p style="margin: 0; font-size: 16px; color: #666;">Your OTP Code:</p>
                         <div class="otp-code">${otp}</div>
                     </div>
-                    
+
                     <div class="warning">
                         <strong>⚠️ Important Security Information:</strong>
                         <ul style="margin: 10px 0; padding-left: 20px;">
@@ -244,18 +266,18 @@ class EmailService {
                             <li>Our support team will never ask for your OTP</li>
                         </ul>
                     </div>
-                    
+
                     <div class="security-notice">
                         <strong>🛡️ Security Notice:</strong>
                         <p style="margin: 5px 0;">If you did not request this password reset, please ignore this email and ensure your account is secure. Your current password will remain unchanged.</p>
                     </div>
-                    
+
                     <p>To reset your password, return to the login page and enter this OTP when prompted.</p>
-                    
+
                     <p>Best regards,<br>
                     <strong>EDTTI IT Support Team</strong></p>
                 </div>
-                
+
                 <div class="footer">
                     <p>This is an automated message. Please do not reply to this email.</p>
                     <p>&copy; ${new Date().getFullYear()} EDTTI University Management System. All rights reserved.</p>
@@ -269,7 +291,7 @@ class EmailService {
     // Generate reset link email template
     generateResetLinkEmailTemplate(resetLink, userName, userType) {
         const userTypeDisplay = userType.charAt(0).toUpperCase() + userType.slice(1);
-        
+
         return `
         <!DOCTYPE html>
         <html lang="en">
@@ -361,15 +383,15 @@ class EmailService {
                     <h1>🔐 Password Reset Link</h1>
                     <p>EDTTI University Management System</p>
                 </div>
-                
+
                 <div class="content">
                     <h2>Hello ${userName},</h2>
                     <p>We received a request to reset your password for your ${userTypeDisplay} account. Click the button below to create a new password.</p>
-                    
+
                     <div style="text-align: center;">
                         <a href="${resetLink}" class="reset-button">🔑 Reset My Password</a>
                     </div>
-                    
+
                     <div class="warning">
                         <strong>⚠️ Important Security Information:</strong>
                         <ul style="margin: 10px 0; padding-left: 20px;">
@@ -379,21 +401,21 @@ class EmailService {
                             <li>Our support team will never ask for your reset link</li>
                         </ul>
                     </div>
-                    
+
                     <div class="security-notice">
                         <strong>🛡️ Security Notice:</strong>
                         <p style="margin: 5px 0;">If you did not request this password reset, please ignore this email and ensure your account is secure. Your current password will remain unchanged.</p>
                     </div>
-                    
+
                     <p><strong>Can't click the button?</strong> Copy and paste this link into your browser:</p>
                     <div class="link-fallback">
                         ${resetLink}
                     </div>
-                    
+
                     <p>Best regards,<br>
                     <strong>EDTTI IT Support Team</strong></p>
                 </div>
-                
+
                 <div class="footer">
                     <p>This is an automated message. Please do not reply to this email.</p>
                     <p>&copy; ${new Date().getFullYear()} EDTTI University Management System. All rights reserved.</p>
@@ -417,9 +439,9 @@ class EmailService {
             'trainer': 'Trainer',
             'student': 'Student'
         };
-        
+
         const userTypeDisplay = roleNames[userType] || userType.charAt(0).toUpperCase() + userType.slice(1);
-        
+
         return `
         <!DOCTYPE html>
         <html lang="en">
@@ -514,17 +536,17 @@ class EmailService {
                     <p>EDTTI University Management System</p>
                     <div class="security-badge">🛡️ SECURE LOGIN</div>
                 </div>
-                
+
                 <div class="content">
                     <h2>Hello ${userName},</h2>
                     <p>You are attempting to sign in to your <strong>${userTypeDisplay}</strong> account. Please use the One Time Password (OTP) below to complete your login.</p>
-                    
+
                     <div class="otp-box">
                         <p style="margin: 0; font-size: 14px; color: #666; text-transform: uppercase; letter-spacing: 2px;">Your Verification Code</p>
                         <div class="otp-code">${otp}</div>
                         <p style="margin: 0; font-size: 12px; color: #999;">Enter this code to proceed</p>
                     </div>
-                    
+
                     <div class="info-box">
                         <strong>📋 Login Details:</strong>
                         <ul style="margin: 10px 0; padding-left: 20px;">
@@ -533,7 +555,7 @@ class EmailService {
                             <li><strong>Time:</strong> ${new Date().toLocaleString()}</li>
                         </ul>
                     </div>
-                    
+
                     <div class="warning">
                         <strong>⚠️ Important Security Information:</strong>
                         <ul style="margin: 10px 0; padding-left: 20px;">
@@ -543,18 +565,18 @@ class EmailService {
                             <li>EDTTI staff will never ask for your OTP</li>
                         </ul>
                     </div>
-                    
+
                     <div style="background: #ffebee; border-left: 4px solid #f44336; padding: 15px; margin: 20px 0; border-radius: 5px;">
                         <strong>🚨 Didn't Request This?</strong>
                         <p style="margin: 5px 0;">If you did not attempt to log in, please ignore this email and contact IT Support immediately. Your password remains secure.</p>
                     </div>
-                    
+
                     <p>For security reasons, this verification code will expire after 10 minutes.</p>
-                    
+
                     <p>Best regards,<br>
                     <strong>EDTTI IT Security Team</strong></p>
                 </div>
-                
+
                 <div class="footer">
                     <p>This is an automated security message. Please do not reply to this email.</p>
                     <p>If you need assistance, contact IT Support: support@edtti.ac.ke</p>
@@ -568,11 +590,18 @@ class EmailService {
 
     // Test email connection
     async testConnection() {
+        if (!this.apiKey) {
+            return { success: false, error: 'BREVO_API_KEY not set' };
+        }
         try {
-            await this.transporter.verify();
-            return { success: true, message: 'Email service is working' };
+            const { ok, status } = await brevoFetch(BREVO_ACCOUNT_URL, { apiKey: this.apiKey, method: 'GET' });
+            if (ok) {
+                return { success: true, message: 'Email service is working' };
+            }
+            return { success: false, error: `Brevo /v3/account returned status=${status}` };
         } catch (error) {
-            return { success: false, error: error.message };
+            const isTimeout = error && error.name === 'AbortError';
+            return { success: false, error: isTimeout ? 'request timeout' : 'network error' };
         }
     }
 }
