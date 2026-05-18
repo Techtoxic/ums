@@ -50,7 +50,7 @@ class FinanceAnalytics {
 
     // Calculate total revenue
     getTotalRevenue() {
-        return this.payments.reduce((total, payment) => total + (payment.amount || 0), 0);
+        return this.payments.reduce((total, payment) => total + Number(payment.amount || 0), 0);
     }
 
     // Calculate expected revenue (all students * their program costs)
@@ -82,7 +82,7 @@ class FinanceAnalytics {
             const method = payment.paymentMode || 'unknown';
             if (stats[method]) {
                 stats[method].count++;
-                stats[method].amount += payment.amount || 0;
+                stats[method].amount += Number(payment.amount || 0);
             } else {
                 // Log unknown payment modes for debugging
                 console.warn('Unknown payment mode:', method, payment);
@@ -130,7 +130,7 @@ class FinanceAnalytics {
             }
             
             monthlyData[monthKey].count++;
-            monthlyData[monthKey].amount += payment.amount || 0;
+            monthlyData[monthKey].amount += Number(payment.amount || 0);
         });
 
         return Object.entries(monthlyData)
@@ -151,7 +151,7 @@ class FinanceAnalytics {
             const programCost = program ? program.programCost : 0;
             
             const studentPayments = this.payments.filter(p => p.studentId === student.admissionNumber);
-            const totalPaid = studentPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+            const totalPaid = studentPayments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
             
             const balance = programCost - totalPaid;
             
@@ -178,7 +178,7 @@ class FinanceAnalytics {
             const programCost = program ? program.programCost : 0;
             
             const studentPayments = this.payments.filter(p => p.studentId === student.admissionNumber);
-            const totalPaid = studentPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+            const totalPaid = studentPayments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
             
             if (totalPaid >= programCost && programCost > 0) {
                 fullyPaidStudents.push({
@@ -215,7 +215,7 @@ class FinanceAnalytics {
             departmentStats[dept].expectedRevenue += programCost;
 
             const studentPayments = this.payments.filter(p => p.studentId === student.admissionNumber);
-            const totalPaid = studentPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+            const totalPaid = studentPayments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
             departmentStats[dept].actualRevenue += totalPaid;
             departmentStats[dept].outstandingBalance += Math.max(0, programCost - totalPaid);
         });
@@ -247,7 +247,7 @@ class FinanceAnalytics {
             intakeStats[intakeKey].expectedRevenue += programCost;
 
             const studentPayments = this.payments.filter(p => p.studentId === student.admissionNumber);
-            const totalPaid = studentPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+            const totalPaid = studentPayments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
             intakeStats[intakeKey].actualRevenue += totalPaid;
         });
 

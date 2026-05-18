@@ -1356,7 +1356,7 @@
                 }
 
                 doc.text(paymentModeDisplay, 25, yPos);
-                doc.text((payment.amount || 0).toLocaleString(), pageWidth - 25, yPos, { align: 'right' });
+                doc.text(Number(payment.amount || 0).toLocaleString(), pageWidth - 25, yPos, { align: 'right' });
 
                 // Add reference details below
                 yPos += 10;

@@ -215,7 +215,7 @@ function calculateDashboardMetrics() {
     if (totalTrainersEl) totalTrainersEl.textContent = allTrainers.length.toLocaleString();
 
     // Calculate total revenue (needed for multiple calculations)
-    const totalRevenue = allPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
+    const totalRevenue = allPayments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
     
     // Update stat-revenue (actual HTML ID)
     const statRevenueEl = document.getElementById('stat-revenue');
@@ -235,7 +235,7 @@ function calculateDashboardMetrics() {
         const programCost = program ? program.programCost : 67189;
         const totalFees = programCost * (student.year || 1);
         const studentPayments = allPayments.filter(p => p.studentId === student.admissionNumber);
-        const totalPaid = studentPayments.reduce((pSum, p) => pSum + (p.amount || 0), 0);
+        const totalPaid = studentPayments.reduce((pSum, p) => pSum + Number(p.amount || 0), 0);
         const balance = totalFees - totalPaid;
         return sum + (balance > 0 ? balance : 0);
     }, 0);
@@ -258,7 +258,7 @@ function calculateDashboardMetrics() {
         const programCost = program ? program.programCost : 67189;
         const totalFees = programCost * (s.year || 1);
         const studentPayments = allPayments.filter(p => p.studentId === s.admissionNumber);
-        const totalPaid = studentPayments.reduce((pSum, p) => pSum + (p.amount || 0), 0);
+        const totalPaid = studentPayments.reduce((pSum, p) => pSum + Number(p.amount || 0), 0);
         return (totalFees - totalPaid) > 0;
     }).length;
     const studentsOwingEl = document.getElementById('students-owing-count');
@@ -353,7 +353,7 @@ function createRevenueChart() {
             const paymentDate = new Date(p.date || p.createdAt);
             return paymentDate.getMonth() === date.getMonth() && 
                    paymentDate.getFullYear() === date.getFullYear();
-        }).reduce((sum, p) => sum + (p.amount || 0), 0);
+        }).reduce((sum, p) => sum + Number(p.amount || 0), 0);
         
         revenueData.push(monthRevenue);
     }
@@ -697,7 +697,7 @@ async function displayStudents() {
             const programCost = program ? program.programCost : 67189;
             const totalFees = programCost * (student.year || 1);
             const studentPayments = allPayments.filter(p => p.studentId === student.admissionNumber);
-            const totalPaid = studentPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+            const totalPaid = studentPayments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
             const balance = totalFees - totalPaid;
             return { ...student, balance };
         });
@@ -853,14 +853,14 @@ async function displayFinancial() {
 
     try {
         // Calculate financial metrics with proper balance calculation
-        const totalRevenue = allPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+        const totalRevenue = allPayments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
         
         const totalOutstanding = allStudents.reduce((sum, student) => {
             const program = allPrograms.find(p => p.programName === getCourseProgram(student.course));
             const programCost = program ? program.programCost : 67189;
             const totalFees = programCost * (student.year || 1);
             const studentPayments = allPayments.filter(p => p.studentId === student.admissionNumber);
-            const totalPaid = studentPayments.reduce((pSum, p) => pSum + (p.amount || 0), 0);
+            const totalPaid = studentPayments.reduce((pSum, p) => pSum + Number(p.amount || 0), 0);
             const balance = totalFees - totalPaid;
             return sum + (balance > 0 ? balance : 0);
         }, 0);
@@ -887,7 +887,7 @@ async function displayFinancial() {
                         const programCost = program ? program.programCost : 67189;
                         const totalFees = programCost * (s.year || 1);
                         const studentPayments = allPayments.filter(p => p.studentId === s.admissionNumber);
-                        const totalPaid = studentPayments.reduce((pSum, p) => pSum + (p.amount || 0), 0);
+                        const totalPaid = studentPayments.reduce((pSum, p) => pSum + Number(p.amount || 0), 0);
                         return (totalFees - totalPaid) > 0;
                     }).length} students owing</p>
                 </div>
@@ -1040,7 +1040,7 @@ function generateReport(type) {
 // ========================================
 
 function formatCurrency(amount) {
-    return `KES ${(amount || 0).toLocaleString()}`;
+    return `KES ${Number(amount || 0).toLocaleString()}`;
 }
 
 function formatDepartmentName(code) {

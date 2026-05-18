@@ -330,7 +330,7 @@ function updateProgramCost(cost) {
 // Update financial information in the UI
 async function updateFinancialInfo(programCost, payments) {
     // Calculate total paid
-    const totalPaid = payments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
+    const totalPaid = payments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
     
     // Calculate total fees based on year of study (programCost is per year)
     const yearOfStudy = studentData.year || 1;
@@ -574,7 +574,7 @@ async function fetchStudentUnits(studentCourse) {
                     });
                     
                     // Calculate balance using same method as dashboard
-                    const totalPaid = payments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
+                    const totalPaid = payments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
                     const yearOfStudy = studentData.year || 1;
                     const totalFees = programCost * yearOfStudy;
                     const outstandingBalance = totalFees - totalPaid;

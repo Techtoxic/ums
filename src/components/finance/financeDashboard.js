@@ -219,7 +219,7 @@ function renderStudentTable(students, programs, payments) {
         
         // Calculate total paid
         const studentPayments = payments.filter(payment => payment.studentId === student.admissionNumber);
-        const totalPaid = studentPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
+        const totalPaid = studentPayments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
         
         // Calculate balance (total fees minus payments) - allow negative values for overpayment
         const balance = totalFees - totalPaid;
@@ -388,7 +388,7 @@ function showPaymentSelectionModal(payments, student) {
                                     </div>
                                 </div>
                                 <div class="text-right">
-                                    <div class="font-semibold text-green-600">KES ${(payment.amount || 0).toLocaleString()}</div>
+                                    <div class="font-semibold text-green-600">KES ${Number(payment.amount || 0).toLocaleString()}</div>
                                     <span class="text-xs text-gray-500">Click to view</span>
                                 </div>
                             </div>
@@ -399,7 +399,7 @@ function showPaymentSelectionModal(payments, student) {
             <div class="p-4 border-t bg-gray-50">
                 <div class="flex justify-between items-center mb-3">
                     <span class="font-medium text-gray-700">Total Paid:</span>
-                    <span class="font-bold text-lg text-green-600">KES ${payments.reduce((sum, p) => sum + (p.amount || 0), 0).toLocaleString()}</span>
+                    <span class="font-bold text-lg text-green-600">KES ${payments.reduce((sum, p) => sum + Number(p.amount || 0), 0).toLocaleString()}</span>
                 </div>
                 <button class="w-full px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition-colors" 
                         onclick="this.closest('.fixed').remove()">Close</button>
@@ -434,8 +434,10 @@ function formatPaymentModeForDisplay(paymentMode) {
 
 // Format currency
 function formatCurrency(amount) {
-    return typeof amount === 'number' 
-        ? amount.toLocaleString('en-KE', { style: 'currency', currency: 'KES' })
+    // Decimal128 fields serialize to strings via toJSON — coerce before formatting.
+    const n = Number(amount);
+    return Number.isFinite(n)
+        ? n.toLocaleString('en-KE', { style: 'currency', currency: 'KES' })
         : 'N/A';
 }
 
@@ -1247,7 +1249,7 @@ function displayPayslips() {
         return `
             <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
                 <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-300">${monthName} ${group.year}</td>
-                <td class="px-4 py-3 text-sm font-semibold text-slate-900 dark:text-white">KES ${group.amount.toLocaleString()}</td>
+                <td class="px-4 py-3 text-sm font-semibold text-slate-900 dark:text-white">KES ${Number(group.amount).toLocaleString()}</td>
                 <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-300">${totalCount} trainers</td>
                 <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-300">${escapeHtml(generatedByName)}</td>
                 <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">${new Date(group.createdAt).toLocaleDateString()}</td>

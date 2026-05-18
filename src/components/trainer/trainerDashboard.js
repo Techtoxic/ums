@@ -1691,7 +1691,7 @@ function displayTrainerPayslips() {
                                     ${isUnread ? '<span class="px-2 py-0.5 bg-blue-500 text-white text-xs rounded-full">New</span>' : ''}
                                 </div>
                                 <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                                    Amount: <span class="font-semibold text-gray-900 dark:text-white">KES ${payslip.amount.toLocaleString()}</span>
+                                    Amount: <span class="font-semibold text-gray-900 dark:text-white">KES ${Number(payslip.amount).toLocaleString()}</span>
                                 </p>
                                 ${payslip.description ? `<p class="text-xs text-gray-500 dark:text-gray-500 mt-1">${escapeHtml(payslip.description)}</p>` : ''}
                             </div>
@@ -1778,7 +1778,7 @@ function showPayslipModal(payslip) {
                     <div class="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border border-green-200 dark:border-green-800">
                         <div>
                             <p class="text-sm text-gray-600 dark:text-gray-400">Total Amount</p>
-                            <p class="text-3xl font-bold text-green-600 dark:text-green-400">KES ${payslip.amount.toLocaleString()}</p>
+                            <p class="text-3xl font-bold text-green-600 dark:text-green-400">KES ${Number(payslip.amount).toLocaleString()}</p>
                         </div>
                         <div class="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
                             <i class="ri-money-dollar-circle-line text-3xl text-green-600 dark:text-green-400"></i>
@@ -1937,7 +1937,7 @@ function downloadPayslipPDF(payslipId) {
     doc.setTextColor(...textDark);
     doc.setFont('helvetica', 'normal');
     doc.text(payslip.description || 'Monthly Salary', 20, yPos);
-    doc.text(payslip.amount.toLocaleString(), 190, yPos, { align: 'right' });
+    doc.text(Number(payslip.amount).toLocaleString(), 190, yPos, { align: 'right' });
     
     // Total
     yPos += 15;
@@ -1951,7 +1951,7 @@ function downloadPayslipPDF(payslipId) {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(12);
     doc.text('TOTAL AMOUNT:', 20, yPos);
-    doc.text(`KES ${payslip.amount.toLocaleString()}`, 190, yPos, { align: 'right' });
+    doc.text(`KES ${Number(payslip.amount).toLocaleString()}`, 190, yPos, { align: 'right' });
     
     // Note Section
     yPos += 25;
