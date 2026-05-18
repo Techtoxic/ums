@@ -41,17 +41,6 @@
                 </div>
 
                 <form id="loginForm" class="space-y-6">
-                    <div class="flex space-x-4 mb-4">
-                        <div class="flex items-center">
-                            <input id="student-type" name="userType" type="radio" value="student" checked class="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500">
-                            <label for="student-type" class="ml-2 block text-sm font-medium text-gray-700">Student</label>
-                        </div>
-                        <div class="flex items-center">
-                            <input id="trainer-type" name="userType" type="radio" value="trainer" class="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500">
-                            <label for="trainer-type" class="ml-2 block text-sm font-medium text-gray-700">Trainer</label>
-                        </div>
-                    </div>
-                    
                     <div class="relative">
                         <label for="admissionNumber" class="block text-sm font-medium text-gray-700 mb-1">ID Number</label>
                         <div class="relative">
@@ -61,7 +50,7 @@
                             <input type="text" id="admissionNumber" name="admissionNumber" required
                                 class="form-input pl-10 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none">
                         </div>
-                        <p class="text-xs text-gray-500 mt-1">Enter admission number for students or staff ID for trainers</p>
+                        <p class="text-xs text-gray-500 mt-1">Enter your admission number</p>
                     </div>
 
                     <div class="relative">
@@ -127,62 +116,47 @@
             const errorMessage = document.getElementById('errorMessage');
             const admissionNumber = document.getElementById('admissionNumber').value;
             const password = document.getElementById('password').value;
-            const userType = document.querySelector('input[name="userType"]:checked').value;
+            // Student-only login (trainers use /trainer/login)
 
             try {
                 // Use dynamic API base URL
                 const API_BASE_URL = window.APP_CONFIG?.API_BASE_URL || `${window.location.protocol}//${window.location.host}/api`;
-                
-                let endpoint = '';
-                if (userType === 'student') {
-                    endpoint = `${API_BASE_URL}/students/login`;
-                } else if (userType === 'trainer') {
-                    endpoint = `${API_BASE_URL}/trainers/login`;
-                }
+
+                const endpoint = `${API_BASE_URL}/students/login`;
 
                 const response = await fetch(endpoint, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ 
-                        [userType === 'student' ? 'admissionNumber' : 'staffId']: admissionNumber, 
-                        password 
+                    body: JSON.stringify({
+                        admissionNumber,
+                        password
                     })
                 });
 
                 const data = await response.json();
 
                 if (response.ok && data.token) {
-                    if (userType === 'student') {
-                        const user = data.user || {};
-                        // Persist JWT for authenticated API calls
-                        sessionStorage.setItem('studentToken', data.token);
-                        localStorage.setItem('studentToken', data.token);
-                        if (window.AUTH && typeof window.AUTH.setAuth === 'function') {
-                            window.AUTH.setAuth(data.token, user, 'student');
-                        }
-
-                        // Store minimal student data in sessionStorage
-                        const studentData = {
-                            id: user.id,
-                            name: user.name,
-                            admissionNumber: user.admissionNumber,
-                            course: user.course,
-                            department: user.department,
-                            year: user.year || 1
-                        };
-                        sessionStorage.setItem('studentData', JSON.stringify(studentData));
-                        window.location.href = '/student/portal';
-                    } else if (userType === 'trainer') {
-                        sessionStorage.setItem('trainerToken', data.token);
-                        localStorage.setItem('trainerToken', data.token);
-                        if (window.AUTH && typeof window.AUTH.setAuth === 'function') {
-                            window.AUTH.setAuth(data.token, data.trainer || {}, 'trainer');
-                        }
-                        sessionStorage.setItem('trainer', JSON.stringify(data.trainer));
-                        window.location.href = '/trainer/dashboard';
+                    const user = data.user || {};
+                    // Persist JWT for authenticated API calls
+                    sessionStorage.setItem('studentToken', data.token);
+                    localStorage.setItem('studentToken', data.token);
+                    if (window.AUTH && typeof window.AUTH.setAuth === 'function') {
+                        window.AUTH.setAuth(data.token, user, 'student');
                     }
+
+                    // Store minimal student data in sessionStorage
+                    const studentData = {
+                        id: user.id,
+                        name: user.name,
+                        admissionNumber: user.admissionNumber,
+                        course: user.course,
+                        department: user.department,
+                        year: user.year || 1
+                    };
+                    sessionStorage.setItem('studentData', JSON.stringify(studentData));
+                    window.location.href = '/student/portal';
                 } else {
                     errorMessage.textContent = data.message || 'Login failed';
                     errorMessage.classList.remove('hidden');
@@ -213,14 +187,14 @@
 
         // Open forgot password modal
         function openForgotPasswordModal() {
-            currentUserType = document.querySelector('input[name="userType"]:checked').value;
+            currentUserType = 'student';
             document.getElementById('forgotPasswordModal').classList.remove('hidden');
             document.getElementById('forgotPasswordModal').classList.add('flex');
             document.getElementById('resetEmail').focus();
             
             // Update the modal title based on user type
             const modalTitle = document.getElementById('modalTitle');
-            modalTitle.textContent = currentUserType === 'student' ? 'Student Password Reset' : 'Trainer Password Reset';
+            modalTitle.textContent = 'Student Password Reset';
         }
 
         // Close forgot password modal

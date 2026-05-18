@@ -5580,36 +5580,28 @@ app.get('/trainer/dashboard', (req, res) => {
 });
 
 // Finance routes
-app.get('/finance/login', noCacheAuthPages, (req, res) => {
-    serveHTML(res, path.join(__dirname, 'src', 'components', 'admin', 'AdminStaffLogin.html'));
-});
+app.get('/finance/login', (req, res) => res.redirect('/admin/login'));
 
 app.get('/finance/dashboard', (req, res) => {
     res.sendFile(path.join(__dirname, 'src', 'components', 'finance', 'FinanceDashboard.html'));
 });
 
 // Registrar routes
-app.get('/registrar/login', noCacheAuthPages, (req, res) => {
-    serveHTML(res, path.join(__dirname, 'src', 'components', 'admin', 'AdminStaffLogin.html'));
-});
+app.get('/registrar/login', (req, res) => res.redirect('/admin/login'));
 
 app.get('/registrar/dashboard', (req, res) => {
     res.sendFile(path.join(__dirname, 'src', 'components', 'registrar', 'RegistrarDashboardNew.html'));
 });
 
 // Dean routes
-app.get('/dean/login', noCacheAuthPages, (req, res) => {
-    serveHTML(res, path.join(__dirname, 'src', 'components', 'admin', 'AdminStaffLogin.html'));
-});
+app.get('/dean/login', (req, res) => res.redirect('/admin/login'));
 
 app.get('/dean/dashboard', (req, res) => {
     res.sendFile(path.join(__dirname, 'src', 'components', 'dean', 'DeanDashboard.html'));
 });
 
 // Deputy routes
-app.get('/deputy/login', noCacheAuthPages, (req, res) => {
-    serveHTML(res, path.join(__dirname, 'src', 'components', 'admin', 'AdminStaffLogin.html'));
-});
+app.get('/deputy/login', (req, res) => res.redirect('/admin/login'));
 
 app.get('/deputy/dashboard', (req, res) => {
     res.sendFile(path.join(__dirname, 'src', 'components', 'deputy', 'DeputyDashboard.html'));
@@ -5625,18 +5617,14 @@ app.get('/hod/dashboard', (req, res) => {
 });
 
 // ILO routes (Industrial Liaison Office)
-app.get('/ilo/login', noCacheAuthPages, (req, res) => {
-    serveHTML(res, path.join(__dirname, 'src', 'components', 'admin', 'AdminStaffLogin.html'));
-});
+app.get('/ilo/login', (req, res) => res.redirect('/admin/login'));
 
 app.get('/ilo/dashboard', (req, res) => {
     res.sendFile(path.join(__dirname, 'src', 'components', 'ilo', 'ILODashboard.html'));
 });
 
 // CIBEC routes (Competency-Based Education & Training Center)
-app.get('/cibec/login', noCacheAuthPages, (req, res) => {
-    serveHTML(res, path.join(__dirname, 'src', 'components', 'admin', 'AdminStaffLogin.html'));
-});
+app.get('/cibec/login', (req, res) => res.redirect('/admin/login'));
 
 app.get('/cibec/dashboard', (req, res) => {
     res.sendFile(path.join(__dirname, 'src', 'components', 'cibec', 'CIBECDashboard.html'));
