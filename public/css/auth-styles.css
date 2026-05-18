@@ -1,0 +1,255 @@
+/* ============================================================
+   EDTTI Unified Auth Styles
+   Shared design system for all authentication pages.
+   Matches src/components/landing/Landing.html.
+   Visual only — does not depend on or alter any page JS.
+   ============================================================ */
+
+:root {
+    --edtti-maroon: #7A0C0C;
+    --edtti-maroon-dark: #5C0808;
+    --edtti-gold: #D4A017;
+    --edtti-gold-light: #F4D58D;
+    --edtti-cream: #FFF8E7;
+    --edtti-text: #1F2937;
+    --edtti-text-light: #6B7280;
+    --edtti-bg-light: #F9FAFB;
+    --edtti-bg-grey: #F5F5F5;
+}
+
+* { box-sizing: border-box; }
+
+/* ---------- Page shell ---------- */
+body.auth-page {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.25rem;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: var(--edtti-text);
+    background: linear-gradient(135deg, var(--edtti-maroon) 0%, var(--edtti-maroon-dark) 100%);
+}
+
+/* ---------- Card ---------- */
+.auth-card {
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.18);
+    padding: 2.25rem;
+    width: 100%;
+    position: relative;
+    z-index: 1;
+}
+
+/* ---------- Brand lockup (EDTTI) ---------- */
+.auth-brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-weight: 800;
+    font-size: 1.5rem;
+    color: var(--edtti-maroon);
+    letter-spacing: -0.02em;
+    margin-bottom: 1.25rem;
+}
+.auth-brand i { font-size: 1.8rem; }
+
+/* ---------- Header emblem (round icon) ---------- */
+.auth-emblem {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--edtti-maroon) 0%, var(--edtti-maroon-dark) 100%);
+    color: var(--edtti-gold-light);
+    font-size: 1.9rem;
+}
+
+.auth-title {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--edtti-text);
+    letter-spacing: -0.02em;
+    margin: 0;
+}
+.auth-subtitle {
+    margin-top: 0.4rem;
+    color: var(--edtti-text-light);
+    font-size: 0.95rem;
+}
+
+/* ---------- Form fields ---------- */
+.auth-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--edtti-text);
+    margin-bottom: 0.4rem;
+}
+.auth-input,
+.form-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+    font-family: inherit;
+    color: var(--edtti-text);
+    background: #ffffff;
+    border: 1px solid #D1D5DB;
+    border-radius: 10px;
+    transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+.auth-input:focus,
+.form-input:focus {
+    outline: none;
+    border-color: var(--edtti-maroon);
+    box-shadow: 0 0 0 3px rgba(122, 12, 12, 0.15);
+}
+.auth-help {
+    font-size: 0.78rem;
+    color: var(--edtti-text-light);
+    margin-top: 0.35rem;
+}
+
+/* ---------- Buttons ---------- */
+.auth-btn-primary,
+.auth-btn-gold,
+.auth-btn-outline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.8rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 700;
+    font-family: inherit;
+    border-radius: 10px;
+    border: 1.5px solid transparent;
+    cursor: pointer;
+    transition: transform 0.16s ease, background 0.16s ease, box-shadow 0.16s ease, color 0.16s ease;
+}
+.auth-btn-primary {
+    background: var(--edtti-maroon);
+    color: #ffffff;
+}
+.auth-btn-primary:hover {
+    background: var(--edtti-maroon-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px rgba(122, 12, 12, 0.3);
+}
+.auth-btn-gold {
+    background: var(--edtti-gold);
+    color: var(--edtti-maroon-dark);
+}
+.auth-btn-gold:hover {
+    background: var(--edtti-gold-light);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px rgba(212, 160, 23, 0.3);
+}
+.auth-btn-outline {
+    background: transparent;
+    color: var(--edtti-maroon);
+    border-color: var(--edtti-maroon);
+}
+.auth-btn-outline:hover {
+    background: var(--edtti-maroon);
+    color: #ffffff;
+    transform: translateY(-1px);
+}
+.auth-btn-primary:disabled,
+.auth-btn-gold:disabled,
+.auth-btn-outline:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* ---------- Messages ---------- */
+.auth-error {
+    background: #FEF2F2;
+    border: 1px solid #FECACA;
+    color: #B91C1C;
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    font-size: 0.88rem;
+}
+.auth-success {
+    background: #ECFDF5;
+    border: 1px solid #A7F3D0;
+    color: #047857;
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    font-size: 0.88rem;
+}
+
+/* ---------- Links ---------- */
+.auth-link {
+    color: var(--edtti-maroon);
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: color 0.16s ease;
+}
+.auth-link:hover { color: var(--edtti-gold); }
+
+/* ---------- Spinner ---------- */
+.auth-spinner {
+    width: 36px;
+    height: 36px;
+    border: 3px solid rgba(122, 12, 12, 0.2);
+    border-top-color: var(--edtti-maroon);
+    border-radius: 50%;
+    animation: auth-spin 0.7s linear infinite;
+    margin: 0 auto;
+}
+@keyframes auth-spin { to { transform: rotate(360deg); } }
+
+/* ---------- OTP inputs (AdminLogin — class name preserved for JS) ---------- */
+.otp-input {
+    width: 50px;
+    height: 50px;
+    font-size: 24px;
+    text-align: center;
+    margin: 0 5px;
+    border: 2px solid #D1D5DB;
+    border-radius: 8px;
+    color: var(--edtti-text);
+}
+.otp-input:focus {
+    border-color: var(--edtti-maroon);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(122, 12, 12, 0.15);
+}
+
+/* ---------- Wizard steps (FirstLogin — class names preserved for JS) ---------- */
+.step-active {
+    background: linear-gradient(135deg, var(--edtti-maroon) 0%, var(--edtti-maroon-dark) 100%);
+    color: #ffffff;
+}
+.step-completed {
+    background: var(--edtti-gold);
+    color: var(--edtti-maroon-dark);
+}
+.step-inactive {
+    background: #E5E7EB;
+    color: #9CA3AF;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 768px) {
+    .auth-card { padding: 1.75rem; }
+    .auth-title { font-size: 1.4rem; }
+}
+@media (max-width: 375px) {
+    body.auth-page { padding: 0.75rem; }
+    .auth-card { padding: 1.35rem; }
+    .auth-brand { font-size: 1.3rem; }
+    .otp-input { width: 42px; height: 42px; font-size: 20px; margin: 0 3px; }
+}

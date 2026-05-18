@@ -9,33 +9,20 @@
     <title>Admin Login - EDTTI UMS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        .gradient-bg {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        .otp-input {
-            width: 50px;
-            height: 50px;
-            font-size: 24px;
-            text-align: center;
-            margin: 0 5px;
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-        }
-        .otp-input:focus {
-            border-color: #667eea;
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-    </style>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.0.0/fonts/remixicon.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/public/css/auth-styles.css">
 </head>
-<body class="gradient-bg min-h-screen flex items-center justify-center p-4">
+<body class="auth-page">
     <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8">
+        <!-- EDTTI Brand -->
+        <div class="auth-brand">
+            <i class="ri-graduation-cap-line"></i>
+            <span>EDTTI</span>
+        </div>
         <!-- Logo/Header -->
         <div class="text-center mb-8">
-            <div class="bg-gradient-to-r from-blue-500 to-purple-600 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i class="fas fa-shield-halved text-white text-3xl"></i>
-            </div>
+            <div class="auth-emblem"><i class="ri-shield-user-line"></i></div>
             <h1 class="text-3xl font-bold text-gray-800">Admin Login</h1>
             <p class="text-gray-600 mt-2">EDTTI University Management System</p>
         </div>
@@ -50,7 +37,7 @@
                     type="email" 
                     id="email" 
                     placeholder="admin@edtti.ac.ke"
-                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7A0C0C] focus:border-transparent transition"
                     required
                 >
             </div>
@@ -64,7 +51,7 @@
                         type="password" 
                         id="password" 
                         placeholder="Enter your password"
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition pr-12"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7A0C0C] focus:border-transparent transition pr-12"
                         required
                     >
                     <button 
@@ -85,13 +72,13 @@
             <button 
                 onclick="login()"
                 id="loginBtn"
-                class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
+                class="w-full bg-gradient-to-r from-[#7A0C0C] to-[#5C0808] text-white py-3 rounded-lg font-semibold hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
             >
                 <i class="fas fa-sign-in-alt mr-2"></i>Sign In
             </button>
 
             <div class="text-center">
-                <a href="/src/components/auth/ForgotPassword.html?type=admin" class="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                <a href="/src/components/auth/ForgotPassword.html?type=admin" class="text-sm text-[#7A0C0C] hover:text-[#D4A017] font-medium">
                     <i class="fas fa-key mr-1"></i>Forgot Password?
                 </a>
             </div>
@@ -118,7 +105,7 @@
                     type="email" 
                     id="newEmail" 
                     placeholder="Enter your new email address"
-                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7A0C0C] focus:border-transparent transition"
                     required
                 >
             </div>
@@ -130,7 +117,7 @@
 
             <button 
                 onclick="updateEmailAndSendOTP()"
-                class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
+                class="w-full bg-gradient-to-r from-[#7A0C0C] to-[#5C0808] text-white py-3 rounded-lg font-semibold hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
             >
                 <i class="fas fa-paper-plane mr-2"></i>Update Email & Send OTP
             </button>
@@ -150,10 +137,10 @@
                     <i class="fas fa-envelope-open-text text-blue-500 text-3xl mb-2"></i>
                     <p class="text-sm text-gray-700">
                         We've sent a verification code to<br>
-                        <strong id="otpEmail" class="text-blue-600"></strong>
+                        <strong id="otpEmail" class="text-[#7A0C0C]"></strong>
                     </p>
                     <p class="text-xs text-gray-500 mt-2">
-                        Code expires in <span id="countdown" class="font-bold text-blue-600">10:00</span>
+                        Code expires in <span id="countdown" class="font-bold text-[#7A0C0C]">10:00</span>
                     </p>
                 </div>
 
@@ -177,7 +164,7 @@
                 <button 
                     onclick="resendOTP()"
                     id="resendBtn"
-                    class="text-sm text-blue-600 hover:text-blue-800 font-medium disabled:text-gray-400"
+                    class="text-sm text-[#7A0C0C] hover:text-[#D4A017] font-medium disabled:text-gray-400"
                     disabled
                 >
                     <i class="fas fa-redo mr-1"></i>Resend Code (<span id="resendCountdown">60</span>s)
@@ -195,7 +182,7 @@
         <!-- Loading Spinner -->
         <div id="loadingSpinner" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div class="bg-white rounded-lg p-6 flex flex-col items-center">
-                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-[#7A0C0C]"></div>
                 <p class="mt-4 text-gray-700 font-medium">Processing...</p>
             </div>
         </div>

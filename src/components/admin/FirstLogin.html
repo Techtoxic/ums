@@ -6,31 +6,20 @@
     <title>First Login Setup - EDTTI UMS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        .gradient-bg {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        .step-active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-        .step-completed {
-            background: #10b981;
-            color: white;
-        }
-        .step-inactive {
-            background: #e5e7eb;
-            color: #9ca3af;
-        }
-    </style>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.0.0/fonts/remixicon.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/public/css/auth-styles.css">
 </head>
-<body class="gradient-bg min-h-screen flex items-center justify-center p-4">
+<body class="auth-page">
     <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-8">
+        <!-- EDTTI Brand -->
+        <div class="auth-brand">
+            <i class="ri-graduation-cap-line"></i>
+            <span>EDTTI</span>
+        </div>
         <!-- Header -->
         <div class="text-center mb-8">
-            <div class="bg-gradient-to-r from-yellow-500 to-orange-600 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i class="fas fa-user-lock text-white text-3xl"></i>
-            </div>
+            <div class="auth-emblem"><i class="ri-lock-2-line"></i></div>
             <h1 class="text-3xl font-bold text-gray-800">Welcome! First Time Setup</h1>
             <p class="text-gray-600 mt-2">Please update your email and password to secure your account</p>
         </div>
@@ -63,7 +52,7 @@
         <!-- Step 1: Update Email -->
         <div id="step1Form" class="space-y-6">
             <h2 class="text-xl font-semibold text-gray-800 mb-4">
-                <i class="fas fa-envelope mr-2 text-blue-600"></i>Step 1: Update Your Email
+                <i class="fas fa-envelope mr-2 text-[#7A0C0C]"></i>Step 1: Update Your Email
             </h2>
             
             <div>
@@ -86,7 +75,7 @@
                     type="email" 
                     id="newEmail" 
                     placeholder="your.email@edtti.ac.ke"
-                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7A0C0C] focus:border-transparent transition"
                     required
                 >
                 <p class="text-xs text-gray-500 mt-1">
@@ -102,7 +91,7 @@
             <button 
                 onclick="updateEmail()"
                 id="updateEmailBtn"
-                class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
+                class="w-full bg-gradient-to-r from-[#7A0C0C] to-[#5C0808] text-white py-3 rounded-lg font-semibold hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
             >
                 <i class="fas fa-arrow-right mr-2"></i>Continue to Password Update
             </button>
@@ -111,7 +100,7 @@
         <!-- Step 2: Update Password -->
         <div id="step2Form" class="hidden space-y-6">
             <h2 class="text-xl font-semibold text-gray-800 mb-4">
-                <i class="fas fa-key mr-2 text-purple-600"></i>Step 2: Update Your Password
+                <i class="fas fa-key mr-2 text-[#7A0C0C]"></i>Step 2: Update Your Password
             </h2>
 
             <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
@@ -134,7 +123,7 @@
                         type="password" 
                         id="currentPassword" 
                         placeholder="Enter your current password"
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition pr-12"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7A0C0C] focus:border-transparent transition pr-12"
                         required
                     >
                     <button 
@@ -156,7 +145,7 @@
                         type="password" 
                         id="newPassword" 
                         placeholder="Enter new password"
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition pr-12"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7A0C0C] focus:border-transparent transition pr-12"
                         oninput="checkPasswordStrength()"
                         required
                     >
@@ -185,7 +174,7 @@
                         type="password" 
                         id="confirmPassword" 
                         placeholder="Confirm new password"
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition pr-12"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#7A0C0C] focus:border-transparent transition pr-12"
                         oninput="checkPasswordMatch()"
                         required
                     >
@@ -215,7 +204,7 @@
                 <button 
                     onclick="updatePassword()"
                     id="updatePasswordBtn"
-                    class="flex-1 bg-gradient-to-r from-purple-500 to-pink-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
+                    class="flex-1 bg-gradient-to-r from-[#7A0C0C] to-[#5C0808] text-white py-3 rounded-lg font-semibold hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
                 >
                     <i class="fas fa-check mr-2"></i>Complete Setup
                 </button>
@@ -225,7 +214,7 @@
         <!-- Loading Spinner -->
         <div id="loadingSpinner" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div class="bg-white rounded-lg p-6 flex flex-col items-center">
-                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-[#7A0C0C]"></div>
                 <p class="mt-4 text-gray-700 font-medium">Updating...</p>
             </div>
         </div>
