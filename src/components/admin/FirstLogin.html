@@ -235,6 +235,22 @@
         let user = null;
         let token = null;
 
+        // Map an admin-staff role to its own dashboard. Falls back to
+        // /admin/dashboard for unknown roles (previous behavior).
+        function dashboardUrlForRole(role) {
+            const map = {
+                admin: '/admin/dashboard',
+                registrar: '/registrar/dashboard',
+                finance: '/finance/dashboard',
+                dean: '/dean/dashboard',
+                deputy: '/deputy/dashboard',
+                ilo: '/ilo/dashboard',
+                cibec: '/cibec/dashboard',
+                hod: '/hod/dashboard'
+            };
+            return map[role] || '/admin/dashboard';
+        }
+
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
             console.log('🔍 First Login page loading...');
@@ -492,7 +508,7 @@
 
                     // Show success message and redirect
                     alert('Setup completed successfully! Redirecting to dashboard...');
-                    window.location.href = '/admin/dashboard';
+                    window.location.href = dashboardUrlForRole(user.role);
                 } else {
                     showPasswordError('Failed to complete setup');
                 }

@@ -212,6 +212,22 @@
         let timeLeft = 600; // 10 minutes in seconds
         let resendTimeLeft = 60;
 
+        // Map an admin-staff role to its own dashboard. Falls back to
+        // /admin/dashboard for unknown roles (previous behavior).
+        function dashboardUrlForRole(role) {
+            const map = {
+                admin: '/admin/dashboard',
+                registrar: '/registrar/dashboard',
+                finance: '/finance/dashboard',
+                dean: '/dean/dashboard',
+                deputy: '/deputy/dashboard',
+                ilo: '/ilo/dashboard',
+                cibec: '/cibec/dashboard',
+                hod: '/hod/dashboard'
+            };
+            return map[role] || '/admin/dashboard';
+        }
+
         function togglePassword() {
             const passwordInput = document.getElementById('password');
             const toggleIcon = document.getElementById('toggleIcon');
@@ -383,7 +399,7 @@
                             window.location.href = '/admin/first-login';
                         } else {
                             console.log('🔄 Redirecting to dashboard...');
-                            window.location.href = '/admin/dashboard';
+                            window.location.href = dashboardUrlForRole(data.data.user.role);
                         }
                     }, 100);
                 } else {
