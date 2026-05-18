@@ -105,6 +105,9 @@ node server.js
 ### Frontend
 - **HTML5 & CSS3** - Structure and styling
 - **Tailwind CSS** - Utility-first CSS framework
+- **Inter** (Google Fonts) - Primary typeface
+- **Remixicon** - Icon set (auth pages & landing)
+- **Shared stylesheet** - `public/css/auth-styles.css` unifies all auth pages
 - **JavaScript (ES6+)** - Client-side functionality
 - **Chart.js** - Analytics and charts
 - **html2pdf.js** - PDF generation
@@ -115,6 +118,42 @@ node server.js
 - Password Resets, Notifications
 - Tools of Trade, Applications
 - System Settings
+
+## 🎨 Design System & Color Scheme
+
+The UI follows the **EDTTI brand identity** — a maroon-and-gold academic palette
+shared across the public landing page (`src/components/landing/Landing.html`) and
+every authentication page via the single source of truth at
+`public/css/auth-styles.css`.
+
+### Brand Palette
+
+| Token | Hex | Usage |
+|---|---|---|
+| `--edtti-maroon` | `#7A0C0C` | Primary brand color — headings, buttons, page background, focus rings |
+| `--edtti-maroon-dark` | `#5C0808` | Gradient end, button hover/active states |
+| `--edtti-gold` | `#D4A017` | Accent — emphasis, gold CTAs, hover highlights |
+| `--edtti-gold-light` | `#F4D58D` | Soft accent — taglines, emblem icons on maroon |
+| `--edtti-cream` | `#FFF8E7` | Soft surfaces — stat cards, subtle fills |
+| `--edtti-text` | `#1F2937` | Primary body text |
+| `--edtti-text-light` | `#6B7280` | Secondary / muted text |
+| `--edtti-bg-light` | `#F9FAFB` | Light section backgrounds |
+| `--edtti-bg-grey` | `#F5F5F5` | Alternate section backgrounds |
+
+### Typography & Icons
+- **Font:** Inter (300–800 weights), loaded from Google Fonts
+- **Icons:** Remixicon on the landing page and brand chrome; Font Awesome is
+  retained on legacy auth pages where icons are toggled by JavaScript
+
+### Conventions
+- The maroon gradient (`--edtti-maroon` → `--edtti-maroon-dark`) is the standard
+  page background and primary-button fill.
+- Gold (`--edtti-gold`) is reserved for accents/CTAs — never large fills.
+- Semantic state colors (success green, error red, info blue) are kept as-is for
+  usability and are **not** overridden by the brand palette.
+- Reusable classes live in `public/css/auth-styles.css`: `.auth-page`,
+  `.auth-card`, `.auth-brand`, `.auth-emblem`, `.auth-input`, `.auth-btn-*`,
+  `.auth-error/.auth-success`, `.auth-spinner`.
 
 ## 📊 Key Features
 
