@@ -5642,9 +5642,9 @@ app.get('/cibec/dashboard', (req, res) => {
     res.sendFile(path.join(__dirname, 'src', 'components', 'cibec', 'CIBECDashboard.html'));
 });
 
-// Root redirect to student login
+// Root: public institutional landing page
 app.get('/', (req, res) => {
-    res.redirect('/student/login');
+    res.sendFile(path.join(__dirname, 'src', 'components', 'landing', 'Landing.html'));
 });
 
 // Serve static files after routes
