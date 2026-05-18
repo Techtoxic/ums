@@ -5570,15 +5570,6 @@ app.get('/student/portal', (req, res) => {
     res.sendFile(path.join(__dirname, 'src', 'components', 'student', 'StudentPortalTailwind.html'));
 });
 
-// Trainer routes
-app.get('/trainer/login', noCacheAuthPages, (req, res) => {
-    res.sendFile(path.join(__dirname, 'src', 'components', 'trainer', 'TrainerLogin.html'));
-});
-
-app.get('/trainer/dashboard', (req, res) => {
-    res.sendFile(path.join(__dirname, 'src', 'components', 'trainer', 'TrainerDashboard.html'));
-});
-
 // Finance routes
 app.get('/finance/login', (req, res) => res.redirect('/admin/login'));
 
@@ -5605,15 +5596,6 @@ app.get('/deputy/login', (req, res) => res.redirect('/admin/login'));
 
 app.get('/deputy/dashboard', (req, res) => {
     res.sendFile(path.join(__dirname, 'src', 'components', 'deputy', 'DeputyDashboard.html'));
-});
-
-// HOD routes
-app.get('/hod/login', noCacheAuthPages, (req, res) => {
-    res.sendFile(path.join(__dirname, 'src', 'components', 'hod', 'HODLogin.html'));
-});
-
-app.get('/hod/dashboard', (req, res) => {
-    res.sendFile(path.join(__dirname, 'src', 'components', 'hod', 'HODDashboard.html'));
 });
 
 // ILO routes (Industrial Liaison Office)
