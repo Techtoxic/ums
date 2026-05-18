@@ -1135,6 +1135,11 @@ app.get('/debug', (req, res) => {
     res.sendFile(path.join(__dirname, 'debug.html'));
 });
 
+// Design system demo (dev only — for visual verification)
+app.get('/design-system', (req, res) => {
+    res.sendFile(path.join(__dirname, 'src', 'components', 'dev', 'design-system-demo.html'));
+});
+
 
 // Admin staff authentication routes
 app.use('/api/admin/auth', adminAuthRoutes);

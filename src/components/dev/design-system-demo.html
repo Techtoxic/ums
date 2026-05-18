@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EDTTI Dashboard Design System — Demo</title>
+
+    <!-- Tailwind for layout primitives only (grid/flex helpers) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.0.0/fonts/remixicon.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Design system -->
+    <link rel="stylesheet" href="/public/css/dashboard-styles.css">
+    <!-- Theme controller: in <head>, after styles, runs pre-paint (no flash) -->
+    <script src="/public/js/dashboard-theme.js"></script>
+</head>
+<body>
+    <div class="dashboard-shell">
+
+        <!-- ============ SIDEBAR ============ -->
+        <div class="dashboard-sidebar__backdrop" id="sbBackdrop" onclick="closeSidebar()"></div>
+        <aside class="dashboard-sidebar" id="sidebar">
+            <div class="dashboard-sidebar__logo">
+                <i class="ri-graduation-cap-line"></i>
+                <span>EDTTI</span>
+            </div>
+            <nav class="dashboard-sidebar__nav">
+                <a class="nav-link active"><i class="ri-dashboard-line"></i><span>Dashboard</span></a>
+                <a class="nav-link"><i class="ri-user-line"></i><span>Students</span></a>
+                <a class="nav-link"><i class="ri-user-star-line"></i><span>Trainers</span></a>
+                <a class="nav-link"><i class="ri-book-open-line"></i><span>Programmes</span></a>
+                <a class="nav-link"><i class="ri-money-dollar-circle-line"></i><span>Finance</span></a>
+                <a class="nav-link"><i class="ri-file-chart-line"></i><span>Reports</span></a>
+                <a class="nav-link"><i class="ri-settings-3-line"></i><span>Settings</span></a>
+            </nav>
+            <div class="dashboard-sidebar__profile">
+                <div class="dashboard-sidebar__avatar">AD</div>
+                <div class="dashboard-sidebar__profile-text">
+                    <div class="font-semibold text-body-sm">Admin User</div>
+                    <div class="text-body-sm" style="color:var(--text-muted)">Administrator</div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ============ MAIN COLUMN ============ -->
+        <div>
+            <!-- Topbar -->
+            <header class="dashboard-topbar">
+                <button class="btn btn--ghost btn--icon lg:hidden" onclick="openSidebar()" aria-label="Open menu">
+                    <i class="ri-menu-line"></i>
+                </button>
+                <div class="dashboard-topbar__title">Design System</div>
+                <div class="dashboard-topbar__search">
+                    <div class="form-field">
+                        <input class="form-field__input" type="text" placeholder="Search…" aria-label="Search">
+                    </div>
+                </div>
+                <div class="dashboard-topbar__actions">
+                    <button class="btn btn--ghost btn--icon" aria-label="Notifications"><i class="ri-notification-3-line"></i></button>
+                    <button data-theme-toggle class="theme-toggle" aria-label="Toggle dark mode">
+                        <i class="ri-sun-line theme-icon-light"></i>
+                        <i class="ri-moon-line theme-icon-dark"></i>
+                    </button>
+                    <div class="dashboard-sidebar__avatar" title="Profile">AD</div>
+                </div>
+            </header>
+
+            <!-- Content -->
+            <main class="dashboard-main">
+
+                <!-- Page header -->
+                <div style="margin-bottom:var(--space-6)">
+                    <h1 class="text-display">Component Library</h1>
+                    <p class="text-body" style="color:var(--text-secondary);margin-top:var(--space-2)">
+                        Every component below renders in both light and dark mode — use the
+                        toggle in the top bar to verify. Phase 1 foundation only; no real data.
+                    </p>
+                </div>
+
+                <!-- Typography scale -->
+                <section class="card" style="margin-bottom:var(--space-5)">
+                    <div class="card__header"><span class="text-headline">Typography</span></div>
+                    <div class="card__body" style="color:var(--text-primary)">
+                        <div class="text-display">Display 48</div>
+                        <div class="text-headline-lg">Headline LG</div>
+                        <div class="text-headline">Headline</div>
+                        <div class="text-headline-sm">Headline SM</div>
+                        <div class="text-body">Body text — the quick brown fox jumps over the lazy dog.</div>
+                        <div class="text-body-sm" style="color:var(--text-secondary)">Body small / helper text.</div>
+                        <div class="text-label" style="margin-top:var(--space-2)">Label uppercase</div>
+                    </div>
+                </section>
+
+                <!-- Stat cards -->
+                <div class="text-label" style="margin-bottom:var(--space-3)">Stat Cards</div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" style="margin-bottom:var(--space-6)">
+                    <div class="stat-card">
+                        <div class="stat-card__top">
+                            <div class="stat-card__icon"><i class="ri-graduation-cap-line"></i></div>
+                            <span class="stat-card__trend"><i class="ri-arrow-up-line"></i>+12%</span>
+                        </div>
+                        <div class="stat-card__label">Total Students</div>
+                        <div class="stat-card__value">1,284</div>
+                        <div class="stat-card__progress"><div class="stat-card__progress-fill" style="width:78%"></div></div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card__top">
+                            <div class="stat-card__icon"><i class="ri-user-star-line"></i></div>
+                            <span class="stat-card__trend"><i class="ri-arrow-up-line"></i>+4%</span>
+                        </div>
+                        <div class="stat-card__label">Active Trainers</div>
+                        <div class="stat-card__value">86</div>
+                        <div class="stat-card__progress"><div class="stat-card__progress-fill" style="width:64%"></div></div>
+                    </div>
+                    <div class="stat-card stat-card--warning">
+                        <div class="stat-card__top">
+                            <div class="stat-card__icon"><i class="ri-money-dollar-circle-line"></i></div>
+                            <span class="stat-card__trend"><i class="ri-arrow-up-line"></i>Review</span>
+                        </div>
+                        <div class="stat-card__label">Total Revenue</div>
+                        <div class="stat-card__value">KSh 4.2M</div>
+                        <div class="stat-card__progress"><div class="stat-card__progress-fill" style="width:81%"></div></div>
+                    </div>
+                    <div class="stat-card stat-card--error">
+                        <div class="stat-card__top">
+                            <div class="stat-card__icon"><i class="ri-alert-line"></i></div>
+                            <span class="stat-card__trend"><i class="ri-arrow-down-line"></i>Attention</span>
+                        </div>
+                        <div class="stat-card__label">Outstanding Balance</div>
+                        <div class="stat-card__value">KSh 940K</div>
+                        <div class="stat-card__progress"><div class="stat-card__progress-fill" style="width:42%"></div></div>
+                    </div>
+                </div>
+
+                <!-- Quick actions -->
+                <div class="text-label" style="margin-bottom:var(--space-3)">Quick Actions</div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" style="margin-bottom:var(--space-6)">
+                    <button class="quick-action">
+                        <span class="quick-action__icon"><i class="ri-user-add-line"></i></span>
+                        <span>
+                            <span class="quick-action__title">Add Student</span><br>
+                            <span class="quick-action__desc">Register a new admission</span>
+                        </span>
+                    </button>
+                    <button class="quick-action">
+                        <span class="quick-action__icon"><i class="ri-file-list-3-line"></i></span>
+                        <span>
+                            <span class="quick-action__title">Generate Report</span><br>
+                            <span class="quick-action__desc">Financial &amp; academic exports</span>
+                        </span>
+                    </button>
+                    <button class="quick-action">
+                        <span class="quick-action__icon"><i class="ri-mail-send-line"></i></span>
+                        <span>
+                            <span class="quick-action__title">Send Notice</span><br>
+                            <span class="quick-action__desc">Broadcast to a department</span>
+                        </span>
+                    </button>
+                </div>
+
+                <!-- Charts placeholder -->
+                <div class="text-label" style="margin-bottom:var(--space-3)">Charts</div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4" style="margin-bottom:var(--space-6)">
+                    <div class="chart-card">
+                        <div class="chart-card__title">Enrollment Trend</div>
+                        <div class="chart-card__canvas-wrap flex-center" style="color:var(--text-muted)">
+                            <span><i class="ri-line-chart-line" style="font-size:2rem"></i>
+                            &nbsp;Chart.js canvas mounts here (use window.DASHBOARD_CHART_DEFAULTS)</span>
+                        </div>
+                        <div class="chart-legend">
+                            <span class="chart-legend__item"><span class="chart-legend__swatch" style="background:var(--maroon)"></span>Students</span>
+                            <span class="chart-legend__item"><span class="chart-legend__swatch" style="background:var(--gold)"></span>Target</span>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <div class="chart-card__title">Revenue by Department</div>
+                        <div class="chart-card__canvas-wrap flex-center" style="color:var(--text-muted)">
+                            <span><i class="ri-bar-chart-2-line" style="font-size:2rem"></i>
+                            &nbsp;Chart.js canvas mounts here</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Data table -->
+                <div class="text-label" style="margin-bottom:var(--space-3)">Data Table</div>
+                <div class="card" style="margin-bottom:var(--space-6);padding:0;overflow:hidden">
+                    <table class="data-table data-table--zebra">
+                        <thead>
+                            <tr>
+                                <th>Admission No.</th>
+                                <th>Name</th>
+                                <th>Programme</th>
+                                <th>Status</th>
+                                <th>Balance</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>EDT/2024/0142</td><td>Jane Wanjiku</td><td>Computing</td>
+                                <td><span class="status-pill status-pill--success">Active</span></td>
+                                <td>KSh 0</td>
+                                <td><i class="ri-more-2-fill data-table__action"></i></td>
+                            </tr>
+                            <tr>
+                                <td>EDT/2024/0143</td><td>Brian Otieno</td><td>Electrical</td>
+                                <td><span class="status-pill status-pill--warning">Pending</span></td>
+                                <td>KSh 18,000</td>
+                                <td><i class="ri-more-2-fill data-table__action"></i></td>
+                            </tr>
+                            <tr>
+                                <td>EDT/2024/0144</td><td>Mary Achieng</td><td>Hospitality</td>
+                                <td><span class="status-pill status-pill--error">Suspended</span></td>
+                                <td>KSh 64,500</td>
+                                <td><i class="ri-more-2-fill data-table__action"></i></td>
+                            </tr>
+                            <tr>
+                                <td>EDT/2024/0145</td><td>Kevin Mutua</td><td>Agriculture</td>
+                                <td><span class="status-pill status-pill--info">Graduated</span></td>
+                                <td>KSh 0</td>
+                                <td><i class="ri-more-2-fill data-table__action"></i></td>
+                            </tr>
+                            <tr>
+                                <td>EDT/2024/0146</td><td>Faith Njeri</td><td>Business</td>
+                                <td><span class="status-pill status-pill--neutral">Inactive</span></td>
+                                <td>KSh 2,000</td>
+                                <td><i class="ri-more-2-fill data-table__action"></i></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Form + Buttons -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4" style="margin-bottom:var(--space-6)">
+                    <div class="card card--elevated">
+                        <div class="card__header"><span class="text-headline">Form Fields</span></div>
+                        <div class="card__body" style="display:flex;flex-direction:column;gap:var(--space-4)">
+                            <div class="form-field">
+                                <label class="form-field__label">Full Name</label>
+                                <input class="form-field__input" type="text" placeholder="e.g. Jane Wanjiku">
+                                <span class="form-field__help">As it appears on the national ID.</span>
+                            </div>
+                            <div class="form-field">
+                                <label class="form-field__label">Programme</label>
+                                <select class="form-field__select">
+                                    <option>Computing &amp; Informatics</option>
+                                    <option>Electrical Engineering</option>
+                                    <option>Hospitality</option>
+                                </select>
+                            </div>
+                            <div class="form-field form-field--error">
+                                <label class="form-field__label">Email</label>
+                                <input class="form-field__input" type="email" value="not-an-email">
+                                <span class="form-field__help">Enter a valid email address.</span>
+                            </div>
+                            <div class="form-field">
+                                <label class="form-field__label">Notes</label>
+                                <textarea class="form-field__textarea" placeholder="Optional notes…"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card__header"><span class="text-headline">Buttons</span></div>
+                        <div class="card__body" style="display:flex;flex-wrap:wrap;gap:var(--space-3);color:var(--text-primary)">
+                            <button class="btn btn--primary"><i class="ri-check-line"></i>Primary</button>
+                            <button class="btn btn--secondary">Secondary</button>
+                            <button class="btn btn--outline">Outline</button>
+                            <button class="btn btn--ghost">Ghost</button>
+                            <button class="btn btn--danger"><i class="ri-delete-bin-line"></i>Danger</button>
+                            <button class="btn btn--primary" disabled>Disabled</button>
+                            <button class="btn btn--primary btn--sm">Small</button>
+                            <button class="btn btn--primary btn--lg">Large</button>
+                            <button class="btn btn--secondary btn--icon" aria-label="Icon"><i class="ri-settings-3-line"></i></button>
+                        </div>
+                        <div class="card__footer">
+                            <button class="btn btn--ghost">Cancel</button>
+                            <button class="btn btn--primary">Save</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Status pills + skeleton -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4" style="margin-bottom:var(--space-6)">
+                    <div class="card">
+                        <div class="card__header"><span class="text-headline">Status Pills</span></div>
+                        <div class="card__body" style="display:flex;flex-wrap:wrap;gap:var(--space-2)">
+                            <span class="status-pill status-pill--success">Success</span>
+                            <span class="status-pill status-pill--warning">Warning</span>
+                            <span class="status-pill status-pill--error">Error</span>
+                            <span class="status-pill status-pill--info">Info</span>
+                            <span class="status-pill status-pill--neutral">Neutral</span>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card__header"><span class="text-headline">Skeleton Loading</span></div>
+                        <div class="card__body">
+                            <div style="display:flex;gap:var(--space-3);align-items:center">
+                                <div class="skeleton skeleton--avatar"></div>
+                                <div style="flex:1">
+                                    <div class="skeleton skeleton--line" style="width:60%"></div>
+                                    <div class="skeleton skeleton--line" style="width:90%"></div>
+                                </div>
+                            </div>
+                            <div class="skeleton skeleton--card" style="margin-top:var(--space-3)"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Empty state -->
+                <div class="card" style="margin-bottom:var(--space-6)">
+                    <div class="empty-state">
+                        <i class="ri-inbox-line empty-state__icon"></i>
+                        <div class="empty-state__title">No applications yet</div>
+                        <div class="empty-state__desc">When students submit graduation or attachment applications, they will appear here.</div>
+                        <button class="btn btn--primary empty-state__action"><i class="ri-add-line"></i>New Application</button>
+                    </div>
+                </div>
+
+                <!-- Divider -->
+                <hr class="divider">
+                <p class="text-body-sm" style="color:var(--text-muted)">
+                    Toast and modal are rendered statically below for visual verification.
+                </p>
+            </main>
+        </div>
+    </div>
+
+    <!-- Static toast (visual proof) -->
+    <div class="toast toast--success toast--enter" role="status">
+        <i class="ri-checkbox-circle-line toast__icon"></i>
+        <div>
+            <div class="font-semibold text-body-sm">Saved successfully</div>
+            <div class="text-body-sm" style="color:var(--text-secondary)">Student record updated.</div>
+        </div>
+    </div>
+
+    <!-- Static modal (rendered open for visual verification) -->
+    <div class="modal-overlay" id="demoModal">
+        <div class="modal" role="dialog" aria-modal="true" aria-label="Confirm deletion">
+            <div class="modal__header">
+                <span>Confirm deletion</span>
+                <button class="btn btn--ghost btn--icon" onclick="document.getElementById('demoModal').style.display='none'" aria-label="Close">
+                    <i class="ri-close-line"></i>
+                </button>
+            </div>
+            <div class="modal__body">
+                Are you sure you want to delete this student record? This action cannot be undone.
+            </div>
+            <div class="modal__footer">
+                <button class="btn btn--ghost" onclick="document.getElementById('demoModal').style.display='none'">Cancel</button>
+                <button class="btn btn--danger"><i class="ri-delete-bin-line"></i>Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* Chart.js design tokens (real globals — see dashboard-styles.css
+           Section 0 for guidance). Defined here so dashboards/charts can
+           consume a single source of truth. */
+        window.DASHBOARD_CHART_COLORS = {
+            primary: '#7A0C0C',
+            primaryDark: '#5C0808',
+            secondary: '#D4A017',
+            secondaryLight: '#F4D58D',
+            success: '#10B981',
+            warning: '#F59E0B',
+            error: '#EF4444',
+            info: '#3B82F6',
+            ramp: ['#7A0C0C', '#D4A017', '#9C2727', '#F4D58D', '#5C0808', '#F59E0B']
+        };
+        window.DASHBOARD_CHART_DEFAULTS = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#1A1F2E',
+                    titleColor: '#F3F4F6',
+                    bodyColor: '#9CA3AF',
+                    borderColor: '#2D3548',
+                    borderWidth: 1,
+                    padding: 10
+                }
+            },
+            scales: {
+                x: { grid: { display: false }, ticks: { color: '#6B7280' } },
+                y: { grid: { color: 'rgba(128,128,128,0.15)' }, ticks: { color: '#6B7280' } }
+            }
+        };
+
+        /* Mobile sidebar helpers (demo only) */
+        function openSidebar() {
+            document.getElementById('sidebar').classList.add('open');
+            document.getElementById('sbBackdrop').classList.add('show');
+        }
+        function closeSidebar() {
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('sbBackdrop').classList.remove('show');
+        }
+
+        /* Demo-only: log theme changes to prove the event fires */
+        window.addEventListener('themeChanged', function (e) {
+            console.log('themeChanged →', e.detail.theme);
+        });
+    </script>
+</body>
+</html>
