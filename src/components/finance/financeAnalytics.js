@@ -4,7 +4,7 @@
 const API_BASE_URL_CONFIG = window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : `${window.location.protocol}//${window.location.host}/api`;
 
 // Authenticated fetch wrapper
-const authFetch = async (url, options = {}) => {
+const financeAnalyticsAuthFetch = window.authFetch || (window.authFetch = async (url, options = {}) => {
     const token = localStorage.getItem('adminToken') || 
                   localStorage.getItem('trainerToken') || 
                   localStorage.getItem('hodToken') ||
@@ -41,7 +41,7 @@ const authFetch = async (url, options = {}) => {
     }
     
     return response;
-};
+});
 
 class FinanceAnalytics {
     constructor() {
@@ -55,9 +55,9 @@ class FinanceAnalytics {
     async loadData() {
         try {
             const [studentsResponse, paymentsResponse, programsResponse] = await Promise.all([
-                authFetch(`${this.API_BASE_URL}/students`),
-                authFetch(`${this.API_BASE_URL}/payments`),
-                authFetch(`${this.API_BASE_URL}/programs`)
+                financeAnalyticsAuthFetch(`${this.API_BASE_URL}/students`),
+                financeAnalyticsAuthFetch(`${this.API_BASE_URL}/payments`),
+                financeAnalyticsAuthFetch(`${this.API_BASE_URL}/programs`)
             ]);
 
             if (!studentsResponse.ok || !paymentsResponse.ok || !programsResponse.ok) {
