@@ -3,6 +3,25 @@
 
 const API_BASE_URL = window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : `${window.location.protocol}//${window.location.host}/api`;
 
+const authFetch = async (url, options = {}) => {
+    const token = localStorage.getItem('registrarToken') ||
+                  localStorage.getItem('adminToken') ||
+                  localStorage.getItem('authToken') ||
+                  window.AUTH?.getToken();
+
+    if (!token) {
+        throw new Error('No authentication token');
+    }
+
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        ...(options.headers || {})
+    };
+
+    return fetch(url, { ...options, headers });
+};
+
 class StudentExporter {
     constructor() {
         this.students = [];
@@ -20,7 +39,7 @@ class StudentExporter {
     // Load students data
     async loadStudents() {
         try {
-            const response = await fetch(`${API_BASE_URL}/students`);
+            const response = await authFetch(`${API_BASE_URL}/students`);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
