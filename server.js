@@ -669,7 +669,7 @@ const generalApiLimiter = rateLimit({
 // Tighter limiter for authentication endpoints (login, OTP, password reset)
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 20,                           // 20 attempts per IP per 15 minutes
+    max: 100,                          // TEMP: raised from 20 for demo. Revert after.
     standardHeaders: true,
     legacyHeaders: false,
     message: { success: false, message: 'Too many authentication attempts, please try again later.' }

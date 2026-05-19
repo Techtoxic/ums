@@ -15,7 +15,7 @@ const emailService = new EmailService();
 // every current and future route under /api/admin/auth is throttled.
 const adminAuthLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 10,                  // 10 requests per IP per window
+    max: 100,                 // TEMP: raised from 10 for demo. Revert after.
     standardHeaders: true,
     legacyHeaders: false,
     message: {
