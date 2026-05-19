@@ -2,12 +2,12 @@
 
 // Authenticated fetch wrapper
 const authFetch = async (url, options = {}) => {
-    const token = localStorage.getItem('adminToken') || 
-                  localStorage.getItem('trainerToken') || 
-                  localStorage.getItem('hodToken') ||
-                  localStorage.getItem('financeToken') ||
+    const token = localStorage.getItem('hodToken') ||
                   localStorage.getItem('authToken') ||
-                  window.AUTH?.getToken();
+                  window.AUTH?.getToken() ||
+                  localStorage.getItem('adminToken') || 
+                  localStorage.getItem('trainerToken') || 
+                  localStorage.getItem('financeToken');
     
     if (!token) {
         const loginUrls = {
@@ -1962,4 +1962,3 @@ function loadProfileData() {
         showToast('Error loading profile data', 'error');
     }
 }
-
