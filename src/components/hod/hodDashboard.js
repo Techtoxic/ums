@@ -1019,7 +1019,7 @@ async function assignSelectedUnits() {
     }
     
     try {
-        const response = await fetch('/api/assignments/assign', {
+        const response = await authFetch('/api/assignments/assign', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -1077,7 +1077,7 @@ async function unassignUnit(unitId) {
     if (!confirm('Are you sure you want to unassign this unit?')) return;
     
     try {
-        const response = await fetch('/api/assignments/unassign', {
+        const response = await authFetch('/api/assignments/unassign', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -1114,7 +1114,7 @@ async function bulkUnassignUnits() {
     if (!confirm(`Are you sure you want to unassign ${selectedUnits.length} unit(s)?`)) return;
     
     try {
-        const response = await fetch('/api/assignments/unassign', {
+        const response = await authFetch('/api/assignments/unassign', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -1391,7 +1391,7 @@ function getStatusBadge(status) {
 async function loadCommonUnits() {
     try {
         console.log('Loading common units...');
-        const response = await fetch('/api/common-units');
+        const response = await authFetch('/api/common-units');
         
         if (response.ok) {
             const data = await response.json();
@@ -1430,7 +1430,7 @@ async function loadCommonUnitAssignments() {
 async function loadAllTrainers() {
     try {
         console.log('Loading all trainers...');
-        const response = await fetch('/api/trainers/all-departments');
+        const response = await authFetch('/api/trainers/all-departments');
         
         if (response.ok) {
             const data = await response.json();
@@ -1765,7 +1765,7 @@ async function assignCommonUnit() {
         console.log('Current HOD:', currentHOD);
         console.log('Selected Trainer:', selectedTrainerForCommonUnit);
         
-        const response = await fetch('/api/common-unit-assignments', {
+        const response = await authFetch('/api/common-unit-assignments', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

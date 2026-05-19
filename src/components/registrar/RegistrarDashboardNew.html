@@ -258,7 +258,7 @@
         // Function to fetch and display students
         async function fetchAndDisplayStudents() {
             try {
-                const response = await fetch(`${API_BASE_URL}/students`);
+                const response = await authFetch(`${API_BASE_URL}/students`);
                 if (!response.ok) {
                     let errorMessage = 'Failed to fetch students';
                     try {
@@ -510,7 +510,7 @@
         // Function to view student details
         async function viewStudent(studentId) {
             try {
-                const response = await fetch(`${API_BASE_URL}/students/${studentId}`);
+                const response = await authFetch(`${API_BASE_URL}/students/${studentId}`);
                 if (!response.ok) throw new Error('Failed to fetch student details');
                 const student = await response.json();
                 
@@ -634,7 +634,7 @@
         // Function to edit student details
         async function editStudent(studentId) {
             try {
-                const response = await fetch(`${API_BASE_URL}/students/${studentId}`);
+                const response = await authFetch(`${API_BASE_URL}/students/${studentId}`);
                 if (!response.ok) throw new Error('Failed to fetch student details');
                 const student = await response.json();
                 
@@ -698,7 +698,7 @@
             };
 
             try {
-                const response = await fetch(`${API_BASE_URL}/students/${studentId}`, {
+                const response = await authFetch(`${API_BASE_URL}/students/${studentId}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -723,7 +723,7 @@
         // Function to load dashboard stats
         async function loadDashboardStats() {
             try {
-                const response = await fetch(`${API_BASE_URL}/students`);
+                const response = await authFetch(`${API_BASE_URL}/students`);
                 if (!response.ok) throw new Error('Failed to fetch students');
                 const students = await response.json();
                 
@@ -853,7 +853,7 @@
                 
                 console.log('Filters:', { levelFilter, deptFilter });
                 
-                const response = await fetch(`${API_BASE_URL}/students`);
+                const response = await authFetch(`${API_BASE_URL}/students`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch students');
                 }
@@ -1014,7 +1014,7 @@
                 progressText.textContent = `${i + 1} of ${studentsToPromote.length} students processed`;
                 
                 try {
-                    const response = await fetch(`${API_BASE_URL}/students/${student._id}`, {
+                    const response = await authFetch(`${API_BASE_URL}/students/${student._id}`, {
                         method: 'PATCH',
                         headers: {
                             'Content-Type': 'application/json',
@@ -1135,7 +1135,7 @@
                 
                 console.log('Modal Filters:', { levelFilter, deptFilter });
                 
-                const response = await fetch(`${API_BASE_URL}/students`);
+                const response = await authFetch(`${API_BASE_URL}/students`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch students');
                 }
@@ -1266,14 +1266,14 @@
 
                 try {
                     // First get the current student data
-                    const getResponse = await fetch(`${API_BASE_URL}/students/${studentId}`);
+                    const getResponse = await authFetch(`${API_BASE_URL}/students/${studentId}`);
                     if (!getResponse.ok) {
                         throw new Error('Failed to fetch student data');
                     }
                     const student = await getResponse.json();
                     
                     // Update with the new year
-                    const response = await fetch(`${API_BASE_URL}/students/${studentId}`, {
+                    const response = await authFetch(`${API_BASE_URL}/students/${studentId}`, {
                         method: 'PATCH',
                         headers: {
                             'Content-Type': 'application/json',
@@ -1469,7 +1469,7 @@
                 const intakeCode = generateIntakeCode(intake, intakeYear);
 
                 // Fetch the latest admission number for this course and intake
-                const response = await fetch(`${API_BASE_URL}/students/latest-admission/${courseInfo.code}/${intake}/${intakeYear}`);
+                const response = await authFetch(`${API_BASE_URL}/students/latest-admission/${courseInfo.code}/${intake}/${intakeYear}`);
                 if (!response.ok) {
                     throw new Error(`Server error: ${response.status}`);
                 }
@@ -1554,7 +1554,7 @@
             console.log('Student data to submit:', studentData);
 
             try {
-                const response = await fetch(`${API_BASE_URL}/students/register`, {
+                const response = await authFetch(`${API_BASE_URL}/students/register`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
