@@ -119,6 +119,67 @@ node server.js
 - Tools of Trade, Applications
 - System Settings
 
+## 🐘 V2 — Postgres / Drizzle (Phase 1a foundation)
+
+The `v2-postgres` branch is migrating the data layer from MongoDB/Mongoose to
+PostgreSQL via [Drizzle ORM](https://orm.drizzle.team/). **Phase 1a** lands the
+foundation only; `server.js` still uses Mongoose in this commit, so the V1 app
+keeps booting. The V2 schema is live in Neon and seeded, ready for the
+`server.js` port (Phase 1b).
+
+### What's in Phase 1a
+
+- `drizzle/schema.js` — 21 tables (users, students, departments, programs,
+  units, common_unit_assignments, trainer_assignments, student_enrollments,
+  unit_registrations, tool_requests, attachment_applications,
+  graduation_applications, notifications, student_notes, student_uploads,
+  audit_logs, system_settings, password_resets, login_otps, payments
+  [TEMPORARY], payslips [TEMPORARY]) with 9 enums and all required indexes.
+- `drizzle.config.js`, `src/db/index.js`, `src/config/env.js` (Zod-validated
+  env with refuse-to-start on missing `DATABASE_URL`/`JWT_SECRET`).
+- `drizzle/seed.js` — idempotent seed: 7 departments / 11 programs / 18 units
+  / 10 users (preserved emails, default passwords — see below) / 7 students /
+  8 sample payments / 5 sample payslips.
+- `drizzle/migrations/0000_*.sql` — initial migration.
+
+### Setup
+
+```bash
+# 1) Copy env.example to .env and fill in DATABASE_URL (Neon URL) + JWT_SECRET
+cp env.example .env
+# Edit .env with a real Neon DATABASE_URL and 32+ char JWT_SECRET
+
+# 2) Install deps (use --legacy-peer-deps because of @aws-sdk peer quirks)
+npm install --legacy-peer-deps
+
+# 3) Apply schema to Neon
+npm run db:migrate
+
+# 4) Seed
+npm run db:seed
+```
+
+### Default seeded passwords (Phase 1a — V1 hashes not portable)
+
+| Email | Role | Password |
+|---|---|---|
+| okmomanyi56@gmail.com | admin | `Admin@2026` |
+| calvinnate6@gmail.com | registrar | `Admin@2026` |
+| whitenat16@gmail.com + others | trainer | `Trainer@2026` |
+| nashonbett18@gmail.com (and `+registrar`) | admin / registrar | `Mt5@2026` |
+| Students | student | phone number (e.g. `0712345689`) |
+
+Change these immediately on first login.
+
+### Not yet done (Phase 1b)
+
+- `server.js` is **not yet ported** — 177 Mongoose call sites and 4 inline
+  Mongoose schemas remain. The V1 app still uses Mongoose against MongoDB.
+- `src/models/` (20 Mongoose models) is not yet deleted.
+- `payments` and `payslips` tables exist in V1-flat shape and are marked
+  `TEMPORARY` in `drizzle/schema.js` — they will be redesigned once the EDTTI
+  fee structure is finalised.
+
 ## 🎨 Design System & Color Scheme
 
 The UI follows the **EDTTI brand identity** — a maroon-and-gold academic palette

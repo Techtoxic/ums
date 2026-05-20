@@ -4,25 +4,38 @@
   "private": true,
   "main": "server.js",
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   },
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "vercel-build": "echo 'Vercel build complete'"
+    "vercel-build": "echo 'Vercel build complete'",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:seed": "node drizzle/seed.js",
+    "db:studio": "drizzle-kit studio",
+    "db:reset": "node drizzle/reset.js"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.919.0",
-    "@aws-sdk/lib-storage": "^3.919.0",
-    "@aws-sdk/s3-request-presigner": "^3.919.0",
+    "@aws-sdk/client-s3": "3.705.0",
+    "@aws-sdk/lib-storage": "3.705.0",
+    "@aws-sdk/s3-request-presigner": "3.705.0",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
+    "dotenv-safe": "^9.1.0",
+    "drizzle-orm": "^0.36.4",
     "express": "^5.1.0",
     "express-rate-limit": "^7.4.0",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^7.6.0",
-    "multer": "^2.0.2"
+    "multer": "^2.0.2",
+    "postgres": "^3.4.5",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.30.0"
   }
 }

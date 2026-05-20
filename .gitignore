@@ -33,9 +33,10 @@ dist/
 build/
 .cache/
 
-# Database dumps
+# Database dumps (but keep Drizzle migration files)
 *.sql
 *.dump
+!drizzle/migrations/**/*.sql
 
 # PM2
 .pm2/
