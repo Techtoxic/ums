@@ -1,10 +1,12 @@
 require('dotenv').config();
 const dns = require('dns');
-// Set DNS resolution order to prioritize IPv4 (Windows fix for MongoDB Atlas)
+// Set DNS resolution order to prioritize IPv4 (legacy MongoDB Atlas workaround; harmless on Neon)
 dns.setDefaultResultOrder('ipv4first');
 
+// V2 Phase 1b: validate environment early (refuses to start without DATABASE_URL / JWT_SECRET).
+require('./src/config/env');
+
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -16,96 +18,24 @@ const fs = require('fs');
 const config = require('./src/config/config');
 const csp = require('./src/config/csp'); // SEV-M-025: CSP (Report-Only by default)
 
+// V2 Phase 1b: Drizzle/Postgres data layer + Mongoose-compatibility shim.
+// The shim exposes Mongoose-style model APIs backed by Drizzle/Postgres, so the
+// existing call sites in this file keep working AS-IS. See src/db/models.js.
+const { db, client } = require('./src/db');
+const {
+    Student, User, AdminStaff, Trainer, HOD,
+    Program, Unit, CommonUnit, CommonUnitAssignment,
+    TrainerAssignment, StudentUnitRegistration,
+    ToolRequest, ToolsOfTrade,
+    AttachmentApplication, GraduationApplication,
+    Notification, StudentNote, StudentUpload,
+    AuditLog, SystemSettings, PasswordReset, LoginOTP,
+    Payment, Payslip,
+} = require('./src/db/models');
+
 // Student Schema
-const studentSchema = new mongoose.Schema({
-    name: { type: String, required: true },
-    idNumber: { type: String, required: true, unique: true },
-    kcseGrade: { type: String, required: true },
-    admissionNumber: { type: String, required: true, unique: true },
-    course: { type: String, required: true },
-    department: { type: String, required: true },
-    year: { type: Number, required: true },
-    intake: { 
-        type: String, 
-        required: true, 
-        enum: ['january', 'september'],
-        lowercase: true 
-    },
-    intakeYear: { type: Number, required: true },
-    phoneNumber: { type: String, required: true },
-    email: { 
-        type: String, 
-        trim: true,
-        lowercase: true,
-        validate: {
-            validator: function(v) {
-                return !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-            },
-            message: 'Invalid email format'
-        }
-    },
-    admissionType: { 
-        type: String, 
-        required: true, 
-        enum: ['walk-in', 'KUCCPS'],
-        default: 'walk-in'
-    },
-    password: { type: String, required: true, select: false }, // SEV-H-018: never returned by default queries
-    role: { type: String, default: 'student' },
-    tokenVersion: { type: Number, default: 0 }, // SEV-H-013: bumped on password/email change to revoke JWTs
-    isFirstLogin: { type: Boolean, default: true }, // SEV-H-014
-    mustUpdatePassword: { type: Boolean, default: true }, // SEV-H-014: forced change of the random initial password
-    createdAt: { type: Date, default: Date.now }
-});
-
-// Hash password before saving + SEV-H-013 tokenVersion bump
-studentSchema.pre('save', async function(next) {
-    if (this.isModified('password')) {
-        this.password = await bcrypt.hash(this.password, 10);
-    }
-    if (!this.isNew && (this.isModified('password') || this.isModified('email'))) {
-        this.tokenVersion = (this.tokenVersion || 0) + 1;
-    }
-    next();
-});
-
-// Method to compare passwords
-studentSchema.methods.comparePassword = async function(candidatePassword) {
-    return await bcrypt.compare(candidatePassword, this.password);
-};
-
-// SEV-H-018: strip secret-like fields from any serialised output.
-function stripStudentSecrets(doc, ret) {
-    delete ret.password;
-    delete ret.tokenVersion;
-    return ret;
-}
-studentSchema.set('toJSON', { transform: stripStudentSecrets });
-studentSchema.set('toObject', { transform: stripStudentSecrets });
-
-// Register Student model (check if already exists for serverless compatibility)
-const Student = mongoose.models.Student || mongoose.model('Student', studentSchema);
-
-// Import models
-const Unit = require('./src/models/Unit');
-const Trainer = require('./src/models/Trainer');
-const TrainerAssignment = require('./src/models/TrainerAssignment');
-const HOD = require('./src/models/HOD');
-const CommonUnit = require('./src/models/CommonUnit');
-const CommonUnitAssignment = require('./src/models/CommonUnitAssignment');
-const SystemSettings = require('./src/models/SystemSettings');
-const StudentUnitRegistration = require('./src/models/StudentUnitRegistration');
-const ToolsOfTrade = require('./src/models/ToolsOfTrade');
-const Notification = require('./src/models/Notification');
-const GraduationApplication = require('./src/models/GraduationApplication');
-const AttachmentApplication = require('./src/models/AttachmentApplication');
-const PasswordReset = require('./src/models/PasswordReset');
-const StudentUpload = require('./src/models/StudentUpload');
-const AuditLog = require('./src/models/AuditLog');
-const StudentNote = require('./src/models/StudentNote');
-const Payslip = require('./src/models/Payslip');
-const AdminStaff = require('./src/models/AdminStaff');
-const LoginOTP = require('./src/models/LoginOTP');
+// V2 Phase 1b: Student model + all V1 model facades now come from src/db/models.js
+// (Mongoose-compatibility shim on top of Drizzle/Postgres). See block above.
 
 // Import services
 const EmailService = require('./src/utils/emailService');
@@ -150,8 +80,10 @@ function toMoneyNumber(v) {
     return Number.isFinite(n) ? n : 0;
 }
 function toDecimal128(v) {
+    // V2: Postgres numeric() accepts strings. Return a fixed-2 decimal string
+    // for compatibility with all call sites that used to pass Decimal128.
     const n = toMoneyNumber(v);
-    return mongoose.Types.Decimal128.fromString(n.toFixed(2));
+    return n.toFixed(2);
 }
 
 // Utility function to format course names
@@ -196,6 +128,22 @@ console.log('🔵 All imports loaded successfully');
 const app = express();
 
 console.log('🔵 Express app created');
+
+// V2 Phase 1b: liveness/readiness probe (defined inline; no DB lookup beyond SELECT 1).
+app.get('/api/health', async (_req, res) => {
+    try {
+        const start = Date.now();
+        await client`SELECT 1 as ok`;
+        res.json({
+            status: 'ok',
+            db: 'postgres',
+            latency_ms: Date.now() - start,
+            commit: 'v2-postgres Phase 1b',
+        });
+    } catch (err) {
+        res.status(503).json({ status: 'down', error: err.message });
+    }
+});
 
 // Create uploads directory if it doesn't exist (skip in serverless/Vercel environment)
 const uploadsDir = path.join(__dirname, 'uploads');
@@ -345,61 +293,55 @@ function fileDownloadAuth(req, res, next) {
 // DATABASE CONNECTION
 // ===============================
 
-// Lazy MongoDB connection for serverless
+// V2 Phase 1b: Postgres connection (Drizzle/Neon). Boot-time SELECT 1 health
+// check; lazy on first request to keep serverless cold-start cheap.
 let isConnected = false;
 
 const connectDB = async () => {
     if (isConnected) return;
-    
     try {
-        console.log('🔄 Connecting to MongoDB...');
-        await mongoose.connect(config.mongodbUri, {
-            serverSelectionTimeoutMS: 30000,
-            socketTimeoutMS: 45000,
-            family: 4,
-        });
-        
+        await client`SELECT 1`;
         isConnected = true;
-        console.log('✅ MongoDB connected');
-        
-        // Initialize default data
-        await initializeSystemSettings();
-        await initializeCommonUnits();
-        await initializeTrainers();
-        await initializeAdminStaff();
-        
+        console.log('✅ Postgres (Neon) connected');
+        // Initialize default data — best-effort; do not crash the boot if these
+        // legacy helpers don't translate cleanly to Postgres yet.
+        try { await initializeSystemSettings(); } catch (e) { console.warn('   initializeSystemSettings skipped:', e.message); }
+        try { await initializeCommonUnits(); }    catch (e) { console.warn('   initializeCommonUnits skipped:',    e.message); }
+        try { await initializeTrainers(); }       catch (e) { console.warn('   initializeTrainers skipped:',       e.message); }
+        try { await initializeAdminStaff(); }     catch (e) { console.warn('   initializeAdminStaff skipped:',     e.message); }
     } catch (error) {
-        console.error('❌ MongoDB error:', error.message);
+        console.error('❌ Postgres connection failed:', error.message);
         throw error;
     }
 };
 
-// Middleware to ensure DB connection
 const ensureDB = async (req, res, next) => {
     try {
-        if (!isConnected) {
-            await connectDB();
-        }
+        if (!isConnected) await connectDB();
         next();
     } catch (err) {
         res.status(500).json({ message: 'Database connection failed' });
     }
 };
 
-// Handle MongoDB connection events
-mongoose.connection.on('disconnected', () => {
-    console.log('⚠️  MongoDB disconnected');
-});
+// V2 Phase 1b: /api/health — lightweight Postgres ping for liveness probes.
+// Defined here (before the route registration loop) so it doesn't need ensureDB.
+// (We attach to app below the express() construction; this is just the handler.)
+const healthHandler = async (_req, res) => {
+    try {
+        const start = Date.now();
+        await client`SELECT 1 as ok`;
+        res.json({
+            status: 'ok',
+            db: 'postgres',
+            latency_ms: Date.now() - start,
+            commit: 'v2-postgres Phase 1b',
+        });
+    } catch (err) {
+        res.status(503).json({ status: 'down', error: err.message });
+    }
+};
 
-mongoose.connection.on('error', (err) => {
-    console.error('❌ MongoDB error:', err);
-});
-
-mongoose.connection.on('reconnected', () => {
-    console.log('✅ MongoDB reconnected');
-});
-
-// Lazy connection - don't connect at startup for Vercel
 console.log('Loading middleware and routes...');
 
 // Trust the first proxy (Vercel/Render/Cloudflare). Required for real client IPs in rate limiting.
@@ -1859,113 +1801,8 @@ async function initializeSystemSettings() {
     }
 }
 
-// Tool Request Schema
-const toolRequestSchema = new mongoose.Schema({
-    toolType: { type: String, required: true },
-    course: { type: String, required: true },
-    dueDate: { type: Date, required: true },
-    instructions: String,
-    status: { type: String, default: 'pending' },
-    createdAt: { type: Date, default: Date.now }
-});
-
-const ToolRequest = mongoose.models.ToolRequest || mongoose.model('ToolRequest', toolRequestSchema);
-
-// Program Schema
-const programSchema = new mongoose.Schema({
-    programName: { 
-        type: String, 
-        required: [true, 'Program name is required'],
-        trim: true,
-        unique: true
-    },
-    programCost: {
-        type: mongoose.Schema.Types.Decimal128, // SEV-H-016: exact money
-        required: [true, 'Program cost is required']
-    },
-    department: {
-        type: String,
-        required: [true, 'Department is required'],
-        enum: ['applied_science', 'agriculture', 'building_civil', 'electromechanical', 'hospitality', 'business_liberal', 'computing_informatics']
-    },
-    createdAt: { 
-        type: Date, 
-        default: Date.now 
-    },
-    updatedAt: { 
-        type: Date, 
-        default: Date.now 
-    }
-});
-
-programSchema.pre('save', function(next) {
-    this.updatedAt = new Date();
-    next();
-});
-
-// SEV-H-016: emit programCost as a plain string, not the raw {$numberDecimal}.
-function decToStringTransform(field) {
-    return function(doc, ret) {
-        if (ret[field] !== undefined && ret[field] !== null && typeof ret[field] === 'object') {
-            ret[field] = ret[field].toString();
-        }
-        return ret;
-    };
-}
-programSchema.set('toJSON', { transform: decToStringTransform('programCost') });
-
-const Program = mongoose.models.Program || mongoose.model('Program', programSchema);
-
-// Payment Schema
-const paymentSchema = new mongoose.Schema({
-    studentId: { 
-        type: String, 
-        required: [true, 'Student ID is required'],
-        trim: true
-    },
-    amount: {
-        type: mongoose.Schema.Types.Decimal128, // SEV-H-016: exact money
-        required: [true, 'Payment amount is required']
-    },
-    paymentMode: {
-        type: String,
-        required: [true, 'Payment mode is required'],
-        enum: ['mpesa', 'bank', 'bursary']
-    },
-    bankName: {
-        type: String,
-        required: function() { return this.paymentMode === 'bank'; }
-    },
-    receiptNumber: {
-        type: String,
-        required: function() { return this.paymentMode === 'bank'; }
-    },
-    mpesaTransactionId: {
-        type: String,
-        required: function() { return this.paymentMode === 'mpesa'; }
-    },
-    bursaryReference: {
-        type: String,
-        required: function() { return this.paymentMode === 'bursary'; }
-    },
-    reference: {
-        type: String,
-        required: true
-    },
-    paymentDate: { 
-        type: Date, 
-        default: Date.now 
-    },
-    createdAt: { 
-        type: Date, 
-        default: Date.now 
-    }
-});
-
-// SEV-H-016: emit amount as a plain string, not the raw {$numberDecimal}.
-paymentSchema.set('toJSON', { transform: decToStringTransform('amount') });
-
-const Payment = mongoose.models.Payment || mongoose.model('Payment', paymentSchema);
+// V2 Phase 1b: ToolRequest, Program, Payment now come from src/db/models.js
+// (Mongoose-compat shim → Drizzle/Postgres). See the top-of-file imports.
 
 
 

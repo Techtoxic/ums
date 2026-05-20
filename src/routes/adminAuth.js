@@ -2,8 +2,8 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
-const AdminStaff = require('../models/AdminStaff');
-const LoginOTP = require('../models/LoginOTP');
+// V2 Phase 1b: AdminStaff and LoginOTP come from the Drizzle/Postgres shim now.
+const { AdminStaff, LoginOTP } = require('../db/models');
 const EmailService = require('../utils/emailService');
 const config = require('../config/config');
 const { signToken } = require('../middleware/auth');

@@ -2,24 +2,29 @@
 // JWT-based authentication with role-based access control (RBAC)
 
 const jwt = require('jsonwebtoken');
-const mongoose = require('mongoose');
 const config = require('../config/config');
+// V2 Phase 1b: models now come from the Drizzle/Postgres shim (not mongoose.models).
+const shim = require('../db/models');
 
 // Sourced from validated config (config will refuse to boot in prod without it)
 const JWT_SECRET = config.jwt.secret;
 const JWT_EXPIRES_IN = config.jwt.expiresIn;
 
 /**
- * SEV-H-013: Resolve the Mongoose model that owns the account for a given role.
- * Models are looked up lazily via mongoose.models so this file does not need to
- * require server.js (the Student model is registered inline there).
+ * SEV-H-013: Resolve the model that owns the account for a given role.
+ * In V2 the unified `users` table holds admin / deputy / finance / dean / ilo /
+ * registrar / cibec / hod / trainer — the shim's role-filtered facades return
+ * the correct rows for each.
  */
 function modelForRole(role) {
-    if (role === 'student') return mongoose.models.Student;
-    if (role === 'hod') return mongoose.models.HOD;
-    if (role === 'trainer') return mongoose.models.Trainer;
-    // admin, deputy, finance, dean, ilo, registrar, cibec all live in AdminStaff
-    return mongoose.models.AdminStaff;
+    if (role === 'student') return shim.Student;
+    if (role === 'hod')     return shim.HOD;
+    if (role === 'trainer') return shim.Trainer;
+    // admin, deputy, finance, dean, ilo, registrar, cibec all live in users.
+    // AdminStaff facade only matches role='admin'; for the broader staff roles
+    // we use the unfiltered User model so the JWT can identify the row by id
+    // regardless of its specific role.
+    return shim.User;
 }
 
 /**
