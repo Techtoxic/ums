@@ -1,6 +1,6 @@
 require('dotenv').config();
 const dns = require('dns');
-// Set DNS resolution order to prioritize IPv4 (legacy MongoDB Atlas workaround; harmless on Neon)
+// Force IPv4 DNS resolution (avoids occasional dual-stack hiccups on Neon).
 dns.setDefaultResultOrder('ipv4first');
 
 // V2 Phase 1b: validate environment early (refuses to start without DATABASE_URL / JWT_SECRET).
@@ -18,8 +18,8 @@ const fs = require('fs');
 const config = require('./src/config/config');
 const csp = require('./src/config/csp'); // SEV-M-025: CSP (Report-Only by default)
 
-// V2 Phase 1b: Drizzle/Postgres data layer + Mongoose-compatibility shim.
-// The shim exposes Mongoose-style model APIs backed by Drizzle/Postgres, so the
+// V2 Phase 1b: Drizzle/Postgres data layer + a thin model facade shim.
+// The shim exposes the legacy V1 model APIs backed by Drizzle/Postgres, so the
 // existing call sites in this file keep working AS-IS. See src/db/models.js.
 const { db, client } = require('./src/db');
 const {
@@ -35,7 +35,7 @@ const {
 
 // Student Schema
 // V2 Phase 1b: Student model + all V1 model facades now come from src/db/models.js
-// (Mongoose-compatibility shim on top of Drizzle/Postgres). See block above.
+// (Drizzle/Postgres facade). See block above.
 
 // Import services
 const EmailService = require('./src/utils/emailService');
@@ -64,7 +64,7 @@ try {
 const { getAllTrainers, parseTrainersFile } = require('./src/data/trainerData');
 
 // SEV-H-019: escape user/DB-supplied values before using them inside a RegExp
-// or a Mongoose $regex, to prevent regex injection and ReDoS.
+// (or the shim's $regex translator), to prevent regex injection and ReDoS.
 function escapeRegex(value) {
     return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -482,10 +482,11 @@ app.post('/api/csp-report', cspReportLimiter, cspReportParser,
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
-// Strip MongoDB operator characters from req.body, req.query, req.params to defeat
-// NoSQL injection (e.g. {"$ne": null} as a password).
-// Replaces express-mongo-sanitize (incompatible with Express 5 read-only req.query).
-function customMongoSanitize(options) {
+// Strip operator characters ($ and . at object-key positions) from req.body,
+// req.query, req.params to defeat operator-injection attacks (e.g. submitting
+// {"$ne": null} as a password). The shim's query translator interprets $-prefixed
+// keys, so this scrub keeps that surface safe.
+function sanitizeQueryOperators(options) {
     const replaceWith = options.replaceWith || '_';
     const onSanitize = options.onSanitize || function () {};
 
@@ -546,7 +547,7 @@ function customMongoSanitize(options) {
     };
 }
 
-app.use(customMongoSanitize({
+app.use(sanitizeQueryOperators({
     replaceWith: '_',
     onSanitize: ({ key }) => {
         console.warn(`Sanitized prohibited key "${key}"`);
@@ -1802,7 +1803,7 @@ async function initializeSystemSettings() {
 }
 
 // V2 Phase 1b: ToolRequest, Program, Payment now come from src/db/models.js
-// (Mongoose-compat shim → Drizzle/Postgres). See the top-of-file imports.
+// (Drizzle/Postgres facade). See the top-of-file imports.
 
 
 
@@ -3523,7 +3524,7 @@ app.patch('/api/students/:id', verifyToken, authorize('admin', 'registrar'), asy
 
                         if (programCostNum > 0) {
                             // SEV-H-016 TODO: `balance` is NOT a field on the Student
-                            // schema, so this write is dropped by Mongoose strict mode
+                            // schema, so this write is dropped by Drizzle strict mode
                             // and is not persisted today. A correct fix (a Decimal128
                             // Student.balance updated via an atomic $inc inside a
                             // replica-set transaction) needs a data-model decision and
@@ -3805,7 +3806,7 @@ app.get('/api/students/:studentId/can-register', verifyToken, authorize('admin',
     }
 });
 
-// Get Student by Mongo _id (used by registrar view/edit)
+// Get Student by id (used by registrar view/edit)
 app.get('/api/students/:id', verifyToken, authorize('admin', 'registrar', 'student'), verifyOwnership('id'), async (req, res) => {
     try {
         const student = await Student.findById(req.params.id, { password: 0 });
@@ -3819,7 +3820,7 @@ app.get('/api/students/:id', verifyToken, authorize('admin', 'registrar', 'stude
     }
 });
 
-// Update Student by Mongo _id
+// Update Student by id
 app.put('/api/students/:id', verifyToken, authorize('admin', 'registrar'), async (req, res) => {
     try {
         const { name, idNumber, phoneNumber, year } = req.body;
@@ -3901,7 +3902,7 @@ app.put('/api/students/:id', verifyToken, authorize('admin', 'registrar'), async
 
                         if (programCostNum > 0) {
                             // SEV-H-016 TODO: `balance` is NOT a field on the Student
-                            // schema, so this write is dropped by Mongoose strict mode
+                            // schema, so this write is dropped by Drizzle strict mode
                             // and is not persisted today. A correct fix (a Decimal128
                             // Student.balance updated via an atomic $inc inside a
                             // replica-set transaction) needs a data-model decision and
@@ -6198,7 +6199,7 @@ app.post('/api/payslips/generate', verifyToken, authorize('admin', 'finance'), a
         const payslips = [];
         
         for (const trainerId of trainerIds) {
-            // Find trainer by _id (MongoDB ObjectId)
+            // Find trainer by id (UUID)
             const trainer = await Trainer.findById(trainerId);
             if (!trainer) {
                 console.warn(`Trainer ${trainerId} not found`);

@@ -1139,7 +1139,7 @@ async function handleGeneratePayslips(e) {
             return;
         }
         
-        // Extract trainer IDs (use MongoDB _id)
+        // Extract trainer IDs (server returns _id as an alias for the row UUID)
         const trainerIds = trainers.map(trainer => trainer._id);
         
         // SEV-H-008: actor identity is sourced server-side from the JWT.

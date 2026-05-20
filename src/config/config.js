@@ -29,8 +29,10 @@ const config = {
     nodeEnv,
     isProduction,
 
-    // Database Configuration
-    mongodbUri: process.env.MONGODB_URI || (isProduction ? null : 'mongodb://localhost:27017/university_management'),
+    // Database Configuration (V2: PostgreSQL/Neon via Drizzle).
+    // The actual connection string is validated by src/config/env.js; this
+    // helper just exposes it on the config object for backwards compatibility.
+    databaseUrl: process.env.DATABASE_URL || null,
 
     // API Configuration
     apiBaseUrl: process.env.API_BASE_URL || 'http://localhost:5502/api',
@@ -75,9 +77,11 @@ const config = {
     }
 };
 
-// Validation
-if (!config.mongodbUri) {
-    console.error('FATAL: MONGODB_URI is required in production.');
+// Validation — DATABASE_URL is validated more thoroughly in src/config/env.js
+// (Zod schema), which runs before any DB client loads. This file is for
+// non-DB knobs (CORS, JWT, S3, rate limits).
+if (isProduction && !config.databaseUrl) {
+    console.error('FATAL: DATABASE_URL is required in production.');
     process.exit(1);
 }
 
@@ -88,7 +92,7 @@ if (isProduction && config.allowedOrigins.length === 0) {
 console.log('Configuration loaded:');
 console.log(`  Environment: ${config.nodeEnv}`);
 console.log(`  Port: ${config.port}`);
-console.log(`  Database: ${config.mongodbUri.replace(/\/\/[^@]+@/, '//***:***@')}`);
+console.log(`  Database: ${config.databaseUrl ? config.databaseUrl.replace(/\/\/[^@]+@/, '//***:***@') : '(not set)'}`);
 console.log(`  Allowed origins: ${config.allowedOrigins.length ? config.allowedOrigins.join(', ') : '(any in dev)'}`);
 
 module.exports = config;

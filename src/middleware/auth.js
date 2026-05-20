@@ -3,7 +3,7 @@
 
 const jwt = require('jsonwebtoken');
 const config = require('../config/config');
-// V2 Phase 1b: models now come from the Drizzle/Postgres shim (not mongoose.models).
+// V2 Phase 1b: models come from the Drizzle/Postgres facade (src/db/models.js).
 const shim = require('../db/models');
 
 // Sourced from validated config (config will refuse to boot in prod without it)
@@ -176,7 +176,7 @@ const authorize = (...allowedRoles) => {
  * Verify the authenticated user owns the resource they are accessing.
  * Admin-level roles bypass.
  *
- * Important: compares as strings; both Mongo ObjectIds and string IDs are handled.
+ * Important: compares as strings; UUIDs and string IDs are both handled.
  */
 const verifyOwnership = (userIdParam = 'id') => {
     return (req, res, next) => {
@@ -202,7 +202,7 @@ const verifyOwnership = (userIdParam = 'id') => {
             }
 
             // For students, also allow matching by admissionNumber since URLs use that
-            // rather than the MongoDB _id.
+            // rather than the row UUID.
             const isOwner = String(requestedUserId) === String(authenticatedUserId) ||
                           (req.user && req.user.admissionNumber &&
                            String(requestedUserId) === String(req.user.admissionNumber));

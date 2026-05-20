@@ -1,6 +1,6 @@
 # University Management System (UMS)
 
-A comprehensive university management system built with Node.js, Express, MongoDB, and modern web technologies.
+A comprehensive university management system built with Node.js, Express, PostgreSQL (via Drizzle ORM), and modern web technologies.
 
 ## Features
 
@@ -38,9 +38,8 @@ A comprehensive university management system built with Node.js, Express, MongoD
 ## 🚀 Setup Instructions
 
 ### Prerequisites
-- **Node.js** (v14 or higher)
-- **MongoDB** (installed and running)
-- **MongoDB Compass** (optional, for database management)
+- **Node.js** v20 or higher
+- **PostgreSQL** database — recommended: a free [Neon](https://neon.tech) project (serverless Postgres). Local Postgres also works.
 - **Git**
 
 ### Installation Steps
@@ -51,54 +50,57 @@ git clone https://github.com/Techtoxic/ums.git
 cd ums
 ```
 
-2. **Install dependencies:**
+2. **Install dependencies** (use `--legacy-peer-deps` because of an `@aws-sdk` peer-dep quirk):
 ```bash
-npm install
+npm install --legacy-peer-deps
 ```
 
 3. **Create environment file:**
-Create a `.env` file in the root directory with the following content:
+Copy `env.example` to `.env` and fill in real values:
 
 ```env
-# Database Configuration
-MONGODB_URI=mongodb://localhost:27017/university_management
+# Database (PostgreSQL — Neon URL must end with ?sslmode=require)
+DATABASE_URL=postgresql://USER:PASSWORD@HOST/DBNAME?sslmode=require
 
-# Email Configuration (Gmail)
-EMAIL_USER=your_email@gmail.com
-EMAIL_APP_PASSWORD=your_app_password
+# JWT (32+ random chars)
+JWT_SECRET=replace_with_at_least_32_random_characters
+JWT_EXPIRES_IN=2h
+SESSION_SECRET=replace_with_at_least_32_random_characters
 
-# Server Configuration
+# Email (Brevo HTTP API — replaces the old Gmail SMTP)
+BREVO_API_KEY=
+BREVO_SENDER_EMAIL=no-reply@yourdomain.tld
+BREVO_SENDER_NAME=EDTTI University Management System
+
+# Server
 PORT=5502
 NODE_ENV=development
 ```
 
-4. **Email Setup (Important!):**
-   - Use a Gmail account for sending emails
-   - Enable 2-Factor Authentication on your Gmail
-   - Generate an App Password: Google Account > Security > 2-Step Verification > App passwords
-   - Use the 16-character app password (not your regular password)
-
-5. **Start MongoDB:**
-   - Ensure MongoDB service is running
-   - Default connection: `mongodb://localhost:27017`
-
-6. **Run the application:**
+4. **Apply database schema:**
 ```bash
-node server.js
+npm run db:migrate   # creates 21 tables on your Postgres instance
+npm run db:seed      # idempotent — seeds departments, programs, users, students
 ```
 
-7. **Access the system:**
+5. **Run the application:**
+```bash
+npm run dev
+```
+
+6. **Access the system:**
    - **Main URL:** `http://localhost:5502`
    - **Student/Trainer Login:** `http://localhost:5502/login`
    - **HOD Login:** `http://localhost:5502/hod/login`
-   - **Registrar Dashboard:** `http://localhost:5502/src/components/registrar/RegistrarDashboardNew.html`
+   - **Admin Login:** `http://localhost:5502/admin/login`
+   - **Health check:** `http://localhost:5502/api/health` (returns Postgres latency)
 
 ## 🔧 System Architecture
 
 ### Backend
 - **Node.js & Express.js** - Server framework
-- **MongoDB with Mongoose** - Database and ODM
-- **Nodemailer** - Email service
+- **PostgreSQL** (Neon-hosted) with **Drizzle ORM** - Database and query layer
+- **Brevo HTTP API** - Transactional email (replaces the old Gmail SMTP path)
 - **Bcrypt.js** - Password hashing
 - **Multer** - File uploads
 
@@ -119,47 +121,44 @@ node server.js
 - Tools of Trade, Applications
 - System Settings
 
-## 🐘 V2 — Postgres / Drizzle (Phase 1a foundation)
+## 🐘 Database — PostgreSQL via Drizzle ORM
 
-The `v2-postgres` branch is migrating the data layer from MongoDB/Mongoose to
-PostgreSQL via [Drizzle ORM](https://orm.drizzle.team/). **Phase 1a** lands the
-foundation only; `server.js` still uses Mongoose in this commit, so the V1 app
-keeps booting. The V2 schema is live in Neon and seeded, ready for the
-`server.js` port (Phase 1b).
+EDTTI UMS runs on **PostgreSQL** (production: a [Neon](https://neon.tech)
+serverless project) via [Drizzle ORM](https://orm.drizzle.team/). The schema
+lives at `drizzle/schema.js` (21 tables, 9 enums, indexed for the hot reads).
+The legacy NoSQL data layer has been retired.
 
-### What's in Phase 1a
+### Schema
 
-- `drizzle/schema.js` — 21 tables (users, students, departments, programs,
-  units, common_unit_assignments, trainer_assignments, student_enrollments,
-  unit_registrations, tool_requests, attachment_applications,
-  graduation_applications, notifications, student_notes, student_uploads,
-  audit_logs, system_settings, password_resets, login_otps, payments
-  [TEMPORARY], payslips [TEMPORARY]) with 9 enums and all required indexes.
-- `drizzle.config.js`, `src/db/index.js`, `src/config/env.js` (Zod-validated
-  env with refuse-to-start on missing `DATABASE_URL`/`JWT_SECRET`).
-- `drizzle/seed.js` — idempotent seed: 7 departments / 11 programs / 18 units
-  / 10 users (preserved emails, default passwords — see below) / 7 students /
-  8 sample payments / 5 sample payslips.
-- `drizzle/migrations/0000_*.sql` — initial migration.
+21 tables: `users`, `students`, `departments`, `programs`, `units`,
+`common_unit_assignments`, `trainer_assignments`, `student_enrollments`,
+`unit_registrations`, `tool_requests`, `attachment_applications`,
+`graduation_applications`, `notifications`, `student_notes`, `student_uploads`,
+`audit_logs`, `system_settings`, `password_resets`, `login_otps`, `payments`
+(TEMPORARY), `payslips` (TEMPORARY). The two TEMPORARY tables retain the
+legacy flat shape pending a fee-structure redesign.
 
-### Setup
+### npm scripts
 
 ```bash
-# 1) Copy env.example to .env and fill in DATABASE_URL (Neon URL) + JWT_SECRET
-cp env.example .env
-# Edit .env with a real Neon DATABASE_URL and 32+ char JWT_SECRET
-
-# 2) Install deps (use --legacy-peer-deps because of @aws-sdk peer quirks)
-npm install --legacy-peer-deps
-
-# 3) Apply schema to Neon
-npm run db:migrate
-
-# 4) Seed
-npm run db:seed
+npm run db:generate   # generate a new migration from schema changes
+npm run db:migrate    # apply pending migrations to DATABASE_URL
+npm run db:push       # dev shortcut: push schema directly (no migration file)
+npm run db:seed       # idempotent seed (7 dept / 11 programs / 18 units / 10 users / 7 students)
+npm run db:studio     # open Drizzle Studio
+npm run db:reset      # custom reset script (see drizzle/reset.js)
 ```
 
-### Default seeded passwords (Phase 1a — V1 hashes not portable)
+### Server data layer
+
+`src/db/index.js` opens a single postgres-js pool (max 20, `prepare: false` so
+it plays well with PgBouncer/Neon). `src/db/models.js` is a thin facade that
+exposes the legacy V1 model API surface (`find`, `findOne`, `create`,
+`findByIdAndUpdate`, etc.) on top of Drizzle, with auto camelCase ↔ snake_case
+translation, `_id` aliasing for frontend compatibility, bcrypt password
+hashing, and `.comparePassword()` on user/student docs.
+
+### Default seeded credentials
 
 | Email | Role | Password |
 |---|---|---|
@@ -170,15 +169,6 @@ npm run db:seed
 | Students | student | phone number (e.g. `0712345689`) |
 
 Change these immediately on first login.
-
-### Not yet done (Phase 1b)
-
-- `server.js` is **not yet ported** — 177 Mongoose call sites and 4 inline
-  Mongoose schemas remain. The V1 app still uses Mongoose against MongoDB.
-- `src/models/` (20 Mongoose models) is not yet deleted.
-- `payments` and `payslips` tables exist in V1-flat shape and are marked
-  `TEMPORARY` in `drizzle/schema.js` — they will be redesigned once the EDTTI
-  fee structure is finalised.
 
 ## 🎨 Design System & Color Scheme
 
@@ -241,23 +231,23 @@ every authentication page via the single source of truth at
 
 ### Common Issues
 
-1. **MongoDB Connection Error:**
-   - Ensure MongoDB service is running
-   - Check connection string in `.env`
-   - Verify MongoDB is accessible on port 27017
+1. **Postgres Connection Error:**
+   - Check `DATABASE_URL` in `.env` — must start with `postgres://` or `postgresql://`
+   - For Neon, the URL must end with `?sslmode=require`
+   - Hit `/api/health` — it returns the SELECT 1 latency and a `down` status if Postgres is unreachable
 
-2. **Email Not Sending:**
-   - Verify Gmail credentials in `.env`
-   - Use App Password, not regular password
-   - Check Gmail 2FA is enabled
+2. **Email Not Sending (Brevo):**
+   - Confirm `BREVO_API_KEY`, `BREVO_SENDER_EMAIL`, `BREVO_SENDER_NAME` are set
+   - Sender email must be a verified sender/domain in your Brevo account
+   - Check server logs — the email service degrades cleanly and never crashes the app
 
 3. **Port Already in Use:**
    - Change PORT in `.env` file
-   - Or kill process using port 5502
+   - Or kill the process using port 5502
 
 4. **Missing Dependencies:**
-   - Run `npm install` again
-   - Delete `node_modules` and `package-lock.json`, then reinstall
+   - Run `npm install --legacy-peer-deps` again (the `--legacy-peer-deps` flag is required because of a `@aws-sdk` peer-dep quirk)
+   - If still broken, delete `node_modules` and `package-lock.json`, then reinstall
 
 ### Debug Mode
 The server logs detailed information. Check console output for:
@@ -324,14 +314,14 @@ Professional email templates included for:
 
 For technical support or questions:
 - Check the console logs for errors
-- Verify all environment variables are set
-- Ensure MongoDB and Node.js are properly installed
+- Verify all environment variables are set (the server validates them via Zod at boot)
+- Confirm Postgres is reachable (try `npm run db:studio` or `curl http://localhost:5502/api/health`)
 - Review this README for setup instructions
 
 ## 🚀 Production Deployment
 
 For production deployment:
-1. Use MongoDB Atlas for cloud database
+1. Use **Neon** (or any managed Postgres) for the database — copy the connection string into `DATABASE_URL` (must include `?sslmode=require`)
 2. Configure environment variables for production
 3. Set up proper SSL certificates
 4. Configure email service with production credentials

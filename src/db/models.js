@@ -1,27 +1,29 @@
 /**
- * EDTTI UMS — V2 Mongoose-compatibility shim, backed by Drizzle/Postgres.
+ * EDTTI UMS — V2 model facade for Drizzle/Postgres.
  *
- * This module exports objects with Mongoose-style APIs (find / findOne /
- * findById / create / findByIdAndUpdate / findByIdAndDelete / countDocuments
- * / updateOne / updateMany / deleteOne / deleteMany / exists / distinct),
- * so the existing V1 call sites in server.js + src/routes/* keep working
- * during Phase 1b without per-site rewriting.
+ * Exposes the legacy V1 model API surface (find / findOne / findById / create /
+ * findByIdAndUpdate / findByIdAndDelete / countDocuments / updateOne / updateMany /
+ * deleteOne / deleteMany / exists / distinct), backed by Drizzle queries against
+ * Postgres. This keeps the existing V1 call sites in server.js + src/routes/*
+ * working AS-IS during the migration without per-site rewriting.
  *
  * COVERED:
  *   - Auto camelCase ↔ snake_case field name translation
  *   - {field: value}, $in, $ne, $gt, $gte, $lt, $lte, $exists query operators
  *   - $set, $inc update operators
- *   - _id alias on every returned doc
+ *   - _id alias on every returned doc (frontend convenience; equals row.id UUID)
  *   - bcrypt pre-save hash for password fields
  *   - comparePassword() method on user/student docs
  *   - role-filtered facades: AdminStaff, Trainer, HOD all back onto `users` table
+ *   - Chainable query thenable (.select/.sort/.limit/.skip/.lean/.populate
+ *     are no-ops; the whole result is also awaitable)
  *
  * NOT COVERED (will throw at runtime; flag for follow-up):
  *   - .populate() (returns reference IDs only)
  *   - .aggregate() (returns [])
- *   - $push / $pull / array operators (Mongoose embedded arrays)
- *   - virtuals, hooks beyond password hashing
- *   - .lean(), .session() (silently no-op chained)
+ *   - $push / $pull / array operators (legacy embedded arrays)
+ *   - schema virtuals, hooks beyond password hashing
+ *   - .session() (silently no-op chained — single-statement writes only)
  */
 const bcrypt = require('bcryptjs');
 const { eq, and, or, ne, gt, gte, lt, lte, inArray, isNull, isNotNull, sql, desc, asc } = require('drizzle-orm');
@@ -37,7 +39,7 @@ function snakeToCamel(s) {
     return s.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
 }
 
-/** Translate a Mongoose-shape filter to a Drizzle WHERE expression. */
+/** Translate a V1-shape filter to a Drizzle WHERE expression. */
 function buildWhere(table, filter, fieldMap) {
     if (!filter || typeof filter !== 'object' || Object.keys(filter).length === 0) return undefined;
     const conds = [];
@@ -82,7 +84,7 @@ function buildWhere(table, filter, fieldMap) {
     return conds.length === 1 ? conds[0] : and(...conds);
 }
 
-/** Resolve a Mongoose key (e.g. admissionNumber, _id) to the Drizzle column object. */
+/** Resolve a V1 key (e.g. admissionNumber, _id) to the Drizzle column object. */
 function resolveCol(table, key, fieldMap) {
     if (key === '_id' || key === 'id') return table.id;
     if (fieldMap && fieldMap[key]) return table[fieldMap[key]];
@@ -91,7 +93,7 @@ function resolveCol(table, key, fieldMap) {
     return table[snake]; // may be undefined
 }
 
-/** Translate a Mongoose update document ({$set, $inc, ...} or flat) into a Drizzle update object. */
+/** Translate a V1 update document ({$set, $inc, ...} or flat) into a Drizzle update object. */
 function buildUpdate(table, update, fieldMap) {
     if (!update || typeof update !== 'object') return {};
     const set = {};
@@ -107,7 +109,7 @@ function buildUpdate(table, update, fieldMap) {
             set[snake] = sql`${table[snake]} + ${v}`;
         }
     } else {
-        // No operators — treat as plain $set (Mongoose's permissive default)
+        // No operators — treat as plain $set (V1's permissive default)
         for (const [k, v] of Object.entries(update)) {
             if (k.startsWith('$')) continue;
             const snake = (fieldMap && fieldMap[k]) || (table[k] ? k : camelToSnake(k));
@@ -134,7 +136,7 @@ function buildInsertValues(table, values, fieldMap) {
     return out;
 }
 
-/** Translate a Drizzle result row into a Mongoose-shape document. */
+/** Translate a Drizzle result row into a V1-shape document. */
 function rowToDoc(row, options) {
     if (!row) return null;
     const doc = {};
@@ -143,7 +145,7 @@ function rowToDoc(row, options) {
         doc[camel] = v;
     }
     doc.id = row.id;
-    doc._id = row.id; // Mongoose alias
+    doc._id = row.id; // V1 alias
     // strip secrets
     if (options && options.secretFields) {
         for (const f of options.secretFields) {
@@ -182,7 +184,7 @@ async function hashPasswordFields(values, hashFields, fieldMap) {
     return out;
 }
 
-/** Build a Mongoose-compat model for a Drizzle table. */
+/** Build a V1-compat model for a Drizzle table. */
 function makeModel(table, options = {}) {
     const opts = {
         fieldMap: options.fieldMap || {},
@@ -345,7 +347,7 @@ function makeModel(table, options = {}) {
             return rows[0] ? { _id: rows[0].id } : null;
         },
 
-        // Mongoose constructor pattern: new Model(...).save()
+        // V1 constructor pattern: new Model(...).save()
         // Returns a "draft" object whose save() inserts and returns the persisted doc.
         ctor(values) {
             const draft = { ...values };
@@ -364,7 +366,7 @@ function makeModel(table, options = {}) {
             return draft;
         },
 
-        // Mongoose-style aggregate — unsupported; returns empty for compatibility.
+        // V1-style aggregate — unsupported; returns empty for compatibility.
         async aggregate() {
             console.warn('[models shim] aggregate() is not implemented in Phase 1b; returning []');
             return [];
@@ -376,7 +378,7 @@ function makeModel(table, options = {}) {
     };
 
     // V1 callers chain `.select('+password')`, `.sort({...})`, etc. on the
-    // result of these query methods. Wrap each to return a Mongoose-style
+    // result of these query methods. Wrap each to return a V1-style
     // thenable so chained calls + await both keep working.
     ['find', 'findOne', 'findById', 'findOneAndUpdate', 'findByIdAndUpdate', 'findOneAndDelete', 'findByIdAndDelete'].forEach((name) => {
         const orig = model[name];
@@ -427,14 +429,14 @@ function attachChainHelpers(arr, table, opts) {
 }
 
 /**
- * Wrap a Promise in a Mongoose-style "Query" thenable. V1 frequently chains
+ * Wrap a Promise in a V1-style "Query" thenable. V1 frequently chains
  * `Model.findOne({...}).select('+password')` etc.; Drizzle returns all columns
  * by default so .select() is a no-op. The wrapper is also awaitable, so any
  * caller doing `await Model.findOne(...)` keeps working transparently.
  */
 function makeQueryThenable(promise) {
     const self = {
-        // Mongoose-style chainable no-ops (we already pull all fields from Postgres)
+        // V1-style chainable no-ops (we already pull all fields from Postgres)
         select:   () => self,
         sort:     () => self,
         limit:    () => self,
