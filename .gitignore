@@ -50,3 +50,7 @@ temp_diff.txt
 
 # SEV-H-015: one-time seeded admin credentials file (read once, then delete)
 .seed-credentials.txt
+
+# Markdown reports and other docs — keep README.md tracked, ignore everything else
+*.md
+!README.md
