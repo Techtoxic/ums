@@ -35,7 +35,7 @@ const csp = require('./src/config/csp'); // SEV-M-025: CSP (Report-Only by defau
 // The shim exposes the legacy V1 model APIs backed by Drizzle/Postgres, so the
 // existing call sites in this file keep working AS-IS. See src/db/models.js.
 const { db, client, schema } = require('./src/db');
-const { eq, sql } = require('drizzle-orm');
+const { eq, and, sql, inArray, isNull } = require('drizzle-orm');
 const userService = require('./src/services/userService');
 
 // Inline helper for V1's HOD.getDepartmentDisplayName static. Used by the HOD
@@ -104,6 +104,19 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 function isValidId(id) {
     return typeof id === 'string' && UUID_RE.test(id);
 }
+
+// V2: maps the snake_case department codes used in users/students.department
+// to the 2-letter codes in the departments table. Used by endpoints that
+// need to JOIN through programs → departments.
+const DEPT_TEXT_TO_SHORT = {
+    applied_science:        'AS',
+    agriculture:            'AG',
+    building_civil:         'BC',
+    electromechanical:      'EM',
+    hospitality:            'HO',
+    business_liberal:       'BL',
+    computing_informatics:  'IT',
+};
 
 // SEV-H-016: money is stored as Decimal128 for exactness. These helpers
 // convert at the boundary. Choice (documented in STAGE2A_REPORT.md):
@@ -2205,24 +2218,45 @@ app.get('/api/units/course/:courseCode', async (req, res) => {
 app.get('/api/units/department/:department', verifyToken, authorize('admin', 'registrar', 'hod'), async (req, res) => {
     try {
         const { department } = req.params;
-        
-        // Validate department
         const validDepartments = ['applied_science', 'agriculture', 'building_civil', 'electromechanical', 'hospitality', 'business_liberal', 'computing_informatics', 'business_administration'];
         if (!validDepartments.includes(department)) {
             return res.status(400).json({ message: 'Invalid department' });
         }
-
-        const units = await Unit.getUnitsByDepartment(department);
-        
+        const shortCode = DEPT_TEXT_TO_SHORT[department];
+        if (!shortCode) {
+            // Known department code with no row in `departments` table (e.g. business_administration).
+            return res.json({ success: true, department, totalUnits: 0, units: [] });
+        }
+        const rows = await db
+            .select({
+                _id: schema.units.id,
+                unitCode: schema.units.code,
+                unitName: schema.units.name,
+                year: schema.units.year,
+                semester: schema.units.semester,
+                isCommon: schema.units.is_common,
+                courseCode: schema.programs.code,
+                courseName: schema.programs.name,
+            })
+            .from(schema.units)
+            .innerJoin(schema.programs, eq(schema.programs.id, schema.units.program_id))
+            .innerJoin(schema.departments, eq(schema.departments.id, schema.programs.department_id))
+            .where(and(
+                eq(schema.departments.code, shortCode),
+                isNull(schema.units.deleted_at),
+            ))
+            .orderBy(schema.programs.code, schema.units.code);
+        // Tag each unit with the requested department text code for frontend compatibility.
+        const units = rows.map(r => ({ ...r, department }));
         res.json({
             success: true,
-            department: department,
+            department,
             totalUnits: units.length,
-            units: units
+            units,
         });
     } catch (error) {
         console.error('Error fetching units by department:', error);
-        res.status(500).json({ message: 'Server error while fetching units' });
+        res.status(500).json({ success: false, message: 'Server error while fetching units' });
     }
 });
 
@@ -2279,18 +2313,28 @@ app.get('/api/courses', async (req, res) => {
 // Get all common units
 app.get('/api/common-units', verifyToken, authorize('admin', 'registrar', 'hod'), async (req, res) => {
     try {
-        const commonUnits = await CommonUnit.getActiveUnits();
-        res.json({ 
-            success: true, 
-            commonUnits: commonUnits,
-            total: commonUnits.length 
+        const rows = await db
+            .select({
+                _id: schema.units.id,
+                unitCode: schema.units.code,
+                unitName: schema.units.name,
+                year: schema.units.year,
+                semester: schema.units.semester,
+            })
+            .from(schema.units)
+            .where(and(
+                eq(schema.units.is_common, true),
+                isNull(schema.units.deleted_at),
+            ))
+            .orderBy(schema.units.code);
+        res.json({
+            success: true,
+            commonUnits: rows,
+            total: rows.length,
         });
     } catch (error) {
         console.error('Error fetching common units:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Server error while fetching common units' 
-        });
+        res.status(500).json({ success: false, message: 'Server error while fetching common units' });
     }
 });
 
@@ -2812,15 +2856,23 @@ app.get('/api/hod/departments', (req, res) => {
 app.get('/api/trainers/department/:department', verifyToken, authorize('admin', 'hod', 'registrar'), async (req, res) => {
     try {
         const { department } = req.params;
-        console.log(`API: Fetching trainers for department: ${department}`);
-        
-        // First, let's see what departments actually exist in the database
-        const allTrainers = await Trainer.find({}).select('name department');
-        console.log(`API: All trainers in database:`, allTrainers.map(t => ({ name: t.name, dept: t.department })));
-        
-        const trainers = await Trainer.getTrainersByDepartment(department);
-        console.log(`API: Found ${trainers.length} trainers for department ${department}:`, trainers.map(t => ({ name: t.name, dept: t.department })));
-        res.json(trainers);
+        const rows = await db
+            .select({
+                _id: schema.users.id,
+                name: schema.users.name,
+                email: schema.users.email,
+                department: schema.users.department,
+                phone: schema.users.phone,
+            })
+            .from(schema.users)
+            .where(and(
+                eq(schema.users.role, 'trainer'),
+                eq(schema.users.department, department),
+                eq(schema.users.is_active, true),
+                isNull(schema.users.deleted_at),
+            ))
+            .orderBy(schema.users.name);
+        res.json(rows);
     } catch (error) {
         console.error('Error fetching trainers:', error);
         res.status(500).json({ message: 'Failed to fetch trainers' });
@@ -3359,53 +3411,44 @@ app.get('/api/diagnostics/unassigned-units', verifyToken, authorize('admin', 're
 app.get('/api/students/department/:department', verifyToken, authorize('admin', 'registrar', 'hod', 'dean'), async (req, res) => {
     try {
         const { department } = req.params;
-        
-        // Get all units for this department
-        const units = await Unit.find({ department: department });
-        const courseCodes = [...new Set(units.map(unit => unit.courseCode))];
-        
-        console.log(`Department: ${department}, Found ${units.length} units, Course codes:`, courseCodes);
-        
-        // First, let's see what courses students actually have
-        const allStudents = await Student.find({}).select('course').distinct('course');
-        console.log(`All student courses in database:`, allStudents);
-        
-        // Fetch students enrolled in courses from this department
-        const students = await Student.find({
-            course: { $in: courseCodes }
-        }).select('name admissionNumber course intake year email phone totalPaid balance');
-        
-        console.log(`Found ${students.length} students for department ${department}:`, students.map(s => ({ name: s.name, course: s.course })));
-        
-        // If no exact matches, try partial matching
-        if (students.length === 0) {
-            console.log(`No exact matches found. Trying partial matching for department ${department}...`);
-            const partialStudents = await Student.find({
-                course: { $regex: new RegExp(courseCodes.map(code => escapeRegex(code).replace(/_/g, '.*')).join('|'), 'i') }
-            }).select('name admissionNumber course intake year email phone totalPaid balance');
-            console.log(`Found ${partialStudents.length} students with partial matching:`, partialStudents.map(s => ({ name: s.name, course: s.course })));
-        }
-        
-        // Group students by course
+        const rows = await db
+            .select({
+                _id: schema.students.id,
+                name: schema.students.name,
+                admissionNumber: schema.students.admission_number,
+                course: schema.students.course,
+                intake: schema.students.intake,
+                year: schema.students.year,
+                email: schema.students.email,
+                phone: schema.students.phone_number,
+            })
+            .from(schema.students)
+            .where(and(
+                eq(schema.students.department, department),
+                isNull(schema.students.deleted_at),
+            ))
+            .orderBy(schema.students.course, schema.students.name);
+        // Group by course code. courseStats matches V1 shape so the HOD
+        // dashboard's existing rendering code keeps working unchanged.
         const studentsByCourse = {};
         const courseStats = {};
-        
-        courseCodes.forEach(courseCode => {
-            const courseStudents = students.filter(student => student.course === courseCode);
-            studentsByCourse[courseCode] = courseStudents;
-            courseStats[courseCode] = {
-                totalStudents: courseStudents.length,
-                courseName: formatCourseNameServer(courseCode)
+        for (const s of rows) {
+            const code = s.course;
+            if (!studentsByCourse[code]) studentsByCourse[code] = [];
+            studentsByCourse[code].push(s);
+        }
+        for (const code of Object.keys(studentsByCourse)) {
+            courseStats[code] = {
+                totalStudents: studentsByCourse[code].length,
+                courseName: formatCourseNameServer ? formatCourseNameServer(code) : code,
             };
-        });
-        
+        }
         res.json({
             students: studentsByCourse,
-            courseStats: courseStats,
-            totalStudents: students.length,
-            totalCourses: courseCodes.length
+            courseStats,
+            totalStudents: rows.length,
+            totalCourses: Object.keys(studentsByCourse).length,
         });
-        
     } catch (error) {
         console.error('Error fetching department students:', error);
         res.status(500).json({ message: 'Failed to fetch department students' });
