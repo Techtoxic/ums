@@ -9,6 +9,12 @@ const path = require('path');
 function parseTrainersFile() {
     try {
         const trainersFilePath = path.join(__dirname, '..', 'components', 'trainer', 'trainers.txt');
+        if (!fs.existsSync(trainersFilePath)) {
+            // trainers.txt was removed in V1 Stage 1. Real trainer data lives in
+            // Postgres (users table, role='trainer'). This parser is kept only for
+            // legacy callers; migrate them to Drizzle in a later stage.
+            return [];
+        }
         const trainersText = fs.readFileSync(trainersFilePath, 'utf-8');
         
         const lines = trainersText.split('\n').map(line => line.trim()).filter(line => line);

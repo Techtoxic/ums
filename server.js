@@ -3,6 +3,19 @@ const dns = require('dns');
 // Force IPv4 DNS resolution (avoids occasional dual-stack hiccups on Neon).
 dns.setDefaultResultOrder('ipv4first');
 
+process.on('unhandledRejection', (reason) => {
+    console.error('[FATAL] Unhandled promise rejection:', reason);
+    // Do not exit. The per-request error handler catches in-flight rejections;
+    // this only fires for orphans. pm2 restart loses sessions for ~2s.
+});
+
+process.on('uncaughtException', (err) => {
+    console.error('[FATAL] Uncaught exception:', err && err.stack ? err.stack : err);
+    // Node docs: exit after uncaughtException because state is undefined.
+    // pm2 restarts within 1-2s. The lesser evil vs a poisoned process.
+    process.exit(1);
+});
+
 // V2 Phase 1b: validate environment early (refuses to start without DATABASE_URL / JWT_SECRET).
 require('./src/config/env');
 
@@ -29,13 +42,13 @@ const userService = require('./src/services/userService');
 // login response so the frontend keeps receiving a human-readable label.
 function hodDepartmentDisplayName(code) {
     const map = {
-        applied_science:  'Applied Sciences',
-        agriculture:      'Agriculture',
-        building_civil:   'Building & Civil Engineering',
-        electromechanical:'Electromechanical',
-        hospitality:      'Hospitality',
-        business_liberal: 'Business & Liberal Studies',
-        ict:              'ICT & Digital Media',
+        applied_science:        'Applied Science',
+        agriculture:            'Agriculture',
+        building_civil:         'Building & Civil Engineering',
+        electromechanical:      'Electromechanical Engineering',
+        hospitality:            'Hospitality',
+        business_liberal:       'Business & Liberal Studies',
+        computing_informatics:  'Computing & Informatics',
     };
     return map[code] || code;
 }
@@ -84,6 +97,12 @@ const { getAllTrainers, parseTrainersFile } = require('./src/data/trainerData');
 // (or the shim's $regex translator), to prevent regex injection and ReDoS.
 function escapeRegex(value) {
     return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// V2: validate Postgres UUID v4/v5 ids before using them in WHERE clauses.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function isValidId(id) {
+    return typeof id === 'string' && UUID_RE.test(id);
 }
 
 // SEV-H-016: money is stored as Decimal128 for exactness. These helpers
@@ -2721,7 +2740,7 @@ app.put('/api/hod/:hodId/profile', verifyToken, authorize('admin', 'hod'), verif
         const { email, phone } = req.body;
 
         // Validate HOD ID format
-        if (!hodId || !hodId.match(/^[0-9a-fA-F]{24}$/)) {
+        if (!isValidId(hodId)) {
             return res.status(400).json({ message: 'Invalid HOD ID format' });
         }
 
@@ -2776,14 +2795,17 @@ app.put('/api/hod/:hodId/profile', verifyToken, authorize('admin', 'hod'), verif
 });
 
 // Get departments for HOD login
-app.get('/api/hod/departments', async (req, res) => {
-    try {
-        const departments = HOD.getAllDepartments();
-        res.json(departments);
-    } catch (error) {
-        console.error('Error fetching departments:', error);
-        res.status(500).json({ message: 'Failed to fetch departments' });
-    }
+app.get('/api/hod/departments', (req, res) => {
+    const departments = [
+        { code: 'applied_science',       name: 'Applied Science' },
+        { code: 'agriculture',           name: 'Agriculture' },
+        { code: 'building_civil',        name: 'Building & Civil Engineering' },
+        { code: 'electromechanical',     name: 'Electromechanical Engineering' },
+        { code: 'hospitality',           name: 'Hospitality' },
+        { code: 'business_liberal',      name: 'Business & Liberal Studies' },
+        { code: 'computing_informatics', name: 'Computing & Informatics' },
+    ];
+    res.json(departments);
 });
 
 // Get trainers by department
@@ -2981,7 +3003,7 @@ app.get('/api/trainers/:trainerId/assignments', verifyToken, authorize('admin', 
         const { trainerId } = req.params;
         
         // Validate trainerId format
-        if (!trainerId || !trainerId.match(/^[0-9a-fA-F]{24}$/)) {
+        if (!isValidId(trainerId)) {
             return res.status(400).json({ 
                 success: false, 
                 message: 'Invalid trainer ID format' 
@@ -3110,7 +3132,7 @@ app.put('/api/trainers/:trainerId/profile', verifyToken, authorize('admin', 'tra
         const { email, phone } = req.body;
         
         // Validate trainerId format
-        if (!trainerId || !trainerId.match(/^[0-9a-fA-F]{24}$/)) {
+        if (!isValidId(trainerId)) {
             return res.status(400).json({ 
                 success: false, 
                 message: 'Invalid trainer ID format' 
@@ -4803,7 +4825,7 @@ app.get('/api/tools/:toolId/download', verifyToken, authorize('admin', 'trainer'
 app.get('/api/files/:category/:id/download', fileDownloadAuth, async (req, res) => {
     try {
         const { category, id } = req.params;
-        if (!/^[0-9a-fA-F]{24}$/.test(String(id))) {
+        if (!isValidId(String(id))) {
             return res.status(403).json({ success: false, message: 'Forbidden' });
         }
 
@@ -6347,11 +6369,41 @@ app.put('/api/payslips/:payslipId/view', verifyToken, authorize('admin', 'financ
     }
 });
 
+// Catch-all 404. JSON for /api/*, plain text otherwise.
+app.use((req, res) => {
+    if (req.path.startsWith('/api')) {
+        return res.status(404).json({
+            success: false,
+            message: 'Endpoint not found',
+            code: 'NOT_FOUND'
+        });
+    }
+    res.status(404).type('text/plain').send('Page not found');
+});
+
+// Global error handler. Logs full detail server-side, returns minimal info to client.
+app.use((err, req, res, next) => {
+    const requestId = crypto.randomBytes(8).toString('hex');
+    console.error(`[ERR ${requestId}] ${req.method} ${req.path}`, err && err.stack ? err.stack : err);
+    if (res.headersSent) return next(err);
+    if (err && (err.type === 'entity.too.large' || err.status === 413)) {
+        return res.status(413).json({ success: false, message: 'Request body too large', requestId });
+    }
+    if (err && err.type === 'entity.parse.failed') {
+        return res.status(400).json({ success: false, message: 'Malformed JSON', requestId });
+    }
+    res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        requestId
+    });
+});
+
 // Start server only in non-serverless environments
 if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
     console.log('🚀 About to start listening on port', PORT);
     console.log('📍 Routes registered, starting server...');
-    
+
     app.listen(PORT, () => {
         console.log(`✅ Server running on port ${PORT}`);
         console.log(`🔐 Admin Portal: http://localhost:${PORT}/admin/login`);

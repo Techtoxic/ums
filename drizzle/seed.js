@@ -268,12 +268,44 @@ async function seedPayslips(userByEmail) {
     console.log(`  ✓ payslips (TEMPORARY): ${count} new (skipped existing)`);
 }
 
+async function seedHODs() {
+    const hodPw = await hash('HOD@2026');
+    const items = [
+        { email: 'okmomanyi@gmail.com',                department: 'computing_informatics', name: 'HOD Computing & Informatics' },
+        { email: 'hod.applied_science@edtti.ac.ke',    department: 'applied_science',       name: 'HOD Applied Science' },
+        { email: 'hod.agriculture@edtti.ac.ke',        department: 'agriculture',           name: 'HOD Agriculture' },
+        { email: 'hod.building_civil@edtti.ac.ke',     department: 'building_civil',        name: 'HOD Building & Civil' },
+        { email: 'hod.electromechanical@edtti.ac.ke',  department: 'electromechanical',     name: 'HOD Electromechanical' },
+        { email: 'hod.hospitality@edtti.ac.ke',        department: 'hospitality',           name: 'HOD Hospitality' },
+        { email: 'hod.business_liberal@edtti.ac.ke',   department: 'business_liberal',      name: 'HOD Business & Liberal Studies' },
+    ];
+    let count = 0;
+    for (const h of items) {
+        await upsert(users, eq(users.email, h.email), {
+            email: h.email,
+            role: 'hod',
+            staff_id: null,
+            name: h.name,
+            password: hodPw,
+            department: h.department,
+            is_active: true,
+            is_first_login: false,
+            must_update_email: false,
+            must_update_password: false,
+            email_verified: true,
+        });
+        count++;
+    }
+    console.log(`  ✓ hods: ${items.length} (${count} ensured)`);
+}
+
 async function main() {
     console.log('🌱 Seeding V2 database...');
     const dept = await seedDepartments();
     const prog = await seedPrograms(dept);
     await seedUnits(prog);
     const userByEmail = await seedUsers();
+    await seedHODs();
     const studentByAdmission = await seedStudents();
     await seedPayments(studentByAdmission, userByEmail);
     await seedPayslips(userByEmail);
