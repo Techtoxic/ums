@@ -15,6 +15,13 @@
       "when": 1779302230896,
       "tag": "0001_faithful_demogoblin",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1779303090699,
+      "tag": "0002_colossal_whistler",
+      "breakpoints": true
     }
   ]
 }

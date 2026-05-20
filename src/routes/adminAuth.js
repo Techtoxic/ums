@@ -4,11 +4,10 @@ const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
 const { and, eq, ne } = require('drizzle-orm');
 
-// V2 Path B: admin auth uses a dedicated Drizzle-backed userService — no
-// dependency on the V1 facade shim for users. LoginOTP still goes through the
-// shim until the OTP flow is migrated separately (out of scope here).
+// V2: admin auth uses dedicated Drizzle-backed service layers — no dependency
+// on the V1 facade shim for users or OTPs.
 const userService = require('../services/userService');
-const { LoginOTP } = require('../db/models');
+const otpService = require('../services/otpService');
 const { db, schema } = require('../db');
 const EmailService = require('../utils/emailService');
 const config = require('../config/config');
@@ -160,34 +159,17 @@ router.post('/login', async (req, res) => {
             });
         }
 
-        // Invalidate any previous OTPs for this user
-        // (LoginOTP statics on the V1 facade — see notes in report)
-        if (typeof LoginOTP.invalidateUserOTPs === 'function') {
-            await LoginOTP.invalidateUserOTPs(staff.id, staff.role);
-        }
+        // Invalidate any previous OTPs for this user, then issue a fresh one.
+        await otpService.invalidateUserOtps(staff.id, staff.role);
+        const { rawCode } = await otpService.createOtp({
+            userId: staff.id,
+            userRole: staff.role,
+            email: staff.email,
+        });
 
-        // Generate OTP
-        const otp = typeof LoginOTP.generateOTP === 'function'
-            ? LoginOTP.generateOTP()
-            : String(Math.floor(100000 + Math.random() * 900000));
-
-        // Create OTP record
-        const loginOTP = LoginOTP.ctor
-            ? LoginOTP.ctor({
-                userId: staff.id,
-                userType: staff.role,
-                email: staff.email,
-                otp: otp,
-                ipAddress: req.ip || req.connection.remoteAddress || 'unknown',
-                userAgent: req.get('User-Agent') || 'unknown'
-            })
-            : { save: async () => null };
-
-        await loginOTP.save();
-
-        // Send OTP via email. Do NOT log OTPs, email addresses, or names.
+        // Send the raw code via email. Do NOT log OTPs, email addresses, or names.
         try {
-            await emailService.sendLoginOTP(staff.email, otp, staff.name, staff.role);
+            await emailService.sendLoginOTP(staff.email, rawCode, staff.name, staff.role);
         } catch (emailError) {
             console.error('Login OTP email failed to send:', emailError.message);
         }
@@ -279,33 +261,17 @@ router.post('/update-email-send-otp', async (req, res) => {
 
         const fresh = updated || staff;
 
-        // Invalidate any previous OTPs
-        if (typeof LoginOTP.invalidateUserOTPs === 'function') {
-            await LoginOTP.invalidateUserOTPs(fresh.id, fresh.role);
-        }
-
-        // Generate OTP
-        const otp = typeof LoginOTP.generateOTP === 'function'
-            ? LoginOTP.generateOTP()
-            : String(Math.floor(100000 + Math.random() * 900000));
-
-        // Create OTP record with new email
-        const loginOTP = LoginOTP.ctor
-            ? LoginOTP.ctor({
-                userId: fresh.id,
-                userType: fresh.role,
-                email: fresh.email,
-                otp: otp,
-                ipAddress: req.ip || req.connection.remoteAddress || 'unknown',
-                userAgent: req.get('User-Agent') || 'unknown'
-            })
-            : { save: async () => null };
-
-        await loginOTP.save();
+        // Invalidate prior OTPs and issue a fresh one for the new email.
+        await otpService.invalidateUserOtps(fresh.id, fresh.role);
+        const { rawCode } = await otpService.createOtp({
+            userId: fresh.id,
+            userRole: fresh.role,
+            email: fresh.email,
+        });
 
         // Send OTP to new email
         try {
-            await emailService.sendLoginOTP(fresh.email, otp, fresh.name, fresh.role);
+            await emailService.sendLoginOTP(fresh.email, rawCode, fresh.name, fresh.role);
         } catch (emailError) {
             console.error('Email sending failed:', emailError.message);
         }
@@ -345,64 +311,28 @@ router.post('/verify-otp', async (req, res) => {
             });
         }
 
-        // SEV-C-001: Look up the OTP by email ONLY (most recent unconsumed,
-        // unexpired record). Never query by the supplied OTP value, otherwise a
-        // wrong guess simply returns null and the attempt is never counted.
-        const loginOTP = await LoginOTP.findOne({
-            email: email.toLowerCase(),
-            isUsed: false,
-            isVerified: false,
-            expiresAt: { $gt: new Date() }
-        }).sort({ createdAt: -1 });
+        // SEV-C-001 + SEV-H-017: hashed-compare the supplied code against the
+        // most recent unconsumed, unexpired OTP for this email. Atomic attempt
+        // counting and 5-strike record consumption live inside otpService.
+        const result = await otpService.verifyOtp({ email, code: otp });
 
-        if (!loginOTP) {
+        if (!result.valid) {
+            // Constant error message regardless of reason — don't leak whether
+            // the OTP existed, expired, was capped, or was simply wrong.
             return res.status(400).json({
                 success: false,
                 message: 'Invalid or expired OTP'
             });
         }
 
-        // If the attempt cap is already reached (or the record is locked/used),
-        // consume it so no further guesses - correct or not - can succeed.
-        if (typeof loginOTP.canAttempt === 'function' && !loginOTP.canAttempt()) {
-            if (!loginOTP.isUsed) {
-                loginOTP.isUsed = true;
-                if (typeof loginOTP.save === 'function') await loginOTP.save();
-            }
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid or expired OTP'
-            });
-        }
-
-        // Compare the supplied OTP against the stored hash (SEV-H-017).
-        if (typeof loginOTP.verifyOtp === 'function' && !loginOTP.verifyOtp(String(otp).trim())) {
-            if (typeof loginOTP.incrementAttempts === 'function') {
-                await loginOTP.incrementAttempts();
-            }
-            if (loginOTP.otpAttempts >= 5) {
-                loginOTP.isUsed = true;
-                if (typeof loginOTP.save === 'function') await loginOTP.save();
-            }
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid or expired OTP'
-            });
-        }
-
-        // Get staff details by id (userId from the OTP record).
-        const staff = await userService.findById(loginOTP.userId);
+        // Get staff details by the user_id stored on the OTP record.
+        const staff = await userService.findById(result.userId);
 
         if (!staff || !staff.is_active) {
             return res.status(401).json({
                 success: false,
                 message: 'User account not found or inactive'
             });
-        }
-
-        // Mark OTP as verified
-        if (typeof loginOTP.markAsVerified === 'function') {
-            await loginOTP.markAsVerified();
         }
 
         // Update last login

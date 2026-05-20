@@ -437,6 +437,8 @@ const passwordResets = pgTable('password_resets', {
 const loginOtps = pgTable('login_otps', {
     id: uuid('id').primaryKey().defaultRandom(),
     email: text('email').notNull(),
+    user_id: uuid('user_id'),
+    user_role: text('user_role'),
     code_hash: text('code_hash').notNull(),
     expires_at: timestamp('expires_at', { withTimezone: true }).notNull(),
     used_at: timestamp('used_at', { withTimezone: true }),
