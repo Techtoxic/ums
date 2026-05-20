@@ -7,7 +7,7 @@
  * column names; callers are responsible for shaping responses.
  */
 const bcrypt = require('bcryptjs');
-const { eq, and, isNull, sql } = require('drizzle-orm');
+const { eq, and, isNull, sql, desc } = require('drizzle-orm');
 const { db, schema } = require('../db');
 
 const { users } = schema;
@@ -50,6 +50,27 @@ async function findById(id) {
         .select()
         .from(users)
         .where(and(eq(users.id, id), isNull(users.deleted_at)))
+        .limit(1);
+    return rows[0] || null;
+}
+
+/**
+ * Active, non-deleted user matching department + role (case-sensitive on both —
+ * department codes are lowercase snake_case in the seed). Orders by created_at
+ * desc and returns the most recent if multiple match.
+ */
+async function findActiveByDepartmentAndRole(department, role) {
+    if (!department || !role) return null;
+    const rows = await db
+        .select()
+        .from(schema.users)
+        .where(and(
+            eq(schema.users.department, department),
+            eq(schema.users.role, role),
+            eq(schema.users.is_active, true),
+            isNull(schema.users.deleted_at),
+        ))
+        .orderBy(desc(schema.users.created_at))
         .limit(1);
     return rows[0] || null;
 }
@@ -191,6 +212,7 @@ module.exports = {
     findByEmailAndRole,
     findById,
     findActiveByEmail,
+    findActiveByDepartmentAndRole,
     isLocked,
     incrementLoginAttempts,
     resetLoginAttempts,

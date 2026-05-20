@@ -21,7 +21,24 @@ const csp = require('./src/config/csp'); // SEV-M-025: CSP (Report-Only by defau
 // V2 Phase 1b: Drizzle/Postgres data layer + a thin model facade shim.
 // The shim exposes the legacy V1 model APIs backed by Drizzle/Postgres, so the
 // existing call sites in this file keep working AS-IS. See src/db/models.js.
-const { db, client } = require('./src/db');
+const { db, client, schema } = require('./src/db');
+const { eq, sql } = require('drizzle-orm');
+const userService = require('./src/services/userService');
+
+// Inline helper for V1's HOD.getDepartmentDisplayName static. Used by the HOD
+// login response so the frontend keeps receiving a human-readable label.
+function hodDepartmentDisplayName(code) {
+    const map = {
+        applied_science:  'Applied Sciences',
+        agriculture:      'Agriculture',
+        building_civil:   'Building & Civil Engineering',
+        electromechanical:'Electromechanical',
+        hospitality:      'Hospitality',
+        business_liberal: 'Business & Liberal Studies',
+        ict:              'ICT & Digital Media',
+    };
+    return map[code] || code;
+}
 const {
     Student, User, AdminStaff, Trainer, HOD,
     Program, Unit, CommonUnit, CommonUnitAssignment,
@@ -2660,34 +2677,33 @@ app.post('/api/hod/login', authLimiter, async (req, res) => {
 
         const genericFail = { message: 'Invalid department or password' };
 
-        // SEV-H-018: password is select:false; load it for comparePassword
-        // and the subsequent updateLastLogin().save().
-        const hod = await HOD.findOne({ department: String(department), isActive: true }).select('+password');
+        // V2 Path B: direct Drizzle via userService.
+        const hod = await userService.findActiveByDepartmentAndRole(String(department), 'hod');
         if (!hod) {
             return res.status(401).json(genericFail);
         }
 
-        const isValidPassword = await hod.comparePassword(password);
+        const isValidPassword = await userService.comparePassword(hod, password);
         if (!isValidPassword) {
             return res.status(401).json(genericFail);
         }
 
-        await hod.updateLastLogin();
+        await userService.updateLastLogin(hod.id);
 
         const token = signToken({
-            userId: String(hod._id),
+            userId: String(hod.id),
             email: hod.email,
             role: 'hod',
-            tokenVersion: hod.tokenVersion || 0 // SEV-H-013
+            tokenVersion: hod.token_version || 0 // SEV-H-013
         });
 
         res.json({
             message: 'Login successful',
             token,
             user: {
-                _id: hod._id,
+                _id: hod.id,                              // V1-compat alias
                 department: hod.department,
-                departmentName: HOD.getDepartmentDisplayName(hod.department),
+                departmentName: hodDepartmentDisplayName(hod.department),
                 name: hod.name,
                 email: hod.email
             }
@@ -2862,37 +2878,44 @@ app.post('/api/trainers/login', authLimiter, async (req, res) => {
 
         const genericFail = { message: 'Invalid email or password' };
 
-        // SEV-C-005: explicitly select the (now select:false) password so the
-        // bcrypt comparePassword and the subsequent updateLastLogin().save() work.
-        const trainer = await Trainer.findOne({ email: String(email).toLowerCase(), isActive: true }).select('+password');
-        if (!trainer) {
+        // V2 Path B: direct Drizzle via userService.
+        const emailLower = String(email).toLowerCase();
+        const trainer = await userService.findActiveByEmail(emailLower);
+        if (!trainer || trainer.role !== 'trainer') {
             return res.status(401).json(genericFail);
         }
 
-        const isPasswordValid = await trainer.comparePassword(password);
+        const isPasswordValid = await userService.comparePassword(trainer, password);
         if (!isPasswordValid) {
             return res.status(401).json(genericFail);
         }
 
-        await trainer.updateLastLogin();
-        const assignedUnitsCount = await trainer.getAssignedUnitsCount();
+        await userService.updateLastLogin(trainer.id);
+
+        // Count of unit assignments for this trainer (one-off — doesn't warrant
+        // a dedicated service function).
+        const assignedUnitsCount = await db
+            .select({ count: sql`count(*)::int` })
+            .from(schema.trainerAssignments)
+            .where(eq(schema.trainerAssignments.trainer_id, trainer.id))
+            .then(rows => rows[0]?.count || 0);
 
         const token = signToken({
-            userId: String(trainer._id),
+            userId: String(trainer.id),
             email: trainer.email,
             role: 'trainer',
-            tokenVersion: trainer.tokenVersion || 0 // SEV-H-013
+            tokenVersion: trainer.token_version || 0 // SEV-H-013
         });
 
         res.json({
             message: 'Login successful',
             token,
             trainer: {
-                _id: trainer._id,
+                _id: trainer.id,                          // V1-compat alias
                 name: trainer.name,
                 email: trainer.email,
                 department: trainer.department,
-                specialization: trainer.specialization,
+                specialization: trainer.specialization || null,  // not in V2 users table
                 assignedUnitsCount
             }
         });
