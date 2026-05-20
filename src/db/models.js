@@ -375,6 +375,16 @@ function makeModel(table, options = {}) {
         _db: db,
     };
 
+    // V1 callers chain `.select('+password')`, `.sort({...})`, etc. on the
+    // result of these query methods. Wrap each to return a Mongoose-style
+    // thenable so chained calls + await both keep working.
+    ['find', 'findOne', 'findById', 'findOneAndUpdate', 'findByIdAndUpdate', 'findOneAndDelete', 'findByIdAndDelete'].forEach((name) => {
+        const orig = model[name];
+        model[name] = function (...args) {
+            return makeQueryThenable(orig.apply(model, args));
+        };
+    });
+
     return model;
 }
 
@@ -414,6 +424,30 @@ function attachChainHelpers(arr, table, opts) {
     arr.lean = function () { return arr; };
     arr.populate = function () { return arr; };
     return arr;
+}
+
+/**
+ * Wrap a Promise in a Mongoose-style "Query" thenable. V1 frequently chains
+ * `Model.findOne({...}).select('+password')` etc.; Drizzle returns all columns
+ * by default so .select() is a no-op. The wrapper is also awaitable, so any
+ * caller doing `await Model.findOne(...)` keeps working transparently.
+ */
+function makeQueryThenable(promise) {
+    const self = {
+        // Mongoose-style chainable no-ops (we already pull all fields from Postgres)
+        select:   () => self,
+        sort:     () => self,
+        limit:    () => self,
+        skip:     () => self,
+        lean:     () => self,
+        populate: () => self,
+        exec:     () => promise,
+        // thenable surface — makes `await query` work
+        then:    (onResolved, onRejected) => promise.then(onResolved, onRejected),
+        catch:   (onRejected) => promise.catch(onRejected),
+        finally: (onFinally) => promise.finally(onFinally),
+    };
+    return self;
 }
 
 // ============================================================================
