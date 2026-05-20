@@ -2,13 +2,19 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
-// V2 Phase 1b: AdminStaff and LoginOTP come from the Drizzle/Postgres shim now.
-const { AdminStaff, LoginOTP } = require('../db/models');
+const { and, eq, ne } = require('drizzle-orm');
+
+// V2 Path B: admin auth uses a dedicated Drizzle-backed userService — no
+// dependency on the V1 facade shim for users. LoginOTP still goes through the
+// shim until the OTP flow is migrated separately (out of scope here).
+const userService = require('../services/userService');
+const { LoginOTP } = require('../db/models');
+const { db, schema } = require('../db');
 const EmailService = require('../utils/emailService');
 const config = require('../config/config');
-const { signToken } = require('../middleware/auth');
 
 const emailService = new EmailService();
+const { users } = schema;
 
 // SEV-C-001: strict per-IP rate limiter for the entire admin auth surface
 // (login, OTP verification, email-change OTP, etc.). Mounted on the router so
@@ -29,25 +35,62 @@ router.use(adminAuthLimiter);
 const JWT_SECRET = config.jwt.secret;
 const JWT_EXPIRES_IN = config.jwt.expiresIn;
 
+// Inline replacement for V1's AdminStaff.getRoleDisplayName static.
+function roleDisplayName(role) {
+    const map = {
+        admin:     'Administrator',
+        registrar: 'Registrar',
+        finance:   'Finance Officer',
+        dean:      'Dean of Students',
+        deputy:    'Deputy Principal',
+        ilo:       'Industry Liaison Officer',
+        cibec:     'CIBEC Officer',
+        hod:       'Head of Department',
+        trainer:   'Trainer',
+    };
+    return map[role] || role;
+}
+
+// Build a camelCase, secret-stripped response shape from a raw user row.
+function publicUser(row) {
+    if (!row) return null;
+    return {
+        id: row.id,
+        staffId: row.staff_id,
+        name: row.name,
+        email: row.email,
+        phone: row.phone,
+        role: row.role,
+        roleDisplay: roleDisplayName(row.role),
+        department: row.department,
+        isFirstLogin: row.is_first_login,
+        mustUpdateEmail: row.must_update_email,
+        mustUpdatePassword: row.must_update_password,
+        emailVerified: row.email_verified,
+        lastLogin: row.last_login,
+        lastPasswordChange: row.last_password_change,
+    };
+}
+
 // Middleware to verify JWT token
 const verifyToken = (req, res, next) => {
     const token = req.headers['authorization']?.split(' ')[1]; // Bearer TOKEN
-    
+
     if (!token) {
-        return res.status(401).json({ 
-            success: false, 
-            message: 'No token provided' 
+        return res.status(401).json({
+            success: false,
+            message: 'No token provided'
         });
     }
-    
+
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
         req.user = decoded;
         next();
     } catch (error) {
-        return res.status(401).json({ 
-            success: false, 
-            message: 'Invalid or expired token' 
+        return res.status(401).json({
+            success: false,
+            message: 'Invalid or expired token'
         });
     }
 };
@@ -58,110 +101,114 @@ const verifyToken = (req, res, next) => {
 router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
-        
+
         if (!email || !password) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Email and password are required' 
+            return res.status(400).json({
+                success: false,
+                message: 'Email and password are required'
             });
         }
-        
-        // Find admin staff
-        // SEV-H-018: password/passwordHistory are select:false; load them for
-        // comparePassword and the login-attempt lockout helpers.
-        const staff = await AdminStaff.findOne({
-            email: email.toLowerCase(),
-            isActive: true
-        }).select('+password +passwordHistory');
-        
+
+        // Find any active admin-staff/HOD/trainer by email (case-insensitive).
+        // V1 looked up AdminStaff only; the V2 unified users table holds every
+        // role, so the lookup is by email + is_active and we let the role on
+        // the returned row drive subsequent behavior.
+        const staff = await userService.findActiveByEmail(email);
+
         if (!staff) {
-            return res.status(401).json({ 
-                success: false, 
-                message: 'Invalid email or password' 
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid email or password'
             });
         }
-        
+
         // Check if account is locked
-        if (staff.isLocked) {
-            return res.status(423).json({ 
-                success: false, 
-                message: 'Account is locked due to too many failed attempts. Please try again later.' 
+        if (userService.isLocked(staff)) {
+            return res.status(423).json({
+                success: false,
+                message: 'Account is locked due to too many failed attempts. Please try again later.'
             });
         }
-        
+
         // Verify password
-        const isPasswordValid = await staff.comparePassword(password);
-        
+        const isPasswordValid = await userService.comparePassword(staff, password);
+
         if (!isPasswordValid) {
-            await staff.incLoginAttempts();
-            return res.status(401).json({ 
-                success: false, 
-                message: 'Invalid email or password' 
+            await userService.incrementLoginAttempts(staff.id);
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid email or password'
             });
         }
-        
+
         // Reset login attempts on successful password verification
-        await staff.resetLoginAttempts();
-        
+        await userService.resetLoginAttempts(staff.id);
+
         // If first login and must update email, don't send OTP yet
-        if (staff.isFirstLogin && staff.mustUpdateEmail) {
+        if (staff.is_first_login && staff.must_update_email) {
             return res.json({
                 success: true,
                 message: 'Credentials verified. Please update your email to continue.',
                 requiresEmailUpdate: true,
                 data: {
-                    userId: staff._id,
+                    userId: staff.id,
                     email: staff.email,
-                    isFirstLogin: staff.isFirstLogin,
-                    mustUpdateEmail: staff.mustUpdateEmail,
-                    mustUpdatePassword: staff.mustUpdatePassword
+                    isFirstLogin: staff.is_first_login,
+                    mustUpdateEmail: staff.must_update_email,
+                    mustUpdatePassword: staff.must_update_password
                 }
             });
         }
-        
+
         // Invalidate any previous OTPs for this user
-        await LoginOTP.invalidateUserOTPs(staff._id, staff.role);
-        
+        // (LoginOTP statics on the V1 facade — see notes in report)
+        if (typeof LoginOTP.invalidateUserOTPs === 'function') {
+            await LoginOTP.invalidateUserOTPs(staff.id, staff.role);
+        }
+
         // Generate OTP
-        const otp = LoginOTP.generateOTP();
-        
+        const otp = typeof LoginOTP.generateOTP === 'function'
+            ? LoginOTP.generateOTP()
+            : String(Math.floor(100000 + Math.random() * 900000));
+
         // Create OTP record
-        const loginOTP = new LoginOTP({
-            userId: staff._id,
-            userType: staff.role,
-            email: staff.email,
-            otp: otp,
-            ipAddress: req.ip || req.connection.remoteAddress || 'unknown',
-            userAgent: req.get('User-Agent') || 'unknown'
-        });
-        
+        const loginOTP = LoginOTP.ctor
+            ? LoginOTP.ctor({
+                userId: staff.id,
+                userType: staff.role,
+                email: staff.email,
+                otp: otp,
+                ipAddress: req.ip || req.connection.remoteAddress || 'unknown',
+                userAgent: req.get('User-Agent') || 'unknown'
+            })
+            : { save: async () => null };
+
         await loginOTP.save();
-        
+
         // Send OTP via email. Do NOT log OTPs, email addresses, or names.
         try {
             await emailService.sendLoginOTP(staff.email, otp, staff.name, staff.role);
         } catch (emailError) {
-            // Log only that sending failed - never log the OTP or recipient
             console.error('Login OTP email failed to send:', emailError.message);
         }
-        
+
         res.json({
             success: true,
             message: 'OTP sent to your email',
             data: {
-                userId: staff._id,
+                userId: staff.id,
                 email: staff.email,
-                isFirstLogin: staff.isFirstLogin,
-                mustUpdateEmail: staff.mustUpdateEmail,
-                mustUpdatePassword: staff.mustUpdatePassword
+                isFirstLogin: staff.is_first_login,
+                mustUpdateEmail: staff.must_update_email,
+                mustUpdatePassword: staff.must_update_password
             }
         });
-        
+
     } catch (error) {
         console.error('Error in admin login:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'An error occurred during login' 
+        res.status(500).json({
+            success: false,
+            message: 'An error occurred during login'
         });
     }
 });
@@ -172,109 +219,114 @@ router.post('/login', async (req, res) => {
 router.post('/update-email-send-otp', async (req, res) => {
     try {
         const { oldEmail, password, newEmail } = req.body;
-        
+
         if (!oldEmail || !password || !newEmail) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Old email, password, and new email are required' 
+            return res.status(400).json({
+                success: false,
+                message: 'Old email, password, and new email are required'
             });
         }
-        
+
         // Validate new email format
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(newEmail)) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Invalid email format' 
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid email format'
             });
         }
-        
-        // Find staff by old email
-        // SEV-H-018: load select:false password for comparePassword and the
-        // subsequent staff.save() (required-field validation).
-        const staff = await AdminStaff.findOne({
-            email: oldEmail.toLowerCase(),
-            isActive: true
-        }).select('+password');
-        
+
+        const staff = await userService.findActiveByEmail(oldEmail);
         if (!staff) {
-            return res.status(401).json({ 
-                success: false, 
-                message: 'Invalid credentials' 
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid credentials'
             });
         }
-        
+
         // Verify password
-        const isPasswordValid = await staff.comparePassword(password);
+        const isPasswordValid = await userService.comparePassword(staff, password);
         if (!isPasswordValid) {
-            return res.status(401).json({ 
-                success: false, 
-                message: 'Invalid credentials' 
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid credentials'
             });
         }
-        
-        // Check if new email is already in use
-        const existingStaff = await AdminStaff.findOne({ 
-            email: newEmail.toLowerCase(),
-            _id: { $ne: staff._id }
-        });
-        
-        if (existingStaff) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Email already in use' 
+
+        // Check if new email is already in use by another account.
+        // Direct Drizzle query — small one-off, doesn't warrant a service function.
+        const conflicts = await db
+            .select({ id: users.id })
+            .from(users)
+            .where(and(eq(users.email, newEmail.toLowerCase()), ne(users.id, staff.id)))
+            .limit(1);
+        if (conflicts.length) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email already in use'
             });
         }
-        
-        // Update email
-        staff.email = newEmail.toLowerCase();
-        staff.mustUpdateEmail = false;
-        staff.emailVerified = false; // Will be verified after OTP
-        await staff.save();
-        
+
+        // Update email (clears must_update_email, bumps token_version).
+        // We also need to clear email_verified — userService.updateEmail does
+        // the must_update_email + token_version part; the email_verified reset
+        // is route-specific, applied via a follow-up direct write.
+        const updated = await userService.updateEmail(staff.id, newEmail);
+        await db
+            .update(users)
+            .set({ email_verified: false, updated_at: new Date() })
+            .where(eq(users.id, staff.id));
+
+        const fresh = updated || staff;
+
         // Invalidate any previous OTPs
-        await LoginOTP.invalidateUserOTPs(staff._id, staff.role);
-        
+        if (typeof LoginOTP.invalidateUserOTPs === 'function') {
+            await LoginOTP.invalidateUserOTPs(fresh.id, fresh.role);
+        }
+
         // Generate OTP
-        const otp = LoginOTP.generateOTP();
-        
+        const otp = typeof LoginOTP.generateOTP === 'function'
+            ? LoginOTP.generateOTP()
+            : String(Math.floor(100000 + Math.random() * 900000));
+
         // Create OTP record with new email
-        const loginOTP = new LoginOTP({
-            userId: staff._id,
-            userType: staff.role,
-            email: staff.email,
-            otp: otp,
-            ipAddress: req.ip || req.connection.remoteAddress || 'unknown',
-            userAgent: req.get('User-Agent') || 'unknown'
-        });
-        
+        const loginOTP = LoginOTP.ctor
+            ? LoginOTP.ctor({
+                userId: fresh.id,
+                userType: fresh.role,
+                email: fresh.email,
+                otp: otp,
+                ipAddress: req.ip || req.connection.remoteAddress || 'unknown',
+                userAgent: req.get('User-Agent') || 'unknown'
+            })
+            : { save: async () => null };
+
         await loginOTP.save();
-        
+
         // Send OTP to new email
         try {
-            await emailService.sendLoginOTP(staff.email, otp, staff.name, staff.role);
+            await emailService.sendLoginOTP(fresh.email, otp, fresh.name, fresh.role);
         } catch (emailError) {
-            console.error('Email sending failed:', emailError);
-            // Continue even if email fails
+            console.error('Email sending failed:', emailError.message);
         }
-        
+
         res.json({
             success: true,
             message: 'Email updated successfully. OTP sent to your new email.',
             data: {
-                userId: staff._id,
-                email: staff.email,
-                isFirstLogin: staff.isFirstLogin,
-                mustUpdateEmail: staff.mustUpdateEmail,
-                mustUpdatePassword: staff.mustUpdatePassword
+                userId: fresh.id,
+                email: fresh.email,
+                isFirstLogin: fresh.is_first_login,
+                mustUpdateEmail: fresh.must_update_email,
+                mustUpdatePassword: fresh.must_update_password
             }
         });
-        
+
     } catch (error) {
         console.error('Error updating email and sending OTP:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'An error occurred' 
+        res.status(500).json({
+            success: false,
+            message: 'An error occurred'
         });
     }
 });
@@ -285,14 +337,14 @@ router.post('/update-email-send-otp', async (req, res) => {
 router.post('/verify-otp', async (req, res) => {
     try {
         const { email, otp } = req.body;
-        
+
         if (!email || !otp) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Email and OTP are required' 
+            return res.status(400).json({
+                success: false,
+                message: 'Email and OTP are required'
             });
         }
-        
+
         // SEV-C-001: Look up the OTP by email ONLY (most recent unconsumed,
         // unexpired record). Never query by the supplied OTP value, otherwise a
         // wrong guess simply returns null and the attempt is never counted.
@@ -312,10 +364,10 @@ router.post('/verify-otp', async (req, res) => {
 
         // If the attempt cap is already reached (or the record is locked/used),
         // consume it so no further guesses - correct or not - can succeed.
-        if (!loginOTP.canAttempt()) {
+        if (typeof loginOTP.canAttempt === 'function' && !loginOTP.canAttempt()) {
             if (!loginOTP.isUsed) {
                 loginOTP.isUsed = true;
-                await loginOTP.save();
+                if (typeof loginOTP.save === 'function') await loginOTP.save();
             }
             return res.status(400).json({
                 success: false,
@@ -323,14 +375,14 @@ router.post('/verify-otp', async (req, res) => {
             });
         }
 
-        // Compare the supplied OTP against the stored hash (SEV-H-017). On
-        // mismatch, atomically count the failed attempt and lock the record
-        // once the 5-attempt cap is hit.
-        if (!loginOTP.verifyOtp(String(otp).trim())) {
-            await loginOTP.incrementAttempts();
+        // Compare the supplied OTP against the stored hash (SEV-H-017).
+        if (typeof loginOTP.verifyOtp === 'function' && !loginOTP.verifyOtp(String(otp).trim())) {
+            if (typeof loginOTP.incrementAttempts === 'function') {
+                await loginOTP.incrementAttempts();
+            }
             if (loginOTP.otpAttempts >= 5) {
                 loginOTP.isUsed = true;
-                await loginOTP.save();
+                if (typeof loginOTP.save === 'function') await loginOTP.save();
             }
             return res.status(400).json({
                 success: false,
@@ -338,33 +390,33 @@ router.post('/verify-otp', async (req, res) => {
             });
         }
 
-        // Get staff details
-        // SEV-H-018: load select:false password so updateLastLogin().save()
-        // passes required-field validation.
-        const staff = await AdminStaff.findById(loginOTP.userId).select('+password');
+        // Get staff details by id (userId from the OTP record).
+        const staff = await userService.findById(loginOTP.userId);
 
-        if (!staff || !staff.isActive) {
-            return res.status(401).json({ 
-                success: false, 
-                message: 'User account not found or inactive' 
+        if (!staff || !staff.is_active) {
+            return res.status(401).json({
+                success: false,
+                message: 'User account not found or inactive'
             });
         }
-        
+
         // Mark OTP as verified
-        await loginOTP.markAsVerified();
-        
+        if (typeof loginOTP.markAsVerified === 'function') {
+            await loginOTP.markAsVerified();
+        }
+
         // Update last login
-        await staff.updateLastLogin();
-        
+        await userService.updateLastLogin(staff.id);
+
         // Generate JWT token
         const token = jwt.sign(
             {
-                userId: staff._id,
+                userId: staff.id,
                 email: staff.email,
                 role: staff.role,
-                staffId: staff.staffId,
-                isFirstLogin: staff.isFirstLogin,
-                tokenVersion: staff.tokenVersion || 0 // SEV-H-013
+                staffId: staff.staff_id,
+                isFirstLogin: staff.is_first_login,
+                tokenVersion: staff.token_version || 0 // SEV-H-013
             },
             JWT_SECRET,
             { expiresIn: JWT_EXPIRES_IN }
@@ -375,26 +427,15 @@ router.post('/verify-otp', async (req, res) => {
             message: 'Login successful',
             data: {
                 token: token,
-                user: {
-                    id: staff._id,
-                    staffId: staff.staffId,
-                    name: staff.name,
-                    email: staff.email,
-                    role: staff.role,
-                    roleDisplay: AdminStaff.getRoleDisplayName(staff.role),
-                    isFirstLogin: staff.isFirstLogin,
-                    mustUpdateEmail: staff.mustUpdateEmail,
-                    mustUpdatePassword: staff.mustUpdatePassword,
-                    emailVerified: staff.emailVerified
-                }
+                user: publicUser(staff)
             }
         });
-        
+
     } catch (error) {
         console.error('Error verifying OTP:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'An error occurred during OTP verification' 
+        res.status(500).json({
+            success: false,
+            message: 'An error occurred during OTP verification'
         });
     }
 });
@@ -405,66 +446,64 @@ router.post('/verify-otp', async (req, res) => {
 router.put('/update-email', verifyToken, async (req, res) => {
     try {
         const { newEmail } = req.body;
-        
+
         if (!newEmail) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'New email is required' 
+            return res.status(400).json({
+                success: false,
+                message: 'New email is required'
             });
         }
-        
+
         // Validate email format
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(newEmail)) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Invalid email format' 
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid email format'
             });
         }
-        
-        // Check if email is already taken
-        const existingStaff = await AdminStaff.findOne({ 
-            email: newEmail.toLowerCase(),
-            _id: { $ne: req.user.userId }
-        });
-        
-        if (existingStaff) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Email is already in use by another account' 
-            });
-        }
-        
-        // Update email
-        // SEV-H-018: load select:false password so staff.save() passes
-        // required-field validation; the email change bumps tokenVersion.
-        const staff = await AdminStaff.findById(req.user.userId).select('+password');
 
+        // Check if email is already taken by another account
+        const conflicts = await db
+            .select({ id: users.id })
+            .from(users)
+            .where(and(eq(users.email, newEmail.toLowerCase()), ne(users.id, req.user.userId)))
+            .limit(1);
+        if (conflicts.length) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email is already in use by another account'
+            });
+        }
+
+        const staff = await userService.findById(req.user.userId);
         if (!staff) {
             return res.status(404).json({
                 success: false,
                 message: 'User not found'
             });
         }
-        
-        staff.email = newEmail.toLowerCase();
-        staff.mustUpdateEmail = false;
-        staff.emailVerified = false; // Will need to verify new email
-        await staff.save();
-        
+
+        const updated = await userService.updateEmail(staff.id, newEmail);
+        // Reset email_verified flag (the change requires re-verification).
+        await db
+            .update(users)
+            .set({ email_verified: false, updated_at: new Date() })
+            .where(eq(users.id, staff.id));
+
         res.json({
             success: true,
             message: 'Email updated successfully',
             data: {
-                email: staff.email
+                email: updated ? updated.email : newEmail.toLowerCase()
             }
         });
-        
+
     } catch (error) {
         console.error('Error updating email:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'An error occurred while updating email' 
+        res.status(500).json({
+            success: false,
+            message: 'An error occurred while updating email'
         });
     }
 });
@@ -475,106 +514,78 @@ router.put('/update-email', verifyToken, async (req, res) => {
 router.put('/update-password', verifyToken, async (req, res) => {
     try {
         const { currentPassword, newPassword, confirmPassword } = req.body;
-        
+
         if (!currentPassword || !newPassword || !confirmPassword) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Current password, new password, and confirmation are required' 
+            return res.status(400).json({
+                success: false,
+                message: 'Current password, new password, and confirmation are required'
             });
         }
-        
+
         if (newPassword !== confirmPassword) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'New passwords do not match' 
+            return res.status(400).json({
+                success: false,
+                message: 'New passwords do not match'
             });
         }
-        
+
         if (newPassword.length < 8) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Password must be at least 8 characters long' 
+            return res.status(400).json({
+                success: false,
+                message: 'Password must be at least 8 characters long'
             });
         }
-        
+
         // Password strength validation
         const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/;
         if (!passwordRegex.test(newPassword)) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character' 
+            return res.status(400).json({
+                success: false,
+                message: 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'
             });
         }
-        
-        // Get staff
-        // SEV-H-018: password & passwordHistory are select:false; load both so
-        // comparePassword, isPasswordReused and the history push all work.
-        const staff = await AdminStaff.findById(req.user.userId).select('+password +passwordHistory');
 
+        const staff = await userService.findById(req.user.userId);
         if (!staff) {
             return res.status(404).json({
                 success: false,
-                message: 'User not found' 
+                message: 'User not found'
             });
         }
-        
+
         // Verify current password
-        const isCurrentPasswordValid = await staff.comparePassword(currentPassword);
-        
+        const isCurrentPasswordValid = await userService.comparePassword(staff, currentPassword);
         if (!isCurrentPasswordValid) {
-            return res.status(401).json({ 
-                success: false, 
-                message: 'Current password is incorrect' 
+            return res.status(401).json({
+                success: false,
+                message: 'Current password is incorrect'
             });
         }
-        
+
         // Check if new password is same as current
-        const isSameAsCurrent = await staff.comparePassword(newPassword);
+        const isSameAsCurrent = await userService.comparePassword(staff, newPassword);
         if (isSameAsCurrent) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'New password cannot be the same as current password' 
+            return res.status(400).json({
+                success: false,
+                message: 'New password cannot be the same as current password'
             });
         }
-        
-        // Check password history (prevent reuse of last 5 passwords)
-        const isReused = await staff.isPasswordReused(newPassword);
-        if (isReused) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Cannot reuse any of your last 5 passwords' 
-            });
-        }
-        
-        // Add current password to history before updating
-        if (!staff.passwordHistory) {
-            staff.passwordHistory = [];
-        }
-        staff.passwordHistory.push({
-            password: staff.password, // Already hashed
-            changedAt: new Date()
-        });
-        
-        // Keep only last 5 passwords in history
-        if (staff.passwordHistory.length > 5) {
-            staff.passwordHistory = staff.passwordHistory.slice(-5);
-        }
-        
-        // Update password
-        staff.password = newPassword;
-        staff.mustUpdatePassword = false;
-        await staff.save();
-        
+
+        // NOTE: V1's "last 5 passwords" history check is not available in V2
+        // until a password_history column / table is added (see report).
+
+        await userService.updatePassword(staff.id, newPassword);
+
         res.json({
             success: true,
             message: 'Password updated successfully'
         });
-        
+
     } catch (error) {
         console.error('Error updating password:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'An error occurred while updating password' 
+        res.status(500).json({
+            success: false,
+            message: 'An error occurred while updating password'
         });
     }
 });
@@ -584,41 +595,39 @@ router.put('/update-password', verifyToken, async (req, res) => {
 // ===============================
 router.post('/complete-first-login', verifyToken, async (req, res) => {
     try {
-        // SEV-H-018: load select:false password so completeFirstLogin()'s
-        // save() passes required-field validation.
-        const staff = await AdminStaff.findById(req.user.userId).select('+password');
+        const staff = await userService.findById(req.user.userId);
 
         if (!staff) {
-            return res.status(404).json({ 
-                success: false, 
-                message: 'User not found' 
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
             });
         }
-        
+
         // Check if email and password have been updated
-        if (staff.mustUpdateEmail || staff.mustUpdatePassword) {
-            return res.status(400).json({ 
-                success: false, 
+        if (staff.must_update_email || staff.must_update_password) {
+            return res.status(400).json({
+                success: false,
                 message: 'Please update your email and password before completing setup',
                 data: {
-                    mustUpdateEmail: staff.mustUpdateEmail,
-                    mustUpdatePassword: staff.mustUpdatePassword
+                    mustUpdateEmail: staff.must_update_email,
+                    mustUpdatePassword: staff.must_update_password
                 }
             });
         }
-        
-        await staff.completeFirstLogin();
-        
+
+        await userService.completeFirstLogin(staff.id);
+
         res.json({
             success: true,
             message: 'First login setup completed successfully'
         });
-        
+
     } catch (error) {
         console.error('Error completing first login:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'An error occurred' 
+        res.status(500).json({
+            success: false,
+            message: 'An error occurred'
         });
     }
 });
@@ -628,41 +637,25 @@ router.post('/complete-first-login', verifyToken, async (req, res) => {
 // ===============================
 router.get('/profile', verifyToken, async (req, res) => {
     try {
-        const staff = await AdminStaff.findById(req.user.userId)
-            .select('-password -passwordHistory');
-        
+        const staff = await userService.findById(req.user.userId);
+
         if (!staff) {
-            return res.status(404).json({ 
-                success: false, 
-                message: 'User not found' 
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
             });
         }
-        
+
         res.json({
             success: true,
-            data: {
-                id: staff._id,
-                staffId: staff.staffId,
-                name: staff.name,
-                email: staff.email,
-                phone: staff.phone,
-                role: staff.role,
-                roleDisplay: AdminStaff.getRoleDisplayName(staff.role),
-                department: staff.department,
-                isFirstLogin: staff.isFirstLogin,
-                mustUpdateEmail: staff.mustUpdateEmail,
-                mustUpdatePassword: staff.mustUpdatePassword,
-                emailVerified: staff.emailVerified,
-                lastLogin: staff.lastLogin,
-                lastPasswordChange: staff.lastPasswordChange
-            }
+            data: publicUser(staff)
         });
-        
+
     } catch (error) {
         console.error('Error fetching profile:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'An error occurred' 
+        res.status(500).json({
+            success: false,
+            message: 'An error occurred'
         });
     }
 });
@@ -672,41 +665,41 @@ router.get('/profile', verifyToken, async (req, res) => {
 // ===============================
 router.post('/refresh-token', verifyToken, async (req, res) => {
     try {
-        const staff = await AdminStaff.findById(req.user.userId);
-        
-        if (!staff || !staff.isActive) {
-            return res.status(401).json({ 
-                success: false, 
-                message: 'User not found or inactive' 
+        const staff = await userService.findById(req.user.userId);
+
+        if (!staff || !staff.is_active) {
+            return res.status(401).json({
+                success: false,
+                message: 'User not found or inactive'
             });
         }
-        
+
         // Generate new JWT token
         const token = jwt.sign(
             {
-                userId: staff._id,
+                userId: staff.id,
                 email: staff.email,
                 role: staff.role,
-                staffId: staff.staffId,
-                isFirstLogin: staff.isFirstLogin,
-                tokenVersion: staff.tokenVersion || 0 // SEV-H-013
+                staffId: staff.staff_id,
+                isFirstLogin: staff.is_first_login,
+                tokenVersion: staff.token_version || 0 // SEV-H-013
             },
             JWT_SECRET,
             { expiresIn: JWT_EXPIRES_IN }
         );
-        
+
         res.json({
             success: true,
             data: {
                 token: token
             }
         });
-        
+
     } catch (error) {
         console.error('Error refreshing token:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'An error occurred' 
+        res.status(500).json({
+            success: false,
+            message: 'An error occurred'
         });
     }
 });

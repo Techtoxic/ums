@@ -111,6 +111,7 @@ const users = pgTable(
         last_login: timestamp('last_login', { withTimezone: true }),
         last_password_change: timestamp('last_password_change', { withTimezone: true }),
         token_version: integer('token_version').notNull().default(0),
+        lock_until: timestamp('lock_until', { withTimezone: true }),
         created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
         updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
         deleted_at: timestamp('deleted_at', { withTimezone: true }),
