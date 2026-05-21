@@ -476,7 +476,7 @@ const usersOpts = {
 
 const studentOpts = {
     hashFields: ['password'],
-    secretFields: ['password', 'token_version'],
+    secretFields: ['password'],
     fieldMap: {
         idNumber: 'id_number',
         kcseGrade: 'kcse_grade',

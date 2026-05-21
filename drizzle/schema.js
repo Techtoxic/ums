@@ -145,6 +145,7 @@ const students = pgTable(
         password: text('password').notNull(),
         role: text('role').notNull().default('student'),
         is_active: boolean('is_active').notNull().default(true),
+        token_version: integer('token_version').notNull().default(0),
         status: studentStatusEnum('status').notNull().default('active'),
         created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
         updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

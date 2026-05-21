@@ -90,21 +90,12 @@ function clearAuthCookie(res) {
 }
 
 /**
- * Extract the bearer token from the request, supporting Authorization header,
- * the legacy x-auth-token header, and the httpOnly authToken cookie.
+ * Extract the auth token from the cookie. Set by the login endpoints via
+ * setAuthCookie (httpOnly, SameSite=Lax). Header-based auth (Bearer,
+ * x-auth-token) was used during the V1→V2 migration window and is no longer
+ * accepted — the frontend uses cookies exclusively via credentials: 'include'.
  */
 function extractToken(req) {
-    // Header takes precedence so the existing Bearer flow keeps working during
-    // migration (step 1 of cookie rollout). Once step 2 + 3 land, we can remove
-    // the header path entirely.
-    const authHeader = req.headers['authorization'];
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-        return authHeader.substring(7);
-    }
-    if (req.headers['x-auth-token']) {
-        return req.headers['x-auth-token'];
-    }
-    // Cookie fallback. cookie-parser populates req.cookies.
     if (req.cookies && req.cookies.authToken) {
         return req.cookies.authToken;
     }

@@ -456,7 +456,9 @@ app.post('/api/auth/logout', async (req, res) => {
             const userId = decoded && decoded.userId;
             const role = decoded && decoded.role;
 
-            // Only users-table roles have token_version. Students skip this.
+            // Bump token_version so the SEV-H-013 revocation check rejects this JWT
+            // on subsequent requests. Staff live in users; students have their own
+            // table with its own token_version column (added in C-SECURITY-step3).
             const STAFF_ROLES = ['admin', 'registrar', 'finance', 'dean', 'deputy', 'ilo', 'cibec', 'hod', 'trainer'];
             if (userId && STAFF_ROLES.includes(role)) {
                 try {
@@ -464,7 +466,19 @@ app.post('/api/auth/logout', async (req, res) => {
                 } catch (dbErr) {
                     // Don't fail logout on DB error — still clear the cookie.
                     // Log so we can spot persistent issues.
-                    console.error('Logout: bumpTokenVersion failed', dbErr.message);
+                    console.error('Logout: bumpTokenVersion (staff) failed', dbErr.message);
+                }
+            } else if (userId && role === 'student') {
+                try {
+                    await db
+                        .update(schema.students)
+                        .set({
+                            token_version: sql`${schema.students.token_version} + 1`,
+                            updated_at: new Date(),
+                        })
+                        .where(eq(schema.students.id, userId));
+                } catch (dbErr) {
+                    console.error('Logout: bumpTokenVersion (student) failed', dbErr.message);
                 }
             }
         }
@@ -1275,13 +1289,8 @@ app.get('/admin/first-login', noCacheAuthPages, (req, res) => {
     serveHTML(res, path.join(__dirname, 'src', 'components', 'admin', 'FirstLogin.html'));
 });
 
-app.get('/admin/dashboard', (req, res) => {
+app.get('/admin/dashboard', noCacheAuthPages, (req, res) => {
     console.log('📊 Admin dashboard requested');
-    res.set({
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
-    });
     serveHTML(res, path.join(__dirname, 'src', 'components', 'admin', 'adminDashboard.html'));
 });
 
@@ -1295,7 +1304,7 @@ app.get('/hod/login', noCacheAuthPages, (req, res) => {
     serveHTML(res, path.join(__dirname, 'src', 'components', 'hod', 'HODLogin.html'));
 });
 
-app.get('/hod/dashboard', (req, res) => {
+app.get('/hod/dashboard', noCacheAuthPages, (req, res) => {
     serveHTML(res, path.join(__dirname, 'src', 'components', 'hod', 'HODDashboard.html'));
 });
 
@@ -1304,12 +1313,12 @@ app.get('/trainer/login', noCacheAuthPages, (req, res) => {
     serveHTML(res, path.join(__dirname, 'src', 'components', 'trainer', 'TrainerLogin.html'));
 });
 
-app.get('/trainer/dashboard', (req, res) => {
+app.get('/trainer/dashboard', noCacheAuthPages, (req, res) => {
     serveHTML(res, path.join(__dirname, 'src', 'components', 'trainer', 'TrainerDashboard.html'));
 });
 
 // Serve student pages
-app.get('/student/dashboard', (req, res) => {
+app.get('/student/dashboard', noCacheAuthPages, (req, res) => {
     serveHTML(res, path.join(__dirname, 'src', 'components', 'student', 'StudentPortalTailwind.html'));
 });
 
@@ -5670,49 +5679,49 @@ app.get('/student/login', noCacheAuthPages, (req, res) => {
     res.sendFile(path.join(__dirname, 'src', 'login.html'));
 });
 
-app.get('/student/portal', (req, res) => {
+app.get('/student/portal', noCacheAuthPages, (req, res) => {
     res.sendFile(path.join(__dirname, 'src', 'components', 'student', 'StudentPortalTailwind.html'));
 });
 
 // Finance routes
 app.get('/finance/login', (req, res) => res.redirect('/admin/login'));
 
-app.get('/finance/dashboard', (req, res) => {
+app.get('/finance/dashboard', noCacheAuthPages, (req, res) => {
     res.sendFile(path.join(__dirname, 'src', 'components', 'finance', 'FinanceDashboard.html'));
 });
 
 // Registrar routes
 app.get('/registrar/login', (req, res) => res.redirect('/admin/login'));
 
-app.get('/registrar/dashboard', (req, res) => {
+app.get('/registrar/dashboard', noCacheAuthPages, (req, res) => {
     res.sendFile(path.join(__dirname, 'src', 'components', 'registrar', 'RegistrarDashboardNew.html'));
 });
 
 // Dean routes
 app.get('/dean/login', (req, res) => res.redirect('/admin/login'));
 
-app.get('/dean/dashboard', (req, res) => {
+app.get('/dean/dashboard', noCacheAuthPages, (req, res) => {
     res.sendFile(path.join(__dirname, 'src', 'components', 'dean', 'DeanDashboard.html'));
 });
 
 // Deputy routes
 app.get('/deputy/login', (req, res) => res.redirect('/admin/login'));
 
-app.get('/deputy/dashboard', (req, res) => {
+app.get('/deputy/dashboard', noCacheAuthPages, (req, res) => {
     res.sendFile(path.join(__dirname, 'src', 'components', 'deputy', 'DeputyDashboard.html'));
 });
 
 // ILO routes (Industrial Liaison Office)
 app.get('/ilo/login', (req, res) => res.redirect('/admin/login'));
 
-app.get('/ilo/dashboard', (req, res) => {
+app.get('/ilo/dashboard', noCacheAuthPages, (req, res) => {
     res.sendFile(path.join(__dirname, 'src', 'components', 'ilo', 'ILODashboard.html'));
 });
 
 // CIBEC routes (Competency-Based Education & Training Center)
 app.get('/cibec/login', (req, res) => res.redirect('/admin/login'));
 
-app.get('/cibec/dashboard', (req, res) => {
+app.get('/cibec/dashboard', noCacheAuthPages, (req, res) => {
     res.sendFile(path.join(__dirname, 'src', 'components', 'cibec', 'CIBECDashboard.html'));
 });
 

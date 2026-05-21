@@ -22,6 +22,13 @@
       "when": 1779303090699,
       "tag": "0002_colossal_whistler",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1779367795367,
+      "tag": "0003_light_anita_blake",
+      "breakpoints": true
     }
   ]
 }
