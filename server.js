@@ -22,6 +22,7 @@ require('./src/config/env');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
@@ -72,7 +73,7 @@ const EmailService = require('./src/utils/emailService');
 const { uploadToS3, getPresignedUrl, deleteFromS3, isS3Configured } = require('./src/utils/s3Service');
 
 // Import authentication middleware
-const { verifyToken, authorize, verifyOwnership, optionalAuth, enforceStudentFirstLogin, signToken } = require('./src/middleware/auth');
+const { verifyToken, authorize, verifyOwnership, optionalAuth, enforceStudentFirstLogin, signToken, setAuthCookie, clearAuthCookie } = require('./src/middleware/auth');
 
 // Initialize email service
 let emailService;
@@ -192,6 +193,16 @@ app.get('/api/health', async (_req, res) => {
     } catch (err) {
         res.status(503).json({ status: 'down', error: err.message });
     }
+});
+
+// Logout endpoint — clears the authentication cookie.
+// No verifyToken middleware: must work even with an expired token, since the
+// most common reason to log out is "my session feels stale". Returns 200
+// unconditionally because there is nothing to fail at — the cookie either
+// gets cleared or never existed in the first place.
+app.post('/api/auth/logout', (req, res) => {
+    clearAuthCookie(res);
+    res.json({ success: true, message: 'Logged out' });
 });
 
 // Create uploads directory if it doesn't exist (skip in serverless/Vercel environment)
@@ -409,6 +420,11 @@ app.use(helmet({
     contentSecurityPolicy: false,        // CSP emitted separately (Report-Only) — see csp middleware below
     crossOriginEmbedderPolicy: false      // PDFs and external assets need this off for now
 }));
+
+// Parse Cookie headers into req.cookies. No signed-cookie secret here — we
+// only read the JWT cookie (which is itself signed via JWT_SECRET); we don't
+// rely on cookie-parser's signature feature.
+app.use(cookieParser());
 
 // SEV-M-025: emit Content-Security-Policy-Report-Only (or Content-Security-Policy
 // when CSP_ENFORCE=true). Report-Only NEVER blocks — it only reports to
@@ -2760,6 +2776,7 @@ app.post('/api/hod/login', authLimiter, async (req, res) => {
             tokenVersion: hod.token_version || 0 // SEV-H-013
         });
 
+        setAuthCookie(res, token);
         res.json({
             message: 'Login successful',
             token,
@@ -3027,6 +3044,7 @@ app.post('/api/trainers/login', authLimiter, async (req, res) => {
             tokenVersion: trainer.token_version || 0 // SEV-H-013
         });
 
+        setAuthCookie(res, token);
         res.json({
             message: 'Login successful',
             token,
@@ -3790,6 +3808,7 @@ app.post('/api/students/login', authLimiter, async (req, res) => {
             firstLoginRequired // SEV-H-014: gates all routes except the password-change endpoint
         });
 
+        setAuthCookie(res, token);
         res.status(200).json({
             message: 'Login successful',
             token,

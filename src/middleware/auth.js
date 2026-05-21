@@ -42,15 +42,66 @@ function signToken(payload, overrides = {}) {
 }
 
 /**
- * Extract the bearer token from the request, supporting Authorization header
- * and the legacy x-auth-token header.
+ * Set the authentication cookie on a response.
+ *
+ * httpOnly  — JavaScript cannot read this cookie, neutralising XSS token theft.
+ * sameSite  — 'lax' allows the cookie on top-level GET navigations (so
+ *             bookmarked links and external referrals still authenticate)
+ *             while blocking cross-site POST/PUT, which gives us baseline CSRF
+ *             protection until the explicit CSRF token lands in step 3.
+ * secure    — bind to HTTPS in production. Off in staging/dev so HTTP works.
+ *             When HTTPS lands later, NODE_ENV=production flips this on
+ *             automatically with no code change.
+ * maxAge    — 2 hours, matches the JWT expiry from config.jwt.expiresIn.
+ *             Cookie auto-deletes when JWT expires anyway.
+ * path: '/' — cookie is sent on every request to this origin.
+ *
+ * Centralised so the cookie policy lives in exactly one place. Every login
+ * endpoint must call this helper rather than calling res.cookie directly.
+ */
+function setAuthCookie(res, token) {
+    res.cookie('authToken', token, {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 2 * 60 * 60 * 1000, // 2h in ms, matches JWT_EXPIRES_IN=2h
+        path: '/',
+    });
+}
+
+/**
+ * Clear the authentication cookie. Used by the logout endpoint and any place
+ * the session must be invalidated server-side.
+ */
+function clearAuthCookie(res) {
+    res.clearCookie('authToken', {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+        path: '/',
+    });
+}
+
+/**
+ * Extract the bearer token from the request, supporting Authorization header,
+ * the legacy x-auth-token header, and the httpOnly authToken cookie.
  */
 function extractToken(req) {
+    // Header takes precedence so the existing Bearer flow keeps working during
+    // migration (step 1 of cookie rollout). Once step 2 + 3 land, we can remove
+    // the header path entirely.
     const authHeader = req.headers['authorization'];
     if (authHeader && authHeader.startsWith('Bearer ')) {
         return authHeader.substring(7);
     }
-    return req.headers['x-auth-token'] || null;
+    if (req.headers['x-auth-token']) {
+        return req.headers['x-auth-token'];
+    }
+    // Cookie fallback. cookie-parser populates req.cookies.
+    if (req.cookies && req.cookies.authToken) {
+        return req.cookies.authToken;
+    }
+    return null;
 }
 
 /**
@@ -295,6 +346,8 @@ module.exports = {
     optionalAuth,
     enforceStudentFirstLogin,
     signToken,
+    setAuthCookie,
+    clearAuthCookie,
     // Backward-compatible aliases
     authenticateToken: verifyToken,
     requireAuth: verifyToken

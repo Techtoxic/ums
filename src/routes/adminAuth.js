@@ -11,6 +11,7 @@ const otpService = require('../services/otpService');
 const { db, schema } = require('../db');
 const EmailService = require('../utils/emailService');
 const config = require('../config/config');
+const { setAuthCookie } = require('../middleware/auth');
 
 const emailService = new EmailService();
 const { users } = schema;
@@ -352,6 +353,7 @@ router.post('/verify-otp', async (req, res) => {
             { expiresIn: JWT_EXPIRES_IN }
         );
 
+        setAuthCookie(res, token);
         res.json({
             success: true,
             message: 'Login successful',
