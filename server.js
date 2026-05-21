@@ -2883,11 +2883,57 @@ app.get('/api/trainers/department/:department', verifyToken, authorize('admin', 
 app.get('/api/assignments/department/:department', verifyToken, authorize('admin', 'hod', 'registrar'), async (req, res) => {
     try {
         const { department } = req.params;
-        console.log(`Fetching assignments for department: ${department}`);
-        
-        const assignments = await TrainerAssignment.getAssignmentsByDepartment(department);
-        console.log(`Found ${assignments.length} assignments for department ${department}`);
-        
+        const validDepartments = ['applied_science', 'agriculture', 'building_civil', 'electromechanical', 'hospitality', 'business_liberal', 'computing_informatics', 'business_administration'];
+        if (!validDepartments.includes(department)) {
+            return res.status(400).json({ message: 'Invalid department' });
+        }
+        const shortCode = DEPT_TEXT_TO_SHORT[department];
+        if (!shortCode) {
+            // Known department code with no row in `departments` (e.g. business_administration).
+            return res.json([]);
+        }
+        // JOIN trainer_assignments → units → programs → departments and
+        // trainer_assignments → users. Filter to assignments whose unit lives
+        // in a program in the requested department.
+        const rows = await db
+            .select({
+                assignmentId:   schema.trainerAssignments.id,
+                assignedAt:     schema.trainerAssignments.created_at,
+                unitUid:        schema.units.id,
+                unitCode:       schema.units.code,
+                unitName:       schema.units.name,
+                courseCode:     schema.programs.code,
+                trainerUid:     schema.users.id,
+                trainerName:    schema.users.name,
+                trainerEmail:   schema.users.email,
+            })
+            .from(schema.trainerAssignments)
+            .innerJoin(schema.units,       eq(schema.units.id,       schema.trainerAssignments.unit_id))
+            .innerJoin(schema.programs,    eq(schema.programs.id,    schema.units.program_id))
+            .innerJoin(schema.departments, eq(schema.departments.id, schema.programs.department_id))
+            .innerJoin(schema.users,       eq(schema.users.id,       schema.trainerAssignments.trainer_id))
+            .where(and(
+                eq(schema.departments.code, shortCode),
+                isNull(schema.units.deleted_at),
+            ))
+            .orderBy(schema.programs.code, schema.units.code);
+        // Reshape into V1 Mongoose-populate format so the frontend
+        // (assignment.unitId.unitCode, assignment.trainerId.name) keeps working unchanged.
+        const assignments = rows.map(r => ({
+            _id: r.assignmentId,
+            assignedAt: r.assignedAt,
+            unitId: {
+                _id:        r.unitUid,
+                unitCode:   r.unitCode,
+                unitName:   r.unitName,
+                courseCode: r.courseCode,
+            },
+            trainerId: {
+                _id:   r.trainerUid,
+                name:  r.trainerName,
+                email: r.trainerEmail,
+            },
+        }));
         res.json(assignments);
     } catch (error) {
         console.error('Error fetching assignments:', error);
