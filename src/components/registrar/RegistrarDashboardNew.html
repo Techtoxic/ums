@@ -5,138 +5,53 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registrar Dashboard - University Management System</title>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="/public/js/auth.js"></script>
     <link rel="stylesheet" href="/public/css/dashboard-styles.css">
+    <!-- Theme controller: in <head>, after styles, runs pre-paint (no flash) -->
+    <script src="/public/js/dashboard-theme.js"></script>
 
     <!-- Frontend Config (Load First!) -->
     <script src="/public/js/config.js"></script>
-    
+
     <script>
+        // Tailwind alias palette realigned to the EDTTI design system so any
+        // remaining utility usage (bg-primary, text-primary, etc.) inside the
+        // existing markup picks up maroon/gold instead of the old blue. The
+        // canonical colors live in public/css/dashboard-styles.css custom
+        // properties; this block exists only to keep Tailwind utility classes
+        // visually consistent until each is migrated to .btn/.stat-card/etc.
         tailwind.config = {
             darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
-                        primary: '#2563eb',
-                        secondary: '#1d4ed8',
-                        success: '#22c55e',
-                        warning: '#f59e0b',
-                        danger: '#ef4444',
+                        primary: '#7A0C0C',     // maroon
+                        secondary: '#5C0808',   // maroon-dark
+                        accent: '#D4A017',      // gold
+                        success: '#10b981',
+                        warning: '#D4A017',
+                        danger: '#E74C3C',
                     }
                 }
             }
         }
     </script>
     <style>
-        @media (max-width: 1024px) {
-            .sidebar.active {
-                display: block !important;
-            }
-        }
-        
-        /* Custom scrollbar styling */
-        .scrollbar-thin {
-            scrollbar-width: thin;
-        }
-        
-        .scrollbar-thin::-webkit-scrollbar {
-            width: 6px;
-        }
-        
-        .scrollbar-thin::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        
-        .scrollbar-thin::-webkit-scrollbar-thumb {
-            background-color: #d1d5db;
-            border-radius: 3px;
-        }
-        
-        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-            background-color: #9ca3af;
-        }
-        
-        .dark .scrollbar-thin::-webkit-scrollbar-thumb {
-            background-color: #4b5563;
-        }
-        
-        .dark .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-            background-color: #6b7280;
-        }
-        
-        body.menu-open::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 30;
-        }
+        /* Custom scrollbar styling (kept — registrar-only utility, not in design system). */
+        .scrollbar-thin { scrollbar-width: thin; }
+        .scrollbar-thin::-webkit-scrollbar { width: 6px; }
+        .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+        .scrollbar-thin::-webkit-scrollbar-thumb { background-color: #d1d5db; border-radius: 3px; }
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover { background-color: #9ca3af; }
+        html.dark .scrollbar-thin::-webkit-scrollbar-thumb { background-color: #4b5563; }
+        html.dark .scrollbar-thin::-webkit-scrollbar-thumb:hover { background-color: #6b7280; }
 
-        /* Sidebar positioning and styling */
-        #sidebar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            height: 100vh;
-            z-index: 40;
-            overflow-y: auto;
-        }
-
-        /* Main content positioning */
-        main {
-            margin-left: 256px; /* 64 * 4 = 256px (w-64) */
-            width: calc(100% - 256px);
-            max-width: calc(100vw - 256px);
-        }
-
-        @media (max-width: 1024px) {
-            #sidebar {
-                transform: translateX(-100%);
-                transition: transform 0.3s ease;
-            }
-            
-            #sidebar.active {
-                transform: translateX(0);
-            }
-            
-            main {
-                margin-left: 0;
-                width: 100%;
-                max-width: 100vw;
-            }
-        }
-
-        /* Mobile Navigation Menu */
-        #mobileNav {
-            display: none;
-        }
-
-        #mobileNav.active {
-            display: block;
-        }
-
-        /* Ensure proper layering and no overlapping */
-        .content-section {
-            background: transparent;
-        }
-
-        /* Sidebar navigation styling */
-        .nav-item {
-            transition: all 0.2s ease;
-        }
-
-        .nav-item:hover {
-            background-color: rgba(59, 130, 246, 0.1);
-        }
-
-        .nav-item.active {
-            background-color: rgba(59, 130, 246, 0.1);
-            color: #3b82f6;
-        }
+        /* Section panels keep their backgrounds transparent so the dashboard-main
+           background tone shows through (matches the design-system demo). */
+        .content-section { background: transparent; }
     </style>
     <!-- Export Modal -->
     <div id="export-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
@@ -1065,6 +980,17 @@
             const user = await window.AUTH.requireAuth('/admin/login');
             if (!user) return;
 
+            // Populate the design-system sidebar profile + welcome line with the
+            // server-issued user identity from /api/me.
+            const userName = document.getElementById('userName');
+            const userAvatar = document.getElementById('userAvatar');
+            const welcomeName = document.getElementById('welcomeName');
+            if (user.name) {
+                if (userName) userName.textContent = user.name;
+                if (welcomeName) welcomeName.textContent = user.name;
+                if (userAvatar) userAvatar.textContent = user.name.charAt(0).toUpperCase();
+            }
+
             fetchAndDisplayStudents();
             loadDashboardStats();
 
@@ -1685,163 +1611,130 @@
     </div>
 
 
-    <div class="min-h-screen">
+    <div class="dashboard-shell">
+        <!-- Sidebar backdrop for mobile -->
+        <div class="dashboard-sidebar__backdrop" id="sbBackdrop" onclick="closeSidebar()"></div>
+
         <!-- Sidebar -->
-        <aside id="sidebar" class="w-64 bg-white dark:bg-gray-800 border-r border-slate-200 dark:border-gray-700 p-4 transition-all duration-300 flex-shrink-0 shadow-lg">
-            <div class="flex items-center justify-between mb-6">
-                <div class="flex items-center gap-2 text-lg font-semibold text-primary">
-                    <i class="ri-admin-line"></i>
-                    <span id="sidebar-title">Registrar Portal</span>
+        <aside class="dashboard-sidebar" id="sidebar">
+            <div class="dashboard-sidebar__logo">
+                <i class="ri-graduation-cap-line"></i>
+                <span>EDTTI</span>
+            </div>
+            <nav class="dashboard-sidebar__nav">
+                <a class="nav-link active" data-section="dashboard" onclick="switchTab('dashboard')">
+                    <i class="ri-dashboard-line"></i><span>Dashboard</span>
+                </a>
+                <a class="nav-link" data-section="admission" onclick="switchTab('dashboard')">
+                    <i class="ri-user-add-line"></i><span>Student Admission</span>
+                </a>
+                <a class="nav-link" data-section="management" onclick="switchTab('management')">
+                    <i class="ri-team-line"></i><span>Student Management</span>
+                </a>
+                <a class="nav-link" data-section="promotion" onclick="switchTab('promotion')">
+                    <i class="ri-arrow-up-line"></i><span>Student Promotion</span>
+                </a>
+                <a class="nav-link" data-section="courses" onclick="switchTab('dashboard')">
+                    <i class="ri-book-open-line"></i><span>Course Management</span>
+                </a>
+                <a class="nav-link" data-section="enrollment" onclick="switchTab('dashboard')">
+                    <i class="ri-file-list-3-line"></i><span>Enrollment</span>
+                </a>
+                <a class="nav-link" data-section="graduation" onclick="switchTab('dashboard')">
+                    <i class="ri-graduation-cap-line"></i><span>Graduation</span>
+                </a>
+                <a class="nav-link" data-section="faculty" onclick="switchTab('dashboard')">
+                    <i class="ri-user-star-line"></i><span>Faculty Management</span>
+                </a>
+                <a class="nav-link" data-section="department" onclick="switchTab('dashboard')">
+                    <i class="ri-building-line"></i><span>Department Management</span>
+                </a>
+                <a class="nav-link" data-section="reports" onclick="switchTab('dashboard')">
+                    <i class="ri-file-chart-line"></i><span>Reports & Analytics</span>
+                </a>
+            </nav>
+            <div class="dashboard-sidebar__profile">
+                <div class="dashboard-sidebar__avatar" id="userAvatar">R</div>
+                <div class="dashboard-sidebar__profile-text">
+                    <div class="font-semibold text-body-sm" id="userName">Registrar</div>
+                    <div class="text-body-sm" style="color:var(--text-muted)">Registrar</div>
                 </div>
-                <button id="toggleSidebar" class="p-1 hover:bg-slate-100 rounded">
-                    <i class="ri-menu-fold-line text-xl text-slate-600"></i>
-                </button>
             </div>
-            
-            <!-- Auth Buttons -->
-            <div class="mb-4">
-                <div>
-                    <button id="logoutBtn" class="w-full px-3 py-2 text-sm bg-danger text-white rounded-lg hover:bg-red-600 transition-colors">
-                        <i class="ri-logout-box-line mr-1"></i>Logout
-                    </button>
-                </div>
-            </div>
-            
-            <!-- Dark Mode Toggle -->
-            <div class="mb-6">
-                <button onclick="toggleDarkMode()" class="w-full flex items-center gap-2 px-3 py-2 text-sm bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">
-                    <i class="ri-moon-line"></i>
-                    <span>Dark Mode</span>
-                </button>
-            </div>
-            
-            <div class="p-2">
-                <nav class="space-y-1">
-                    <a href="#" onclick="switchTab('dashboard')" class="flex items-center gap-3 px-4 py-3 text-primary bg-blue-50 dark:bg-blue-900/30 rounded-lg nav-item active">
-                        <i class="ri-dashboard-line text-xl"></i>
-                        <span>Dashboard</span>
-                    </a>
-                    <a href="#" onclick="switchTab('dashboard')" class="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg nav-item">
-                        <i class="ri-user-add-line text-xl"></i>
-                        <span>Student Admission</span>
-                    </a>
-                    <a href="#" onclick="switchTab('management')" class="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg nav-item">
-                        <i class="ri-group-line text-xl"></i>
-                        <span>Student Management</span>
-                    </a>
-                    <a href="#" onclick="switchTab('promotion')" class="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg nav-item">
-                        <i class="ri-arrow-up-line text-xl"></i>
-                        <span>Student Promotion</span>
-                    </a>
-                    <a href="#" onclick="switchTab('dashboard')" class="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg nav-item">
-                        <i class="ri-book-open-line text-xl"></i>
-                        <span>Course Management</span>
-                    </a>
-
-                    <a href="#" onclick="switchTab('dashboard')" class="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg nav-item">
-                        <i class="ri-file-list-3-line text-xl"></i>
-                        <span>Enrollment</span>
-                    </a>
-                    <a href="#" onclick="switchTab('dashboard')" class="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg nav-item">
-                        <i class="ri-graduation-cap-line text-xl"></i>
-                        <span>Graduation</span>
-                    </a>
-                    <div class="my-4 border-t border-gray-200 dark:border-gray-700"></div>
-                    <a href="#" onclick="switchTab('dashboard')" class="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg nav-item">
-                        <i class="ri-team-line text-xl"></i>
-                        <span>Faculty Management</span>
-                    </a>
-                    <a href="#" onclick="switchTab('dashboard')" class="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg nav-item">
-                        <i class="ri-building-line text-xl"></i>
-                        <span>Department Management</span>
-                    </a>
-                    <a href="#" onclick="switchTab('dashboard')" class="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg nav-item">
-                        <i class="ri-file-chart-line text-xl"></i>
-                        <span>Reports & Analytics</span>
-                    </a>
-                </nav>
-            </div>
-
         </aside>
 
-        <!-- Main Content -->
-        <main class="p-4 overflow-x-auto bg-slate-50 dark:bg-gray-900 min-h-screen">
-            <!-- Mobile Menu Button -->
-            <button id="mobileMenuBtn" class="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
-                <i class="ri-menu-line text-xl"></i>
-            </button>
-            
+        <!-- Main column: topbar + content -->
+        <div>
+            <!-- Topbar -->
+            <header class="dashboard-topbar">
+                <button class="btn btn--ghost btn--icon lg:hidden" onclick="openSidebar()" aria-label="Open menu">
+                    <i class="ri-menu-line"></i>
+                </button>
+                <div class="dashboard-topbar__title">Registrar Dashboard</div>
+                <div class="dashboard-topbar__actions">
+                    <button class="btn btn--primary" onclick="openAdmissionModal()">
+                        <i class="ri-user-add-line"></i> Add Student
+                    </button>
+                    <button class="btn btn--secondary" onclick="showPromotionModal()">
+                        <i class="ri-arrow-up-line"></i> Promote Students
+                    </button>
+                    <button class="btn btn--ghost" id="export-students-btn" onclick="showExportModal()">
+                        <i class="ri-download-line"></i> Export
+                    </button>
+                    <button data-theme-toggle class="theme-toggle" aria-label="Toggle dark mode">
+                        <i class="ri-sun-line theme-icon-light"></i>
+                        <i class="ri-moon-line theme-icon-dark"></i>
+                    </button>
+                    <button id="logoutBtn" class="btn btn--danger btn--icon" aria-label="Logout">
+                        <i class="ri-logout-box-line"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <main class="dashboard-main">
+
             <!-- Dashboard Section -->
             <div id="content-dashboard" class="content-section">
-            <!-- Header -->
-            <div class="flex justify-between items-center mb-4">
-                <div>
-                    <h1 class="text-2xl font-semibold mb-1">Registrar Dashboard</h1>
-                    <p class="text-slate-500 text-sm">Academic Year 2024/2025 | <strong>Admin User</strong></p>
+                <!-- Page intro -->
+                <div style="margin-bottom: var(--space-6)">
+                    <h1 class="text-display">Welcome back</h1>
+                    <p class="text-body" style="color: var(--text-secondary); margin-top: var(--space-2)">
+                        Academic Year <span id="academicYear">2024/2025</span> &nbsp;·&nbsp;
+                        <span id="welcomeName">Registrar</span>
+                    </p>
                 </div>
-                <div class="flex gap-2">
-                    <button onclick="openAdmissionModal()" class="flex items-center gap-1 px-3 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors text-sm">
-                        <i class="ri-user-add-line"></i>
-                        <span>Add Student</span>
-                    </button>
-                    <button onclick="showPromotionModal()" class="flex items-center gap-1 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm">
-                        <i class="ri-arrow-up-line"></i>
-                        <span>Promote Students</span>
-                    </button>
-                    <button id="export-students-btn" onclick="showExportModal()" class="flex items-center gap-1 px-3 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors text-sm">
-                        <i class="ri-download-line"></i>
-                        <span>Export</span>
-                    </button>
-                </div>
-            </div>
 
-            <!-- Dashboard Stats -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                <div class="bg-white rounded-lg shadow-sm p-4">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-slate-500 text-sm">Total Students</p>
-                            <p class="text-2xl font-bold text-slate-800" id="totalStudents">0</p>
+                <!-- Stat cards -->
+                <div class="stat-cards-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-6)">
+                    <div class="stat-card">
+                        <div class="stat-card__top">
+                            <div class="stat-card__icon"><i class="ri-team-line"></i></div>
                         </div>
-                        <div class="bg-blue-100 p-3 rounded-lg">
-                            <i class="ri-group-line text-xl text-blue-600"></i>
+                        <div class="stat-card__label">Total Students</div>
+                        <div class="stat-card__value" id="totalStudents">—</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card__top">
+                            <div class="stat-card__icon"><i class="ri-user-add-line"></i></div>
                         </div>
+                        <div class="stat-card__label">New Admissions</div>
+                        <div class="stat-card__value" id="newAdmissions">—</div>
+                    </div>
+                    <div class="stat-card stat-card--warning">
+                        <div class="stat-card__top">
+                            <div class="stat-card__icon"><i class="ri-book-line"></i></div>
+                        </div>
+                        <div class="stat-card__label">Active Courses</div>
+                        <div class="stat-card__value" id="activeCourses">—</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card__top">
+                            <div class="stat-card__icon"><i class="ri-building-line"></i></div>
+                        </div>
+                        <div class="stat-card__label">Departments</div>
+                        <div class="stat-card__value">7</div>
                     </div>
                 </div>
-                <div class="bg-white rounded-lg shadow-sm p-4">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-slate-500 text-sm">New Admissions</p>
-                            <p class="text-2xl font-bold text-slate-800" id="newAdmissions">0</p>
-                        </div>
-                        <div class="bg-green-100 p-3 rounded-lg">
-                            <i class="ri-user-add-line text-xl text-green-600"></i>
-                        </div>
-                    </div>
-                </div>
-                <div class="bg-white rounded-lg shadow-sm p-4">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-slate-500 text-sm">Active Courses</p>
-                            <p class="text-2xl font-bold text-slate-800" id="activeCourses">0</p>
-                        </div>
-                        <div class="bg-yellow-100 p-3 rounded-lg">
-                            <i class="ri-book-line text-xl text-yellow-600"></i>
-                        </div>
-                    </div>
-                </div>
-                <div class="bg-white rounded-lg shadow-sm p-4">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-slate-500 text-sm">Departments</p>
-                            <p class="text-2xl font-bold text-slate-800">7</p>
-                        </div>
-                        <div class="bg-purple-100 p-3 rounded-lg">
-                            <i class="ri-building-line text-xl text-purple-600"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
             </div>
 
@@ -2373,11 +2266,27 @@
             </div>
             </div>
             </div>
-        </main>
-    </div>
+            </main>
+        </div><!-- /.topbar+main wrapper -->
+    </div><!-- /.dashboard-shell -->
 
     <script>
-        // Theme toggle functionality
+        /* Mobile sidebar helpers — matches the design-system demo pattern.
+           .dashboard-sidebar gains .open on small screens; the backdrop
+           gains .show to dim the page behind it. Both are removed on close
+           or when a nav-link is tapped. */
+        function openSidebar() {
+            document.getElementById('sidebar').classList.add('open');
+            document.getElementById('sbBackdrop').classList.add('show');
+        }
+        function closeSidebar() {
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('sbBackdrop').classList.remove('show');
+        }
+
+        // Theme toggle functionality (legacy — kept harmless for any callers; the
+        // active theme controller is /public/js/dashboard-theme.js which the
+        // data-theme-toggle button in the topbar wires automatically).
         function toggleDarkMode() {
             document.documentElement.classList.toggle('dark');
             localStorage.setItem('darkMode', document.documentElement.classList.contains('dark'));
