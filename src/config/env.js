@@ -26,6 +26,7 @@ const EnvSchema = z.object({
     PORT: z.coerce.number().int().positive().default(5502),
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
     ALLOWED_ORIGINS: z.string().optional().default(''),
+    COOKIE_SECURE: z.string().optional().default('false'),
 
     // ---------- Email (Brevo HTTP API) — optional in dev ----------
     BREVO_API_KEY: z.string().optional(),

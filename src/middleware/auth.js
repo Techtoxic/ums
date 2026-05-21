@@ -8,6 +8,13 @@ const shim = require('../db/models');
 
 // Sourced from validated config (config will refuse to boot in prod without it)
 const JWT_SECRET = config.jwt.secret;
+
+// COOKIE_SECURE: set to true ONLY when serving over HTTPS. Decoupled from
+// NODE_ENV because staging may run with NODE_ENV=production while still
+// serving HTTP. Chrome silently drops Secure-flagged cookies on http://
+// origins, so getting this wrong makes auth invisibly fail in the browser
+// even though the server response looks fine.
+const COOKIE_SECURE = String(process.env.COOKIE_SECURE || '').toLowerCase() === 'true';
 const JWT_EXPIRES_IN = config.jwt.expiresIn;
 
 /**
@@ -63,7 +70,7 @@ function setAuthCookie(res, token) {
     res.cookie('authToken', token, {
         httpOnly: true,
         sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production',
+        secure: COOKIE_SECURE,
         maxAge: 2 * 60 * 60 * 1000, // 2h in ms, matches JWT_EXPIRES_IN=2h
         path: '/',
     });
@@ -77,7 +84,7 @@ function clearAuthCookie(res) {
     res.clearCookie('authToken', {
         httpOnly: true,
         sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production',
+        secure: COOKIE_SECURE,
         path: '/',
     });
 }
