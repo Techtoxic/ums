@@ -198,6 +198,29 @@
     // Passively clean up pre-cookie localStorage on every page load.
     cleanupLegacyLocalStorage();
 
+    // Suppress the back-button bfcache flash on dashboards.
+    //
+    // When the user uses the browser back button to return to a dashboard after
+    // logging out, Chrome restores the DOM from an in-memory snapshot it captured
+    // at navigation time. That snapshot shows the dashboard AS IT WAS WHEN THE
+    // USER CLICKED LOGOUT — including any data visible on screen — because
+    // hideAuthGate() had already removed the skeleton overlay before logout.
+    //
+    // `pageshow` with event.persisted === true fires only on bfcache restoration
+    // (NOT on normal navigation). When we detect it, force a fresh page load so
+    // the browser re-renders the HTML from scratch. The fresh render includes
+    // the skeleton overlay as the first body element, covering the dashboard
+    // until requireAuth() resolves and either fades it (auth valid) or redirects
+    // to login (auth dead).
+    //
+    // Cost: one extra HTTP request per back-button navigation to a logged-out
+    // dashboard. The dashboard HTML is ~30KB, this is negligible.
+    window.addEventListener('pageshow', (event) => {
+        if (event.persisted) {
+            window.location.reload();
+        }
+    });
+
     // ==========================================================================
     // Stage 2B-2A: centralized output-encoding helpers (XSS escaping).
     // One source of truth, loaded by every dashboard (they all load auth.js).
