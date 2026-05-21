@@ -5,8 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Finance Dashboard - University Management System</title>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    
+    <link rel="stylesheet" href="/public/css/dashboard-styles.css">
+    <!-- Theme controller: in <head>, after styles, runs pre-paint (no flash) -->
+    <script src="/public/js/dashboard-theme.js"></script>
+
     <!-- Frontend Config (Load First!) -->
     <script src="/public/js/config.js"></script>
     
@@ -82,146 +87,109 @@
     </style>
     
     <script>
+        // Tailwind alias palette realigned to the EDTTI design system so any
+        // remaining utility usage (bg-primary, text-primary, etc.) inside the
+        // existing finance markup picks up maroon/gold instead of the old blue.
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
-                        primary: '#2563eb',
-                        secondary: '#1d4ed8',
-                        success: '#22c55e',
-                        warning: '#f59e0b',
-                        danger: '#ef4444',
+                        primary: '#7A0C0C',     // maroon
+                        secondary: '#5C0808',   // maroon-dark
+                        accent: '#D4A017',      // gold
+                        success: '#10B981',
+                        warning: '#F59E0B',
+                        danger: '#EF4444',
                     }
                 }
             }
         }
     </script>
-    <style>
-        @media (max-width: 1024px) {
-            .sidebar.active {
-                display: block !important;
-            }
-        }
-        
-        body.menu-open::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 30;
-        }
-
-    </style>
     <script src="/public/js/auth.js"></script>
 </head>
-<body class="bg-slate-50 dark:bg-gray-900 text-slate-800 dark:text-white">
-    <div class="flex min-h-screen">
-        <!-- Sidebar -->
-        <aside id="sidebar" class="sidebar w-64 bg-white dark:bg-gray-800 border-r border-slate-200 dark:border-gray-700 p-4 transition-all duration-300 flex-shrink-0">
-            <div class="flex items-center justify-between mb-6">
-                <div class="flex items-center gap-2 text-lg font-semibold text-primary">
-                    <i class="ri-bank-line"></i>
-                    <span id="sidebar-title">Finance Dashboard</span>
-                </div>
-                <button id="toggleSidebar" class="p-1 hover:bg-slate-100 rounded">
-                    <i class="ri-menu-fold-line text-xl text-slate-600"></i>
-            </button>
-        </div>
+<body class="text-slate-800 dark:text-white">
+    <div class="dashboard-shell">
+        <!-- Sidebar backdrop for mobile -->
+        <div class="dashboard-sidebar__backdrop" id="sbBackdrop" onclick="closeSidebar()"></div>
 
-            <!-- Auth Buttons -->
-            <div class="mb-4">
-                <div class="flex gap-2">
-                    <button id="loginBtn" class="flex-1 px-2 py-1 text-xs bg-success text-white rounded hover:bg-green-600 transition-colors">
-                        <i class="ri-login-box-line mr-1"></i>Login
-            </button>
-                    <button id="logoutBtn" class="flex-1 px-2 py-1 text-xs bg-danger text-white rounded hover:bg-red-600 transition-colors">
-                        <i class="ri-logout-box-line mr-1"></i>Logout
-                </button>
+        <!-- Sidebar -->
+        <aside class="dashboard-sidebar" id="sidebar">
+            <div class="dashboard-sidebar__logo">
+                <i class="ri-graduation-cap-line"></i>
+                <span>EDTTI</span>
             </div>
-        </div>
-            
-            <!-- Dark Mode Toggle -->
-            <div class="mb-6">
-                <button id="dark-mode-toggle" onclick="toggleDarkMode()" class="w-full flex items-center gap-2 px-3 py-2 text-sm bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">
-                    <i class="ri-moon-line"></i>
-                    <span>Dark Mode</span>
-                </button>
-            </div>
-            <nav>
-                <ul class="space-y-2">
-                    <li>
-                        <a href="#" onclick="showSection('dashboard')" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-primary bg-blue-50 hover:bg-blue-100 transition-colors active">
-                            <i class="ri-dashboard-line"></i>
-                            <span>Dashboard</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#" onclick="showSection('analytics')" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 hover:bg-slate-50 transition-colors">
-                            <i class="ri-bar-chart-line"></i>
-                            <span>Analytics</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#" onclick="showSection('reports')" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 hover:bg-slate-50 transition-colors">
-                            <i class="ri-file-chart-line"></i>
-                            <span>Reports</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#" onclick="showSection('revenue')" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 hover:bg-slate-50 transition-colors">
-                            <i class="ri-line-chart-line"></i>
-                            <span>Revenue</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#" onclick="showSection('expenditure')" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 hover:bg-slate-50 transition-colors">
-                            <i class="ri-shopping-cart-line"></i>
-                            <span>Expenditure</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#" onclick="showSection('collections')" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 hover:bg-slate-50 transition-colors">
-                            <i class="ri-money-dollar-circle-line"></i>
-                            <span>Collections</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#" onclick="showSection('payslips')" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 hover:bg-slate-50 transition-colors">
-                            <i class="ri-file-text-line"></i>
-                            <span>Trainer Payslips</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#" onclick="showSection('settings')" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 hover:bg-slate-50 transition-colors">
-                            <i class="ri-settings-line"></i>
-                            <span>Settings</span>
-                        </a>
-                    </li>
-                </ul>
+            <nav class="dashboard-sidebar__nav">
+                <a href="#" class="nav-link nav-item active" onclick="showSection('dashboard'); event.preventDefault();">
+                    <i class="ri-dashboard-line"></i><span>Dashboard</span>
+                </a>
+                <a href="#" class="nav-link nav-item" onclick="showSection('analytics'); event.preventDefault();">
+                    <i class="ri-line-chart-line"></i><span>Analytics</span>
+                </a>
+                <a href="#" class="nav-link nav-item" onclick="showSection('reports'); event.preventDefault();">
+                    <i class="ri-file-chart-line"></i><span>Reports</span>
+                </a>
+                <a href="#" class="nav-link nav-item" onclick="showSection('revenue'); event.preventDefault();">
+                    <i class="ri-money-dollar-circle-line"></i><span>Revenue</span>
+                </a>
+                <a href="#" class="nav-link nav-item" onclick="showSection('expenditure'); event.preventDefault();">
+                    <i class="ri-arrow-down-circle-line"></i><span>Expenditure</span>
+                </a>
+                <a href="#" class="nav-link nav-item" onclick="showSection('collections'); event.preventDefault();">
+                    <i class="ri-wallet-3-line"></i><span>Collections</span>
+                </a>
+                <a href="#" class="nav-link nav-item" onclick="showSection('payslips'); event.preventDefault();">
+                    <i class="ri-file-list-3-line"></i><span>Trainer Payslips</span>
+                </a>
+                <a href="#" class="nav-link nav-item" onclick="showSection('settings'); event.preventDefault();">
+                    <i class="ri-settings-3-line"></i><span>Settings</span>
+                </a>
             </nav>
+            <div class="dashboard-sidebar__profile">
+                <div class="dashboard-sidebar__avatar" id="userAvatar">F</div>
+                <div class="dashboard-sidebar__profile-text">
+                    <div class="font-semibold text-body-sm" id="userName">Finance</div>
+                    <div class="text-body-sm" style="color:var(--text-muted)">Finance Officer</div>
+                </div>
+            </div>
         </aside>
 
-        <!-- Main Content -->
-        <main class="flex-1 p-4 overflow-auto bg-slate-50 dark:bg-gray-900">
-            <div class="flex justify-between items-center mb-4">
-                <div>
-                    <h1 class="text-2xl font-semibold mb-1">Financial Overview</h1>
-                    <p class="text-slate-500 text-sm">Academic Year 2025/2026 | <strong>Naomy!</strong></p>
-                </div>
-                <div class="flex gap-2">
-                    <button class="flex items-center gap-1 px-3 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors text-sm" onclick="generateFeesStatement()">
-                        <i class="ri-file-list-line"></i>
-                        <span>Statement</span>
+        <!-- Main column: topbar + content -->
+        <div>
+            <!-- Topbar -->
+            <header class="dashboard-topbar">
+                <button class="btn btn--ghost btn--icon lg:hidden" onclick="openSidebar()" aria-label="Open menu">
+                    <i class="ri-menu-line"></i>
+                </button>
+                <div class="dashboard-topbar__title">Finance Dashboard</div>
+                <div class="dashboard-topbar__actions">
+                    <button class="btn btn--primary" onclick="generateFeesStatement()">
+                        <i class="ri-file-list-line"></i> Statement
                     </button>
-                    <button class="flex items-center gap-1 px-3 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors text-sm">
-                        <i class="ri-download-line"></i>
-                        <span>Export</span>
+                    <button class="btn btn--secondary">
+                        <i class="ri-download-line"></i> Export
+                    </button>
+                    <button data-theme-toggle class="theme-toggle" aria-label="Toggle dark mode">
+                        <i class="ri-sun-line theme-icon-light"></i>
+                        <i class="ri-moon-line theme-icon-dark"></i>
+                    </button>
+                    <button id="logoutBtn" class="btn btn--danger btn--icon" aria-label="Logout">
+                        <i class="ri-logout-box-line"></i>
                     </button>
                 </div>
-            </div>
+            </header>
+
+            <!-- Main Content -->
+            <main class="dashboard-main">
+                <!-- Page intro -->
+                <div style="margin-bottom: var(--space-6)">
+                    <h1 class="text-display">Finance Overview</h1>
+                    <p class="text-body" style="color: var(--text-secondary); margin-top: var(--space-2)">
+                        Academic Year <span id="academicYear">2025/2026</span>
+                        &nbsp;·&nbsp;
+                        <span id="welcomeName">Finance</span>
+                    </p>
+                </div>
 
             <!-- Program Management Cards -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -885,12 +853,27 @@
             <!-- Toast Notification -->
             <div id="toast" class="fixed bottom-4 right-4 px-6 py-3 rounded-xl text-white transform translate-y-full opacity-0 transition-all duration-300 shadow-lg z-50"></div>
 
-        </main>
-    </div>
+            </main>
+        </div><!-- /.topbar+main wrapper -->
+    </div><!-- /.dashboard-shell -->
 
     <script>
-        // Initialize dark mode from localStorage
-        if (localStorage.getItem('finance-dark-mode') === 'enabled') {
+        /* Mobile sidebar helpers — match the design-system demo pattern. */
+        function openSidebar() {
+            document.getElementById('sidebar').classList.add('open');
+            document.getElementById('sbBackdrop').classList.add('show');
+        }
+        function closeSidebar() {
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('sbBackdrop').classList.remove('show');
+        }
+
+        // Initialize dark mode from localStorage — legacy key kept for users who
+        // had it set before the design-system theme controller took over. The
+        // controller in /public/js/dashboard-theme.js uses localStorage.theme
+        // and runs in <head>, so this block is a one-time bridge.
+        if (localStorage.getItem('finance-dark-mode') === 'enabled' && localStorage.getItem('theme') == null) {
+            try { localStorage.setItem('theme', 'dark'); } catch (e) { /* ignore */ }
             document.documentElement.classList.add('dark');
         }
         
@@ -903,10 +886,14 @@
             }
         });
 
-        // Toggle dark mode function
+        // Toggle dark mode function — legacy. The active theme controller is
+        // /public/js/dashboard-theme.js wired via [data-theme-toggle] in the
+        // topbar. This function is retained for any pre-migration inline
+        // onclick callers; guards against the removed #dark-mode-toggle.
         function toggleDarkMode() {
             document.documentElement.classList.toggle('dark');
             const darkModeToggle = document.getElementById('dark-mode-toggle');
+            if (!darkModeToggle) return;
             const icon = darkModeToggle.querySelector('i');
             const span = darkModeToggle.querySelector('span');
             
@@ -934,18 +921,14 @@
                 paymentDateField.value = today;
             }
             
-            // Apply saved dark mode preference
+            // Apply saved dark mode preference (legacy — the design-system theme
+            // controller in /public/js/dashboard-theme.js handles theme now; this
+            // block only fires for users whose 'finance-dark-mode' key predates
+            // the migration. The old sidebar dark-mode button is gone, so we
+            // skip the icon/text swap that used to update it.)
             const darkModePreference = localStorage.getItem('finance-dark-mode');
             if (darkModePreference === 'enabled') {
                 document.documentElement.classList.add('dark');
-                const darkModeToggle = document.getElementById('dark-mode-toggle');
-                const icon = darkModeToggle.querySelector('i');
-                const span = darkModeToggle.querySelector('span');
-                if (icon) {
-                    icon.classList.remove('ri-moon-line');
-                    icon.classList.add('ri-sun-line');
-                }
-                if (span) span.textContent = 'Light Mode';
             }
         });
 
@@ -992,18 +975,16 @@
                 });
             }
             
-            // Update navigation active state
-            document.querySelectorAll('.nav-item').forEach(item => {
-                item.classList.remove('active', 'text-primary', 'bg-blue-50');
-                item.classList.add('text-slate-500');
+            // Update navigation active state — the design-system .nav-link.active
+            // rule handles the maroon background + white text; we just toggle the
+            // .active class. The old Tailwind utility juggling (text-primary,
+            // bg-blue-50, text-slate-500) is dropped — those classes do nothing
+            // for .nav-link styling and were leftover from the legacy sidebar.
+            document.querySelectorAll('.nav-link').forEach(item => {
+                item.classList.remove('active');
             });
-            
-            // Set active nav item
-            const activeNav = document.querySelector(`[onclick="showSection('${sectionName}')"]`);
-            if (activeNav) {
-                activeNav.classList.add('active', 'text-primary', 'bg-blue-50');
-                activeNav.classList.remove('text-slate-500');
-            }
+            const activeNav = document.querySelector(`[onclick^="showSection('${sectionName}'"]`);
+            if (activeNav) activeNav.classList.add('active');
             
             // Load section-specific data
             if (sectionName === 'analytics' && financeAnalytics) {
@@ -1553,6 +1534,39 @@
                 toast.classList.remove('translate-y-0', 'opacity-100');
             }, 4000);
         }
+    </script>
+
+    <script>
+        // Cookie-based auth init + topbar logout wiring. Mirrors the registrar
+        // pattern from commit 6f16fbc. The shared /public/js/auth.js exposes
+        // window.AUTH; requireAuth() bounces to /admin/login on no/expired
+        // session, and on success populates the sidebar profile + welcome line
+        // from the /api/me user object.
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (window.AUTH && typeof window.AUTH.requireAuth === 'function') {
+                const user = await window.AUTH.requireAuth('/admin/login');
+                if (user) {
+                    const userName = document.getElementById('userName');
+                    const userAvatar = document.getElementById('userAvatar');
+                    const welcomeName = document.getElementById('welcomeName');
+                    if (user.name) {
+                        if (userName) userName.textContent = user.name;
+                        if (welcomeName) welcomeName.textContent = user.name;
+                        if (userAvatar) userAvatar.textContent = user.name.charAt(0).toUpperCase();
+                    }
+                }
+            }
+
+            // Topbar logout button — finance role logs back into /admin/login.
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn && window.AUTH && typeof window.AUTH.logout === 'function') {
+                logoutBtn.addEventListener('click', async () => {
+                    if (confirm('Are you sure you want to logout?')) {
+                        await window.AUTH.logout({ role: 'admin' });
+                    }
+                });
+            }
+        });
     </script>
 </body>
 </html>
