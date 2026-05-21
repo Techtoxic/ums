@@ -457,7 +457,7 @@ function makeQueryThenable(promise) {
 // ============================================================================
 const usersOpts = {
     hashFields: ['password'],
-    secretFields: ['password', 'token_version'],
+    secretFields: ['password'],
     fieldMap: {
         isActive: 'is_active',
         isFirstLogin: 'is_first_login',
