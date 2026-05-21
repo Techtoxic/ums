@@ -7,6 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="/public/js/auth.js"></script>
+    <link rel="stylesheet" href="/public/css/dashboard-styles.css">
 
     <!-- Frontend Config (Load First!) -->
     <script src="/public/js/config.js"></script>
@@ -1647,6 +1648,42 @@
     </script>
 </head>
 <body class="bg-slate-50 dark:bg-gray-900 text-slate-800 dark:text-white overflow-x-hidden">
+    <!-- Auth gate: covers the dashboard until requireAuth() resolves, suppressing
+         the bfcache back-button flash. Skeleton matches registrar layout (10 nav
+         items: Dashboard, Admission, Management, Promotion, Course Mgmt, Enrollment,
+         Graduation, Faculty, Department, Reports; 4 tiles: Total Students,
+         New Admissions, Active Courses, Departments). -->
+    <div id="authGate" class="auth-gate" aria-live="polite" aria-busy="true">
+        <aside class="skel-sidebar">
+            <div class="skel skel-sidebar__logo"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__user"></div>
+        </aside>
+        <main class="skel-main">
+            <div class="skel-topbar">
+                <div class="skel skel-topbar__title"></div>
+                <div class="skel skel-topbar__action"></div>
+            </div>
+            <div class="skel skel-welcome"></div>
+            <div class="skel-tiles" style="--tile-count: 4;">
+                <div class="skel skel-tile"></div>
+                <div class="skel skel-tile"></div>
+                <div class="skel skel-tile"></div>
+                <div class="skel skel-tile"></div>
+            </div>
+            <div class="skel skel-content"></div>
+        </main>
+    </div>
+
 
     <div class="min-h-screen">
         <!-- Sidebar -->

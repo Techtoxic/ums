@@ -33,6 +33,23 @@
         }
     }
 
+    /**
+     * Fade and remove the auth gate overlay. Called only after requireAuth()
+     * confirms the user is authenticated. No-op if no gate element exists.
+     *
+     * The fade-then-remove pattern (rather than instant removal) gives a smooth
+     * transition into the real dashboard. On bfcache restoration, JS runs again
+     * and either calls this (auth still valid) or redirects to login (revoked).
+     */
+    function hideAuthGate() {
+        const el = document.getElementById('authGate');
+        if (!el) return;
+        el.classList.add('auth-gate--hiding');
+        setTimeout(() => {
+            if (el.parentNode) el.parentNode.removeChild(el);
+        }, 250);
+    }
+
     const AUTH_UTILS = {
         // Module-level cache of current user, populated by me()/init()
         _user: null,
@@ -167,6 +184,8 @@
                 }
                 return null;
             }
+            // Auth succeeded — fade out the skeleton overlay so the dashboard becomes visible.
+            hideAuthGate();
             return user;
         }
     };
@@ -174,6 +193,7 @@
     // Expose globally
     window.AUTH = AUTH_UTILS;
     window.cleanupLegacyLocalStorage = cleanupLegacyLocalStorage;
+    window.hideAuthGate = hideAuthGate;
 
     // Passively clean up pre-cookie localStorage on every page load.
     cleanupLegacyLocalStorage();

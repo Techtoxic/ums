@@ -15,7 +15,8 @@
     
     <!-- Auth Utility (Load First!) -->
     <script src="/public/js/auth.js"></script>
-    
+    <link rel="stylesheet" href="/public/css/dashboard-styles.css">
+
     <!-- Frontend Config -->
     <script src="/public/js/config.js"></script>
     
@@ -47,7 +48,38 @@
     </script>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
-    
+    <!-- Auth gate: covers the dashboard until requireAuth() resolves, suppressing
+         the bfcache back-button flash. Skeleton matches admin layout (7 sidebar
+         nav items: dashboard/students/trainers/financial/programs/reports/settings;
+         4 stat tiles: Students/Trainers/Revenue/Outstanding). -->
+    <div id="authGate" class="auth-gate" aria-live="polite" aria-busy="true">
+        <aside class="skel-sidebar">
+            <div class="skel skel-sidebar__logo"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__user"></div>
+        </aside>
+        <main class="skel-main">
+            <div class="skel-topbar">
+                <div class="skel skel-topbar__title"></div>
+                <div class="skel skel-topbar__action"></div>
+            </div>
+            <div class="skel skel-welcome"></div>
+            <div class="skel-tiles" style="--tile-count: 4;">
+                <div class="skel skel-tile"></div>
+                <div class="skel skel-tile"></div>
+                <div class="skel skel-tile"></div>
+                <div class="skel skel-tile"></div>
+            </div>
+            <div class="skel skel-content"></div>
+        </main>
+    </div>
+
     <!-- Sidebar -->
     <aside id="sidebar" class="fixed top-0 left-0 z-30 w-16 lg:w-20 h-screen transition-transform -translate-x-full lg:translate-x-0 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
         <div class="h-full px-1 py-2 overflow-y-auto flex flex-col">

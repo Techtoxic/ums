@@ -112,9 +112,42 @@
             transition: filter 0.3s ease;
         }
     </style>
+    <link rel="stylesheet" href="/public/css/dashboard-styles.css">
     <script src="/public/js/auth.js"></script>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 font-sans transition-colors duration-300">
+    <!-- Auth gate: covers the dashboard until requireAuth() resolves, suppressing
+         the bfcache back-button flash. Skeleton matches trainer layout (7 sidebar
+         nav items: Dashboard, Assignments, Students, Tools, Payslips, Notifications,
+         Profile; 4 stat tiles: Active Assignments, My Students, Courses, Department). -->
+    <div id="authGate" class="auth-gate" aria-live="polite" aria-busy="true">
+        <aside class="skel-sidebar">
+            <div class="skel skel-sidebar__logo"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__user"></div>
+        </aside>
+        <main class="skel-main">
+            <div class="skel-topbar">
+                <div class="skel skel-topbar__title"></div>
+                <div class="skel skel-topbar__action"></div>
+            </div>
+            <div class="skel skel-welcome"></div>
+            <div class="skel-tiles" style="--tile-count: 4;">
+                <div class="skel skel-tile"></div>
+                <div class="skel skel-tile"></div>
+                <div class="skel skel-tile"></div>
+                <div class="skel skel-tile"></div>
+            </div>
+            <div class="skel skel-content"></div>
+        </main>
+    </div>
+
     <!-- Mobile Menu Overlay -->
     <div id="mobileOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden md:hidden"></div>
 

@@ -751,3 +751,136 @@ html.dark .theme-icon-dark  { display: none; }
     .dashboard-shell { display: block; }
     .card, .stat-card { box-shadow: none; border-color: #ccc; }
 }
+
+/* ============================================================
+ * AUTH GATE OVERLAY — Tier 2 skeleton-screen edition
+ *
+ * Shown by default in dashboard HTML to suppress the back-button bfcache
+ * flash. Chrome restores the dashboard DOM from memory on back-navigation
+ * regardless of Cache-Control headers; an overlay that's in the HTML from
+ * the first byte covers the data until JS confirms auth.
+ *
+ * Skeletons are per-dashboard variations on the same building blocks
+ * (skel-sidebar, skel-topbar, skel-tile, skel-row, skel-line) so users see
+ * roughly their dashboard's shape during the brief loading moment.
+ * ============================================================ */
+
+.auth-gate {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    background: #f9fafb;
+    transition: opacity 200ms ease-out;
+    overflow: hidden;
+}
+html.dark .auth-gate {
+    background: #111827;
+}
+.auth-gate--hiding {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Generic shimmer block — base for every placeholder shape. */
+.skel {
+    background: linear-gradient(
+        90deg,
+        rgba(229, 231, 235, 0.8) 0%,
+        rgba(243, 244, 246, 1) 50%,
+        rgba(229, 231, 235, 0.8) 100%
+    );
+    background-size: 200% 100%;
+    animation: skel-shimmer 1.4s ease-in-out infinite;
+    border-radius: 8px;
+}
+html.dark .skel {
+    background: linear-gradient(
+        90deg,
+        rgba(31, 41, 55, 0.8) 0%,
+        rgba(55, 65, 81, 1) 50%,
+        rgba(31, 41, 55, 0.8) 100%
+    );
+    background-size: 200% 100%;
+}
+@keyframes skel-shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* Sidebar skeleton — left 256px column with logo + nav items. */
+.skel-sidebar {
+    width: 256px;
+    flex-shrink: 0;
+    background: #ffffff;
+    border-right: 1px solid #e5e7eb;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+html.dark .skel-sidebar {
+    background: #1f2937;
+    border-right-color: #374151;
+}
+.skel-sidebar__logo {
+    height: 40px;
+    margin-bottom: 16px;
+}
+.skel-sidebar__item {
+    height: 44px;
+}
+.skel-sidebar__user {
+    height: 56px;
+    margin-top: auto;
+}
+
+/* Main area: top bar + content rows. */
+.skel-main {
+    flex: 1;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow: hidden;
+}
+.skel-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 48px;
+}
+.skel-topbar__title {
+    width: 200px;
+    height: 28px;
+}
+.skel-topbar__action {
+    width: 96px;
+    height: 36px;
+}
+.skel-welcome {
+    height: 140px;
+    border-radius: 12px;
+}
+.skel-tiles {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(var(--tile-count, 4), minmax(0, 1fr));
+}
+.skel-tile {
+    height: 108px;
+}
+.skel-content {
+    flex: 1;
+    border-radius: 12px;
+    min-height: 240px;
+}
+.skel-row {
+    height: 56px;
+}
+.skel-line {
+    height: 14px;
+}
+.skel-line--short { width: 40%; }
+.skel-line--medium { width: 65%; }
+.skel-line--long { width: 90%; }
