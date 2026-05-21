@@ -173,6 +173,11 @@ async function seedUsers() {
         { email: 'nashonbett18+registrar@gmail.com', role: 'registrar', staff_id: 'REGISTRAR002', name: 'Demo Presenter (Registrar)', department: 'Registry',       password: demoPw },
         { email: 'maxxciey7@gmail.com',             role: 'admin',     staff_id: 'ADMIN003',     name: 'Maxxy', department: 'Administration', password: adminPw },
         { email: 'maxxymaxxy04@gmail.com',          role: 'registrar', staff_id: 'REGISTRAR003', name: 'Maxxy', department: 'Registry',       password: adminPw },
+        { email: 'okmomanyi56+finance@gmail.com',   role: 'finance',   staff_id: 'FINANCE001',   name: 'Finance Officer',    department: 'Finance',            password: adminPw },
+        { email: 'okmomanyi56+dean@gmail.com',      role: 'dean',      staff_id: 'DEAN001',      name: 'Dean of Students',   department: 'Academic Affairs',   password: adminPw },
+        { email: 'okmomanyi56+deputy@gmail.com',    role: 'deputy',    staff_id: 'DEPUTY001',    name: 'Deputy Principal',   department: 'Administration',     password: adminPw },
+        { email: 'okmomanyi56+ilo@gmail.com',       role: 'ilo',       staff_id: 'ILO001',       name: 'ILO Officer',        department: 'Industrial Liaison', password: adminPw },
+        { email: 'okmomanyi56+cibec@gmail.com',     role: 'cibec',     staff_id: 'CIBEC001',     name: 'CIBEC Officer',      department: 'CIBEC',              password: adminPw },
         // Additional trainers across departments
         { email: 'james.kiprop@edtti.ac.ke',  role: 'trainer', name: 'James Kiprop',  department: 'electromechanical', password: trainerPw },
         { email: 'mary.atieno@edtti.ac.ke',   role: 'trainer', name: 'Mary Atieno',   department: 'business_liberal',  password: trainerPw },
