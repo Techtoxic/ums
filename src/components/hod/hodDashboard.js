@@ -460,7 +460,12 @@ function updateStatsDisplay() {
     
     if (assignmentRateEl) assignmentRateEl.textContent = `${assignmentRate}%`;
     if (assignmentProgressEl) assignmentProgressEl.style.width = `${assignmentRate}%`;
-    if (activeTrainersEl) activeTrainersEl.textContent = trainersData.filter(t => t.assignedUnits && t.assignedUnits.length > 0).length || totalTrainers;
+    if (activeTrainersEl) {
+        // Count unique trainers who have at least one unit assignment.
+        // V2 doesn't decorate each trainer with assignedUnits; derive from assignmentsData instead.
+        const activeIds = new Set(assignmentsData.map(a => a.trainerId && a.trainerId._id).filter(Boolean));
+        activeTrainersEl.textContent = activeIds.size;
+    }
     
     console.log('Stats updated:', { totalCourses, totalUnits, totalTrainers, assignedUnits });
 }
@@ -1114,14 +1119,23 @@ function updateAnalytics() {
     updateWorkloadChart();
 }
 
+// Module-level chart instance for proper teardown on re-render.
+let assignmentChart = null;
+
 // Update assignment status chart
 function updateAssignmentChart() {
     const ctx = document.getElementById('assignmentChart').getContext('2d');
-    
+
+    // Destroy existing chart if it exists (prevents Chart.js "Canvas is already in use" leak
+    // when the analytics tab is opened more than once per session).
+    if (assignmentChart) {
+        assignmentChart.destroy();
+    }
+
     const assignedCount = assignmentsData.length;
-    const unassignedCount = unitsData.length - assignedCount;
-    
-    new Chart(ctx, {
+    const unassignedCount = Math.max(0, unitsData.length - assignedCount);
+
+    assignmentChart = new Chart(ctx, {
         type: 'doughnut',
         data: {
             labels: ['Assigned', 'Unassigned'],

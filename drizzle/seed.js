@@ -131,6 +131,34 @@ async function seedUnits(progByCode) {
     console.log(`  ✓ units: ${count}`);
 }
 
+async function seedCommonUnits(_progByCode) {
+    // Common units sit alongside program-specific units in the `units` table
+    // with program_id=NULL and is_common=true. The schema's program_id column
+    // is nullable specifically for this case.
+    const items = [
+        { code: 'CU-001', name: 'Communication Skills' },
+        { code: 'CU-002', name: 'Numeracy Skills' },
+        { code: 'CU-003', name: 'Digital Literacy' },
+        { code: 'CU-004', name: 'Entrepreneurial Skills' },
+        { code: 'CU-005', name: 'Employability Skills' },
+        { code: 'CU-006', name: 'Environmental Literacy' },
+        { code: 'CU-007', name: 'Occupational Safety and Health (OSH) Practices' },
+    ];
+    let count = 0;
+    for (const u of items) {
+        await upsert(units, eq(units.code, u.code), {
+            program_id: null,
+            code: u.code,
+            name: u.name,
+            year: 1,
+            semester: 1,
+            is_common: true,
+        });
+        count++;
+    }
+    console.log(`  ✓ common units: ${items.length} (${count} ensured)`);
+}
+
 async function seedUsers() {
     // CRITICAL users — preserved emails. Passwords are defaults (V1 hashes not reachable).
     const adminPw = await hash('Admin@2026');
@@ -304,6 +332,7 @@ async function main() {
     const dept = await seedDepartments();
     const prog = await seedPrograms(dept);
     await seedUnits(prog);
+    await seedCommonUnits(prog);
     const userByEmail = await seedUsers();
     await seedHODs();
     const studentByAdmission = await seedStudents();
