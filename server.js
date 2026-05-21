@@ -74,6 +74,7 @@ const { uploadToS3, getPresignedUrl, deleteFromS3, isS3Configured } = require('.
 
 // Import authentication middleware
 const { verifyToken, authorize, verifyOwnership, optionalAuth, enforceStudentFirstLogin, signToken, setAuthCookie, clearAuthCookie } = require('./src/middleware/auth');
+const jwt = require('jsonwebtoken');
 
 // Initialize email service
 let emailService;
@@ -195,15 +196,10 @@ app.get('/api/health', async (_req, res) => {
     }
 });
 
-// Logout endpoint — clears the authentication cookie.
-// No verifyToken middleware: must work even with an expired token, since the
-// most common reason to log out is "my session feels stale". Returns 200
-// unconditionally because there is nothing to fail at — the cookie either
-// gets cleared or never existed in the first place.
-app.post('/api/auth/logout', (req, res) => {
-    clearAuthCookie(res);
-    res.json({ success: true, message: 'Logged out' });
-});
+// Logout endpoint is registered AFTER cookie-parser (search for the matching
+// app.post('/api/auth/logout') below) so req.cookies is populated. Don't add
+// it here — placing it before cookieParser() leaves req.cookies undefined and
+// the token_version bump silently never fires.
 
 // Create uploads directory if it doesn't exist (skip in serverless/Vercel environment)
 const uploadsDir = path.join(__dirname, 'uploads');
@@ -425,6 +421,61 @@ app.use(helmet({
 // only read the JWT cookie (which is itself signed via JWT_SECRET); we don't
 // rely on cookie-parser's signature feature.
 app.use(cookieParser());
+
+// Logout endpoint — clears the auth cookie AND revokes all outstanding JWTs
+// for staff users by bumping users.token_version. Students don't have a
+// token_version column yet (separate schema migration), so their JWTs live
+// until natural expiry — clear the cookie only.
+//
+// Best-effort throughout: a malformed or expired token still results in 200
+// with the cookie cleared. The endpoint must never fail — it exists to clean
+// up client state. Must be registered after cookieParser() so req.cookies is
+// populated.
+app.post('/api/auth/logout', async (req, res) => {
+    try {
+        // Pull token from cookie or header without throwing if missing.
+        let token = null;
+        if (req.cookies && req.cookies.authToken) {
+            token = req.cookies.authToken;
+        } else {
+            const authHeader = req.headers['authorization'];
+            if (authHeader && authHeader.startsWith('Bearer ')) {
+                token = authHeader.substring(7);
+            } else if (req.headers['x-auth-token']) {
+                token = req.headers['x-auth-token'];
+            }
+        }
+
+        if (token) {
+            // Decode without verification first so we can act even if the token
+            // is expired (the most common reason to log out is "I think my
+            // session is stale"). jwt.decode does NOT validate the signature
+            // — that's intentional, we're not granting access here, just
+            // revoking the version on a row we identify by claim.
+            const decoded = jwt.decode(token);
+            const userId = decoded && decoded.userId;
+            const role = decoded && decoded.role;
+
+            // Only users-table roles have token_version. Students skip this.
+            const STAFF_ROLES = ['admin', 'registrar', 'finance', 'dean', 'deputy', 'ilo', 'cibec', 'hod', 'trainer'];
+            if (userId && STAFF_ROLES.includes(role)) {
+                try {
+                    await userService.bumpTokenVersion(userId);
+                } catch (dbErr) {
+                    // Don't fail logout on DB error — still clear the cookie.
+                    // Log so we can spot persistent issues.
+                    console.error('Logout: bumpTokenVersion failed', dbErr.message);
+                }
+            }
+        }
+    } catch (err) {
+        // Catch-all so logout never 500s.
+        console.error('Logout handler unexpected error:', err.message);
+    } finally {
+        clearAuthCookie(res);
+        res.json({ success: true, message: 'Logged out' });
+    }
+});
 
 // SEV-M-025: emit Content-Security-Policy-Report-Only (or Content-Security-Policy
 // when CSP_ENFORCE=true). Report-Only NEVER blocks — it only reports to

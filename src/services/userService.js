@@ -207,6 +207,27 @@ async function updatePassword(userId, newPasswordPlain) {
         .where(eq(users.id, userId));
 }
 
+/**
+ * Atomically increment a user's token_version. Used on logout and on any
+ * server-side session invalidation (password change, role change, etc.) so
+ * that existing JWTs become unusable on next verifyToken pass. Pairs with the
+ * SEV-H-013 check in middleware/auth.js.
+ *
+ * Only operates on rows in the `users` table — students live in a separate
+ * table without a token_version column. Callers are responsible for checking
+ * role before invoking.
+ */
+async function bumpTokenVersion(userId) {
+    if (!userId) return;
+    await db
+        .update(users)
+        .set({
+            token_version: sql`${users.token_version} + 1`,
+            updated_at: new Date(),
+        })
+        .where(eq(users.id, userId));
+}
+
 module.exports = {
     findByEmail,
     findByEmailAndRole,
@@ -221,4 +242,5 @@ module.exports = {
     completeFirstLogin,
     updateEmail,
     updatePassword,
+    bumpTokenVersion,
 };
