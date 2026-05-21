@@ -49,14 +49,12 @@ async function initializeDashboard() {
         // Setup UI interactions
         setupUI();
         
-        // Check if HOD is logged in
-        const hodData = localStorage.getItem('hodData');
-        if (!hodData) {
-            window.location.href = '/hod/login';
-            return;
-        }
+        // Cookie-based auth: fetch identity from server. requireAuth bounces to
+        // login if no valid session.
+        const user = await window.AUTH.requireAuth('/hod/login');
+        if (!user) return; // requireAuth already redirected
 
-        currentHOD = JSON.parse(hodData);
+        currentHOD = user;
         console.log(`Current HOD data:`, currentHOD);
         
         // Update UI with HOD info
@@ -241,10 +239,10 @@ async function handleProfileUpdate(e) {
         const data = await response.json();
         
         if (response.ok) {
-            // Update current HOD data
-            currentHOD = { ...currentHOD, ...data.hod };
-            localStorage.setItem('hodData', JSON.stringify(currentHOD));
-            
+            // Update current HOD data — re-fetch from server so the cookie-backed
+            // identity stays authoritative.
+            currentHOD = (await window.AUTH.me({ force: true })) || { ...currentHOD, ...data.hod };
+
             // Update UI
             updateHODInfo();
             
@@ -1288,10 +1286,9 @@ function updatePaginationControls(section, totalItems, totalPages) {
 }
 
 // Logout function
-function logout() {
+async function logout() {
     if (confirm('Are you sure you want to logout?')) {
-        localStorage.removeItem('hodData');
-        window.location.href = '/hod/login';
+        await window.AUTH.logout({ role: 'hod' });
     }
 }
 
@@ -1548,7 +1545,6 @@ async function showAssignCommonUnitsModal() {
     
     // Debug HOD information
     console.log('🔍 Current HOD when opening modal:', currentHOD);
-    console.log('🔍 HOD from localStorage:', localStorage.getItem('hodData'));
     
     // Load data if not already loaded
     if (commonUnitsData.length === 0) await loadCommonUnits();
@@ -1699,17 +1695,17 @@ async function assignCommonUnit() {
     }
     
     if (!currentHOD || !currentHOD._id) {
-        // Try to reload HOD data from localStorage
-        const hodData = localStorage.getItem('hodData');
-        if (hodData) {
-            try {
-                currentHOD = JSON.parse(hodData);
-                console.log('🔄 Reloaded HOD data from localStorage:', currentHOD);
-            } catch (e) {
-                console.error('❌ Error parsing HOD data from localStorage:', e);
+        // Try to reload HOD data from the cookie-backed /api/me endpoint
+        try {
+            const refreshed = await window.AUTH.me({ force: true });
+            if (refreshed) {
+                currentHOD = refreshed;
+                console.log('🔄 Reloaded HOD data from /api/me:', currentHOD);
             }
+        } catch (e) {
+            console.error('❌ Error refreshing HOD data from /api/me:', e);
         }
-        
+
         // Check again after attempting to reload
         if (!currentHOD || !currentHOD._id) {
             showToast('HOD information not available. Please log in again.', 'error');

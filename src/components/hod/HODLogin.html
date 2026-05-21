@@ -447,21 +447,8 @@
                 const data = await response.json();
 
                 if (response.ok && data.token) {
-                    // Store JWT for authenticated API calls
-                    localStorage.setItem('hodToken', data.token);
-                    if (window.AUTH && typeof window.AUTH.setAuth === 'function') {
-                        window.AUTH.setAuth(data.token, data.user || {}, 'hod');
-                    }
-
-                    localStorage.setItem('hodData', JSON.stringify({
-                        _id: data.user && data.user._id,
-                        department: data.user && data.user.department,
-                        departmentName: data.user && data.user.departmentName,
-                        name: data.user && data.user.name,
-                        email: data.user && data.user.email,
-                        loginTime: new Date().toISOString()
-                    }));
-
+                    // Login succeeded — the server set the auth cookie via Set-Cookie.
+                    // No localStorage writes; AUTH.me() will fetch identity on the dashboard.
                     showToast('Login successful! Redirecting...', 'success');
 
                     setTimeout(() => {

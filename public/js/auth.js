@@ -1,194 +1,182 @@
 /**
  * Authentication Utility
- * Handles JWT token management and authenticated API requests
+ * Cookie-based auth. Identity lives in an httpOnly cookie set by the server
+ * at login; the browser auto-attaches it on every same-origin request when
+ * fetch is called with credentials: 'include'. Dashboards call AUTH.me() on
+ * page load to discover who the cookie identifies.
  */
 
 (function(window) {
     'use strict';
-    
+
+    /**
+     * Remove all known auth-related localStorage keys leftover from the pre-cookie
+     * era. Called on every page load via the IIFE bottom-runner so cleanup happens
+     * passively the first time any user opens the migrated build. Preserves
+     * unrelated keys like dark-mode preferences and UI state.
+     */
+    function cleanupLegacyLocalStorage() {
+        if (typeof localStorage === 'undefined') return;
+        const KEYS_TO_REMOVE = [
+            // Old AUTH_UTILS keys
+            'authToken', 'authUser', 'authRole',
+            // Per-role legacy token keys
+            'adminToken', 'adminUser',
+            'trainerToken', 'trainerData',
+            'hodToken', 'hodData',
+            'studentToken', 'studentData',
+            // V1-era keys that may linger
+            'currentUser', 'userToken',
+        ];
+        for (const k of KEYS_TO_REMOVE) {
+            try { localStorage.removeItem(k); } catch (e) { /* private mode etc */ }
+        }
+    }
+
     const AUTH_UTILS = {
-        // Token storage keys
-        TOKEN_KEY: 'authToken',
-        USER_KEY: 'authUser',
-        ROLE_KEY: 'authRole',
-        
+        // Module-level cache of current user, populated by me()/init()
+        _user: null,
+
         /**
-         * Store authentication data
+         * Fetch the current user from /api/me. The cookie is sent automatically.
+         * Caches the result so multiple dashboard panels don't all re-fetch.
          */
-        setAuth(token, user, role) {
-            localStorage.setItem(this.TOKEN_KEY, token);
-            localStorage.setItem(this.USER_KEY, JSON.stringify(user));
-            localStorage.setItem(this.ROLE_KEY, role);
+        async me({ force = false } = {}) {
+            if (this._user && !force) return this._user;
+            try {
+                const response = await fetch('/api/me', {
+                    method: 'GET',
+                    credentials: 'include',
+                });
+                if (!response.ok) {
+                    this._user = null;
+                    return null;
+                }
+                const data = await response.json();
+                this._user = data && data.user ? data.user : null;
+                return this._user;
+            } catch (err) {
+                console.error('AUTH.me() failed:', err);
+                this._user = null;
+                return null;
+            }
         },
-        
+
         /**
-         * Get stored token
-         */
-        getToken() {
-            return localStorage.getItem(this.TOKEN_KEY);
-        },
-        
-        /**
-         * Get stored user
+         * Synchronously return the cached user (or null if not yet loaded).
+         * Use after an `await AUTH.me()` somewhere earlier in the page lifecycle.
          */
         getUser() {
-            const user = localStorage.getItem(this.USER_KEY);
-            return user ? JSON.parse(user) : null;
+            return this._user;
         },
-        
+
         /**
-         * Get stored role
+         * Synchronously return the cached user's role.
          */
         getRole() {
-            return localStorage.getItem(this.ROLE_KEY);
+            return this._user ? this._user.role : null;
         },
-        
+
         /**
-         * Check if user is authenticated
+         * True if /api/me has returned a user.
          */
         isAuthenticated() {
-            return !!this.getToken();
+            return !!this._user;
         },
-        
+
         /**
-         * Clear authentication data
+         * Log out: POST to /api/auth/logout (which clears the cookie AND bumps
+         * token_version server-side), then clear any lingering localStorage keys,
+         * then redirect to the login page for the current role.
          */
-        clearAuth() {
-            localStorage.removeItem(this.TOKEN_KEY);
-            localStorage.removeItem(this.USER_KEY);
-            localStorage.removeItem(this.ROLE_KEY);
-            
-            // Also clear legacy keys
-            localStorage.removeItem('adminToken');
-            localStorage.removeItem('adminUser');
-            localStorage.removeItem('trainerToken');
-            localStorage.removeItem('hodToken');
+        async logout({ redirect = null, role = null } = {}) {
+            try {
+                await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    credentials: 'include',
+                });
+            } catch (err) {
+                // Logout must never fail-fast. Continue with client cleanup either way.
+                console.error('AUTH.logout server call failed:', err);
+            }
+            this._user = null;
+            cleanupLegacyLocalStorage();
+            const loginPath = redirect
+                || (role === 'student' ? '/student/login'
+                :   role === 'trainer' ? '/trainer/login'
+                :   role === 'hod'     ? '/hod/login'
+                :                        '/admin/login');
+            window.location.href = loginPath;
         },
-        
+
         /**
-         * Make authenticated API request
+         * Make a cookie-authenticated API request. The cookie is sent automatically
+         * via credentials: 'include'. No Authorization header is added — the backend
+         * still accepts Bearer as fallback but we no longer send it.
          */
         async fetch(url, options = {}) {
-            const token = this.getToken();
-            
-            if (!token) {
-                throw new Error('No authentication token found');
-            }
-            
-            // Add Authorization header. Default the JSON Content-Type only for
-            // non-FormData bodies — for multipart uploads the browser must set
-            // its own Content-Type (with the boundary), so we must NOT force
-            // application/json. (Stage 2B-1B: required so upload calls can be
-            // normalized through this helper without breaking multipart.)
             const isFormData = (typeof FormData !== 'undefined') && (options.body instanceof FormData);
             const headers = {
                 ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
-                'Authorization': `Bearer ${token}`,
                 ...(options.headers || {})
             };
-            
             const response = await fetch(url, {
                 ...options,
+                credentials: 'include',
                 headers
             });
-            
-            // Handle token expiration
+            // If the server tells us the session is dead, clean up and bounce to login.
             if (response.status === 401) {
-                const data = await response.json();
-                if (data.code === 'TOKEN_EXPIRED' || data.code === 'INVALID_TOKEN') {
-                    this.clearAuth();
-                    window.location.href = '/admin/login';
-                    throw new Error('Session expired. Please login again.');
+                try {
+                    const data = await response.clone().json();
+                    if (data && (data.code === 'TOKEN_EXPIRED' || data.code === 'INVALID_TOKEN' || data.code === 'TOKEN_REVOKED' || data.code === 'NO_TOKEN')) {
+                        cleanupLegacyLocalStorage();
+                        this._user = null;
+                        // Don't loop if we're already on a login page.
+                        if (!/\/(admin|trainer|hod|student)\/login/.test(window.location.pathname)) {
+                            window.location.href = '/admin/login';
+                        }
+                        throw new Error('Session expired. Please login again.');
+                    }
+                } catch (jsonErr) {
+                    // Body wasn't JSON or didn't match our codes; fall through.
                 }
             }
-            
             return response;
         },
-        
+
         /**
-         * Make authenticated GET request
+         * Convenience wrappers.
          */
-        async get(url) {
-            const response = await this.fetch(url, { method: 'GET' });
-            return response.json();
-        },
-        
+        async get(url) { const r = await this.fetch(url, { method: 'GET' });   return r.json(); },
+        async post(url, data) { const r = await this.fetch(url, { method: 'POST',   body: JSON.stringify(data) }); return r.json(); },
+        async put(url, data)  { const r = await this.fetch(url, { method: 'PUT',    body: JSON.stringify(data) }); return r.json(); },
+        async delete(url)     { const r = await this.fetch(url, { method: 'DELETE' });                              return r.json(); },
+
         /**
-         * Make authenticated POST request
+         * Page-load guard for dashboards.
+         * Awaits /api/me. If no user, bounces to the given login page. Returns the user otherwise.
+         * Pages should call this at the top of their initialization.
          */
-        async post(url, data) {
-            const response = await this.fetch(url, {
-                method: 'POST',
-                body: JSON.stringify(data)
-            });
-            return response.json();
-        },
-        
-        /**
-         * Make authenticated PUT request
-         */
-        async put(url, data) {
-            const response = await this.fetch(url, {
-                method: 'PUT',
-                body: JSON.stringify(data)
-            });
-            return response.json();
-        },
-        
-        /**
-         * Make authenticated DELETE request
-         */
-        async delete(url) {
-            const response = await this.fetch(url, { method: 'DELETE' });
-            return response.json();
-        },
-        
-        /**
-         * Redirect to login if not authenticated
-         */
-        requireAuth(loginUrl = '/admin/login') {
-            if (!this.isAuthenticated()) {
-                window.location.href = loginUrl;
-                return false;
+        async requireAuth(loginUrl = '/admin/login') {
+            const user = await this.me();
+            if (!user) {
+                cleanupLegacyLocalStorage();
+                if (!/\/(admin|trainer|hod|student)\/login/.test(window.location.pathname)) {
+                    window.location.href = loginUrl;
+                }
+                return null;
             }
-            return true;
-        },
-        
-        /**
-         * Migrate legacy tokens to new system
-         */
-        migrateLegacyTokens() {
-            // Check for admin token
-            const adminToken = localStorage.getItem('adminToken');
-            const adminUser = localStorage.getItem('adminUser');
-            
-            if (adminToken && !this.getToken()) {
-                const user = adminUser ? JSON.parse(adminUser) : {};
-                this.setAuth(adminToken, user, user.role || 'admin');
-                console.log('✅ Migrated admin token to new auth system');
-            }
-            
-            // Check for trainer token
-            const trainerToken = localStorage.getItem('trainerToken');
-            if (trainerToken && !this.getToken()) {
-                this.setAuth(trainerToken, {}, 'trainer');
-                console.log('✅ Migrated trainer token to new auth system');
-            }
-            
-            // Check for HOD token
-            const hodToken = localStorage.getItem('hodToken');
-            if (hodToken && !this.getToken()) {
-                this.setAuth(hodToken, {}, 'hod');
-                console.log('✅ Migrated HOD token to new auth system');
-            }
+            return user;
         }
     };
-    
-    // Auto-migrate legacy tokens on load
-    AUTH_UTILS.migrateLegacyTokens();
 
     // Expose globally
     window.AUTH = AUTH_UTILS;
+    window.cleanupLegacyLocalStorage = cleanupLegacyLocalStorage;
+
+    // Passively clean up pre-cookie localStorage on every page load.
+    cleanupLegacyLocalStorage();
 
     // ==========================================================================
     // Stage 2B-2A: centralized output-encoding helpers (XSS escaping).

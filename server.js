@@ -477,6 +477,63 @@ app.post('/api/auth/logout', async (req, res) => {
     }
 });
 
+// Return the currently authenticated user. Replaces dashboards reading user
+// data from localStorage. Frontend calls this once on page load to populate
+// the user identity. The response shape is a discriminated union by role:
+// staff users vs students, with role-specific extra fields where relevant.
+app.get('/api/me', verifyToken, async (req, res) => {
+    try {
+        const { userId, role } = req.user;
+
+        if (role === 'student') {
+            const rows = await db
+                .select({
+                    id: schema.students.id,
+                    name: schema.students.name,
+                    admissionNumber: schema.students.admission_number,
+                    email: schema.students.email,
+                    phone: schema.students.phone_number,
+                    course: schema.students.course,
+                    department: schema.students.department,
+                    year: schema.students.year,
+                })
+                .from(schema.students)
+                .where(eq(schema.students.id, userId))
+                .limit(1);
+            if (!rows[0]) return res.status(404).json({ success: false, message: 'User not found' });
+            return res.json({ success: true, user: { ...rows[0], role: 'student' } });
+        }
+
+        // Staff roles live in `users`
+        const rows = await db
+            .select({
+                id: schema.users.id,
+                name: schema.users.name,
+                email: schema.users.email,
+                role: schema.users.role,
+                department: schema.users.department,
+                phone: schema.users.phone,
+                staffId: schema.users.staff_id,
+                isFirstLogin: schema.users.is_first_login,
+            })
+            .from(schema.users)
+            .where(eq(schema.users.id, userId))
+            .limit(1);
+        if (!rows[0]) return res.status(404).json({ success: false, message: 'User not found' });
+
+        const user = { ...rows[0] };
+        if (user.role === 'hod') {
+            user.departmentName = hodDepartmentDisplayName(user.department);
+        }
+        user._id = user.id; // V1-compat alias
+
+        return res.json({ success: true, user });
+    } catch (error) {
+        console.error('Error in /api/me:', error.message);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
 // SEV-M-025: emit Content-Security-Policy-Report-Only (or Content-Security-Policy
 // when CSP_ENFORCE=true). Report-Only NEVER blocks — it only reports to
 // /api/csp-report. Default is Report-Only; do not flip to enforce here.
