@@ -164,14 +164,6 @@ function formatCourseNameServer(courseCode) {
     return courseNames[courseCode] || courseCode.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 }
 
-// Import routes (conditionally) and database initializer
-let studentRoutes;
-try {
-    studentRoutes = require('./src/server/routes/student');
-} catch (err) {
-    console.warn('Student routes file not found, using inline student endpoints.');
-}
-
 const adminAuthRoutes = require('./src/routes/adminAuth');
 
 console.log('🔵 All imports loaded successfully');
