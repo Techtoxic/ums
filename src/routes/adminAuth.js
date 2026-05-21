@@ -11,7 +11,7 @@ const otpService = require('../services/otpService');
 const { db, schema } = require('../db');
 const EmailService = require('../utils/emailService');
 const config = require('../config/config');
-const { setAuthCookie } = require('../middleware/auth');
+const { setAuthCookie, setCsrfCookie, generateCsrfToken } = require('../middleware/auth');
 
 const emailService = new EmailService();
 const { users } = schema;
@@ -354,6 +354,7 @@ router.post('/verify-otp', async (req, res) => {
         );
 
         setAuthCookie(res, token);
+        setCsrfCookie(res, generateCsrfToken());
         res.json({
             success: true,
             message: 'Login successful',

@@ -2,6 +2,7 @@
 // JWT-based authentication with role-based access control (RBAC)
 
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const config = require('../config/config');
 // V2 Phase 1b: models come from the Drizzle/Postgres facade (src/db/models.js).
 const shim = require('../db/models');
@@ -87,6 +88,76 @@ function clearAuthCookie(res) {
         secure: COOKIE_SECURE,
         path: '/',
     });
+}
+
+/**
+ * Generate a CSRF token: 32 cryptographically random bytes, hex-encoded.
+ * Stored in a cookie (readable by JS) and sent back as a header by the
+ * frontend on every state-changing request. Double-submit pattern.
+ */
+function generateCsrfToken() {
+    return crypto.randomBytes(32).toString('hex');
+}
+
+/**
+ * Set the CSRF token cookie. Intentionally NOT httpOnly because the frontend
+ * JavaScript needs to read it via document.cookie to echo back in the header.
+ * Same Path/SameSite/Secure attributes as the auth cookie so they share
+ * lifecycle and cross-site rules.
+ */
+function setCsrfCookie(res, token) {
+    res.cookie('csrfToken', token, {
+        httpOnly: false,       // JS must read this — that's the whole point
+        sameSite: 'lax',
+        secure: COOKIE_SECURE,
+        maxAge: 2 * 60 * 60 * 1000, // same 2h as authToken
+        path: '/',
+    });
+}
+
+function clearCsrfCookie(res) {
+    res.clearCookie('csrfToken', {
+        httpOnly: false,
+        sameSite: 'lax',
+        secure: COOKIE_SECURE,
+        path: '/',
+    });
+}
+
+/**
+ * Middleware: require a valid CSRF token on state-changing requests.
+ *
+ * Compares X-CSRF-Token header against csrfToken cookie. Both must be present
+ * and equal (constant-time comparison to prevent timing attacks, though for
+ * a 64-char hex string the timing window is negligible — belt and suspenders).
+ *
+ * Returns 403 CSRF_FAILED on mismatch. The frontend treats this like any
+ * other auth failure: it cleans up and redirects to login.
+ */
+function requireCsrfToken(req, res, next) {
+    const headerToken = req.headers['x-csrf-token'];
+    const cookieToken = req.cookies && req.cookies.csrfToken;
+
+    if (!headerToken || !cookieToken) {
+        return res.status(403).json({
+            success: false,
+            message: 'CSRF token missing.',
+            code: 'CSRF_FAILED'
+        });
+    }
+
+    // Constant-time comparison. Buffers must be same length or timingSafeEqual throws.
+    const a = Buffer.from(String(headerToken));
+    const b = Buffer.from(String(cookieToken));
+    if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+        return res.status(403).json({
+            success: false,
+            message: 'CSRF token mismatch.',
+            code: 'CSRF_FAILED'
+        });
+    }
+
+    next();
 }
 
 /**
@@ -346,6 +417,10 @@ module.exports = {
     signToken,
     setAuthCookie,
     clearAuthCookie,
+    generateCsrfToken,
+    setCsrfCookie,
+    clearCsrfCookie,
+    requireCsrfToken,
     // Backward-compatible aliases
     authenticateToken: verifyToken,
     requireAuth: verifyToken

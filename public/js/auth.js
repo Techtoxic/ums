@@ -34,6 +34,16 @@
     }
 
     /**
+     * Read a cookie value by name. Cookies are document-readable so non-httpOnly
+     * cookies like csrfToken can be picked up here. Returns null if absent.
+     */
+    function readCookie(name) {
+        if (typeof document === 'undefined' || !document.cookie) return null;
+        const match = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/[.$?*|{}()\[\]\\\/\+^]/g, '\\$&') + '=([^;]*)'));
+        return match ? decodeURIComponent(match[1]) : null;
+    }
+
+    /**
      * Fade and remove the auth gate overlay. Called only after requireAuth()
      * confirms the user is authenticated. No-op if no gate element exists.
      *
@@ -132,11 +142,23 @@
          * still accepts Bearer as fallback but we no longer send it.
          */
         async fetch(url, options = {}) {
+            const method = (options.method || 'GET').toUpperCase();
+            const isStateChanging = method === 'POST' || method === 'PUT' || method === 'DELETE' || method === 'PATCH';
             const isFormData = (typeof FormData !== 'undefined') && (options.body instanceof FormData);
+
             const headers = {
                 ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
                 ...(options.headers || {})
             };
+
+            // Attach CSRF header on state-changing requests. The cookie is readable
+            // (non-httpOnly) so JS can echo the value back. Server-side middleware
+            // compares header against cookie — must match.
+            if (isStateChanging) {
+                const csrf = readCookie('csrfToken');
+                if (csrf) headers['X-CSRF-Token'] = csrf;
+            }
+
             const response = await fetch(url, {
                 ...options,
                 credentials: 'include',
@@ -157,6 +179,24 @@
                     }
                 } catch (jsonErr) {
                     // Body wasn't JSON or didn't match our codes; fall through.
+                }
+            }
+            // CSRF mismatch — usually means the token has expired or got out of
+            // sync between cookie and header. Force a fresh login to re-issue
+            // the cookie pair.
+            if (response.status === 403) {
+                try {
+                    const data = await response.clone().json();
+                    if (data && data.code === 'CSRF_FAILED') {
+                        cleanupLegacyLocalStorage();
+                        this._user = null;
+                        if (!/\/(admin|trainer|hod|student)\/login/.test(window.location.pathname)) {
+                            window.location.href = '/admin/login';
+                        }
+                        throw new Error('Security token expired. Please login again.');
+                    }
+                } catch (jsonErr) {
+                    // fall through
                 }
             }
             return response;
@@ -194,6 +234,7 @@
     window.AUTH = AUTH_UTILS;
     window.cleanupLegacyLocalStorage = cleanupLegacyLocalStorage;
     window.hideAuthGate = hideAuthGate;
+    window.readCookie = readCookie; // exposed for debugging
 
     // Passively clean up pre-cookie localStorage on every page load.
     cleanupLegacyLocalStorage();

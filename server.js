@@ -73,7 +73,7 @@ const EmailService = require('./src/utils/emailService');
 const { uploadToS3, getPresignedUrl, deleteFromS3, isS3Configured } = require('./src/utils/s3Service');
 
 // Import authentication middleware
-const { verifyToken, authorize, verifyOwnership, optionalAuth, enforceStudentFirstLogin, signToken, setAuthCookie, clearAuthCookie } = require('./src/middleware/auth');
+const { verifyToken, authorize, verifyOwnership, optionalAuth, enforceStudentFirstLogin, signToken, setAuthCookie, clearAuthCookie, generateCsrfToken, setCsrfCookie, clearCsrfCookie, requireCsrfToken } = require('./src/middleware/auth');
 const jwt = require('jsonwebtoken');
 
 // Initialize email service
@@ -414,6 +414,44 @@ app.use(helmet({
 // rely on cookie-parser's signature feature.
 app.use(cookieParser());
 
+// CSRF protection for state-changing requests under /api.
+//
+// We allow-list a small set of endpoints that legitimately don't have a CSRF
+// token yet (login flow — no session) or for which CSRF doesn't apply (logout
+// is idempotent and only clears client state, csp-report is browser-initiated).
+// All other /api POST/PUT/DELETE/PATCH go through the double-submit check.
+//
+// Each entry is "METHOD PATH". Match is on req.method + req.path with no query
+// string. Add to this list with care — every exemption is a CSRF gap.
+const CSRF_EXEMPT_ROUTES = new Set([
+    // Login flow (no session yet to check token against)
+    'POST /api/admin/auth/login',          // admin / registrar / etc. login
+    'POST /api/admin/auth/verify-otp',     // admin OTP step
+    'POST /api/hod/login',
+    'POST /api/trainers/login',
+    'POST /api/students/login',
+    'POST /api/auth/verify-otp',           // standalone OTP endpoint (admin-flow alias)
+    'POST /api/auth/forgot-password',
+    'POST /api/auth/reset-password',
+    // Logout: idempotent, only clears client state. Allowing without CSRF
+    // means a malicious site could log a user out — annoying but not a
+    // security issue.
+    'POST /api/auth/logout',
+    // Browser-initiated, no JS context to read cookie
+    'POST /api/csp-report',
+]);
+
+const STATE_CHANGING_METHODS = new Set(['POST', 'PUT', 'DELETE', 'PATCH']);
+
+app.use((req, res, next) => {
+    // Only check /api routes. HTML pages, static files, etc. are unaffected.
+    if (!req.path.startsWith('/api/')) return next();
+    if (!STATE_CHANGING_METHODS.has(req.method)) return next();
+    const key = `${req.method} ${req.path}`;
+    if (CSRF_EXEMPT_ROUTES.has(key)) return next();
+    return requireCsrfToken(req, res, next);
+});
+
 // Logout endpoint — clears the auth cookie AND revokes all outstanding JWTs
 // for staff users by bumping users.token_version. Students don't have a
 // token_version column yet (separate schema migration), so their JWTs live
@@ -479,6 +517,7 @@ app.post('/api/auth/logout', async (req, res) => {
         console.error('Logout handler unexpected error:', err.message);
     } finally {
         clearAuthCookie(res);
+        clearCsrfCookie(res);
         res.json({ success: true, message: 'Logged out' });
     }
 });
@@ -490,6 +529,12 @@ app.post('/api/auth/logout', async (req, res) => {
 app.get('/api/me', verifyToken, async (req, res) => {
     try {
         const { userId, role } = req.user;
+
+        // Lazy-issue CSRF token if missing (for sessions established before
+        // CSRF rollout — they have a valid authToken but no csrfToken yet).
+        if (!req.cookies || !req.cookies.csrfToken) {
+            setCsrfCookie(res, generateCsrfToken());
+        }
 
         if (role === 'student') {
             const rows = await db
@@ -2886,6 +2931,7 @@ app.post('/api/hod/login', authLimiter, async (req, res) => {
         });
 
         setAuthCookie(res, token);
+        setCsrfCookie(res, generateCsrfToken());
         res.json({
             message: 'Login successful',
             token,
@@ -3154,6 +3200,7 @@ app.post('/api/trainers/login', authLimiter, async (req, res) => {
         });
 
         setAuthCookie(res, token);
+        setCsrfCookie(res, generateCsrfToken());
         res.json({
             message: 'Login successful',
             token,
@@ -3918,6 +3965,7 @@ app.post('/api/students/login', authLimiter, async (req, res) => {
         });
 
         setAuthCookie(res, token);
+        setCsrfCookie(res, generateCsrfToken());
         res.status(200).json({
             message: 'Login successful',
             token,
