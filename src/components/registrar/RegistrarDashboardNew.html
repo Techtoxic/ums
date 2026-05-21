@@ -6,7 +6,8 @@
     <title>Registrar Dashboard - University Management System</title>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    
+    <script src="/public/js/auth.js"></script>
+
     <!-- Frontend Config (Load First!) -->
     <script src="/public/js/config.js"></script>
     
@@ -1644,7 +1645,6 @@
             }
         }
     </script>
-    <script src="/public/js/auth.js"></script>
 </head>
 <body class="bg-slate-50 dark:bg-gray-900 text-slate-800 dark:text-white overflow-x-hidden">
 
@@ -1663,11 +1663,8 @@
             
             <!-- Auth Buttons -->
             <div class="mb-4">
-                <div class="flex gap-2">
-                    <button id="loginBtn" class="flex-1 px-2 py-1 text-xs bg-success text-white rounded hover:bg-green-600 transition-colors">
-                        <i class="ri-login-box-line mr-1"></i>Login
-                    </button>
-                    <button id="logoutBtn" class="flex-1 px-2 py-1 text-xs bg-danger text-white rounded hover:bg-red-600 transition-colors">
+                <div>
+                    <button id="logoutBtn" class="w-full px-3 py-2 text-sm bg-danger text-white rounded-lg hover:bg-red-600 transition-colors">
                         <i class="ri-logout-box-line mr-1"></i>Logout
                     </button>
                 </div>
