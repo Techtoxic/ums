@@ -1070,10 +1070,20 @@ function hideLoading() {
 // Initialize the portal
 async function initializePortal() {
     console.log('Initializing student portal...');
-    console.log('Student data from session:', studentData);
-    
+
+    // Cookie-based auth: confirm the student session is live before doing
+    // anything else. requireAuth bounces to /student/login on no/expired cookie.
+    const me = await window.AUTH.requireAuth('/student/login');
+    if (!me) return;
+    // Merge server identity into the sessionStorage profile cache that other
+    // student modules (uploadSection.js, StudentPortalTailwind.html graduation
+    // flow) read from. Server takes precedence on overlapping fields.
+    studentData = { ...studentData, ...me };
+    try { sessionStorage.setItem('studentData', JSON.stringify(studentData)); } catch (e) { /* private mode */ }
+    console.log('Student data after auth check:', studentData);
+
     showLoading();
-    
+
     try {
     // Always fetch fresh data from API on portal load to ensure we have latest updates
     // This ensures email, admissionType, and other fields are up-to-date

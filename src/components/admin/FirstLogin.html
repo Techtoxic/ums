@@ -9,6 +9,7 @@
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.0.0/fonts/remixicon.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/public/css/auth-styles.css">
+    <script src="/public/js/auth.js"></script>
 </head>
 <body class="auth-page">
     <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-8">
@@ -222,7 +223,6 @@
 
     <script>
         let user = null;
-        let token = null;
 
         // Map an admin-staff role to its own dashboard. Falls back to
         // /admin/dashboard for unknown roles (previous behavior).
@@ -241,39 +241,18 @@
         }
 
         // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             console.log('🔍 First Login page loading...');
-            
-            token = localStorage.getItem('adminToken');
-            const userString = localStorage.getItem('adminUser');
-            
-            console.log('📋 Auth check:', {
-                hasToken: !!token,
-                hasUserString: !!userString,
-                userString: userString ? userString.substring(0, 100) + '...' : null
-            });
-            
-            try {
-                user = JSON.parse(userString || '{}');
-                console.log('✅ User data parsed:', {
-                    email: user.email,
-                    name: user.name,
-                    isFirstLogin: user.isFirstLogin
-                });
-            } catch (error) {
-                console.error('❌ Error parsing user data:', error);
-                localStorage.clear();
+
+            user = await window.AUTH.me();
+            if (!user || !user.email) {
+                console.log('❌ No authenticated session — redirecting to login...');
+                cleanupLegacyLocalStorage();
                 window.location.href = '/admin/login';
                 return;
             }
 
-            if (!token || !user.email) {
-                console.log('❌ No token or email found, redirecting to login...');
-                window.location.href = '/admin/login';
-                return;
-            }
-
-            console.log('✅ First login page initialized successfully');
+            console.log('✅ First login page initialized for', user.email);
             document.getElementById('currentEmail').value = user.email;
         });
 
@@ -385,21 +364,16 @@
             showLoading();
 
             try {
-                const response = await fetch('/api/admin/auth/update-email', {
+                const response = await window.AUTH.fetch('/api/admin/auth/update-email', {
                     method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
                     body: JSON.stringify({ newEmail })
                 });
 
                 const data = await response.json();
 
                 if (data.success) {
-                    // Update stored user data
-                    user.email = data.data.email;
-                    localStorage.setItem('adminUser', JSON.stringify(user));
+                    // Re-fetch identity from server so the in-memory user reflects the new email
+                    user = (await window.AUTH.me({ force: true })) || user;
 
                     // Move to step 2
                     document.getElementById('step1Form').classList.add('hidden');
@@ -454,12 +428,8 @@
             showLoading();
 
             try {
-                const response = await fetch('/api/admin/auth/update-password', {
+                const response = await window.AUTH.fetch('/api/admin/auth/update-password', {
                     method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
                     body: JSON.stringify({ currentPassword, newPassword, confirmPassword })
                 });
 
@@ -481,19 +451,15 @@
 
         async function completeFirstLogin() {
             try {
-                const response = await fetch('/api/admin/auth/complete-first-login', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
+                const response = await window.AUTH.fetch('/api/admin/auth/complete-first-login', {
+                    method: 'POST'
                 });
 
                 const data = await response.json();
 
                 if (data.success) {
-                    // Update user data
-                    user.isFirstLogin = false;
-                    localStorage.setItem('adminUser', JSON.stringify(user));
+                    // Re-fetch identity from server so isFirstLogin reflects the new state
+                    user = (await window.AUTH.me({ force: true })) || user;
 
                     // Show success message and redirect
                     alert('Setup completed successfully! Redirecting to dashboard...');

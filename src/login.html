@@ -140,15 +140,12 @@
                 const data = await response.json();
 
                 if (response.ok && data.token) {
+                    // Login succeeded — the server set the auth cookie via Set-Cookie.
+                    // No localStorage token write; the cookie is the source of truth.
+                    // The student portal modules (uploadSection.js etc.) still rely on a
+                    // sessionStorage profile cache; populate it so the portal renders
+                    // without an extra round trip. AUTH.me() will refresh it server-side.
                     const user = data.user || {};
-                    // Persist JWT for authenticated API calls
-                    sessionStorage.setItem('studentToken', data.token);
-                    localStorage.setItem('studentToken', data.token);
-                    if (window.AUTH && typeof window.AUTH.setAuth === 'function') {
-                        window.AUTH.setAuth(data.token, user, 'student');
-                    }
-
-                    // Store minimal student data in sessionStorage
                     const studentData = {
                         id: user.id,
                         name: user.name,

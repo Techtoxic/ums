@@ -34,14 +34,12 @@ async function initializeDashboard() {
     try {
         console.log('🚀 Initializing beautiful trainer dashboard...');
         
-        // Check if trainer is logged in
-        const trainerData = localStorage.getItem('trainerData');
-        if (!trainerData) {
-            window.location.href = '/trainer/login';
-            return;
-        }
+        // Cookie-based auth: fetch identity from server. requireAuth bounces to
+        // /trainer/login if no valid session.
+        const trainer = await window.AUTH.requireAuth('/trainer/login');
+        if (!trainer) return; // requireAuth already redirected
 
-        currentTrainer = JSON.parse(trainerData);
+        currentTrainer = trainer;
         console.log('👤 Current trainer:', currentTrainer.name);
         
         // Initialize UI components
@@ -709,13 +707,12 @@ async function handlePhoneUpdate(event) {
             throw new Error(data.message || 'Failed to update profile');
         }
         
-        // Update current trainer data
-        currentTrainer = { ...currentTrainer, ...data.trainer };
-        localStorage.setItem('trainerData', JSON.stringify(currentTrainer));
-        
+        // Update current trainer data — re-fetch from server so cookie-backed identity stays authoritative
+        currentTrainer = (await window.AUTH.me({ force: true })) || { ...currentTrainer, ...data.trainer };
+
         // Update UI
         updateTrainerInfo();
-        
+
         closePhoneModal();
         showToast('Contact information updated successfully', 'success');
         
@@ -746,13 +743,12 @@ async function handleProfileUpdate(event) {
             throw new Error(data.message || 'Failed to update profile');
         }
         
-        // Update current trainer data
-        currentTrainer = { ...currentTrainer, ...data.trainer };
-        localStorage.setItem('trainerData', JSON.stringify(currentTrainer));
-        
+        // Update current trainer data — re-fetch from server so cookie-backed identity stays authoritative
+        currentTrainer = (await window.AUTH.me({ force: true })) || { ...currentTrainer, ...data.trainer };
+
         // Update UI
         updateTrainerInfo();
-        
+
         showToast('Profile updated successfully', 'success');
         
     } catch (error) {
@@ -792,10 +788,8 @@ function updateCurrentTime() {
     }
 }
 
-function logout() {
-        localStorage.removeItem('trainerData');
-    localStorage.removeItem('theme');
-        window.location.href = '/trainer/login';
+async function logout() {
+    await window.AUTH.logout({ role: 'trainer' });
 }
 
 // Toast notification system

@@ -12,16 +12,19 @@
     <!-- Frontend Config (Load First!) -->
     <script src="/public/js/config.js"></script>
 
-    <!-- Global fetch interceptor: automatically inject Bearer token for all /api/ calls -->
+    <!-- Global fetch interceptor: ensure the httpOnly auth cookie attaches to
+         every /api/ call. Bearer-token injection remains as a fallback for any
+         legacy sessionStorage token still in the wild — but post-migration this
+         will be a no-op and the cookie carries identity. -->
     <script>
         (function() {
             const _origFetch = window.fetch;
             window.fetch = function(url, options) {
                 options = options || {};
                 if (typeof url === 'string' && url.includes('/api/')) {
+                    options.credentials = options.credentials || 'include';
                     const token = sessionStorage.getItem('studentToken')
-                               || localStorage.getItem('studentToken')
-                               || (window.AUTH && window.AUTH.getToken());
+                               || localStorage.getItem('studentToken');
                     if (token) {
                         options.headers = Object.assign({}, options.headers, {
                             'Authorization': 'Bearer ' + token
@@ -1733,17 +1736,19 @@
                     delete window.confirmLogout;
                 };
                 
-                window.confirmLogout = function() {
+                window.confirmLogout = async function() {
                     document.body.removeChild(modal);
                     delete window.cancelLogout;
                     delete window.confirmLogout;
-                    
-                    // Clear session data
-                    sessionStorage.clear();
-                    localStorage.removeItem('studentData');
-                    
-                    // Redirect to login page
-                    window.location.replace('/student/login');
+
+                    // Wipe the portal's sessionStorage profile cache so a different
+                    // student logging in on the same browser doesn't see stale data.
+                    try { sessionStorage.clear(); } catch (e) { /* private mode */ }
+
+                    // AUTH.logout clears the cookie server-side (no token_version
+                    // bump for students — that column is missing from schema) and
+                    // redirects to /student/login.
+                    await window.AUTH.logout({ role: 'student' });
                 };
             }
 

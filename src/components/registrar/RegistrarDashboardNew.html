@@ -1058,31 +1058,45 @@
         // window.escapeHtml from public/js/auth.js (also escapes " ' /).
 
         // Load students when the page loads
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Cookie-based auth: bounce to login if no valid session.
+            const user = await window.AUTH.requireAuth('/admin/login');
+            if (!user) return;
+
             fetchAndDisplayStudents();
             loadDashboardStats();
-            
+
             // Add event listeners for filters
             const departmentFilter = document.getElementById('departmentFilter');
             const yearFilter = document.getElementById('yearFilter');
-            
+
             if (departmentFilter) {
                 departmentFilter.addEventListener('change', handleDepartmentFilter);
             }
-            
+
             if (yearFilter) {
                 yearFilter.addEventListener('change', handleYearFilter);
             }
-            
+
             // Add event listeners for search and filters
             document.querySelector('input[placeholder="Search students..."]')
                 .addEventListener('input', handleSearch);
-            
+
             document.getElementById('departmentFilter')
                 .addEventListener('change', handleDepartmentFilter);
-            
+
             document.getElementById('yearFilter')
                 .addEventListener('change', handleYearFilter);
+
+            // Logout button — registrar logs back into /admin/login.
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', async () => {
+                    if (confirm('Are you sure you want to logout?')) {
+                        await window.AUTH.logout({ role: 'admin' });
+                    }
+                });
+            }
         });
 
     </script>

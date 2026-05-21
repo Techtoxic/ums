@@ -24,42 +24,16 @@ let viewMode = 'list';
 // INITIALIZATION
 // ========================================
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     console.log('🔍 Dashboard loading - checking authentication...');
-    
-    // Check authentication (NEW SYSTEM)
-    const adminToken = localStorage.getItem('adminToken');
-    const adminUser = localStorage.getItem('adminUser');
-    
-    console.log('📋 Auth check:', {
-        hasToken: !!adminToken,
-        hasUser: !!adminUser,
-        tokenLength: adminToken ? adminToken.length : 0
-    });
-    
-    if (!adminToken || !adminUser) {
-        console.log('❌ No token or user found, redirecting to login...');
-        window.location.href = '/admin/login';
-        return;
-    }
 
-    // Parse user data
-    let admin;
-    try {
-        admin = JSON.parse(adminUser);
-        console.log('✅ User data parsed:', {
-            name: admin.name,
-            email: admin.email,
-            role: admin.role,
-            isFirstLogin: admin.isFirstLogin
-        });
-    } catch (error) {
-        console.error('❌ Error parsing user data:', error);
-        localStorage.clear();
-        window.location.href = '/admin/login';
-        return;
-    }
-    
+    // Cookie-based auth: fetch identity from server. requireAuth bounces to
+    // /admin/login if no valid session.
+    const admin = await window.AUTH.requireAuth('/admin/login');
+    if (!admin) return; // requireAuth already redirected
+
+    console.log('✅ User data loaded:', { name: admin.name, email: admin.email, role: admin.role, isFirstLogin: admin.isFirstLogin });
+
     // Check if first login - redirect to setup if needed
     if (admin.isFirstLogin === true) {
         console.log('⚠️ First login detected, redirecting to setup...');
@@ -667,10 +641,9 @@ document.addEventListener('click', function(e) {
     }
 });
 
-function logout() {
+async function logout() {
     if (confirm('Are you sure you want to logout?')) {
-        sessionStorage.removeItem('adminData');
-        window.location.href = '/admin/login';
+        await window.AUTH.logout({ role: 'admin' });
     }
 }
 

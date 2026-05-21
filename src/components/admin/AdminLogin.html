@@ -348,47 +348,21 @@
                         user: data.data.user
                     });
                     
-                    // Store token and user data
-                    try {
-                        localStorage.setItem('adminToken', data.data.token);
-                        localStorage.setItem('adminUser', JSON.stringify(data.data.user));
-                        
-                        // Verify storage worked
-                        const storedToken = localStorage.getItem('adminToken');
-                        const storedUser = localStorage.getItem('adminUser');
-                        
-                        console.log('💾 Verification check:', {
-                            tokenSaved: storedToken === data.data.token,
-                            userSaved: !!storedUser,
-                            tokenPreview: storedToken ? storedToken.substring(0, 20) + '...' : null
-                        });
-                        
-                        if (!storedToken || !storedUser) {
-                            throw new Error('LocalStorage failed to save data');
-                        }
-                    } catch (storageError) {
-                        console.error('❌ Storage error:', storageError);
-                        showOTPError('Browser storage error. Please enable cookies/localStorage and try again.');
-                        hideLoading();
-                        return;
-                    }
+                    // OTP verified — the server set the auth cookie via Set-Cookie.
+                    // No localStorage writes; dashboards fetch identity via AUTH.me().
 
                     // Clear countdown
                     if (countdownTimer) clearInterval(countdownTimer);
                     if (resendTimer) clearInterval(resendTimer);
 
-                    // Delay redirect slightly to ensure localStorage persists
-                    console.log('⏳ Waiting 100ms before redirect...');
-                    setTimeout(() => {
-                        // Redirect based on first login status
-                        if (data.data.user.isFirstLogin) {
-                            console.log('🔄 Redirecting to first-login setup...');
-                            window.location.href = '/admin/first-login';
-                        } else {
-                            console.log('🔄 Redirecting to dashboard...');
-                            window.location.href = dashboardUrlForRole(data.data.user.role);
-                        }
-                    }, 100);
+                    // Redirect based on first login status
+                    if (data.data.user.isFirstLogin) {
+                        console.log('🔄 Redirecting to first-login setup...');
+                        window.location.href = '/admin/first-login';
+                    } else {
+                        console.log('🔄 Redirecting to dashboard...');
+                        window.location.href = dashboardUrlForRole(data.data.user.role);
+                    }
                 } else {
                     showOTPError(data.message || 'Invalid OTP. Please try again.');
                     // Clear OTP inputs
