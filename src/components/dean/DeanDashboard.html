@@ -6,10 +6,37 @@
     <title>Dean Portal - Student Welfare Management</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/public/css/dashboard-styles.css">
+    <script src="/public/js/dashboard-theme.js"></script>
+    <script>
+        // Tailwind alias palette realigned to the EDTTI design system so any
+        // remaining utility usage (bg-primary, text-primary, focus:ring-purple-*)
+        // can be swapped on a per-need basis without re-rendering surprise
+        // colors. focus ring purple stays — that's a focus-state-only tint.
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#7A0C0C',     // maroon
+                        secondary: '#5C0808',   // maroon-dark
+                        accent: '#D4A017',      // gold
+                        success: '#10B981',
+                        warning: '#F59E0B',
+                        danger: '#EF4444',
+                    }
+                }
+            }
+        }
+    </script>
     <style>
         .content-section { display: none; }
         .content-section.active { display: block; }
-        .nav-link.active { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        /* Purple-gradient .nav-link.active removed — the design-system rule
+           in /public/css/dashboard-styles.css gives the active link a maroon
+           background and white text, matching the rest of the new chrome. */
     </style>
     <script src="/public/js/auth.js"></script>
 </head>
@@ -19,13 +46,17 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex items-center">
-                    <i class="ri-graduation-cap-line text-3xl text-purple-600 mr-3"></i>
+                    <i class="ri-graduation-cap-line text-3xl text-primary mr-3"></i>
                     <h1 class="text-2xl font-bold text-gray-800">Dean Portal</h1>
                 </div>
                 <div class="flex items-center space-x-4">
                     <span class="text-gray-700" id="dean-name">Loading...</span>
-                    <button onclick="logout()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
-                        <i class="ri-logout-box-line mr-2"></i>Logout
+                    <button data-theme-toggle class="theme-toggle" aria-label="Toggle dark mode">
+                        <i class="ri-sun-line theme-icon-light"></i>
+                        <i class="ri-moon-line theme-icon-dark"></i>
+                    </button>
+                    <button id="logoutBtn" class="btn btn--danger btn--icon" aria-label="Logout">
+                        <i class="ri-logout-box-line"></i>
                     </button>
                 </div>
             </div>
@@ -242,6 +273,25 @@
     </div>
 
     <script src="deanDashboard.js"></script>
+    <script>
+        // Cookie-based auth init + topbar logout wiring. The shared
+        // /public/js/auth.js exposes window.AUTH; requireAuth() bounces to
+        // /admin/login on no/expired session and populates #dean-name from
+        // the /api/me user object so the header shows the real name.
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (window.AUTH && typeof window.AUTH.requireAuth === 'function') {
+                const user = await window.AUTH.requireAuth('/admin/login');
+                if (user && user.name) {
+                    const nameEl = document.getElementById('dean-name');
+                    if (nameEl) nameEl.textContent = user.name;
+                }
+            }
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn && window.AUTH && typeof window.AUTH.logout === 'function') {
+                logoutBtn.addEventListener('click', () => window.AUTH.logout({ role: 'admin' }));
+            }
+        });
+    </script>
 </body>
 </html>
 

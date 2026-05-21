@@ -6,6 +6,28 @@
     <title>ILO Dashboard - University Management System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/public/css/dashboard-styles.css">
+    <script src="/public/js/dashboard-theme.js"></script>
+    <script>
+        // Tailwind alias palette realigned to the EDTTI design system.
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#7A0C0C',     // maroon
+                        secondary: '#5C0808',   // maroon-dark
+                        accent: '#D4A017',      // gold
+                        success: '#10B981',
+                        warning: '#F59E0B',
+                        danger: '#EF4444',
+                    }
+                }
+            }
+        }
+    </script>
     <script src="/public/js/auth.js"></script>
 </head>
 <body class="bg-gray-50">
@@ -18,9 +40,12 @@
                 </div>
                 <div class="flex items-center space-x-4">
                     <span class="text-sm text-gray-500" id="current-time"></span>
-                    <button onclick="logout()" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700">
-                        <i class="ri-logout-circle-line mr-2"></i>
-                        Logout
+                    <button data-theme-toggle class="theme-toggle" aria-label="Toggle dark mode">
+                        <i class="ri-sun-line theme-icon-light"></i>
+                        <i class="ri-moon-line theme-icon-dark"></i>
+                    </button>
+                    <button id="logoutBtn" class="btn btn--danger btn--icon" aria-label="Logout">
+                        <i class="ri-logout-circle-line"></i>
                     </button>
                 </div>
             </div>
@@ -33,13 +58,13 @@
         <div class="mb-6">
             <div class="border-b border-gray-200">
                 <nav class="-mb-px flex space-x-8">
-                    <button onclick="showTab('graduation-applications')" 
-                            class="tab-button py-2 px-1 border-b-2 font-medium text-sm bg-blue-600 text-white border-blue-600">
+                    <button onclick="showTab('graduation-applications')"
+                            class="tab-button btn btn--primary">
                         <i class="ri-graduation-cap-line mr-2"></i>
                         Graduation Applications
                     </button>
-                    <button onclick="showTab('attachment-applications')" 
-                            class="tab-button py-2 px-1 border-b-2 font-medium text-sm bg-gray-200 text-gray-700 border-transparent hover:text-gray-800 hover:border-gray-300">
+                    <button onclick="showTab('attachment-applications')"
+                            class="tab-button btn btn--ghost">
                         <i class="ri-briefcase-line mr-2"></i>
                         Attachment Applications
                     </button>
@@ -213,6 +238,26 @@
 
     <!-- External JavaScript -->
     <script src="iloDashboard.js"></script>
+    <script>
+        // Cookie-based auth init + header logout wiring (parallel to dean/cibec).
+        // iloDashboard.js's existing showTab(name) drives the .tab-content
+        // show/hide; it likely re-applies the bg-blue-* utility classes to the
+        // active tab — those classes still resolve via Tailwind, but the
+        // realigned 'primary' alias means any bg-primary picks up maroon.
+        // The active-tab visual is now driven by btn--primary, so showTab()
+        // should be updated to toggle btn--primary/btn--ghost classes instead
+        // of bg-blue-600/bg-gray-200. iloDashboard.js is out of scope per the
+        // prompt, so flag if the active state visually breaks on tab switch.
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (window.AUTH && typeof window.AUTH.requireAuth === 'function') {
+                await window.AUTH.requireAuth('/admin/login');
+            }
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn && window.AUTH && typeof window.AUTH.logout === 'function') {
+                logoutBtn.addEventListener('click', () => window.AUTH.logout({ role: 'admin' }));
+            }
+        });
+    </script>
 </body>
 </html>
 

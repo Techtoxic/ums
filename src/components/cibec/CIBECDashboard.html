@@ -6,19 +6,39 @@
     <title>CIBEC Portal - Student Uploads</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/public/css/dashboard-styles.css">
+    <script src="/public/js/dashboard-theme.js"></script>
+    <script>
+        // Tailwind alias palette realigned to the EDTTI design system.
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#7A0C0C',     // maroon
+                        secondary: '#5C0808',   // maroon-dark
+                        accent: '#D4A017',      // gold
+                        success: '#10B981',
+                        warning: '#F59E0B',
+                        danger: '#EF4444',
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        .stat-card {
-            transition: all 0.3s ease;
-        }
-        .stat-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
-        }
+        /* .stat-card removed — name collides with the design-system primitive
+           in /public/css/dashboard-styles.css. The CIBEC stat tiles below use
+           inline gradient classes (bg-gradient-to-br ...) so they don't need
+           the legacy hover styling. Keep .upload-card and .filter-chip — those
+           are unique to this dashboard. */
         .upload-card {
             transition: all 0.2s ease;
         }
         .upload-card:hover {
-            background-color: rgba(59, 130, 246, 0.05);
+            background-color: rgba(122, 12, 12, 0.05);
         }
         .filter-chip {
             transition: all 0.2s ease;
@@ -35,7 +55,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center space-x-3">
-                    <i class="ri-folder-user-line text-3xl text-blue-600"></i>
+                    <i class="ri-folder-user-line text-3xl text-primary"></i>
                     <div>
                         <h1 class="text-xl font-bold text-gray-900">CIBEC Portal</h1>
                         <p class="text-xs text-gray-500">Student Uploads Management</p>
@@ -51,8 +71,15 @@
                     </button>
                     <div class="flex items-center space-x-2">
                         <i class="ri-user-line text-gray-600"></i>
-                        <span class="text-sm font-medium text-gray-700">CIBEC Admin</span>
+                        <span class="text-sm font-medium text-gray-700" id="userName">CIBEC Admin</span>
                     </div>
+                    <button data-theme-toggle class="theme-toggle" aria-label="Toggle dark mode">
+                        <i class="ri-sun-line theme-icon-light"></i>
+                        <i class="ri-moon-line theme-icon-dark"></i>
+                    </button>
+                    <button id="logoutBtn" class="btn btn--danger btn--icon" aria-label="Logout">
+                        <i class="ri-logout-box-line"></i>
+                    </button>
                 </div>
             </div>
         </div>
@@ -288,6 +315,24 @@
     </div>
 
     <script src="./cibecDashboard.js"></script>
+    <script>
+        // Cookie-based auth init + new topbar logout. CIBEC had no logout
+        // button at all before this pass; the static "CIBEC Admin" text is
+        // now replaced by an #userName slot that AUTH.me populates.
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (window.AUTH && typeof window.AUTH.requireAuth === 'function') {
+                const user = await window.AUTH.requireAuth('/admin/login');
+                if (user && user.name) {
+                    const nameEl = document.getElementById('userName');
+                    if (nameEl) nameEl.textContent = user.name;
+                }
+            }
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn && window.AUTH && typeof window.AUTH.logout === 'function') {
+                logoutBtn.addEventListener('click', () => window.AUTH.logout({ role: 'admin' }));
+            }
+        });
+    </script>
 </body>
 </html>
 
