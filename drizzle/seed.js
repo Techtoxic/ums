@@ -171,6 +171,8 @@ async function seedUsers() {
         { email: 'whitenat16@gmail.com',            role: 'trainer',   staff_id: null,           name: 'Madam Nelly Chepkwony', department: 'applied_science', password: trainerPw },
         { email: 'nashonbett18@gmail.com',          role: 'admin',     staff_id: 'ADMIN002',     name: 'Demo Presenter (Admin)',    department: 'Administration', password: demoPw },
         { email: 'nashonbett18+registrar@gmail.com', role: 'registrar', staff_id: 'REGISTRAR002', name: 'Demo Presenter (Registrar)', department: 'Registry',       password: demoPw },
+        { email: 'maxxciey7@gmail.com',             role: 'admin',     staff_id: 'ADMIN003',     name: 'Maxxy', department: 'Administration', password: adminPw },
+        { email: 'maxxymaxxy04@gmail.com',          role: 'registrar', staff_id: 'REGISTRAR003', name: 'Maxxy', department: 'Registry',       password: adminPw },
         // Additional trainers across departments
         { email: 'james.kiprop@edtti.ac.ke',  role: 'trainer', name: 'James Kiprop',  department: 'electromechanical', password: trainerPw },
         { email: 'mary.atieno@edtti.ac.ke',   role: 'trainer', name: 'Mary Atieno',   department: 'business_liberal',  password: trainerPw },
