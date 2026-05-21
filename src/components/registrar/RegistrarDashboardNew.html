@@ -1748,154 +1748,6 @@
                         <span>New Admission</span>
                     </button>
 
-                    <!-- Student Admission Modal -->
-                    <div id="admissionModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-[9999]">
-                        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg w-full max-w-lg mx-4">
-                            <div class="p-6">
-                                <div class="flex justify-between items-center mb-6">
-                                    <h3 class="text-xl font-bold text-gray-800 dark:text-white">New Student Admission</h3>
-                                    <button onclick="closeAdmissionModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-                                        <i class="ri-close-line text-2xl"></i>
-                                    </button>
-                                </div>
-                                <form id="admissionForm" onsubmit="handleAdmission(event)" class="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name</label>
-                                        <input type="text" name="name" required class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ID/Birth Certificate Number</label>
-                                        <input type="text" name="idNumber" required class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">KCSE Grade</label>
-                                        <select name="kcseGrade" required class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
-                                            <option value="">Select Grade</option>
-                                            <option value="A">A</option>
-                                            <option value="A-">A-</option>
-                                            <option value="B+">B+</option>
-                                            <option value="B">B</option>
-                                            <option value="B-">B-</option>
-                                            <option value="C+">C+</option>
-                                            <option value="C">C</option>
-                                            <option value="C-">C-</option>
-                                            <option value="D+">D+</option>
-                                            <option value="D">D</option>
-                                            <option value="D-">D-</option>
-                                            <option value="E">E</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone Number</label>
-                        <input type="tel" name="phonenumber" required pattern="[0-9]{10}" placeholder="Enter 10-digit phone number" class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Admission Type</label>
-                        <select name="admissionType" required class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
-                            <option value="">Select Admission Type</option>
-                            <option value="walk-in">Walk-in</option>
-                            <option value="KUCCPS">KUCCPS</option>
-                        </select>
-                    </div>
-                                                        <div>
-                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Year of Study</label>
-                                        <select name="year" class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white" required>
-                                            <option value="1" selected>Year 1</option>
-                                            <option value="2">Year 2</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Intake</label>
-                                        <select name="intake" id="intake-select" class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white" required onchange="updateIntakeYear(); regenerateAdmissionOnIntakeChange()">
-                                            <option value="">Select Intake</option>
-                                            <option value="january">January</option>
-                                            <option value="september">September</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Intake Year</label>
-                                        <input type="number" name="intakeYear" id="intake-year" class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white" readonly required>
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Department</label>
-                                        <select name="department" id="department" required class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white" disabled>
-                                            <option value="">Department will be auto-selected</option>
-                                            <option value="applied_science">Applied Science Department</option>
-                                            <option value="agriculture">Agriculture Department</option>
-                                            <option value="building_civil">Building and Civil Department</option>
-                                            <option value="electromechanical">Electromechanical Department</option>
-                                            <option value="hospitality">Hospitality Department</option>
-                                            <option value="business_liberal">Business and Liberal Studies</option>
-                                            <option value="computing_informatics">Computing and Informatics</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Course</label>
-                                        <select name="course" id="course" required onchange="handleCourseSelection()" class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
-                                            <option value="">Select Course</option>
-                                            <optgroup label="Applied Science Department">
-                                                <option value="applied_biology_6">Applied Biology Level 6 (AP6)</option>
-                                                <option value="analytical_chemistry_6">Analytical Chemistry Level 6 (AC6)</option>
-                                                <option value="science_laboratory_technology_5">Science Lab Technology Level 5 (SLT5)</option>
-                                            </optgroup>
-                                            <optgroup label="Agriculture Department">
-                                                <option value="general_agriculture_4">General Agriculture Level 4 (GA4)</option>
-                                                <option value="sustainable_agriculture_5">Sustainable Agriculture Level 5 (SA5)</option>
-                                                <option value="agricultural_extension_6">Agricultural Extension Level 6 (AE6)</option>
-                                            </optgroup>
-                                            <optgroup label="Building and Civil Department">
-                                                <option value="building_technician_4">Building Technician Level 4 (BT4)</option>
-                                                <option value="building_technician_6">Building Technician Level 6 (BT6)</option>
-                                                <option value="civil_engineering_6">Civil Engineering Level 6 (CE6)</option>
-                                                <option value="plumbing_4">Plumbing Level 4 (PL4)</option>
-                                                <option value="plumbing_5">Plumbing Level 5 (PL5)</option>
-                                            </optgroup>
-                                            <optgroup label="Electromechanical Department">
-                                                <option value="electrical_engineering_4">Electrical Engineering Level 4 (EE4)</option>
-                                                <option value="electrical_engineering_5">Electrical Engineering Level 5 (EE5)</option>
-                                                <option value="electrical_engineering_6">Electrical Engineering Level 6 (EE6)</option>
-                                                <option value="automotive_engineering_5">Automotive Engineering Level 5 (AM5)</option>
-                                                <option value="automotive_engineering_6">Automotive Engineering Level 6 (AM6)</option>
-                                            </optgroup>
-                                            <optgroup label="Hospitality Department">
-                                                <option value="food_and_beverage_4">Food and Beverage Level 4 (FB4)</option>
-                                                <option value="food_and_beverage_5">Food & Beverage Level 5 (FB5)</option>
-                                                <option value="food_and_beverage_6">Food & Beverage Level 6 (FB6)</option>
-                                                <option value="fashion_and_design_4">Fashion & Design Level 4 (FD4)</option>
-                                                <option value="fashion_and_design_5">Fashion and Design Level 5 (FD5)</option>
-                                                <option value="fashion_and_design_6">Fashion and Design Level 6 (FD6)</option>
-                                                <option value="hairdressing_4">Hairdressing Level 4 (HD4)</option>
-                                                <option value="hairdressing_5">Hairdressing Level 5 (HD5)</option>
-                                                <option value="hairdressing_6">Hairdressing Level 6 (HD6)</option>
-                                                <option value="tourism_management_5">Tourism Management Level 5 (TM5)</option>
-                                                <option value="tourism_management_6">Tourism Management Level 6 (TM6)</option>
-                                            </optgroup>
-                                            <optgroup label="Business and Liberal Studies">
-                                                <option value="social_work_5">Social Work Level 5 (SW5)</option>
-                                                <option value="social_work_6">Social Work Level 6 (SW6)</option>
-                                                <option value="office_administration_5">Office Administration Level 5 (OA5)</option>
-                                                <option value="office_administration_6">Office Administration Level 6 (OA6)</option>
-                                            </optgroup>
-                                            <optgroup label="Computing and Informatics">
-                                                <option value="ict_5">ICT Level 5 (ICT5)</option>
-                                                <option value="ict_6">ICT Level 6 (ICT6)</option>
-                                                <option value="information_science_5">Information Science Level 5 (IS5)</option>
-                                                <option value="information_science_6">Information Science Level 6 (IS6)</option>
-                                            </optgroup>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Admission Number</label>
-                                        <input type="text" id="admissionNumber" readonly class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary dark:text-white" placeholder="Select a course first">
-                                    </div>
-                                    <div class="flex justify-end gap-4 mt-6">
-                                        <button type="button" onclick="closeAdmissionModal()" class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">Cancel</button>
-                                        <button type="submit" class="px-4 py-2 bg-primary hover:bg-secondary text-white rounded-lg transition-colors">Register Student</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
                     <button onclick="showPromotionModal()" class="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors">
                         <i class="ri-arrow-up-line"></i>
                         <span>Promote Students</span>
@@ -2054,105 +1906,6 @@
                 </div>
             </div>
 
-            <!-- Student Promotion Modal -->
-            <div id="promotionModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-[9999] p-4">
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-6xl max-h-[90vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
-                    <div class="p-6">
-                        <div class="flex justify-between items-center mb-6">
-                            <h3 class="text-xl font-bold text-gray-800 dark:text-white flex items-center">
-                                <i class="ri-arrow-up-line text-green-600 mr-2"></i>
-                                Student Promotion
-                            </h3>
-                            <button onclick="closePromotionModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
-                                <i class="ri-close-line text-2xl"></i>
-                            </button>
-                        </div>
-                        
-                        <!-- Promotion Controls -->
-                        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6">
-                            <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
-                                <div class="flex flex-col md:flex-row gap-4">
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Filter by Level</label>
-                                        <select id="modalLevelFilter" class="px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-600 dark:text-white">
-                                            <option value="all">All Levels</option>
-                                            <option value="5">Level 5</option>
-                                            <option value="6">Level 6</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Filter by Department</label>
-                                        <select id="modalDeptFilter" class="px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-600 dark:text-white">
-                                            <option value="all">All Departments</option>
-                                            <option value="applied_science">Applied Science</option>
-                                            <option value="agriculture">Agriculture</option>
-                                            <option value="building_civil">Building & Civil</option>
-                                            <option value="electromechanical">Electromechanical</option>
-                                            <option value="hospitality">Hospitality</option>
-                                            <option value="business_liberal">Business & Liberal</option>
-                                            <option value="computing_informatics">Computing & Informatics</option>
-                                        </select>
-                                    </div>
-                                    <div class="flex items-end">
-                                        <button onclick="loadModalPromotionStudents()" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors">
-                                            <i class="ri-refresh-line mr-2"></i>Load Students
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="flex gap-2">
-                                    <button onclick="promoteAllModalStudents()" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
-                                        <i class="ri-arrow-up-line mr-2"></i>Promote All
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Promotion Rules -->
-                        <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 mb-6">
-                            <h4 class="font-semibold text-blue-800 dark:text-blue-300 mb-2">Promotion Rules</h4>
-                            <ul class="text-sm text-blue-700 dark:text-blue-300 space-y-1">
-                                <li>• Level 5 students can be promoted up to Year 2 (2 years total)</li>
-                                <li>• Level 6 students can be promoted up to Year 3 (3 years total)</li>
-                                <li>• Students who have reached maximum years cannot be promoted further</li>
-                            </ul>
-                        </div>
-
-                        <!-- Students Table -->
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                                <thead class="bg-gray-50 dark:bg-gray-700">
-                                    <tr>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                            <input type="checkbox" id="selectAllStudents" class="rounded border-gray-300">
-                                        </th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Student</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Course</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Current Year</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Level</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Max Year</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="modalPromotionTableBody" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                    <tr>
-                                        <td colspan="7" class="px-6 py-4 text-center text-gray-500">
-                                            Click "Load Students" to view eligible students for promotion
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <!-- Promotion Progress -->
-                        <div id="modalPromotionProgress" class="hidden mt-6">
-                            <div class="bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                                <div id="modalProgressBar" class="bg-green-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
-                            </div>
-                            <p id="modalProgressText" class="text-sm text-gray-600 dark:text-gray-400 mt-2">Preparing promotion...</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
             </div>
 
@@ -2625,5 +2378,255 @@
         window.downloadPDF = downloadPDF;
         window.switchTab = switchTab; // Make switchTab available globally
     </script>
+    <!-- Modals — direct children of body so they're not hidden by content-section parents -->
+    <!-- Student Admission Modal -->
+    <div id="admissionModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-[9999]">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg w-full max-w-lg mx-4">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-800 dark:text-white">New Student Admission</h3>
+                    <button onclick="closeAdmissionModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                        <i class="ri-close-line text-2xl"></i>
+                    </button>
+                </div>
+                <form id="admissionForm" onsubmit="handleAdmission(event)" class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name</label>
+                        <input type="text" name="name" required class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ID/Birth Certificate Number</label>
+                        <input type="text" name="idNumber" required class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">KCSE Grade</label>
+                        <select name="kcseGrade" required class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                            <option value="">Select Grade</option>
+                            <option value="A">A</option>
+                            <option value="A-">A-</option>
+                            <option value="B+">B+</option>
+                            <option value="B">B</option>
+                            <option value="B-">B-</option>
+                            <option value="C+">C+</option>
+                            <option value="C">C</option>
+                            <option value="C-">C-</option>
+                            <option value="D+">D+</option>
+                            <option value="D">D</option>
+                            <option value="D-">D-</option>
+                            <option value="E">E</option>
+                        </select>
+                    </div>
+                    <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone Number</label>
+        <input type="tel" name="phonenumber" required pattern="[0-9]{10}" placeholder="Enter 10-digit phone number" class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+    </div>
+    <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Admission Type</label>
+        <select name="admissionType" required class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+            <option value="">Select Admission Type</option>
+            <option value="walk-in">Walk-in</option>
+            <option value="KUCCPS">KUCCPS</option>
+        </select>
+    </div>
+                                        <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Year of Study</label>
+                        <select name="year" class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white" required>
+                            <option value="1" selected>Year 1</option>
+                            <option value="2">Year 2</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Intake</label>
+                        <select name="intake" id="intake-select" class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white" required onchange="updateIntakeYear(); regenerateAdmissionOnIntakeChange()">
+                            <option value="">Select Intake</option>
+                            <option value="january">January</option>
+                            <option value="september">September</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Intake Year</label>
+                        <input type="number" name="intakeYear" id="intake-year" class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white" readonly required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Department</label>
+                        <select name="department" id="department" required class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white" disabled>
+                            <option value="">Department will be auto-selected</option>
+                            <option value="applied_science">Applied Science Department</option>
+                            <option value="agriculture">Agriculture Department</option>
+                            <option value="building_civil">Building and Civil Department</option>
+                            <option value="electromechanical">Electromechanical Department</option>
+                            <option value="hospitality">Hospitality Department</option>
+                            <option value="business_liberal">Business and Liberal Studies</option>
+                            <option value="computing_informatics">Computing and Informatics</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Course</label>
+                        <select name="course" id="course" required onchange="handleCourseSelection()" class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                            <option value="">Select Course</option>
+                            <optgroup label="Applied Science Department">
+                                <option value="applied_biology_6">Applied Biology Level 6 (AP6)</option>
+                                <option value="analytical_chemistry_6">Analytical Chemistry Level 6 (AC6)</option>
+                                <option value="science_laboratory_technology_5">Science Lab Technology Level 5 (SLT5)</option>
+                            </optgroup>
+                            <optgroup label="Agriculture Department">
+                                <option value="general_agriculture_4">General Agriculture Level 4 (GA4)</option>
+                                <option value="sustainable_agriculture_5">Sustainable Agriculture Level 5 (SA5)</option>
+                                <option value="agricultural_extension_6">Agricultural Extension Level 6 (AE6)</option>
+                            </optgroup>
+                            <optgroup label="Building and Civil Department">
+                                <option value="building_technician_4">Building Technician Level 4 (BT4)</option>
+                                <option value="building_technician_6">Building Technician Level 6 (BT6)</option>
+                                <option value="civil_engineering_6">Civil Engineering Level 6 (CE6)</option>
+                                <option value="plumbing_4">Plumbing Level 4 (PL4)</option>
+                                <option value="plumbing_5">Plumbing Level 5 (PL5)</option>
+                            </optgroup>
+                            <optgroup label="Electromechanical Department">
+                                <option value="electrical_engineering_4">Electrical Engineering Level 4 (EE4)</option>
+                                <option value="electrical_engineering_5">Electrical Engineering Level 5 (EE5)</option>
+                                <option value="electrical_engineering_6">Electrical Engineering Level 6 (EE6)</option>
+                                <option value="automotive_engineering_5">Automotive Engineering Level 5 (AM5)</option>
+                                <option value="automotive_engineering_6">Automotive Engineering Level 6 (AM6)</option>
+                            </optgroup>
+                            <optgroup label="Hospitality Department">
+                                <option value="food_and_beverage_4">Food and Beverage Level 4 (FB4)</option>
+                                <option value="food_and_beverage_5">Food & Beverage Level 5 (FB5)</option>
+                                <option value="food_and_beverage_6">Food & Beverage Level 6 (FB6)</option>
+                                <option value="fashion_and_design_4">Fashion & Design Level 4 (FD4)</option>
+                                <option value="fashion_and_design_5">Fashion and Design Level 5 (FD5)</option>
+                                <option value="fashion_and_design_6">Fashion and Design Level 6 (FD6)</option>
+                                <option value="hairdressing_4">Hairdressing Level 4 (HD4)</option>
+                                <option value="hairdressing_5">Hairdressing Level 5 (HD5)</option>
+                                <option value="hairdressing_6">Hairdressing Level 6 (HD6)</option>
+                                <option value="tourism_management_5">Tourism Management Level 5 (TM5)</option>
+                                <option value="tourism_management_6">Tourism Management Level 6 (TM6)</option>
+                            </optgroup>
+                            <optgroup label="Business and Liberal Studies">
+                                <option value="social_work_5">Social Work Level 5 (SW5)</option>
+                                <option value="social_work_6">Social Work Level 6 (SW6)</option>
+                                <option value="office_administration_5">Office Administration Level 5 (OA5)</option>
+                                <option value="office_administration_6">Office Administration Level 6 (OA6)</option>
+                            </optgroup>
+                            <optgroup label="Computing and Informatics">
+                                <option value="ict_5">ICT Level 5 (ICT5)</option>
+                                <option value="ict_6">ICT Level 6 (ICT6)</option>
+                                <option value="information_science_5">Information Science Level 5 (IS5)</option>
+                                <option value="information_science_6">Information Science Level 6 (IS6)</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Admission Number</label>
+                        <input type="text" id="admissionNumber" readonly class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary dark:text-white" placeholder="Select a course first">
+                    </div>
+                    <div class="flex justify-end gap-4 mt-6">
+                        <button type="button" onclick="closeAdmissionModal()" class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">Cancel</button>
+                        <button type="submit" class="px-4 py-2 bg-primary hover:bg-secondary text-white rounded-lg transition-colors">Register Student</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Student Promotion Modal -->
+    <div id="promotionModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-[9999] p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-6xl max-h-[90vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-800 dark:text-white flex items-center">
+                        <i class="ri-arrow-up-line text-green-600 mr-2"></i>
+                        Student Promotion
+                    </h3>
+                    <button onclick="closePromotionModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+                        <i class="ri-close-line text-2xl"></i>
+                    </button>
+                </div>
+                
+                <!-- Promotion Controls -->
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6">
+                    <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
+                        <div class="flex flex-col md:flex-row gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Filter by Level</label>
+                                <select id="modalLevelFilter" class="px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-600 dark:text-white">
+                                    <option value="all">All Levels</option>
+                                    <option value="5">Level 5</option>
+                                    <option value="6">Level 6</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Filter by Department</label>
+                                <select id="modalDeptFilter" class="px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-600 dark:text-white">
+                                    <option value="all">All Departments</option>
+                                    <option value="applied_science">Applied Science</option>
+                                    <option value="agriculture">Agriculture</option>
+                                    <option value="building_civil">Building & Civil</option>
+                                    <option value="electromechanical">Electromechanical</option>
+                                    <option value="hospitality">Hospitality</option>
+                                    <option value="business_liberal">Business & Liberal</option>
+                                    <option value="computing_informatics">Computing & Informatics</option>
+                                </select>
+                            </div>
+                            <div class="flex items-end">
+                                <button onclick="loadModalPromotionStudents()" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors">
+                                    <i class="ri-refresh-line mr-2"></i>Load Students
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="promoteAllModalStudents()" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
+                                <i class="ri-arrow-up-line mr-2"></i>Promote All
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Promotion Rules -->
+                <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 mb-6">
+                    <h4 class="font-semibold text-blue-800 dark:text-blue-300 mb-2">Promotion Rules</h4>
+                    <ul class="text-sm text-blue-700 dark:text-blue-300 space-y-1">
+                        <li>• Level 5 students can be promoted up to Year 2 (2 years total)</li>
+                        <li>• Level 6 students can be promoted up to Year 3 (3 years total)</li>
+                        <li>• Students who have reached maximum years cannot be promoted further</li>
+                    </ul>
+                </div>
+
+                <!-- Students Table -->
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead class="bg-gray-50 dark:bg-gray-700">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    <input type="checkbox" id="selectAllStudents" class="rounded border-gray-300">
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Student</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Course</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Current Year</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Level</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Max Year</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modalPromotionTableBody" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                            <tr>
+                                <td colspan="7" class="px-6 py-4 text-center text-gray-500">
+                                    Click "Load Students" to view eligible students for promotion
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Promotion Progress -->
+                <div id="modalPromotionProgress" class="hidden mt-6">
+                    <div class="bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                        <div id="modalProgressBar" class="bg-green-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                    <p id="modalProgressText" class="text-sm text-gray-600 dark:text-gray-400 mt-2">Preparing promotion...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>
