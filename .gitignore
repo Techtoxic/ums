@@ -28,6 +28,10 @@ Thumbs.db
 *.swo
 *~
 
+# AI coding assistants (per-developer local config; do not commit)
+.claude/
+.cursor/
+
 # Build outputs
 dist/
 build/
