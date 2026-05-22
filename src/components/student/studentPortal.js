@@ -132,22 +132,12 @@ async function fetchProgramCost(courseKey) {
             console.warn('Course key is missing, cannot fetch program cost');
             return null;
         }
-        
-        // Convert course key to program name
-        const programName = courseToProgram[courseKey];
-        if (!programName) {
-            console.warn(`No program mapping found for course: ${courseKey}`);
-            return null;
-        }
-        
-        console.log(`Fetching cost for program: ${programName} (from course: ${courseKey})`);
-        
-        // Fetch programs data from the API
+
+        console.log(`Fetching program cost for course code: ${courseKey}`);
+
         const response = await authFetch(`${API_BASE_URL}/programs`, {
             method: 'GET',
-            headers: {
-                'Content-Type': 'application/json'
-            }
+            headers: { 'Content-Type': 'application/json' }
         });
 
         if (!response.ok) {
@@ -158,20 +148,21 @@ async function fetchProgramCost(courseKey) {
         if (!Array.isArray(programs)) {
             throw new Error('Invalid programs data format received');
         }
-        
-        console.log('Available programs:', programs.map(p => p.name));
 
-        // Find the program with matching name
+        console.log('Available program codes:', programs.map(p => p.code));
+
+        // Student's `course` field is the program CODE (e.g. "AC6").
+        // Match directly against the API's `code` field — case-insensitive for safety.
         const foundProgram = programs.find(program =>
-            program.name && program.name.toLowerCase() === programName.toLowerCase()
+            program.code && program.code.toLowerCase() === courseKey.toLowerCase()
         );
-        
+
         if (!foundProgram) {
-            console.warn(`Program '${programName}' not found in database`);
+            console.warn(`Program with code '${courseKey}' not found in database`);
             return null;
         }
-        
-        console.log(`Found program cost: ${foundProgram.programCost}`);
+
+        console.log(`Found program: ${foundProgram.name} — cost: ${foundProgram.programCost}`);
         return foundProgram.programCost || null;
     } catch (error) {
         console.error('Error fetching program cost:', error.message);
