@@ -71,8 +71,8 @@ function showTab(tabName) {
     // Remove active class from all tab buttons
     const buttons = document.querySelectorAll('.tab-button');
     buttons.forEach(button => {
-        button.classList.remove('bg-blue-600', 'text-white');
-        button.classList.add('bg-gray-200', 'text-gray-700');
+        button.classList.remove('btn--primary');
+        button.classList.add('btn--ghost');
     });
     
     // Show selected tab
@@ -85,8 +85,8 @@ function showTab(tabName) {
     // Add active class to selected button
     const activeButton = document.querySelector('[onclick*="' + tabName + '"]');
     if (activeButton) {
-        activeButton.classList.remove('bg-gray-200', 'text-gray-700');
-        activeButton.classList.add('bg-blue-600', 'text-white');
+        activeButton.classList.remove('btn--ghost');
+        activeButton.classList.add('btn--primary');
         console.log('🔧 Activated button for:', tabName);
     }
 }
