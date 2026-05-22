@@ -84,6 +84,24 @@
         .dark .bg-primary:hover {
             background: linear-gradient(135deg, #E63946 0%, #FF5A6A 100%) !important;
         }
+
+        /* Native <select> option list readability — options are JS-injected so
+           must be styled by element selector, not per-element class. Chrome renders
+           the option popup semi-natively; explicit bg+color on option is required. */
+        select option {
+            background-color: #ffffff;
+            color: #0f172a;
+        }
+        html.dark select option {
+            background-color: #1f2937;
+            color: #f3f4f6;
+        }
+        /* The collapsed select control itself */
+        html.dark select {
+            background-color: #1f2937;
+            color: #f3f4f6;
+            border-color: #4b5563;
+        }
     </style>
     
     <script>
