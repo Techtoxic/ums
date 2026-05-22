@@ -717,38 +717,45 @@
         // Tab switching functionality
         function switchTab(tabName) {
             // Hide all content sections
-            const sections = document.querySelectorAll('.content-section');
-            sections.forEach(section => section.classList.add('hidden'));
-            
-            // Remove active class from all nav items
-            const navItems = document.querySelectorAll('.nav-item');
-            navItems.forEach(item => {
-                item.classList.remove('text-primary', 'bg-blue-50', 'dark:bg-blue-900/30');
-                item.classList.add('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-50', 'dark:hover:bg-gray-700');
-            });
-            
-            // Map tab names to section IDs
+            document.querySelectorAll('.content-section').forEach(section => section.classList.add('hidden'));
+
+            // Clear active state from ALL nav links (design-system .active class)
+            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+
+            // Map tab names to real section IDs
             const sectionMap = {
                 'dashboard': 'content-dashboard',
                 'management': 'content-management',
                 'promotion': 'content-promotion'
             };
-            
-            // Show selected section
-            const sectionId = sectionMap[tabName] || `content-${tabName}`;
-            const targetSection = document.getElementById(sectionId);
+
+            // Resolve target section; unbuilt tabs fall back to the coming-soon placeholder
+            const sectionId = sectionMap[tabName];
+            let targetSection = sectionId ? document.getElementById(sectionId) : null;
+
             if (targetSection) {
                 targetSection.classList.remove('hidden');
+            } else {
+                // Unbuilt section — show the coming-soon placeholder with a contextual title
+                const placeholder = document.getElementById('content-comingsoon');
+                if (placeholder) {
+                    const titleEl = document.getElementById('comingSoonTitle');
+                    const labels = {
+                        admission: 'Student Admission', courses: 'Course Management',
+                        enrollment: 'Enrollment', graduation: 'Graduation',
+                        faculty: 'Faculty Management', department: 'Department Management',
+                        reports: 'Reports & Analytics'
+                    };
+                    if (titleEl) titleEl.textContent = (labels[tabName] || 'Coming Soon') + ' — Coming Soon';
+                    placeholder.classList.remove('hidden');
+                }
             }
-            
-            // Add active class to selected nav item
-            const activeNavItem = document.querySelector(`[onclick="switchTab('${tabName}')"]`);
-            if (activeNavItem) {
-                activeNavItem.classList.remove('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-50', 'dark:hover:bg-gray-700');
-                activeNavItem.classList.add('text-primary', 'bg-blue-50', 'dark:bg-blue-900/30');
-            }
-            
-            // Load data for specific tabs
+
+            // Set active state on the clicked nav link, keyed by the UNIQUE data-section attribute
+            const activeNavItem = document.querySelector(`.nav-link[data-section="${tabName}"]`);
+            if (activeNavItem) activeNavItem.classList.add('active');
+
+            // Load data for sections that need it
             if (tabName === 'management') {
                 fetchAndDisplayStudents();
             } else if (tabName === 'promotion') {
@@ -1625,7 +1632,7 @@
                 <a class="nav-link active" data-section="dashboard" onclick="switchTab('dashboard')">
                     <i class="ri-dashboard-line"></i><span>Dashboard</span>
                 </a>
-                <a class="nav-link" data-section="admission" onclick="switchTab('dashboard')">
+                <a class="nav-link" data-section="admission" onclick="switchTab('admission')">
                     <i class="ri-user-add-line"></i><span>Student Admission</span>
                 </a>
                 <a class="nav-link" data-section="management" onclick="switchTab('management')">
@@ -1634,22 +1641,22 @@
                 <a class="nav-link" data-section="promotion" onclick="switchTab('promotion')">
                     <i class="ri-arrow-up-line"></i><span>Student Promotion</span>
                 </a>
-                <a class="nav-link" data-section="courses" onclick="switchTab('dashboard')">
+                <a class="nav-link" data-section="courses" onclick="switchTab('courses')">
                     <i class="ri-book-open-line"></i><span>Course Management</span>
                 </a>
-                <a class="nav-link" data-section="enrollment" onclick="switchTab('dashboard')">
+                <a class="nav-link" data-section="enrollment" onclick="switchTab('enrollment')">
                     <i class="ri-file-list-3-line"></i><span>Enrollment</span>
                 </a>
-                <a class="nav-link" data-section="graduation" onclick="switchTab('dashboard')">
+                <a class="nav-link" data-section="graduation" onclick="switchTab('graduation')">
                     <i class="ri-graduation-cap-line"></i><span>Graduation</span>
                 </a>
-                <a class="nav-link" data-section="faculty" onclick="switchTab('dashboard')">
+                <a class="nav-link" data-section="faculty" onclick="switchTab('faculty')">
                     <i class="ri-user-star-line"></i><span>Faculty Management</span>
                 </a>
-                <a class="nav-link" data-section="department" onclick="switchTab('dashboard')">
+                <a class="nav-link" data-section="department" onclick="switchTab('department')">
                     <i class="ri-building-line"></i><span>Department Management</span>
                 </a>
-                <a class="nav-link" data-section="reports" onclick="switchTab('dashboard')">
+                <a class="nav-link" data-section="reports" onclick="switchTab('reports')">
                     <i class="ri-file-chart-line"></i><span>Reports & Analytics</span>
                 </a>
             </nav>
@@ -2024,6 +2031,17 @@
                 </div>
             </div>
             </div>
+            </div>
+
+            <!-- Coming Soon placeholder — reused by all unbuilt nav sections -->
+            <div id="content-comingsoon" class="content-section hidden">
+                <div class="card">
+                    <div class="card__body" style="text-align:center; padding: var(--space-12) var(--space-6);">
+                        <i class="ri-tools-line" style="font-size:3rem; color:var(--text-muted); margin-bottom:var(--space-4);"></i>
+                        <h2 class="text-headline" style="margin-bottom:var(--space-2);" id="comingSoonTitle">Coming Soon</h2>
+                        <p class="text-body" style="color:var(--text-secondary);">This section is not yet available. It will be added in a future update.</p>
+                    </div>
+                </div>
             </div>
             </main>
         </div><!-- /.topbar+main wrapper -->
