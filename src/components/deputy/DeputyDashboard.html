@@ -988,72 +988,6 @@
         </div><!-- /.topbar+main wrapper -->
     </div><!-- /.dashboard-shell -->
 
-    <!-- Tool Request Modal -->
-    <div id="toolRequestModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
-        <div class="bg-white dark:bg-gray-800 p-8 rounded-xl w-full max-w-5xl mx-4 shadow-2xl">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-2xl font-semibold">New Tool Request</h3>
-                <button onclick="closeToolRequestForm()" class="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300 transition-colors">
-                    <i class="ri-close-line text-2xl"></i>
-                </button>
-            </div>
-
-            <form id="toolRequestForm" class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div class="space-y-6">
-                    <div>
-                        <label class="block text-sm font-medium mb-2">Tool Type</label>
-                        <select name="toolType" class="w-full search-input" required>
-                            <option value="">Select Tool Type</option>
-                            <option value="course_outline">Course Outline</option>
-                            <option value="learning_plan">Learning Plan</option>
-                            <option value="record_of_work">Record of Work</option>
-                            <option value="session_plan">Session Plan</option>
-                            <option value="exam">Exam</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-2">Due Date</label>
-                        <input type="date" name="dueDate" class="w-full search-input" required>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-2">Trainer</label>
-                        <div class="space-y-3 bg-slate-50 dark:bg-gray-700/50 p-4 rounded-lg">
-                            <label class="flex items-center gap-3 cursor-pointer">
-                                <input type="radio" name="trainer" value="all" class="text-primary" checked>
-                                <span>Send to All Trainers</span>
-                            </label>
-                            <label class="flex items-center gap-3 cursor-pointer">
-                                <input type="radio" name="trainer" value="specific" class="text-primary">
-                                <span>Select Specific Trainer</span>
-                            </label>
-                        </div>
-                        <select name="specificTrainerId" class="w-full search-input mt-3" id="specificTrainer" disabled>
-                            <option value="">Loading trainers...</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium mb-2">Specific Instructions</label>
-                    <textarea 
-                        name="instructions"
-                        class="w-full h-[calc(100%-2rem)] search-input resize-none" 
-                        placeholder="Enter detailed instructions for the tool request..."
-                        required
-                    ></textarea>
-                </div>
-
-                <div class="md:col-span-2 flex justify-end gap-3 pt-6 border-t dark:border-gray-700">
-                    <button 
-                        type="button" 
-                        class="px-6 py-2 rounded-lg border border-slate-300 dark:border-gray-600 hover:bg-slate-50 dark:hover:bg-gray-700 transition-colors" 
-                        onclick="closeToolRequestForm()"
-                    >Cancel</button>
-                    <button type="submit" class="btn-primary px-6">Submit Request</button>
-                </div>
-            </form>
-        </div>
-    </div>
 
     <script>
         // Mobile sidebar helpers — design-system pattern (.dashboard-sidebar.open
@@ -1073,36 +1007,6 @@
             if (bd) bd.classList.remove('show');
         }
 
-        // Tool Request Modal
-        const modal = document.getElementById('toolRequestModal');
-        const trainerRadios = document.getElementsByName('trainer');
-        const specificTrainerSelect = document.getElementById('specificTrainer');
-
-        function openToolRequestForm() {
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            document.body.style.overflow = 'hidden';
-        }
-
-        function closeToolRequestForm() {
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-            document.body.style.overflow = '';
-        }
-
-        // Handle trainer selection
-        trainerRadios.forEach(radio => {
-            radio.addEventListener('change', (e) => {
-                specificTrainerSelect.disabled = e.target.value !== 'specific';
-            });
-        });
-
-        // Close modal when clicking outside
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                closeToolRequestForm();
-            }
-        });
     </script>
 <script>
         async function viewToolRequest(requestId) {
