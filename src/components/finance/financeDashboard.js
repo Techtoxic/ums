@@ -912,7 +912,7 @@ function populateProgramDropdown(programs) {
         const option = document.createElement('option');
         option.value = program._id;
         option.textContent = program.name;
-        option.dataset.department = program.department;
+        option.dataset.department = program.departmentName || '';
         option.dataset.cost = program.programCost;
         selectProgramDropdown.appendChild(option);
     });
@@ -923,18 +923,10 @@ function handleProgramSelection() {
     const selectedOption = selectProgramDropdown.options[selectProgramDropdown.selectedIndex];
     
     if (selectedOption.value) {
-        // Auto-fill department
-        const departmentMap = {
-            'applied_science': 'Applied Science Department',
-            'agriculture': 'Agriculture Department',
-            'building_civil': 'Building and Civil Department',
-            'electromechanical': 'Electromechanical Department',
-            'hospitality': 'Hospitality Department',
-            'business_liberal': 'Business and Liberal Studies',
-            'computing_informatics': 'Computing and Informatics'
-        };
-        
-        const departmentName = departmentMap[selectedOption.dataset.department] || selectedOption.dataset.department;
+        // Auto-fill department. /api/programs already returns departmentName as a
+        // readable display name (joined server-side), stored in the option's
+        // dataset — no code->name mapping needed.
+        const departmentName = selectedOption.dataset.department || 'N/A';
         programDepartmentDisplay.value = departmentName;
         
         // Show current cost in placeholder
