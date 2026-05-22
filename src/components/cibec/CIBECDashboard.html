@@ -29,11 +29,18 @@
         }
     </script>
     <style>
-        /* .stat-card removed — name collides with the design-system primitive
-           in /public/css/dashboard-styles.css. The CIBEC stat tiles below use
-           inline gradient classes (bg-gradient-to-br ...) so they don't need
-           the legacy hover styling. Keep .upload-card and .filter-chip — those
-           are unique to this dashboard. */
+        /* CIBEC stat tiles — hover lift under a non-colliding class name
+           (the bare .stat-card name belongs to the design-system primitive in
+           /public/css/dashboard-styles.css). Restores the lift/shadow lost when
+           the colliding .stat-card rule was removed in 905cebb.
+           Keep .upload-card and .filter-chip — those are unique to this dashboard. */
+        .cibec-stat-card {
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .cibec-stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.18);
+        }
         .upload-card {
             transition: all 0.2s ease;
         }
@@ -90,7 +97,7 @@
         
         <!-- Statistics Cards -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div class="stat-card bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white">
+            <div class="stat-card cibec-stat-card bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-blue-100 text-sm font-medium">Total Uploads</p>
@@ -100,7 +107,7 @@
                 </div>
             </div>
 
-            <div class="stat-card bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white">
+            <div class="stat-card cibec-stat-card bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-green-100 text-sm font-medium">Assessments</p>
@@ -110,7 +117,7 @@
                 </div>
             </div>
 
-            <div class="stat-card bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
+            <div class="stat-card cibec-stat-card bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-purple-100 text-sm font-medium">Practicals</p>
@@ -120,7 +127,7 @@
                 </div>
             </div>
 
-            <div class="stat-card bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg p-6 text-white">
+            <div class="stat-card cibec-stat-card bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg p-6 text-white">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-orange-100 text-sm font-medium">Profile Docs</p>
