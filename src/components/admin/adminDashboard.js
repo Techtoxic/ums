@@ -205,7 +205,7 @@ function calculateDashboardMetrics() {
 
     // Calculate outstanding balance
     const totalOutstanding = allStudents.reduce((sum, student) => {
-        const program = allPrograms.find(p => p.programName === getCourseProgram(student.course));
+        const program = allPrograms.find(p => p.name === getCourseProgram(student.course));
         const programCost = program ? program.programCost : 67189;
         const totalFees = programCost * (student.year || 1);
         const studentPayments = allPayments.filter(p => p.studentId === student.admissionNumber);
@@ -228,7 +228,7 @@ function calculateDashboardMetrics() {
     
     // Students owing
     const studentsOwing = allStudents.filter(s => {
-        const program = allPrograms.find(p => p.programName === getCourseProgram(s.course));
+        const program = allPrograms.find(p => p.name === getCourseProgram(s.course));
         const programCost = program ? program.programCost : 67189;
         const totalFees = programCost * (s.year || 1);
         const studentPayments = allPayments.filter(p => p.studentId === s.admissionNumber);
@@ -240,7 +240,7 @@ function calculateDashboardMetrics() {
 
     // Collection Rate - based on total expected fees
     const totalExpected = allStudents.reduce((sum, student) => {
-        const program = allPrograms.find(p => p.programName === getCourseProgram(student.course));
+        const program = allPrograms.find(p => p.name === getCourseProgram(student.course));
         const programCost = program ? program.programCost : 67189;
         return sum + (programCost * (student.year || 1));
     }, 0);
@@ -666,7 +666,7 @@ async function displayStudents() {
 
         // Calculate balance for each student
         const studentsWithBalance = allStudents.map(student => {
-            const program = allPrograms.find(p => p.programName === getCourseProgram(student.course));
+            const program = allPrograms.find(p => p.name === getCourseProgram(student.course));
             const programCost = program ? program.programCost : 67189;
             const totalFees = programCost * (student.year || 1);
             const studentPayments = allPayments.filter(p => p.studentId === student.admissionNumber);
@@ -829,7 +829,7 @@ async function displayFinancial() {
         const totalRevenue = allPayments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
         
         const totalOutstanding = allStudents.reduce((sum, student) => {
-            const program = allPrograms.find(p => p.programName === getCourseProgram(student.course));
+            const program = allPrograms.find(p => p.name === getCourseProgram(student.course));
             const programCost = program ? program.programCost : 67189;
             const totalFees = programCost * (student.year || 1);
             const studentPayments = allPayments.filter(p => p.studentId === student.admissionNumber);
@@ -856,7 +856,7 @@ async function displayFinancial() {
                     </div>
                     <p class="text-base md:text-lg font-bold text-red-600">${formatCurrency(totalOutstanding)}</p>
                     <p class="text-xs text-red-700 mt-1">${allStudents.filter(s => {
-                        const program = allPrograms.find(p => p.programName === getCourseProgram(s.course));
+                        const program = allPrograms.find(p => p.name === getCourseProgram(s.course));
                         const programCost = program ? program.programCost : 67189;
                         const totalFees = programCost * (s.year || 1);
                         const studentPayments = allPayments.filter(p => p.studentId === s.admissionNumber);
@@ -915,8 +915,8 @@ async function displayPrograms(searchTerm = '') {
         // Filter programs based on search term
         const filteredPrograms = allPrograms.filter(program => {
             const searchLower = searchTerm.toLowerCase();
-            return program.programName.toLowerCase().includes(searchLower) ||
-                   formatDepartmentName(program.department).toLowerCase().includes(searchLower);
+            return program.name.toLowerCase().includes(searchLower) ||
+                   (program.departmentName || '').toLowerCase().includes(searchLower);
         });
 
         container.innerHTML = `
@@ -939,8 +939,8 @@ async function displayPrograms(searchTerm = '') {
                     </div>
                 ` : filteredPrograms.map(program => `
                     <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-2 hover:shadow-lg transition">
-                        <h4 class="font-semibold text-xs text-gray-800 dark:text-white mb-1">${escapeHtml(program.programName)}</h4>
-                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-2">${escapeHtml(formatDepartmentName(program.department))}</p>
+                        <h4 class="font-semibold text-xs text-gray-800 dark:text-white mb-1">${escapeHtml(program.name)}</h4>
+                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-2">${escapeHtml(program.departmentName)}</p>
                         <div class="flex items-center justify-between">
                             <span class="text-sm font-bold text-primary">${formatCurrency(program.programCost)}</span>
                             <span class="text-xs text-gray-500">per year</span>
