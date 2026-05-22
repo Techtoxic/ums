@@ -237,7 +237,7 @@
                     <button id="desktopSidebarToggle" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg hidden md:block">
                         <i class="ri-menu-fold-line text-xl text-gray-600 dark:text-gray-300"></i>
                     </button>
-                    <h2 id="pageTitle" class="text-xl font-semibold text-gray-800 dark:text-white">Dashboard</h2>
+                    <h2 id="pageTitle" class="text-headline text-gray-800 dark:text-white">Dashboard</h2>
                 </div>
                 <div class="flex items-center gap-3">
                     <div class="hidden sm:flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
@@ -267,7 +267,7 @@
                 <div class="relative z-10">
                     <div class="flex items-center justify-between">
                         <div>
-                            <h2 class="text-3xl font-bold mb-2">Welcome back!</h2>
+                            <h2 class="text-headline-lg mb-2">Welcome back!</h2>
                             <p class="text-white/80 text-lg" id="welcomeTrainerName">Loading...</p>
                             <p class="text-white/60 text-sm mt-1" id="welcomeDepartment">Loading...</p>
                         </div>
@@ -281,59 +281,68 @@
 
             <!-- Stats Cards -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 card-hover">
+                <div class="card card-hover">
+                    <div class="card__body">
                     <div class="flex items-center">
                         <div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
                             <i class="ri-task-line text-blue-600 dark:text-blue-400 text-xl"></i>
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Active Assignments</p>
-                            <p class="text-2xl font-bold text-gray-900 dark:text-white" id="statsAssignments">0</p>
+                            <p class="text-headline-lg text-gray-900 dark:text-white" id="statsAssignments">0</p>
                         </div>
+                    </div>
                     </div>
                 </div>
 
-                <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 card-hover">
+                <div class="card card-hover">
+                    <div class="card__body">
                     <div class="flex items-center">
                         <div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-xl">
                             <i class="ri-group-line text-green-600 dark:text-green-400 text-xl"></i>
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-600 dark:text-gray-400">My Students</p>
-                            <p class="text-2xl font-bold text-gray-900 dark:text-white" id="statsStudents">0</p>
+                            <p class="text-headline-lg text-gray-900 dark:text-white" id="statsStudents">0</p>
                         </div>
+                    </div>
                     </div>
                 </div>
 
-                <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 card-hover">
+                <div class="card card-hover">
+                    <div class="card__body">
                     <div class="flex items-center">
                         <div class="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-xl">
                             <i class="ri-book-open-line text-purple-600 dark:text-purple-400 text-xl"></i>
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Courses</p>
-                            <p class="text-2xl font-bold text-gray-900 dark:text-white" id="statsCourses">0</p>
+                            <p class="text-headline-lg text-gray-900 dark:text-white" id="statsCourses">0</p>
                         </div>
+                    </div>
                     </div>
                 </div>
 
-                <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 card-hover">
+                <div class="card card-hover">
+                    <div class="card__body">
                     <div class="flex items-center">
                         <div class="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-xl">
                             <i class="ri-building-line text-orange-600 dark:text-orange-400 text-xl"></i>
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Department</p>
-                            <p class="text-lg font-bold text-gray-900 dark:text-white" id="statsDepartment">-</p>
+                            <p class="text-headline-sm text-gray-900 dark:text-white" id="statsDepartment">-</p>
                         </div>
+                    </div>
                     </div>
                 </div>
             </div>
 
             <!-- Quick Actions -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 card-hover">
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h3>
+                <div class="card card-hover">
+                    <div class="card__body">
+                    <h3 class="text-headline-sm text-gray-900 dark:text-white mb-4">Quick Actions</h3>
                     <div class="space-y-3">
                         <button onclick="showSection('assignments')" class="w-full flex items-center space-x-3 p-3 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded-lg transition-colors text-left">
                             <i class="ri-task-line text-blue-600 dark:text-blue-400"></i>
@@ -348,10 +357,12 @@
                             <span class="text-purple-700 dark:text-purple-300 font-medium">Update Profile</span>
                         </button>
                     </div>
+                    </div>
                 </div>
 
-                <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 card-hover">
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Recent Activity</h3>
+                <div class="card card-hover">
+                    <div class="card__body">
+                    <h3 class="text-headline-sm text-gray-900 dark:text-white mb-4">Recent Activity</h3>
                     <div class="space-y-3">
                         <div class="flex items-center space-x-3 p-2 rounded-lg">
                             <div class="w-2 h-2 bg-green-500 rounded-full"></div>
@@ -362,10 +373,12 @@
                             <span class="text-sm text-gray-600 dark:text-gray-400">Dashboard initialized</span>
                         </div>
                     </div>
+                    </div>
                 </div>
 
-                <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 card-hover">
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">System Status</h3>
+                <div class="card card-hover">
+                    <div class="card__body">
+                    <h3 class="text-headline-sm text-gray-900 dark:text-white mb-4">System Status</h3>
                     <div class="space-y-3">
                         <div class="flex items-center justify-between">
                             <span class="text-sm text-gray-600 dark:text-gray-400">Connection</span>
@@ -379,16 +392,17 @@
                             <span class="text-sm text-gray-600 dark:text-gray-400" id="lastSync">Just now</span>
                         </div>
                     </div>
+                    </div>
                 </div>
             </div>
         </section>
 
             <!-- Assignments Section -->
             <section id="section-assignments" class="content-section hidden">
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <div class="card">
+                <div class="card__header">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">My Unit Assignments</h2>
+                        <h2 class="text-headline-sm text-gray-900 dark:text-white">My Unit Assignments</h2>
                         <div class="flex items-center space-x-4">
                             <select id="assignmentFilter" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
                                 <option value="">All Units</option>
@@ -402,7 +416,7 @@
                     </div>
                 </div>
 
-                <div class="p-6">
+                <div class="card__body">
                     <!-- Loading State -->
                     <div id="loadingState" class="text-center py-12 hidden">
                         <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -440,10 +454,10 @@
 
             <!-- Students Section -->
             <section id="section-students" class="content-section hidden">
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <div class="card">
+                <div class="card__header">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">My Students</h2>
+                        <h2 class="text-headline-sm text-gray-900 dark:text-white">My Students</h2>
                         <div class="flex items-center space-x-4">
                             <select id="studentsFilter" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
                                 <option value="">All Students</option>
@@ -458,7 +472,7 @@
                     </div>
                 </div>
 
-                <div class="p-6">
+                <div class="card__body">
                     <!-- Students Grid -->
                     <div id="studentsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <!-- Students will be populated here -->
@@ -480,11 +494,11 @@
             <section id="section-tools-of-trade" class="content-section hidden">
                 <div class="space-y-6">
                     <!-- Tools of Trade Header -->
-                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-                        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                    <div class="card">
+                        <div class="card__header">
                             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
                                 <div>
-                                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Tools of Trade</h2>
+                                    <h2 class="text-headline-sm text-gray-900 dark:text-white">Tools of Trade</h2>
                                     <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Upload and manage your teaching materials</p>
                                 </div>
                                 <div class="flex items-center space-x-3">
@@ -503,10 +517,10 @@
                             </div>
                         </div>
 
-                        <div class="p-6">
+                        <div class="card__body">
                             <!-- Upload Section -->
                             <div class="mb-8">
-                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Upload Tools of Trade</h3>
+                                <h3 class="text-headline-sm text-gray-900 dark:text-white mb-4">Upload Tools of Trade</h3>
                                 
                                 <!-- Unit Selection -->
                                 <div class="mb-6">
@@ -580,7 +594,7 @@
 
                             <!-- Submitted Tools -->
                             <div>
-                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Submitted Tools</h3>
+                                <h3 class="text-headline-sm text-gray-900 dark:text-white mb-4">Submitted Tools</h3>
                                 
                                 <!-- Loading State -->
                                 <div id="toolsLoadingState" class="text-center py-8 hidden">
@@ -615,7 +629,7 @@
                         <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
                                 <div>
-                                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">My Payslips</h2>
+                                    <h2 class="text-headline-sm text-gray-900 dark:text-white">My Payslips</h2>
                                     <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">View and manage your salary payslips</p>
                                 </div>
                                 <button onclick="refreshPayslips()" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/80 transition-colors text-sm font-medium">
@@ -652,11 +666,11 @@
             <section id="section-notifications" class="content-section hidden">
                 <div class="space-y-6">
                     <!-- Notifications Header -->
-                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-                        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                    <div class="card">
+                        <div class="card__header">
                             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
                                 <div>
-                                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Notifications</h2>
+                                    <h2 class="text-headline-sm text-gray-900 dark:text-white">Notifications</h2>
                                     <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Stay updated with your latest requests and updates</p>
                                 </div>
                                 <div class="flex items-center space-x-3">
@@ -670,7 +684,7 @@
                             </div>
                         </div>
 
-                        <div class="p-6">
+                        <div class="card__body">
                             <!-- Loading State -->
                             <div id="notificationsLoadingState" class="text-center py-8 hidden">
                                 <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -697,13 +711,13 @@
 
             <section id="section-profile" class="content-section hidden">
             <div class="max-w-4xl mx-auto">
-                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-                    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Profile Settings</h2>
+                <div class="card">
+                    <div class="card__header">
+                        <h2 class="text-headline-sm text-gray-900 dark:text-white">Profile Settings</h2>
                         <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Update your personal information and contact details</p>
                     </div>
 
-                    <div class="p-6">
+                    <div class="card__body">
                         <form id="profileForm" class="space-y-6">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
@@ -750,7 +764,7 @@
     <div id="bulkUploadModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white dark:bg-gray-800 rounded-xl max-w-4xl w-full p-6">
             <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-semibold text-gray-900 dark:text-white">Bulk Upload Tools of Trade</h3>
+                <h3 class="text-headline text-gray-900 dark:text-white">Bulk Upload Tools of Trade</h3>
                 <button onclick="closeBulkUploadModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
                     <i class="ri-close-line text-2xl"></i>
                 </button>
@@ -827,7 +841,7 @@
                 <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
                     <i class="ri-phone-line text-primary text-2xl"></i>
                 </div>
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Update Contact Information</h3>
+                <h3 class="text-headline-sm text-gray-900 dark:text-white mb-2">Update Contact Information</h3>
                 <p class="text-sm text-gray-600 dark:text-gray-400">Help us keep your contact information up to date</p>
             </div>
             
