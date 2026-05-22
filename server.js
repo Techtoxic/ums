@@ -2385,7 +2385,7 @@ app.get('/api/units/course/:courseCode', async (req, res) => {
 });
 
 // Get units by department (for admin use)
-app.get('/api/units/department/:department', verifyToken, authorize('admin', 'registrar', 'hod'), async (req, res) => {
+app.get('/api/units/department/:department', verifyToken, authorize('admin', 'registrar', 'hod', 'deputy'), async (req, res) => {
     try {
         const { department } = req.params;
         const validDepartments = ['applied_science', 'agriculture', 'building_civil', 'electromechanical', 'hospitality', 'business_liberal', 'computing_informatics', 'business_administration'];
@@ -2431,7 +2431,7 @@ app.get('/api/units/department/:department', verifyToken, authorize('admin', 're
 });
 
 // Get all units (for admin use with pagination)
-app.get('/api/units', verifyToken, authorize('admin', 'registrar', 'hod'), async (req, res) => {
+app.get('/api/units', verifyToken, authorize('admin', 'registrar', 'hod', 'deputy'), async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 50;
@@ -2867,7 +2867,7 @@ app.delete('/api/common-unit-assignments/:assignmentId', verifyToken, authorize(
 });
 
 // Get trainers from all departments for common unit assignment
-app.get('/api/trainers/all-departments', verifyToken, authorize('admin', 'hod', 'registrar'), async (req, res) => {
+app.get('/api/trainers/all-departments', verifyToken, authorize('admin', 'hod', 'registrar', 'deputy'), async (req, res) => {
     try {
         const trainers = await Trainer.find({ isActive: true })
             .select('name email department specialization')
@@ -3025,7 +3025,7 @@ app.get('/api/hod/departments', (req, res) => {
 });
 
 // Get trainers by department
-app.get('/api/trainers/department/:department', verifyToken, authorize('admin', 'hod', 'registrar'), async (req, res) => {
+app.get('/api/trainers/department/:department', verifyToken, authorize('admin', 'hod', 'registrar', 'deputy'), async (req, res) => {
     try {
         const { department } = req.params;
         const rows = await db
@@ -3762,7 +3762,7 @@ app.get('/api/students/latest-admission/:courseCode', verifyToken, authorize('ad
 });
 
 // Get All Students Endpoint - PROTECTED (Admin/Registrar only)
-app.get('/api/students', verifyToken, authorize('admin', 'registrar', 'dean', 'finance'), async (req, res) => {
+app.get('/api/students', verifyToken, authorize('admin', 'registrar', 'dean', 'finance', 'deputy'), async (req, res) => {
     try {
         const students = await Student.find({}, { password: 0 });
         res.json(students);
@@ -4942,7 +4942,7 @@ app.get('/api/tools/trainer/:trainerId', verifyToken, authorize('admin', 'traine
 });
 
 // Get all Tools of Trade (for HOD/Deputy)
-app.get('/api/tools', verifyToken, authorize('admin', 'trainer', 'hod', 'registrar'), async (req, res) => {
+app.get('/api/tools', verifyToken, authorize('admin', 'trainer', 'hod', 'registrar', 'deputy'), async (req, res) => {
     try {
         const { status, toolType, department, academicYear, semester } = req.query;
 
