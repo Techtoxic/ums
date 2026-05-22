@@ -159,11 +159,11 @@ async function fetchProgramCost(courseKey) {
             throw new Error('Invalid programs data format received');
         }
         
-        console.log('Available programs:', programs.map(p => p.programName));
-        
+        console.log('Available programs:', programs.map(p => p.name));
+
         // Find the program with matching name
-        const foundProgram = programs.find(program => 
-            program.programName && program.programName.toLowerCase() === programName.toLowerCase()
+        const foundProgram = programs.find(program =>
+            program.name && program.name.toLowerCase() === programName.toLowerCase()
         );
         
         if (!foundProgram) {
