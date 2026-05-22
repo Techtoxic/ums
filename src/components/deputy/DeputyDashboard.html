@@ -5,9 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Deputy Academics Dashboard - University Management System</title>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/public/css/dashboard-styles.css">
+    <!-- Theme controller: in <head>, after styles, runs pre-paint (no flash) -->
+    <script src="/public/js/dashboard-theme.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
+
     <!-- Frontend Config (Load First!) -->
     <script src="/public/js/config.js"></script>
     
@@ -527,13 +532,8 @@
             z-index: 30;
         }
 
-        /* Sidebar positioning with top navbar */
-        @media (min-width: 1024px) {
-            #sidebar {
-                top: 64px;
-                height: calc(100vh - 64px);
-            }
-        }
+        /* (Removed: legacy fixed-sidebar offset rule — the .dashboard-shell
+           grid in /public/css/dashboard-styles.css now lays out the sidebar.) */
 
         .stats-card {
             background-color: white;
@@ -571,24 +571,8 @@
             border-color: #4b5563;
         }
 
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 0.75rem;
-            border-radius: 0.5rem;
-            transition: all 0.3s ease;
-        }
-
-        .nav-item:hover {
-            background-color: rgba(122, 12, 12, 0.1);
-            color: #7A0C0C;
-        }
-
-        .nav-item.active {
-            background-color: rgba(122, 12, 12, 0.1);
-            color: #7A0C0C;
-        }
+        /* (Removed: .nav-item rules — the sidebar now uses the design-system
+           .nav-link / .nav-link.active primitives from dashboard-styles.css.) */
 
         .content-section {
             display: flex;
@@ -623,177 +607,124 @@
     </style>
     <script src="/public/js/auth.js"></script>
 </head>
-<body class="bg-slate-50 dark:bg-gray-900 text-slate-800 dark:text-slate-200">
-    <!-- Top Navigation Bar -->
-    <nav class="fixed top-0 left-0 right-0 h-16 bg-white dark:bg-gray-800 border-b border-slate-200 dark:border-gray-700 flex items-center justify-between px-6 z-40">
-        <!-- Left side -->
-        <div class="flex items-center gap-4">
-            <button id="menuBtn" class="lg:hidden text-slate-500 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-300">
-                <i class="ri-menu-line text-2xl"></i>
-            </button>
-            <button id="toggleSidebar" class="hidden lg:block p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-                <i class="ri-menu-fold-line text-xl text-slate-600 dark:text-slate-300"></i>
-            </button>
-            <div class="flex items-center gap-3">
-                <img src="https://via.placeholder.com/32x32/7A0C0C/FFFFFF?text=E" alt="Emura Logo" class="h-8 w-8 rounded">
-                <span class="font-bold text-lg hidden sm:inline">Deputy Academics Portal</span>
-            </div>
-        </div>
+<body class="text-slate-800 dark:text-slate-200">
+    <div class="dashboard-shell">
+        <!-- Sidebar backdrop for mobile -->
+        <div class="dashboard-sidebar__backdrop" id="sbBackdrop" onclick="closeSidebar()"></div>
 
-        <!-- Right side -->
-        <div class="flex items-center gap-4">
-            <button id="themeToggle" class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-gray-700">
-                <i class="ri-sun-line dark:hidden"></i>
-                <i class="ri-moon-line hidden dark:block"></i>
-            </button>
-            <button class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-gray-700 relative">
-                <i class="ri-notification-3-line"></i>
-                <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-            </button>
-            <div class="flex items-center gap-3 border-l border-slate-200 dark:border-gray-700 pl-4">
-                <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                    <i class="ri-user-line text-primary"></i>
-                </div>
-                <div class="hidden sm:block">
-                    <p class="text-sm font-medium">Samuel Langat</p>
-                    <p class="text-xs text-slate-500 dark:text-slate-400">Deputy Academics</p>
-                </div>
+        <!-- Sidebar -->
+        <aside class="dashboard-sidebar" id="sidebar">
+            <div class="dashboard-sidebar__logo">
+                <i class="ri-graduation-cap-line"></i>
+                <span>EDTTI</span>
             </div>
-        </div>
-    </nav>
-
-    <!-- Sidebar -->
-    <aside id="sidebar" class="fixed left-0 top-0 h-screen w-64 bg-white dark:bg-gray-800 shadow-sm z-30 transform -translate-x-full lg:translate-x-0 transition-transform duration-300">
-        <div class="h-full flex flex-col pt-16">
-            <!-- Navigation -->
-            <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
-                <a href="#" onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-item flex items-center gap-3 p-3 rounded-lg bg-primary/10 text-primary">
-                    <i class="ri-dashboard-line"></i>
-                    <span>Dashboard</span>
+            <nav class="dashboard-sidebar__nav">
+                <a href="#" onclick="switchTab('dashboard'); event.preventDefault();" id="nav-dashboard" class="nav-link active">
+                    <i class="ri-dashboard-line"></i><span>Dashboard</span>
                 </a>
-                <a href="#" onclick="switchTab('students')" id="nav-students" class="nav-item flex items-center gap-3 p-3 rounded-lg hover:bg-primary/10 hover:text-primary transition-colors">
-                    <i class="ri-user-line"></i>
-                    <span>Students</span>
+                <a href="#" onclick="switchTab('students'); event.preventDefault();" id="nav-students" class="nav-link">
+                    <i class="ri-team-line"></i><span>Students</span>
                 </a>
-                <a href="#" onclick="switchTab('trainers')" id="nav-trainers" class="nav-item flex items-center gap-3 p-3 rounded-lg hover:bg-primary/10 hover:text-primary transition-colors">
-                    <i class="ri-team-line"></i>
-                    <span>Trainers</span>
+                <a href="#" onclick="switchTab('trainers'); event.preventDefault();" id="nav-trainers" class="nav-link">
+                    <i class="ri-user-star-line"></i><span>Trainers</span>
                 </a>
-                <a href="#" onclick="switchTab('courses')" id="nav-courses" class="nav-item flex items-center gap-3 p-3 rounded-lg hover:bg-primary/10 hover:text-primary transition-colors">
-                    <i class="ri-book-open-line"></i>
-                    <span>Courses</span>
+                <a href="#" onclick="switchTab('courses'); event.preventDefault();" id="nav-courses" class="nav-link">
+                    <i class="ri-book-open-line"></i><span>Courses</span>
                 </a>
-                <a href="#" onclick="switchTab('units')" id="nav-units" class="nav-item flex items-center gap-3 p-3 rounded-lg hover:bg-primary/10 hover:text-primary transition-colors">
-                    <i class="ri-file-list-3-line"></i>
-                    <span>Units</span>
+                <a href="#" onclick="switchTab('units'); event.preventDefault();" id="nav-units" class="nav-link">
+                    <i class="ri-file-list-3-line"></i><span>Units</span>
                 </a>
-                <a href="#" onclick="switchTab('tools')" id="nav-tools" class="nav-item flex items-center gap-3 p-3 rounded-lg hover:bg-primary/10 hover:text-primary transition-colors">
-                    <i class="ri-tools-line"></i>
-                    <span>Tools of Trade</span>
+                <a href="#" onclick="switchTab('tools'); event.preventDefault();" id="nav-tools" class="nav-link">
+                    <i class="ri-tools-line"></i><span>Tools of Trade</span>
                 </a>
-                <a href="#" onclick="switchTab('notifications')" id="nav-notifications" class="nav-item flex items-center gap-3 p-3 rounded-lg hover:bg-primary/10 hover:text-primary transition-colors">
-                    <i class="ri-notification-line"></i>
-                    <span>Notifications</span>
+                <a href="#" onclick="switchTab('notifications'); event.preventDefault();" id="nav-notifications" class="nav-link">
+                    <i class="ri-notification-3-line"></i><span>Notifications</span>
                 </a>
             </nav>
-        </div>
-    </aside>
+            <div class="dashboard-sidebar__profile">
+                <div class="dashboard-sidebar__avatar" id="userAvatar">D</div>
+                <div class="dashboard-sidebar__profile-text">
+                    <div class="font-semibold text-body-sm" id="userName">Deputy</div>
+                    <div class="text-body-sm" style="color:var(--text-muted)">Deputy Academics</div>
+                </div>
+            </div>
+        </aside>
 
-    <!-- Main Content -->
-    <main class="lg:ml-64 min-h-screen p-4 pt-20">
+        <!-- Main column: topbar + content -->
+        <div>
+            <!-- Topbar -->
+            <header class="dashboard-topbar">
+                <button class="btn btn--ghost btn--icon lg:hidden" onclick="openSidebar()" aria-label="Open menu">
+                    <i class="ri-menu-line"></i>
+                </button>
+                <div class="dashboard-topbar__title">Deputy Academics Dashboard</div>
+                <div class="dashboard-topbar__actions">
+                    <button data-theme-toggle class="theme-toggle" aria-label="Toggle dark mode">
+                        <i class="ri-sun-line theme-icon-light"></i>
+                        <i class="ri-moon-line theme-icon-dark"></i>
+                    </button>
+                    <button id="logoutBtn" class="btn btn--danger btn--icon" aria-label="Logout">
+                        <i class="ri-logout-box-line"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <main class="dashboard-main">
         <!-- Page Header -->
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
             <div>
                 <h1 class="text-2xl font-bold" id="pageTitle">Dashboard Overview</h1>
-                <p class="text-slate-500 dark:text-slate-400">Welcome back, Samuel Langat!</p>
+                <p class="text-slate-500 dark:text-slate-400">Welcome back, <span id="welcomeName">Deputy</span>!</p>
             </div>
         </div>
 
         <!-- Dashboard Section -->
         <div id="content-dashboard" class="content-section">
-            <!-- Quick Stats -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-                <!-- Active Students -->
-                <div class="stats-card">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-semibold">Active Students</h3>
-                        <i class="ri-user-line text-2xl text-primary"></i>
-                    </div>
-                    <p class="text-3xl font-bold mb-2" id="totalStudents">Loading...</p>
-                    <p class="text-sm text-slate-500 dark:text-slate-400">Total enrolled students</p>
+            <!-- Quick Stats — design-system stat cards. IDs preserved so the
+                 existing loadDashboardStats() data-population keeps working;
+                 "Loading..." default text retained (the data layer is a
+                 separate backend concern, out of scope here). -->
+            <div class="stat-cards-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-6)">
+                <div class="stat-card">
+                    <div class="stat-card__top"><div class="stat-card__icon"><i class="ri-team-line"></i></div></div>
+                    <div class="stat-card__label">Active Students</div>
+                    <div class="stat-card__value" id="totalStudents">Loading...</div>
                 </div>
-
-                <!-- Active Trainers -->
-                <div class="stats-card">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-semibold">Active Trainers</h3>
-                        <i class="ri-team-line text-2xl text-primary"></i>
-                    </div>
-                    <p class="text-3xl font-bold mb-2" id="totalTrainers">Loading...</p>
-                    <p class="text-sm text-slate-500 dark:text-slate-400">Total trainers</p>
+                <div class="stat-card">
+                    <div class="stat-card__top"><div class="stat-card__icon"><i class="ri-user-star-line"></i></div></div>
+                    <div class="stat-card__label">Active Trainers</div>
+                    <div class="stat-card__value" id="totalTrainers">Loading...</div>
                 </div>
-
-                <!-- Total Courses -->
-                <div class="stats-card">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-semibold">Total Courses</h3>
-                        <i class="ri-book-open-line text-2xl text-primary"></i>
-                    </div>
-                    <p class="text-3xl font-bold mb-2" id="totalCourses">Loading...</p>
-                    <p class="text-sm text-slate-500 dark:text-slate-400">Available courses</p>
+                <div class="stat-card">
+                    <div class="stat-card__top"><div class="stat-card__icon"><i class="ri-book-open-line"></i></div></div>
+                    <div class="stat-card__label">Total Courses</div>
+                    <div class="stat-card__value" id="totalCourses">Loading...</div>
                 </div>
-
-                <!-- Total Units -->
-                <div class="stats-card">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-semibold">Total Units</h3>
-                        <i class="ri-file-list-3-line text-2xl text-primary"></i>
-                    </div>
-                    <p class="text-3xl font-bold mb-2" id="totalUnits">Loading...</p>
-                    <p class="text-sm text-slate-500 dark:text-slate-400">Available units</p>
+                <div class="stat-card">
+                    <div class="stat-card__top"><div class="stat-card__icon"><i class="ri-file-list-3-line"></i></div></div>
+                    <div class="stat-card__label">Total Units</div>
+                    <div class="stat-card__value" id="totalUnits">Loading...</div>
                 </div>
-            </div>
-
-            <!-- Second Row Stats -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-                <!-- Pending Tool Requests -->
-                <div class="stats-card">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-semibold">Pending Tools</h3>
-                        <i class="ri-time-line text-2xl text-warning"></i>
-                    </div>
-                    <p class="text-3xl font-bold mb-2" id="pendingTools">Loading...</p>
-                    <p class="text-sm text-slate-500 dark:text-slate-400">Awaiting review</p>
+                <div class="stat-card stat-card--warning">
+                    <div class="stat-card__top"><div class="stat-card__icon"><i class="ri-time-line"></i></div></div>
+                    <div class="stat-card__label">Pending Tools</div>
+                    <div class="stat-card__value" id="pendingTools">Loading...</div>
                 </div>
-
-                <!-- Tools Submitted -->
-                <div class="stats-card">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-semibold">Total Tools</h3>
-                        <i class="ri-checkbox-circle-line text-2xl text-success"></i>
-                    </div>
-                    <p class="text-3xl font-bold mb-2" id="totalTools">Loading...</p>
-                    <p class="text-sm text-slate-500 dark:text-slate-400">All submitted tools</p>
+                <div class="stat-card">
+                    <div class="stat-card__top"><div class="stat-card__icon"><i class="ri-checkbox-circle-line"></i></div></div>
+                    <div class="stat-card__label">Total Tools</div>
+                    <div class="stat-card__value" id="totalTools">Loading...</div>
                 </div>
-
-                <!-- Departments -->
-                <div class="stats-card">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-semibold">Departments</h3>
-                        <i class="ri-building-line text-2xl text-primary"></i>
-                    </div>
-                    <p class="text-3xl font-bold mb-2" id="totalDepartments">Loading...</p>
-                    <p class="text-sm text-slate-500 dark:text-slate-400">Active departments</p>
+                <div class="stat-card">
+                    <div class="stat-card__top"><div class="stat-card__icon"><i class="ri-building-line"></i></div></div>
+                    <div class="stat-card__label">Departments</div>
+                    <div class="stat-card__value" id="totalDepartments">Loading...</div>
                 </div>
-
-                <!-- Notifications -->
-                <div class="stats-card">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-semibold">Notifications</h3>
-                        <i class="ri-notification-line text-2xl text-primary"></i>
-                    </div>
-                    <p class="text-3xl font-bold mb-2" id="totalNotifications">Loading...</p>
-                    <p class="text-sm text-slate-500 dark:text-slate-400">System notifications</p>
+                <div class="stat-card">
+                    <div class="stat-card__top"><div class="stat-card__icon"><i class="ri-notification-3-line"></i></div></div>
+                    <div class="stat-card__label">Notifications</div>
+                    <div class="stat-card__value" id="totalNotifications">Loading...</div>
                 </div>
             </div>
 
@@ -1053,7 +984,9 @@
         <div id="content-notifications" class="content-section hidden">
             <!-- Notifications will be loaded here -->
         </div>
-    </main>
+            </main>
+        </div><!-- /.topbar+main wrapper -->
+    </div><!-- /.dashboard-shell -->
 
     <!-- Tool Request Modal -->
     <div id="toolRequestModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
@@ -1123,32 +1056,22 @@
     </div>
 
     <script>
-        // Theme Toggle
-        const themeToggle = document.getElementById('themeToggle');
-        themeToggle.addEventListener('click', () => {
-            document.documentElement.classList.toggle('dark');
-        });
-
-        // Mobile Menu Toggle
-        const menuBtn = document.getElementById('menuBtn');
-        const body = document.body;
-
-        menuBtn.addEventListener('click', () => {
-            const sidebar = document.getElementById('sidebar');
-            sidebar.classList.toggle('-translate-x-full');
-            body.classList.toggle('menu-open');
-        });
-
-        // Close menu when clicking outside
-        document.addEventListener('click', (e) => {
-            const sidebar = document.getElementById('sidebar');
-            if (body.classList.contains('menu-open') && 
-                !sidebar.contains(e.target) && 
-                !menuBtn.contains(e.target)) {
-                sidebar.classList.add('-translate-x-full');
-                body.classList.remove('menu-open');
-            }
-        });
+        // Mobile sidebar helpers — design-system pattern (.dashboard-sidebar.open
+        // + .dashboard-sidebar__backdrop.show). Theme toggling is handled by the
+        // [data-theme-toggle] button auto-wired in /public/js/dashboard-theme.js,
+        // so the old themeToggle listener is gone.
+        function openSidebar() {
+            const sb = document.getElementById('sidebar');
+            const bd = document.getElementById('sbBackdrop');
+            if (sb) sb.classList.add('open');
+            if (bd) bd.classList.add('show');
+        }
+        function closeSidebar() {
+            const sb = document.getElementById('sidebar');
+            const bd = document.getElementById('sbBackdrop');
+            if (sb) sb.classList.remove('open');
+            if (bd) bd.classList.remove('show');
+        }
 
         // Tool Request Modal
         const modal = document.getElementById('toolRequestModal');
@@ -1825,25 +1748,25 @@
             const allSections = document.querySelectorAll('.content-section');
             allSections.forEach(section => section.classList.add('hidden'));
             
-            // Remove active class from all nav items
-            const allNavItems = document.querySelectorAll('.nav-item');
-            allNavItems.forEach(item => {
-                item.classList.remove('bg-primary/10', 'text-primary');
-                item.classList.add('hover:bg-primary/10', 'hover:text-primary');
-            });
-            
+            // Remove active class from all nav links (design-system .nav-link.active
+            // handles the maroon highlight; just toggle the class).
+            const allNavLinks = document.querySelectorAll('.nav-link');
+            allNavLinks.forEach(item => item.classList.remove('active'));
+
             // Show selected section
             const targetSection = document.getElementById(`content-${tabName}`);
             if (targetSection) {
                 targetSection.classList.remove('hidden');
             }
-            
-            // Add active class to selected nav item
+
+            // Add active class to selected nav link
             const activeNavItem = document.getElementById(`nav-${tabName}`);
             if (activeNavItem) {
-                activeNavItem.classList.add('bg-primary/10', 'text-primary');
-                activeNavItem.classList.remove('hover:bg-primary/10', 'hover:text-primary');
+                activeNavItem.classList.add('active');
             }
+
+            // Close the mobile sidebar after navigating
+            if (typeof closeSidebar === 'function') closeSidebar();
             
             // Update page title
             const titles = {
@@ -2075,7 +1998,27 @@
         }
 
         // Load data on page load
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Cookie-based auth init + topbar logout wiring (parallel to the
+            // registrar/finance conversions). requireAuth bounces to /admin/login
+            // on no/expired session and populates the sidebar profile + welcome
+            // line from the /api/me user object.
+            if (window.AUTH && typeof window.AUTH.requireAuth === 'function') {
+                const user = await window.AUTH.requireAuth('/admin/login');
+                if (user && user.name) {
+                    const userName = document.getElementById('userName');
+                    const userAvatar = document.getElementById('userAvatar');
+                    const welcomeName = document.getElementById('welcomeName');
+                    if (userName) userName.textContent = user.name;
+                    if (welcomeName) welcomeName.textContent = user.name;
+                    if (userAvatar) userAvatar.textContent = user.name.charAt(0).toUpperCase();
+                }
+            }
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn && window.AUTH && typeof window.AUTH.logout === 'function') {
+                logoutBtn.addEventListener('click', () => window.AUTH.logout({ role: 'admin' }));
+            }
+
             loadDashboardStats();
             loadCoursesData();
             loadTrainers();
