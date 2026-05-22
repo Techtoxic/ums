@@ -4058,7 +4058,7 @@ app.get('/api/students/:studentId/can-register', verifyToken, authorize('admin',
         }
         
         // Calculate outstanding balance using the same method as the dashboard
-        const payments = await Payment.find({ studentId: studentId }).sort({ date: -1 });
+        const payments = await Payment.find({ studentId: student.id }).sort({ date: -1 });
         const paidAmount = payments.reduce((sum, payment) => sum + toMoneyNumber(payment.amount), 0); // SEV-H-016
         
         // Get program cost using the same mapping as frontend
@@ -4417,7 +4417,7 @@ app.post('/api/students/register-units', verifyToken, authorize('admin', 'regist
         }
         
         // Calculate outstanding balance using the same method as the dashboard
-        const payments = await Payment.find({ studentId: studentId }).sort({ date: -1 });
+        const payments = await Payment.find({ studentId: student.id }).sort({ date: -1 });
         const paidAmount = payments.reduce((sum, payment) => sum + toMoneyNumber(payment.amount), 0); // SEV-H-016
         
         // Get program cost using the same mapping as frontend
@@ -4791,7 +4791,11 @@ app.get('/api/payments', verifyToken, authorize('admin', 'finance', 'registrar')
 // Get payments for a specific student
 app.get('/api/payments/student/:studentId', verifyToken, authorize('admin', 'finance', 'student'), verifyOwnership('studentId'), async (req, res) => {
     try {
-        const payments = await Payment.find({ studentId: req.params.studentId }).sort({ paymentDate: -1 });
+        const student = await Student.findOne({ admissionNumber: req.params.studentId });
+        if (!student) {
+            return res.status(404).json({ message: 'Student not found' });
+        }
+        const payments = await Payment.find({ studentId: student.id }).sort({ paymentDate: -1 });
         res.json(payments);
     } catch (error) {
         console.error('Error fetching student payments:', error);
