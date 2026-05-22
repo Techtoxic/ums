@@ -2,14 +2,14 @@
 
 // Course to Program Name Mapping (same as student portal)
 
-// Authenticated fetch wrapper
-const authFetch = async (url, options = {}) => {
-    // Stage 2B-1B: delegate to the single shared auth helper (public/js/auth.js).
-    // It attaches the Authorization header (and a JSON Content-Type for
-    // non-FormData bodies) and handles token-expiry redirects. The wrapper
-    // name is kept so existing call sites are unchanged.
+// Authenticated fetch wrapper — guarded against double-declaration.
+// financeAnalytics.js also defines this; both load as classic scripts so a
+// bare top-level `const` collides in global scope. window assignment is
+// idempotent. Bare authFetch(...) call sites resolve to window.authFetch via
+// global-scope lookup, so they stay unchanged.
+window.authFetch = window.authFetch || (async (url, options = {}) => {
     return window.AUTH.fetch(url, options);
-};
+});
 
 const courseToProgram = {
     'applied_biology_6': 'Applied Biology Level 6',

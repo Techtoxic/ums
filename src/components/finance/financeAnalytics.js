@@ -3,14 +3,12 @@
 
 const API_BASE_URL_CONFIG = window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : `${window.location.protocol}//${window.location.host}/api`;
 
-// Authenticated fetch wrapper
-const authFetch = async (url, options = {}) => {
-    // Stage 2B-1B: delegate to the single shared auth helper (public/js/auth.js).
-    // It attaches the Authorization header (and a JSON Content-Type for
-    // non-FormData bodies) and handles token-expiry redirects. The wrapper
-    // name is kept so existing call sites are unchanged.
+// Authenticated fetch wrapper — guarded against double-declaration.
+// See note in financeDashboard.js. window assignment is idempotent across
+// both files regardless of script load order.
+window.authFetch = window.authFetch || (async (url, options = {}) => {
     return window.AUTH.fetch(url, options);
-};
+});
 
 class FinanceAnalytics {
     constructor() {
