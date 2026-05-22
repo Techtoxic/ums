@@ -207,7 +207,8 @@
                 <!-- Dashboard content from existing code... -->
                 <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-3">
                     <!-- Stats Cards -->
-                    <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="card hover:shadow-md transition-shadow">
+                        <div class="card__body">
                         <div class="flex items-start justify-between">
                             <div class="w-10 h-10 rounded-lg bg-[#7A0C0C]/10 flex items-center justify-center text-[#7A0C0C]">
                                 <i class="ri-graduation-cap-line text-lg"></i>
@@ -217,13 +218,15 @@
                             </span>
                         </div>
                         <p class="mt-3 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Students</p>
-                        <h3 id="stat-students" class="text-3xl font-bold text-gray-800 dark:text-white truncate">-</h3>
+                        <h3 id="stat-students" class="text-headline-lg text-gray-800 dark:text-white truncate">-</h3>
                         <div class="mt-3 h-1 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                             <div class="h-full bg-[#7A0C0C] rounded-full" style="width:72%"></div>
                         </div>
+                        </div>
                     </div>
 
-                    <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="card hover:shadow-md transition-shadow">
+                        <div class="card__body">
                         <div class="flex items-start justify-between">
                             <div class="w-10 h-10 rounded-lg bg-[#7A0C0C]/10 flex items-center justify-center text-[#7A0C0C]">
                                 <i class="ri-user-star-line text-lg"></i>
@@ -233,13 +236,15 @@
                             </span>
                         </div>
                         <p class="mt-3 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Trainers</p>
-                        <h3 id="stat-trainers" class="text-3xl font-bold text-gray-800 dark:text-white truncate">-</h3>
+                        <h3 id="stat-trainers" class="text-headline-lg text-gray-800 dark:text-white truncate">-</h3>
                         <div class="mt-3 h-1 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                             <div class="h-full bg-[#7A0C0C] rounded-full" style="width:64%"></div>
                         </div>
+                        </div>
                     </div>
 
-                    <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="card hover:shadow-md transition-shadow">
+                        <div class="card__body">
                         <div class="flex items-start justify-between">
                             <div class="w-10 h-10 rounded-lg bg-[#7A0C0C]/10 flex items-center justify-center text-[#7A0C0C]">
                                 <i class="ri-money-dollar-circle-line text-lg"></i>
@@ -249,13 +254,15 @@
                             </span>
                         </div>
                         <p class="mt-3 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Revenue</p>
-                        <h3 id="stat-revenue" class="text-3xl font-bold text-gray-800 dark:text-white truncate">-</h3>
+                        <h3 id="stat-revenue" class="text-headline-lg text-gray-800 dark:text-white truncate">-</h3>
                         <div class="mt-3 h-1 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                             <div class="h-full bg-[#7A0C0C] rounded-full" style="width:80%"></div>
                         </div>
+                        </div>
                     </div>
 
-                    <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="card hover:shadow-md transition-shadow">
+                        <div class="card__body">
                         <div class="flex items-start justify-between">
                             <div class="w-10 h-10 rounded-lg bg-[#D4A017]/15 flex items-center justify-center text-[#D4A017]">
                                 <i class="ri-alert-line text-lg"></i>
@@ -265,9 +272,10 @@
                             </span>
                         </div>
                         <p class="mt-3 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Outstanding</p>
-                        <h3 id="stat-outstanding" class="text-3xl font-bold text-gray-800 dark:text-white truncate">-</h3>
+                        <h3 id="stat-outstanding" class="text-headline-lg text-gray-800 dark:text-white truncate">-</h3>
                         <div class="mt-3 h-1 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                             <div class="h-full bg-[#D4A017] rounded-full" style="width:45%"></div>
+                        </div>
                         </div>
                     </div>
                 </div>
@@ -311,7 +319,8 @@
 
             <!-- Students Section -->
             <div id="students-section" class="content-section">
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-2 md:p-3">
+                <div class="card">
+                    <div class="card__body">
                     <!-- Header with buttons -->
                     <div class="flex items-center justify-between gap-2 mb-2">
                         <h2 class="text-sm font-bold text-gray-800 dark:text-white">Students</h2>
@@ -341,52 +350,63 @@
                     
                     <!-- Students Table -->
                     <div id="students-table" class="overflow-x-auto"></div>
+                    </div>
                 </div>
             </div>
 
             <!-- Trainers Section -->
             <div id="trainers-section" class="content-section">
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-2 md:p-4">
+                <div class="card">
+                    <div class="card__body">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
-                        <h2 class="text-base md:text-lg font-bold text-gray-800 dark:text-white">Trainer Management</h2>
+                        <h2 class="text-headline-sm text-gray-800 dark:text-white">Trainer Management</h2>
                         <button onclick="openAddTrainerModal()" class="bg-primary text-white px-3 py-1.5 text-xs rounded-md hover:bg-secondary transition shadow-sm">
                             <i class="ri-user-add-line mr-1"></i><span class="hidden sm:inline">Add </span>Trainer
                         </button>
                     </div>
                     
                     <div id="trainers-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2"></div>
+                    </div>
                 </div>
             </div>
 
             <!-- Financial Section -->
             <div id="financial-section" class="content-section">
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-2 md:p-4">
-                    <h2 class="text-base md:text-lg font-bold text-gray-800 dark:text-white mb-3">Financial Overview</h2>
+                <div class="card">
+                    <div class="card__body">
+                    <h2 class="text-headline-sm text-gray-800 dark:text-white mb-3">Financial Overview</h2>
                     <div id="financial-content"></div>
+                    </div>
                 </div>
             </div>
 
             <!-- Programs Section -->
             <div id="programs-section" class="content-section">
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-2 md:p-4">
-                    <h2 class="text-base md:text-lg font-bold text-gray-800 dark:text-white mb-3">Program Management</h2>
+                <div class="card">
+                    <div class="card__body">
+                    <h2 class="text-headline-sm text-gray-800 dark:text-white mb-3">Program Management</h2>
                     <div id="programs-list"></div>
+                    </div>
                 </div>
             </div>
 
             <!-- Reports Section -->
             <div id="reports-section" class="content-section">
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-2 md:p-4">
-                    <h2 class="text-base md:text-lg font-bold text-gray-800 dark:text-white mb-3">Reports & Analytics</h2>
+                <div class="card">
+                    <div class="card__body">
+                    <h2 class="text-headline-sm text-gray-800 dark:text-white mb-3">Reports & Analytics</h2>
                     <p class="text-xs text-gray-600 dark:text-gray-400">Coming soon: Comprehensive reporting system</p>
+                    </div>
                 </div>
             </div>
 
             <!-- Settings Section -->
             <div id="settings-section" class="content-section">
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-2 md:p-4">
-                    <h2 class="text-base md:text-lg font-bold text-gray-800 dark:text-white mb-3">System Settings</h2>
+                <div class="card">
+                    <div class="card__body">
+                    <h2 class="text-headline-sm text-gray-800 dark:text-white mb-3">System Settings</h2>
                     <p class="text-xs text-gray-600 dark:text-gray-400">Coming soon: System configuration</p>
+                    </div>
                 </div>
             </div>
         </main>
