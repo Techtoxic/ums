@@ -210,7 +210,7 @@ function renderStudentTable(students, programs, payments) {
     students.forEach(student => {
         // Find program cost using course mapping (exact match only)
         const programName = courseToProgram[student.course];
-        const program = programs.find(p => p.programName && p.programName.toLowerCase() === (programName || '').toLowerCase());
+        const program = programs.find(p => p.name && p.name.toLowerCase() === (programName || '').toLowerCase());
         const programCost = program ? program.programCost : 67189; // Default to standard cost
         
         // Calculate total fees based on year of study (programCost is per year)
@@ -312,9 +312,9 @@ async function showStudentPaymentReceipts(data) {
                     const programsResponse = await authFetch(`${API_BASE_URL}/programs`);
                     if (programsResponse.ok) {
                         const programs = await programsResponse.json();
-                        const program = programs.find(p => p.programCode === fullStudent.course);
+                        const program = programs.find(p => p.code === fullStudent.course);
                         if (program) {
-                            programName = program.programName;
+                            programName = program.name;
                         }
                     }
                 } catch (progErr) {
@@ -785,7 +785,7 @@ function displayPrograms(programs) {
     }
     
     // Sort programs alphabetically
-    const sortedPrograms = [...programs].sort((a, b) => a.programName.localeCompare(b.programName));
+    const sortedPrograms = [...programs].sort((a, b) => a.name.localeCompare(b.name));
     
     // Calculate pagination
     const totalPrograms = sortedPrograms.length;
@@ -799,24 +799,15 @@ function displayPrograms(programs) {
     
     // Process each program
     currentPrograms.forEach(program => {
-        // Map department codes to readable names
-        const departmentMap = {
-            'applied_science': 'Applied Science',
-            'agriculture': 'Agriculture',
-            'building_civil': 'Building & Civil',
-            'electromechanical': 'Electromechanical',
-            'hospitality': 'Hospitality',
-            'business_liberal': 'Business & Liberal',
-            'computing_informatics': 'Computing & Informatics'
-        };
-        
-        const departmentName = departmentMap[program.department] || program.department;
-        
+        // V2: /api/programs now includes departmentName (joined server-side from
+        // the departments table by departmentId). Fall back to 'Unknown' if absent.
+        const departmentName = program.departmentName || 'Unknown';
+
         // Create table row
         const row = document.createElement('tr');
         row.className = 'hover:bg-slate-50';
         row.innerHTML = `
-            <td class="px-3 py-2 text-sm">${escapeHtml(program.programName)}</td>
+            <td class="px-3 py-2 text-sm">${escapeHtml(program.name)}</td>
             <td class="px-3 py-2 text-sm">${escapeHtml(departmentName)}</td>
             <td class="px-3 py-2 text-sm">${formatCurrency(program.programCost)}</td>
         `;
@@ -914,13 +905,13 @@ function populateProgramDropdown(programs) {
     selectProgramDropdown.innerHTML = '<option value="">Select a program...</option>';
     
     // Sort programs by name
-    const sortedPrograms = [...programs].sort((a, b) => a.programName.localeCompare(b.programName));
+    const sortedPrograms = [...programs].sort((a, b) => a.name.localeCompare(b.name));
     
     // Add programs to dropdown
     sortedPrograms.forEach(program => {
         const option = document.createElement('option');
         option.value = program._id;
-        option.textContent = program.programName;
+        option.textContent = program.name;
         option.dataset.department = program.department;
         option.dataset.cost = program.programCost;
         selectProgramDropdown.appendChild(option);

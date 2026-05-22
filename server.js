@@ -4322,7 +4322,7 @@ app.put('/api/students/:studentId/email', verifyToken, authorize('admin', 'regis
 // ========================================
 
 // Get all system settings
-app.get('/api/system-settings', verifyToken, authorize('admin', 'registrar', 'student'), async (req, res) => {
+app.get('/api/system-settings', verifyToken, authorize('admin', 'registrar', 'student', 'finance'), async (req, res) => {
     try {
         const { category } = req.query;
         let settings;
@@ -4609,7 +4609,21 @@ app.post('/api/programs', verifyToken, authorize('admin', 'registrar'), async (r
 app.get('/api/programs', async (req, res) => {
     try {
         const programs = await Program.find().sort({ createdAt: -1 });
-        res.json(programs);
+        // V2: programs carry departmentId (UUID) but no department name. Attach
+        // departmentName via a read-only lookup so the finance dashboard (and any
+        // other consumer) can display it without a second round trip. Existing
+        // fields are preserved — departmentName is purely additive.
+        const deptRows = await db
+            .select({ id: schema.departments.id, name: schema.departments.name })
+            .from(schema.departments);
+        const deptNameById = {};
+        for (const d of deptRows) deptNameById[d.id] = d.name;
+        const enriched = programs.map((p) => {
+            const obj = (typeof p.toJSON === 'function') ? p.toJSON() : { ...p };
+            obj.departmentName = deptNameById[obj.departmentId] || null;
+            return obj;
+        });
+        res.json(enriched);
     } catch (error) {
         console.error('Error fetching programs:', error);
         res.status(500).json({ message: 'Error fetching programs' });

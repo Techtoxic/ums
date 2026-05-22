@@ -328,7 +328,7 @@ class FinanceAnalytics {
 
         const programName = courseToProgram[courseName] || courseName;
         return this.programs.find(program => 
-            program.programName && program.programName.toLowerCase() === programName.toLowerCase()
+            program.name && program.name.toLowerCase() === programName.toLowerCase()
         );
     }
 
