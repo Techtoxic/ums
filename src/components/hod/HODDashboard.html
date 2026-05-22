@@ -235,7 +235,7 @@
                     <button id="desktopSidebarToggle" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg hidden md:block">
                         <i class="ri-menu-fold-line text-xl text-gray-600 dark:text-gray-300"></i>
                     </button>
-                    <h2 id="pageTitle" class="text-xl font-semibold text-gray-800 dark:text-white">Dashboard</h2>
+                    <h2 id="pageTitle" class="text-headline text-gray-800 dark:text-white">Dashboard</h2>
                 </div>
                 <div class="flex items-center gap-3">
                     <div class="hidden sm:flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
@@ -265,7 +265,7 @@
                     <div class="relative z-10">
                         <div class="flex items-center justify-between">
                             <div>
-                                <h2 class="text-3xl font-bold mb-2">Welcome back!</h2>
+                                <h2 class="text-headline-lg mb-2">Welcome back!</h2>
                                 <p class="text-white/80 text-lg" id="welcomeHodName">Loading...</p>
                                 <p class="text-white/60 text-sm mt-1" id="welcomeDepartment">Loading...</p>
                             </div>
@@ -280,75 +280,86 @@
                 <!-- Stats Overview -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
                     <!-- Total Courses -->
-                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
+                    <div class="card">
+                        <div class="card__body">
                         <div class="flex items-center">
                             <div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
                                 <i class="fas fa-book text-blue-600 dark:text-blue-400 text-xl"></i>
                             </div>
                             <div class="ml-4">
                                 <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Courses</p>
-                                <p class="text-2xl font-bold text-gray-800 dark:text-gray-200" id="totalCourses">0</p>
+                                <p class="text-headline-lg text-gray-800 dark:text-gray-200" id="totalCourses">0</p>
                             </div>
+                        </div>
                         </div>
                     </div>
 
                     <!-- Total Units -->
-                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
+                    <div class="card">
+                        <div class="card__body">
                         <div class="flex items-center">
                             <div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
                                 <i class="fas fa-puzzle-piece text-green-600 dark:text-green-400 text-xl"></i>
                             </div>
                             <div class="ml-4">
                                 <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Units</p>
-                                <p class="text-2xl font-bold text-gray-800 dark:text-gray-200" id="totalUnits">0</p>
+                                <p class="text-headline-lg text-gray-800 dark:text-gray-200" id="totalUnits">0</p>
                             </div>
+                        </div>
                         </div>
                     </div>
 
                     <!-- Total Trainers -->
-                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
+                    <div class="card">
+                        <div class="card__body">
                         <div class="flex items-center">
                             <div class="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
                                 <i class="fas fa-chalkboard-teacher text-purple-600 dark:text-purple-400 text-xl"></i>
                             </div>
                             <div class="ml-4">
                                 <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Trainers</p>
-                                <p class="text-2xl font-bold text-gray-800 dark:text-gray-200" id="totalTrainers">0</p>
+                                <p class="text-headline-lg text-gray-800 dark:text-gray-200" id="totalTrainers">0</p>
                             </div>
+                        </div>
                         </div>
                     </div>
 
                     <!-- Assigned Units -->
-                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
+                    <div class="card">
+                        <div class="card__body">
                         <div class="flex items-center">
                             <div class="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
                                 <i class="fas fa-tasks text-orange-600 dark:text-orange-400 text-xl"></i>
                             </div>
                             <div class="ml-4">
                                 <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Assigned Units</p>
-                                <p class="text-2xl font-bold text-gray-800 dark:text-gray-200" id="assignedUnits">0</p>
+                                <p class="text-headline-lg text-gray-800 dark:text-gray-200" id="assignedUnits">0</p>
                             </div>
+                        </div>
                         </div>
                     </div>
 
                     <!-- Total Students -->
-                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
+                    <div class="card">
+                        <div class="card__body">
                         <div class="flex items-center">
                             <div class="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
                                 <i class="fas fa-user-graduate text-indigo-600 dark:text-indigo-400 text-xl"></i>
                             </div>
                             <div class="ml-4">
                                 <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Students</p>
-                                <p class="text-2xl font-bold text-gray-800 dark:text-gray-200" id="totalStudents">0</p>
+                                <p class="text-headline-lg text-gray-800 dark:text-gray-200" id="totalStudents">0</p>
                             </div>
+                        </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Quick Actions -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
-                        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Quick Actions</h3>
+                    <div class="card">
+                        <div class="card__body">
+                        <h3 class="text-headline-sm text-gray-800 dark:text-gray-200 mb-4">Quick Actions</h3>
                         <div class="space-y-3">
                             <button 
                                 onclick="switchTab('trainers'); showAssignUnitsModal();" 
@@ -369,17 +380,21 @@
                                 <i class="fas fa-chart-line mr-3"></i>View Analytics
                             </button>
                         </div>
-                    </div>
-
-                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
-                        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Recent Activity</h3>
-                        <div class="space-y-3" id="recentActivity">
-                            <p class="text-gray-500 dark:text-gray-400 text-sm italic">No recent activity</p>
                         </div>
                     </div>
 
-                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
-                        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Department Summary</h3>
+                    <div class="card">
+                        <div class="card__body">
+                        <h3 class="text-headline-sm text-gray-800 dark:text-gray-200 mb-4">Recent Activity</h3>
+                        <div class="space-y-3" id="recentActivity">
+                            <p class="text-gray-500 dark:text-gray-400 text-sm italic">No recent activity</p>
+                        </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card__body">
+                        <h3 class="text-headline-sm text-gray-800 dark:text-gray-200 mb-4">Department Summary</h3>
                         <div class="space-y-3">
                             <div class="flex justify-between">
                                 <span class="text-gray-600 dark:text-gray-400">Assignment Rate</span>
@@ -393,6 +408,7 @@
                                 <span class="font-medium text-gray-800 dark:text-gray-200" id="activeTrainers">0</span>
                             </div>
                         </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -401,9 +417,10 @@
             <div class="mt-8">
                 <!-- Courses & Units Tab -->
                 <div id="content-courses" class="tab-content hidden">
-                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+                    <div class="card">
+                        <div class="card__body">
                         <div class="flex justify-between items-center mb-6">
-                            <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Department Courses & Units</h2>
+                            <h2 class="text-headline-sm text-gray-800 dark:text-gray-200">Department Courses & Units</h2>
                             <div class="flex space-x-4">
                                 <select 
                                     id="courseFilter" 
@@ -446,14 +463,16 @@
                                 </button>
                             </div>
                         </div>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Trainers Tab -->
                 <div id="content-trainers" class="tab-content hidden">
-                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+                    <div class="card">
+                        <div class="card__body">
                         <div class="flex justify-between items-center mb-6">
-                            <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Department Trainers</h2>
+                            <h2 class="text-headline-sm text-gray-800 dark:text-gray-200">Department Trainers</h2>
                             <button 
                                 onclick="showAssignUnitsModal()"
                                 class="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white px-4 py-2 rounded-lg transition-colors duration-200"
@@ -466,14 +485,16 @@
                         <div id="trainersGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             <!-- Trainer cards will be populated here -->
                         </div>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Unit Assignments Tab -->
                 <div id="content-assignments" class="tab-content hidden">
-                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+                    <div class="card">
+                        <div class="card__body">
                         <div class="flex justify-between items-center mb-6">
-                            <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Current Unit Assignments</h2>
+                            <h2 class="text-headline-sm text-gray-800 dark:text-gray-200">Current Unit Assignments</h2>
                             <div class="flex space-x-4">
                                 <select 
                                     id="assignmentFilter" 
@@ -513,14 +534,16 @@
                                 </tbody>
                             </table>
                         </div>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Common Units Tab -->
                 <div id="content-common-units" class="tab-content hidden">
-                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+                    <div class="card">
+                        <div class="card__body">
                         <div class="flex justify-between items-center mb-6">
-                            <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Common Units Management</h2>
+                            <h2 class="text-headline-sm text-gray-800 dark:text-gray-200">Common Units Management</h2>
                             <button 
                                 onclick="showAssignCommonUnitsModal()"
                                 class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
@@ -550,7 +573,7 @@
                         <!-- Common Unit Assignments Table -->
                         <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
                             <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Common Unit Assignments</h3>
+                                <h3 class="text-headline-sm text-gray-800 dark:text-gray-200">Common Unit Assignments</h3>
                             </div>
                             <div class="overflow-x-auto">
                                 <table id="commonUnitsAssignmentsTable" class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -570,13 +593,15 @@
                                 </table>
                             </div>
                         </div>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Analytics Tab -->
                 <div id="content-analytics" class="tab-content hidden">
-                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
-                        <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-6">Department Analytics</h2>
+                    <div class="card">
+                        <div class="card__body">
+                        <h2 class="text-headline-sm text-gray-800 dark:text-gray-200 mb-6">Department Analytics</h2>
                         
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             <!-- Unit Assignment Chart -->
@@ -595,14 +620,16 @@
                                 </div>
                             </div>
                         </div>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Profile Tab -->
                 <div id="content-profile" class="tab-content hidden">
-                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+                    <div class="card">
+                        <div class="card__body">
                         <div class="flex justify-between items-center mb-6">
-                            <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200">My Profile</h2>
+                            <h2 class="text-headline-sm text-gray-800 dark:text-gray-200">My Profile</h2>
                             <button onclick="showProfileUpdateModal(true, true)" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors">
                                 <i class="ri-edit-line mr-2"></i>Edit Profile
                             </button>
@@ -616,7 +643,7 @@
                                         <i class="ri-user-line text-white text-3xl"></i>
                                     </div>
                                     <div>
-                                        <h3 class="text-xl font-semibold text-gray-800 dark:text-white" id="profile-name">Loading...</h3>
+                                        <h3 class="text-headline text-gray-800 dark:text-white" id="profile-name">Loading...</h3>
                                         <p class="text-gray-600 dark:text-gray-400" id="profile-department">Loading...</p>
                                     </div>
                                 </div>
@@ -646,7 +673,7 @@
 
                             <!-- Account Information -->
                             <div class="space-y-6">
-                                <h4 class="text-lg font-semibold text-gray-800 dark:text-white">Account Information</h4>
+                                <h4 class="text-headline-sm text-gray-800 dark:text-white">Account Information</h4>
                                 
                                 <div class="grid grid-cols-1 gap-4">
                                     <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
@@ -693,6 +720,7 @@
                                 </div>
                             </div>
                         </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -704,7 +732,7 @@
         <div class="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto shadow-xl">
             <div class="p-6 border-b border-gray-200 dark:border-gray-700">
                 <div class="flex justify-between items-center">
-                    <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Assign Units to Trainer</h3>
+                    <h3 class="text-headline-sm text-gray-800 dark:text-gray-200">Assign Units to Trainer</h3>
                     <button onclick="closeAssignUnitsModal()" class="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
                         <i class="fas fa-times text-xl"></i>
                     </button>
@@ -759,7 +787,7 @@
         <div class="bg-white dark:bg-gray-800 rounded-lg max-w-5xl w-full mx-4 max-h-[90vh] overflow-y-auto shadow-xl">
             <div class="p-6 border-b border-gray-200 dark:border-gray-700">
                 <div class="flex justify-between items-center">
-                    <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Assign Common Units</h3>
+                    <h3 class="text-headline-sm text-gray-800 dark:text-gray-200">Assign Common Units</h3>
                     <button onclick="closeAssignCommonUnitsModal()" class="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
                         <i class="ri-close-line text-2xl"></i>
                     </button>
