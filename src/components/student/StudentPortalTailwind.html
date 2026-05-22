@@ -505,21 +505,21 @@
                                     <div class="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-3">
                                         <i class="ri-price-tag-3-line text-white text-xl"></i>
                                     </div>
-                                    <p class="text-2xl font-bold text-blue-600 program-cost">KES 0</p>
+                                    <p class="text-headline-lg text-blue-600 program-cost">KES 0</p>
                                     <p class="text-sm text-gray-600 dark:text-gray-400">Program Cost</p>
                                 </div>
                                 <div class="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-xl">
                                     <div class="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-3">
                                         <i class="ri-check-double-line text-white text-xl"></i>
                                     </div>
-                                    <p class="text-2xl font-bold text-green-600 total-paid">KES 0</p>
+                                    <p class="text-headline-lg text-green-600 total-paid">KES 0</p>
                                     <p class="text-sm text-gray-600 dark:text-gray-400">Total Paid</p>
                                 </div>
                                 <div class="text-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl">
                                     <div class="w-12 h-12 bg-orange-600 rounded-full flex items-center justify-center mx-auto mb-3">
                                         <i class="ri-wallet-3-line text-white text-xl"></i>
                                     </div>
-                                    <p class="text-2xl font-bold text-orange-600 balance">KES 0</p>
+                                    <p class="text-headline-lg text-orange-600 balance">KES 0</p>
                                     <p class="text-sm text-gray-600 dark:text-gray-400">Balance</p>
                                 </div>
                             </div>
@@ -691,15 +691,18 @@
             <section id="uploads" class="content-section hidden">
                 <div class="space-y-2">
                     <!-- Page Header -->
-                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                    <div class="card">
+                        <div class="card__body">
                         <h2 class="text-base md:text-sm md:text-base font-semibold text-gray-800 dark:text-white">Document Uploads</h2>
                         <p class="text-gray-600 dark:text-gray-400 mt-1">Upload your profile photo, certificates, and assessment work</p>
+                        </div>
                     </div>
 
                     <!-- Profile & Documents Uploads -->
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                         <!-- Profile Photo Card -->
-                        <div id="profile-photo-card" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                        <div id="profile-photo-card" class="card">
+                            <div class="card__body">
                             <div class="flex items-start justify-between mb-4">
                                 <div class="flex items-center space-x-3">
                                     <div class="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
@@ -726,10 +729,12 @@
                                     <i class="ri-refresh-line"></i>
                                 </button>
                             </div>
+                            </div>
                         </div>
 
                         <!-- KCSE Results Card -->
-                        <div id="kcse-card" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                        <div id="kcse-card" class="card">
+                            <div class="card__body">
                             <div class="flex items-start justify-between mb-4">
                                 <div class="flex items-center space-x-3">
                                     <div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
@@ -756,10 +761,12 @@
                                     <i class="ri-refresh-line"></i>
                                 </button>
                             </div>
+                            </div>
                         </div>
 
                         <!-- KCPE Results Card -->
-                        <div id="kcpe-card" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                        <div id="kcpe-card" class="card">
+                            <div class="card__body">
                             <div class="flex items-start justify-between mb-4">
                                 <div class="flex items-center space-x-3">
                                     <div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
@@ -786,11 +793,13 @@
                                     <i class="ri-refresh-line"></i>
                                 </button>
                             </div>
+                            </div>
                         </div>
                     </div>
 
                     <!-- Unit Assessments & Practicals -->
-                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                    <div class="card">
+                        <div class="card__body">
                         <div class="mb-6">
                             <h3 class="text-sm md:text-base font-semibold text-gray-900 dark:text-white">Unit Assessments & Practical Work</h3>
                             <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Upload assessments and practical work for your registered units (department units only)</p>
@@ -803,6 +812,7 @@
                                 <i class="ri-loader-4-line text-4xl text-gray-400 animate-spin mb-4"></i>
                                 <p class="text-gray-600 dark:text-gray-400">Loading your registered units...</p>
                             </div>
+                        </div>
                         </div>
                     </div>
 
@@ -956,7 +966,7 @@
                             <!-- Student Information Display -->
                             <div class="grid md:grid-cols-2 gap-2 mb-3">
                                 <div class="space-y-2">
-                                    <h3 class="text-lg font-medium text-gray-800 dark:text-white">Student Information</h3>
+                                    <h3 class="text-headline-sm text-gray-800 dark:text-white">Student Information</h3>
                                     <div class="space-y-3">
                                         <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
                                             <span class="text-gray-600 dark:text-gray-400">Name:</span>
@@ -989,7 +999,7 @@
                                     </div>
                                 </div>
                                 <div class="space-y-2">
-                                    <h3 class="text-lg font-medium text-gray-800 dark:text-white">Application Status</h3>
+                                    <h3 class="text-headline-sm text-gray-800 dark:text-white">Application Status</h3>
                                     <div id="graduation-status-info" class="space-y-3">
                                         <!-- Status will be populated by JavaScript -->
                                     </div>
@@ -1067,7 +1077,7 @@
                             <!-- Student Information Display -->
                             <div class="grid md:grid-cols-2 gap-2 mb-3">
                                 <div class="space-y-2">
-                                    <h3 class="text-lg font-medium text-gray-800 dark:text-white">Student Information</h3>
+                                    <h3 class="text-headline-sm text-gray-800 dark:text-white">Student Information</h3>
                                     <div class="space-y-3">
                                         <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
                                             <span class="text-gray-600 dark:text-gray-400">Name:</span>
@@ -1100,7 +1110,7 @@
                                     </div>
                                 </div>
                                 <div class="space-y-2">
-                                    <h3 class="text-lg font-medium text-gray-800 dark:text-white">Attachment Location</h3>
+                                    <h3 class="text-headline-sm text-gray-800 dark:text-white">Attachment Location</h3>
                                     <div class="space-y-2">
                                         <div>
                                             <label for="attachment-county" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Preferred County</label>
