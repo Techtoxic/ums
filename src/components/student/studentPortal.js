@@ -1,13 +1,17 @@
 // Student Portal JavaScript
 const API_BASE_URL = window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : `${window.location.protocol}//${window.location.host}/api`;
 
-// Authenticated fetch wrapper for student
-const authFetch = async (url, options = {}) => {
+// Authenticated fetch wrapper for student — guarded against double-declaration.
+// uploadSection.js also defines authFetch; both load as classic scripts on the
+// same page, so a bare top-level `const` collides (SyntaxError). window
+// assignment is idempotent regardless of load order.
+window.authFetch = window.authFetch || (async (url, options = {}) => {
     // Stage 2B-1B: delegate to the single shared auth helper (public/js/auth.js).
     // It attaches the Authorization header (and a JSON Content-Type for
     // non-FormData bodies) and handles token-expiry redirects.
     return window.AUTH.fetch(url, options);
-};
+});
+const authFetch = window.authFetch;
 
 // Get student data from session storage
 let studentData = JSON.parse(sessionStorage.getItem('studentData')) || {};

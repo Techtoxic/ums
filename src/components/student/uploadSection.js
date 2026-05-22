@@ -5,8 +5,11 @@
 // API Base - use relative URL to avoid hardcoding port
 const UPLOAD_API_BASE = '/api';
 
-// Stage 2B-1B: authenticated fetch via the shared helper.
-const authFetch = async (url, options = {}) => window.AUTH.fetch(url, options);
+// Stage 2B-1B: authenticated fetch via the shared helper. Guarded against
+// double-declaration — studentPortal.js also defines authFetch and both load
+// as classic scripts on the same page. window assignment is idempotent.
+window.authFetch = window.authFetch || (async (url, options = {}) => window.AUTH.fetch(url, options));
+const authFetch = window.authFetch;
 
 // Get current student data
 function getStudentData() {
