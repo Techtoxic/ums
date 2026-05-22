@@ -58,7 +58,7 @@
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md transform transition-all duration-300 scale-95">
             <div class="p-6 border-b border-gray-200 dark:border-gray-700">
                 <div class="flex items-center justify-between">
-                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Export Students</h3>
+                    <h3 class="text-headline-sm text-gray-800 dark:text-white">Export Students</h3>
                     <button onclick="closeExportModal()" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
                         <i class="ri-close-line text-xl text-gray-600 dark:text-gray-300"></i>
                     </button>
@@ -1740,8 +1740,9 @@
 
             <!-- Student Management Section -->
             <div id="content-management" class="content-section hidden">
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-8">
-                <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-6">Student Management</h2>
+            <div class="card mb-8">
+                <div class="card__body">
+                <h2 class="text-headline text-gray-800 dark:text-white mb-6">Student Management</h2>
                 <div class="flex flex-wrap gap-4 mb-6">
                     <button onclick="openAdmissionModal()" class="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-secondary text-white rounded-lg transition-colors">
                         <i class="ri-user-add-line"></i>
@@ -1827,13 +1828,16 @@
                         </button>
                     </div>
                 </div>
+                </div>
             </div>
 
             <!-- Course Overview Section -->
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-                <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-6">Course Overview by Department</h2>
+            <div class="card">
+                <div class="card__body">
+                <h2 class="text-headline text-gray-800 dark:text-white mb-6">Course Overview by Department</h2>
                 <div id="courseOverviewGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     <!-- Course data will be populated here -->
+                </div>
                 </div>
             </div>
 
@@ -1842,7 +1846,7 @@
                 <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-lg transform transition-all duration-300 scale-95">
                     <div class="p-5">
                         <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
+                            <h3 class="text-headline-sm text-gray-800 dark:text-white flex items-center">
                                 <i class="ri-user-line text-primary mr-2"></i>
                                 Student Details
                             </h3>
@@ -1862,7 +1866,7 @@
                 <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md transform transition-all duration-300 scale-95">
                     <div class="p-5">
                         <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
+                            <h3 class="text-headline-sm text-gray-800 dark:text-white flex items-center">
                                 <i class="ri-edit-line text-primary mr-2"></i>
                                 Edit Student
                             </h3>
@@ -1919,8 +1923,9 @@
                     </div>
                 </div>
                 
-                <div id="promotionSection" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-8">
-                <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-6">Promotion Controls</h2>
+                <div id="promotionSection" class="card mb-8">
+                <div class="card__body">
+                <h2 class="text-headline text-gray-800 dark:text-white mb-6">Promotion Controls</h2>
                 
                 <!-- Promotion Controls -->
                 <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6">
@@ -2015,6 +2020,7 @@
                         </div>
                         <p id="progressText" class="text-sm text-blue-700 dark:text-blue-300 mt-2">0 of 0 students promoted</p>
                     </div>
+                </div>
                 </div>
             </div>
             </div>
@@ -2213,7 +2219,7 @@
                 </div>
 
                 <!-- Letter Title -->
-                <div class="text-center text-xl font-bold underline mb-8 uppercase">
+                <div class="text-center text-headline underline mb-8 uppercase">
                     LETTER OF ADMISSION
                 </div>
 
@@ -2384,7 +2390,7 @@
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg w-full max-w-lg mx-4">
             <div class="p-6">
                 <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-xl font-bold text-gray-800 dark:text-white">New Student Admission</h3>
+                    <h3 class="text-headline text-gray-800 dark:text-white">New Student Admission</h3>
                     <button onclick="closeAdmissionModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
                         <i class="ri-close-line text-2xl"></i>
                     </button>
@@ -2533,7 +2539,7 @@
         <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-6xl max-h-[90vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
             <div class="p-6">
                 <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-xl font-bold text-gray-800 dark:text-white flex items-center">
+                    <h3 class="text-headline text-gray-800 dark:text-white flex items-center">
                         <i class="ri-arrow-up-line text-green-600 mr-2"></i>
                         Student Promotion
                     </h3>
