@@ -5347,6 +5347,13 @@ app.post('/api/notifications/broadcast', verifyToken, authorize('admin', 'regist
 // GRADUATION APPLICATION ENDPOINTS
 // ========================================
 
+// Eligibility rule (recovered from the V1 GraduationApplication/AttachmentApplication eligibility
+// static dropped in the Postgres migration): a student may apply in the final year of
+// their level — Year (level - 3). Level 4 → Year 1, Level 5 → Year 2, Level 6 → Year 3.
+function isEligibleToApply(level, yearOfStudy) {
+    return yearOfStudy === (level - 3);
+}
+
 // Check if student can apply for graduation
 app.get('/api/students/:studentId/graduation-eligibility', verifyToken, authorize('admin', 'registrar', 'student'), verifyOwnership('studentId'), async (req, res) => {
     try {
@@ -5361,23 +5368,20 @@ app.get('/api/students/:studentId/graduation-eligibility', verifyToken, authoriz
         const level = parseInt(student.course.match(/(\d+)$/)?.[1]) || 4;
         const yearOfStudy = student.year || 1;
         
-        const canApply = GraduationApplication.canStudentApply(level, yearOfStudy);
-        
-        // Check if already applied for current academic year
-        const currentAcademicYear = await SystemSettings.getSetting('current_academic_year', '2024/2025');
-        
-        const existingApplication = await GraduationApplication.findOne({
-            studentId,
-            academicYear: currentAcademicYear
-        });
-        
+        const eligible = isEligibleToApply(level, yearOfStudy);
+
+        // A student has an existing application if any non-rejected row exists for them.
+        // Query by the resolved student uuid (the shim maps studentId -> student_id).
+        const existingApplications = await GraduationApplication.find({ studentId: student.id });
+        const existingApplication = existingApplications.find(a => a.status !== 'rejected') || null;
+
         res.json({
-            canApply: canApply && !existingApplication,
+            canApply: eligible && !existingApplication,
             level,
             yearOfStudy,
             hasExistingApplication: !!existingApplication,
             existingApplication: existingApplication,
-            reason: !canApply ? `Level ${level} students can only apply in Year ${level - 3}` : null
+            reason: !eligible ? `Level ${level} students can only apply in Year ${level - 3}` : null
         });
         
     } catch (error) {
@@ -5401,51 +5405,23 @@ app.post('/api/students/:studentId/graduation-application', verifyToken, authori
         const yearOfStudy = student.year || 1;
         
         // Validate eligibility
-        if (!GraduationApplication.canStudentApply(level, yearOfStudy)) {
-            return res.status(400).json({ 
-                message: `Level ${level} students can only apply for graduation in Year ${level - 3}` 
+        if (!isEligibleToApply(level, yearOfStudy)) {
+            return res.status(400).json({
+                message: `Level ${level} students can only apply for graduation in Year ${level - 3}`
             });
         }
-        
-        // Get current academic settings
-        const currentAcademicYear = await SystemSettings.getSetting('current_academic_year', '2024/2025');
-        
-        // Check if already applied
-        const existingApplication = await GraduationApplication.findOne({
-            studentId,
-            academicYear: currentAcademicYear
-        });
-        
-        if (existingApplication) {
-            return res.status(400).json({ message: 'You have already applied for graduation this academic period' });
+
+        // Guard: block if a non-rejected application already exists (query by student uuid).
+        const existingApplications = await GraduationApplication.find({ studentId: student.id });
+        if (existingApplications.some(a => a.status !== 'rejected')) {
+            return res.status(400).json({ message: 'You have already applied for graduation' });
         }
-        
-        // Get student's unit registrations to check completion
-        const registrations = await StudentUnitRegistration.find({
-            studentId,
-            status: 'registered',
-            isActive: true
+
+        // graduation_applications only has student_id (+ status default 'pending'); the V1
+        // snapshot fields (name, course, level, academicYear, unitsCompleted, ...) have no columns.
+        const application = await GraduationApplication.create({
+            studentId: student.id
         });
-        
-        const application = new GraduationApplication({
-            studentId,
-            name: student.name,
-            admissionNumber: student.admissionNumber,
-            idNumber: student.idNumber,
-            phoneNumber: student.phoneNumber,
-            kcseGrade: student.kcseGrade,
-            course: student.course,
-            department: student.department,
-            yearOfStudy,
-            intake: student.intake,
-            admissionType: student.admissionType,
-            level,
-            academicYear: currentAcademicYear,
-            unitsCompleted: registrations.length,
-            totalUnits: registrations.length // This should be calculated based on course requirements
-        });
-        
-        await application.save();
         
         // Create notification for ILO office
         const notification = new Notification({
@@ -5490,23 +5466,20 @@ app.get('/api/students/:studentId/attachment-eligibility', verifyToken, authoriz
         const level = parseInt(student.course.match(/(\d+)$/)?.[1]) || 4;
         const yearOfStudy = student.year || 1;
         
-        const canApply = AttachmentApplication.canStudentApply(level, yearOfStudy);
-        
-        // Check if already applied for current academic year
-        const currentAcademicYear = await SystemSettings.getSetting('current_academic_year', '2024/2025');
-        
-        const existingApplication = await AttachmentApplication.findOne({
-            studentId,
-            academicYear: currentAcademicYear
-        });
-        
+        const eligible = isEligibleToApply(level, yearOfStudy);
+
+        // A student has an existing application if any non-rejected row exists for them.
+        // Query by the resolved student uuid (the shim maps studentId -> student_id).
+        const existingApplications = await AttachmentApplication.find({ studentId: student.id });
+        const existingApplication = existingApplications.find(a => a.status !== 'rejected') || null;
+
         res.json({
-            canApply: canApply && !existingApplication,
+            canApply: eligible && !existingApplication,
             level,
             yearOfStudy,
             hasExistingApplication: !!existingApplication,
             existingApplication: existingApplication,
-            reason: !canApply ? `Level ${level} students can only apply in Year ${level - 3}` : null
+            reason: !eligible ? `Level ${level} students can only apply in Year ${level - 3}` : null
         });
         
     } catch (error) {
@@ -5535,53 +5508,24 @@ app.post('/api/students/:studentId/attachment-application', verifyToken, authori
         const yearOfStudy = student.year || 1;
         
         // Validate eligibility
-        if (!AttachmentApplication.canStudentApply(level, yearOfStudy)) {
-            return res.status(400).json({ 
-                message: `Level ${level} students can only apply for attachment in Year ${level - 3}` 
+        if (!isEligibleToApply(level, yearOfStudy)) {
+            return res.status(400).json({
+                message: `Level ${level} students can only apply for attachment in Year ${level - 3}`
             });
         }
-        
-        // Get current academic settings
-        const currentAcademicYear = await SystemSettings.getSetting('current_academic_year', '2024/2025');
-        
-        // Check if already applied
-        const existingApplication = await AttachmentApplication.findOne({
-            studentId,
-            academicYear: currentAcademicYear
-        });
-        
-        if (existingApplication) {
-            return res.status(400).json({ message: 'You have already applied for attachment this academic period' });
+
+        // Guard: block if a non-rejected application already exists (query by student uuid).
+        const existingApplications = await AttachmentApplication.find({ studentId: student.id });
+        if (existingApplications.some(a => a.status !== 'rejected')) {
+            return res.status(400).json({ message: 'You have already applied for attachment' });
         }
-        
-        // Get student's unit registrations to check completion
-        const registrations = await StudentUnitRegistration.find({
-            studentId,
-            status: 'registered',
-            isActive: true
+
+        // attachment_applications has student_id, company_name, start_date, end_date (+ status default).
+        // county / nearestTown have NO column in the current schema, so they are validated above but
+        // cannot be persisted; the V1 snapshot fields (name, course, level, ...) also have no columns.
+        const application = await AttachmentApplication.create({
+            studentId: student.id
         });
-        
-        const application = new AttachmentApplication({
-            studentId,
-            name: student.name,
-            admissionNumber: student.admissionNumber,
-            idNumber: student.idNumber,
-            phoneNumber: student.phoneNumber,
-            kcseGrade: student.kcseGrade,
-            course: student.course,
-            department: student.department,
-            yearOfStudy,
-            intake: student.intake,
-            admissionType: student.admissionType,
-            level,
-            county: county.trim(),
-            nearestTown: nearestTown.trim(),
-            academicYear: currentAcademicYear,
-            unitsCompleted: registrations.length,
-            totalUnits: registrations.length // This should be calculated based on course requirements
-        });
-        
-        await application.save();
         
         // Create notification for ILO office
         const notification = new Notification({
