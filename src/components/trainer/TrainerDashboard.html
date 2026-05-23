@@ -509,6 +509,7 @@
                                         <option value="record_of_work">Record of Work</option>
                                         <option value="session_plan">Session Plan</option>
                                         <option value="exam">Exam</option>
+                                        <option value="tvet_license">TVET License</option>
                                     </select>
                                     <button onclick="refreshTools()" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors text-sm font-medium">
                                         <i class="ri-refresh-line mr-2"></i>Refresh
@@ -518,22 +519,21 @@
                         </div>
 
                         <div class="card__body">
+                            <!-- Tool Requests for You -->
+                            <div class="mb-8">
+                                <h3 class="text-headline-sm text-gray-900 dark:text-white mb-4">Tool Requests for You</h3>
+                                <div id="toolRequestsList" class="space-y-3"><!-- populated by JS --></div>
+                                <div id="toolRequestsEmpty" class="text-sm text-gray-500 dark:text-gray-400 hidden">No pending tool requests.</div>
+                            </div>
+
                             <!-- Upload Section -->
                             <div class="mb-8">
                                 <h3 class="text-headline-sm text-gray-900 dark:text-white mb-4">Upload Tools of Trade</h3>
-                                
-                                <!-- Unit Selection -->
-                                <div class="mb-6">
-                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Unit</label>
-                                    <select id="unitSelect" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                                        <option value="">Choose a unit to upload tools for...</option>
-                                    </select>
-                                </div>
 
                                 <!-- Tool Type Selection -->
                                 <div class="mb-6">
                                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tool Type</label>
-                                    <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                                    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
                                         <button onclick="selectToolType('course_outline')" class="tool-type-btn p-4 border-2 border-gray-200 dark:border-gray-600 rounded-lg hover:border-primary hover:bg-primary/5 transition-all text-center">
                                             <i class="ri-file-text-line text-2xl text-gray-400 mb-2"></i>
                                             <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Course Outline</p>
@@ -553,6 +553,10 @@
                                         <button onclick="selectToolType('exam')" class="tool-type-btn p-4 border-2 border-gray-200 dark:border-gray-600 rounded-lg hover:border-primary hover:bg-primary/5 transition-all text-center">
                                             <i class="ri-file-list-3-line text-2xl text-gray-400 mb-2"></i>
                                             <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Exam</p>
+                                        </button>
+                                        <button onclick="selectToolType('tvet_license')" class="tool-type-btn p-4 border-2 border-gray-200 dark:border-gray-600 rounded-lg hover:border-primary hover:bg-primary/5 transition-all text-center">
+                                            <i class="ri-award-line text-2xl text-gray-400 mb-2"></i>
+                                            <p class="text-sm font-medium text-gray-700 dark:text-gray-300">TVET License</p>
                                         </button>
                                     </div>
                                 </div>

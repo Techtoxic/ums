@@ -16,6 +16,7 @@ let studentsData = [];
 let toolsData = [];
 let selectedToolType = null;
 let selectedFile = null;
+let selectedRequestId = null; // set when fulfilling a specific tool request; null = general upload
 let bulkToolType = null;
 let bulkFiles = [];
 let currentSection = 'dashboard';
@@ -844,10 +845,10 @@ async function loadToolsOfTrade() {
         console.log('🔄 Loading tools of trade...');
         
         showToolsLoadingState();
-        
-        // Load units for dropdown
-        await loadUnitsForTools();
-        
+
+        // Load the open requests addressed to this trainer
+        loadToolRequests();
+
         // Load submitted tools
         const response = await authFetch(`${API_BASE_URL}/tools/trainer/${currentTrainer._id}`);
         
@@ -868,48 +869,86 @@ async function loadToolsOfTrade() {
     }
 }
 
-// Load units for tools dropdown
-async function loadUnitsForTools() {
+// Tool-type display labels (shared by the requests list and submitted-tools cards).
+const TOOL_TYPE_NAMES = {
+    course_outline: 'Course Outline',
+    learning_plan: 'Learning Plan',
+    record_of_work: 'Record of Work',
+    session_plan: 'Session Plan',
+    exam: 'Exam',
+    tvet_license: 'TVET License'
+};
+
+// Load the open tool requests addressed to this trainer (faculty / their department / them).
+async function loadToolRequests() {
+    const listEl = document.getElementById('toolRequestsList');
+    const emptyEl = document.getElementById('toolRequestsEmpty');
+    if (!listEl) return;
+
     try {
-        const response = await authFetch(`${API_BASE_URL}/trainers/${currentTrainer._id}/assignments`);
-        
+        const response = await authFetch(`${API_BASE_URL}/tool-requests/trainer/${currentTrainer._id}`);
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
-        
-        const data = await response.json();
-        const assignments = data.assignments || [];
-        
-        const unitSelect = document.getElementById('unitSelect');
-        unitSelect.innerHTML = '<option value="">Choose a unit to upload tools for...</option>';
-        
-        assignments.forEach(assignment => {
-            if (assignment.unitId && assignment.unitId.unitCode) {
-                const option = document.createElement('option');
-                option.value = assignment.unitId._id;
-                option.textContent = `${assignment.unitId.unitCode} - ${assignment.unitId.unitName}`;
-                unitSelect.appendChild(option);
-            }
-        });
-        
+        const requests = await response.json();
+
+        if (!Array.isArray(requests) || requests.length === 0) {
+            listEl.innerHTML = '';
+            if (emptyEl) emptyEl.classList.remove('hidden');
+            return;
+        }
+        if (emptyEl) emptyEl.classList.add('hidden');
+
+        listEl.innerHTML = requests.map(r => {
+            const label = TOOL_TYPE_NAMES[r.toolType] || (r.toolType || '').replace(/_/g, ' ');
+            const due = r.dueDate ? new Date(r.dueDate).toLocaleDateString() : 'No due date';
+            return `
+                <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex justify-between items-start gap-4">
+                    <div class="flex-1">
+                        <p class="font-medium text-gray-900 dark:text-white">${escapeHtml(label)}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Due: ${escapeHtml(due)}</p>
+                        ${r.instructions ? `<p class="text-sm text-gray-600 dark:text-gray-400 mt-2">${escapeHtml(r.instructions)}</p>` : ''}
+                    </div>
+                    <button onclick="fulfillToolRequest('${escapeAttr(r.id)}', '${escapeAttr(r.toolType)}')" class="px-3 py-1.5 bg-primary text-white rounded-lg hover:bg-secondary transition-colors text-sm font-medium whitespace-nowrap">
+                        <i class="ri-upload-line mr-1"></i>Fulfill this
+                    </button>
+                </div>`;
+        }).join('');
     } catch (error) {
-        console.error('❌ Error loading units for tools:', error);
+        console.error('❌ Error loading tool requests:', error);
+        listEl.innerHTML = '';
+        if (emptyEl) emptyEl.classList.remove('hidden');
     }
 }
 
-// Select tool type
+// Pre-fill the upload from a request: link the requestId, pre-select the tool type, scroll to upload.
+function fulfillToolRequest(requestId, toolType) {
+    selectedRequestId = requestId;
+    if (toolType) selectToolType(toolType);
+
+    const uploadArea = document.getElementById('uploadArea');
+    if (uploadArea) {
+        uploadArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        uploadArea.classList.add('border-primary', 'bg-primary/5');
+        setTimeout(() => uploadArea.classList.remove('bg-primary/5'), 1500);
+    }
+    showToast('Request selected — choose your file and upload.', 'success');
+}
+
+// Select tool type. Highlights the matching button by its onclick target so it works
+// both from a button click and when called programmatically (e.g. fulfillToolRequest).
 function selectToolType(toolType) {
     selectedToolType = toolType;
-    
-    // Update UI
+
     document.querySelectorAll('.tool-type-btn').forEach(btn => {
-        btn.classList.remove('border-primary', 'bg-primary/5');
-        btn.classList.add('border-gray-200', 'dark:border-gray-600');
+        const onclick = btn.getAttribute('onclick') || '';
+        const isMatch = onclick.includes(`selectToolType('${toolType}')`);
+        btn.classList.toggle('border-primary', isMatch);
+        btn.classList.toggle('bg-primary/5', isMatch);
+        btn.classList.toggle('border-gray-200', !isMatch);
+        btn.classList.toggle('dark:border-gray-600', !isMatch);
     });
-    
-    event.target.closest('.tool-type-btn').classList.remove('border-gray-200', 'dark:border-gray-600');
-    event.target.closest('.tool-type-btn').classList.add('border-primary', 'bg-primary/5');
-    
+
     // Enable upload button if file is selected
     updateUploadButton();
 }
@@ -957,9 +996,7 @@ function clearFileSelection() {
 // Update upload button state
 function updateUploadButton() {
     const uploadBtn = document.getElementById('uploadBtn');
-    const unitSelect = document.getElementById('unitSelect');
-    
-    const canUpload = selectedFile && selectedToolType && unitSelect.value;
+    const canUpload = selectedFile && selectedToolType;
     uploadBtn.disabled = !canUpload;
 }
 
@@ -969,22 +1006,15 @@ async function uploadTool() {
         showToast('Please select a file and tool type', 'error');
         return;
     }
-    
-    const unitSelect = document.getElementById('unitSelect');
-    if (!unitSelect.value) {
-        showToast('Please select a unit', 'error');
-        return;
-    }
-    
+
     try {
         const formData = new FormData();
         formData.append('file', selectedFile);
         formData.append('trainerId', currentTrainer._id);
-        formData.append('unitId', unitSelect.value);
         formData.append('toolType', selectedToolType);
-        formData.append('academicYear', '2024/2025');
-        formData.append('semester', '1');
-        
+        // requestId is optional — present only when fulfilling a specific request.
+        if (selectedRequestId) formData.append('requestId', selectedRequestId);
+
         const uploadBtn = document.getElementById('uploadBtn');
         uploadBtn.disabled = true;
         uploadBtn.innerHTML = '<i class="ri-loader-4-line animate-spin mr-2"></i>Uploading...';
@@ -1010,14 +1040,14 @@ async function uploadTool() {
         // Reset form
         clearFileSelection();
         selectedToolType = null;
+        selectedRequestId = null;
         document.querySelectorAll('.tool-type-btn').forEach(btn => {
             btn.classList.remove('border-primary', 'bg-primary/5');
             btn.classList.add('border-gray-200', 'dark:border-gray-600');
         });
-        unitSelect.value = '';
         updateUploadButton();
-        
-        // Reload tools
+
+        // Reload tools (also refreshes the requests list via loadToolsOfTrade)
         await loadToolsOfTrade();
         
     } catch (error) {
@@ -1060,25 +1090,14 @@ function createToolCard(tool) {
         'needs_revision': 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800'
     };
     
-    const toolTypeNames = {
-        'course_outline': 'Course Outline',
-        'learning_plan': 'Learning Plan',
-        'record_of_work': 'Record of Work',
-        'session_plan': 'Session Plan',
-        'exam': 'Exam'
-    };
-    
-    const unitName = tool.unitId?.unitName || tool.commonUnitId?.unitName || 'Unknown Unit';
-    const unitCode = tool.unitId?.unitCode || tool.commonUnitId?.unitCode || 'N/A';
-    const submittedAt = new Date(tool.submittedAt).toLocaleDateString();
+    const submittedAt = tool.createdAt ? new Date(tool.createdAt).toLocaleDateString() : 'N/A';
     const fileSize = formatFileSize(tool.fileSize);
     
     return `
         <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 card-hover">
             <div class="flex justify-between items-start mb-4">
                 <div class="flex-1">
-                    <h3 class="font-semibold text-gray-900 dark:text-white text-lg">${escapeHtml(toolTypeNames[tool.toolType] || tool.toolType)}</h3>
-                    <p class="text-gray-600 dark:text-gray-400 text-sm">${escapeHtml(unitCode)} - ${escapeHtml(unitName)}</p>
+                    <h3 class="font-semibold text-gray-900 dark:text-white text-lg">${escapeHtml(TOOL_TYPE_NAMES[tool.toolType] || tool.toolType)}</h3>
                 </div>
                 <span class="px-3 py-1 rounded-full text-xs font-medium border ${statusColors[tool.status] || statusColors.submitted}">
                     ${escapeHtml(tool.status.replace('_', ' ').toUpperCase())}
@@ -1088,7 +1107,7 @@ function createToolCard(tool) {
             <div class="space-y-2 mb-4">
                 <div class="flex justify-between text-sm">
                     <span class="text-gray-600 dark:text-gray-400">File:</span>
-                    <span class="font-medium text-gray-900 dark:text-white truncate">${escapeHtml(tool.originalFileName)}</span>
+                    <span class="font-medium text-gray-900 dark:text-white truncate">${escapeHtml(tool.originalName)}</span>
                 </div>
                 <div class="flex justify-between text-sm">
                     <span class="text-gray-600 dark:text-gray-400">Size:</span>
@@ -1109,15 +1128,12 @@ function createToolCard(tool) {
                 </div>
             ` : ''}
             
-            <div class="flex justify-between items-center pt-4 border-t border-gray-100 dark:border-gray-700">
-                <div class="text-xs text-gray-500 dark:text-gray-500">
-                    ${escapeHtml(tool.academicYear)} - Semester ${escapeHtml(tool.semester)}
-                </div>
+            <div class="flex justify-end items-center pt-4 border-t border-gray-100 dark:border-gray-700">
                 <div class="flex space-x-2">
-                    <button onclick="downloadTool('${escapeAttr(tool._id)}')" class="text-primary hover:text-secondary text-sm font-medium transition-colors">
+                    <button onclick="downloadTool('${escapeAttr(tool.id)}')" class="text-primary hover:text-secondary text-sm font-medium transition-colors">
                         <i class="ri-download-line mr-1"></i>Download
                     </button>
-                    <button onclick="deleteTool('${escapeAttr(tool._id)}')" class="text-red-500 hover:text-red-700 text-sm font-medium transition-colors">
+                    <button onclick="deleteTool('${escapeAttr(tool.id)}')" class="text-red-500 hover:text-red-700 text-sm font-medium transition-colors">
                         <i class="ri-delete-bin-line mr-1"></i>Delete
                     </button>
                 </div>
