@@ -36,7 +36,7 @@ const csp = require('./src/config/csp'); // SEV-M-025: CSP (Report-Only by defau
 // The shim exposes the legacy V1 model APIs backed by Drizzle/Postgres, so the
 // existing call sites in this file keep working AS-IS. See src/db/models.js.
 const { db, client, schema } = require('./src/db');
-const { eq, and, sql, inArray, isNull } = require('drizzle-orm');
+const { eq, and, sql, inArray, isNull, desc } = require('drizzle-orm');
 const userService = require('./src/services/userService');
 
 // Inline helper for V1's HOD.getDepartmentDisplayName static. Used by the HOD
@@ -5423,19 +5423,17 @@ app.post('/api/students/:studentId/graduation-application', verifyToken, authori
             studentId: student.id
         });
         
-        // Create notification for ILO office
-        const notification = new Notification({
-            recipientId: 'ilo_office',
-            recipientType: 'deputy',
-            title: 'New Graduation Application',
-            message: `${student.name} (${studentId}) has applied for graduation`,
-            type: 'general',
-            relatedId: application._id.toString(),
-            priority: 'medium'
-        });
-        
-        await notification.save();
-        
+        // Notify all ILO officers (they review/approve applications)
+        const iloUsers = await User.find({ role: 'ilo' });
+        for (const ilo of iloUsers) {
+            await Notification.create({
+                recipientId: ilo.id,
+                recipientType: 'user',
+                title: 'New Graduation Application',
+                body: `${student.name} (${studentId}) has applied for graduation.`,
+            });
+        }
+
         res.json({
             success: true,
             message: 'Graduation application submitted successfully',
@@ -5520,26 +5518,24 @@ app.post('/api/students/:studentId/attachment-application', verifyToken, authori
             return res.status(400).json({ message: 'You have already applied for attachment' });
         }
 
-        // attachment_applications has student_id, company_name, start_date, end_date (+ status default).
-        // county / nearestTown have NO column in the current schema, so they are validated above but
-        // cannot be persisted; the V1 snapshot fields (name, course, level, ...) also have no columns.
+        // Persist the attachment location (county / nearest_town columns added in migration 0004).
         const application = await AttachmentApplication.create({
-            studentId: student.id
+            studentId: student.id,
+            county: county,
+            nearestTown: nearestTown,
         });
-        
-        // Create notification for ILO office
-        const notification = new Notification({
-            recipientId: 'ilo_office',
-            recipientType: 'deputy',
-            title: 'New Attachment Application',
-            message: `${student.name} (${studentId}) has applied for attachment in ${county}, ${nearestTown}`,
-            type: 'general',
-            relatedId: application._id.toString(),
-            priority: 'medium'
-        });
-        
-        await notification.save();
-        
+
+        // Notify all ILO officers (they review/approve applications)
+        const iloUsers = await User.find({ role: 'ilo' });
+        for (const ilo of iloUsers) {
+            await Notification.create({
+                recipientId: ilo.id,
+                recipientType: 'user',
+                title: 'New Attachment Application',
+                body: `${student.name} (${studentId}) has applied for attachment — ${county}, ${nearestTown}.`,
+            });
+        }
+
         res.json({
             success: true,
             message: 'Attachment application submitted successfully',
@@ -5559,21 +5555,35 @@ app.post('/api/students/:studentId/attachment-application', verifyToken, authori
 // Get all graduation applications
 app.get('/api/ilo/graduation-applications', verifyToken, authorize('admin', 'ilo', 'registrar'), async (req, res) => {
     try {
-        const { status, department } = req.query;
-        
-        let query = {};
-        if (status) query.status = status;
-        if (department) query.department = department;
-        
-        const applications = await GraduationApplication.find(query)
-            .sort({ applicationDate: -1 });
-            
+        const { status } = req.query; // department filter dropped — no such column
+
+        const conditions = [];
+        if (status) conditions.push(eq(schema.graduationApplications.status, status));
+
+        const applications = await db
+            .select({
+                id: schema.graduationApplications.id,
+                studentId: schema.graduationApplications.student_id,
+                status: schema.graduationApplications.status,
+                appliedAt: schema.graduationApplications.applied_at,
+                comments: schema.graduationApplications.comments,
+                reviewedBy: schema.graduationApplications.reviewed_by,
+                reviewedAt: schema.graduationApplications.reviewed_at,
+                studentName: schema.students.name,
+                admissionNumber: schema.students.admission_number,
+                course: schema.students.course,
+            })
+            .from(schema.graduationApplications)
+            .innerJoin(schema.students, eq(schema.students.id, schema.graduationApplications.student_id))
+            .where(conditions.length ? and(...conditions) : undefined)
+            .orderBy(desc(schema.graduationApplications.applied_at));
+
         res.json({
             success: true,
             applications,
             total: applications.length
         });
-        
+
     } catch (error) {
         console.error('Error fetching graduation applications:', error);
         res.status(500).json({ message: 'Error fetching applications' });
@@ -5583,22 +5593,39 @@ app.get('/api/ilo/graduation-applications', verifyToken, authorize('admin', 'ilo
 // Get all attachment applications
 app.get('/api/ilo/attachment-applications', verifyToken, authorize('admin', 'ilo', 'registrar'), async (req, res) => {
     try {
-        const { status, department, county } = req.query;
-        
-        let query = {};
-        if (status) query.status = status;
-        if (department) query.department = department;
-        if (county) query.county = county;
-        
-        const applications = await AttachmentApplication.find(query)
-            .sort({ applicationDate: -1 });
-            
+        const { status, county } = req.query; // department filter dropped — no such column
+
+        const conditions = [];
+        if (status) conditions.push(eq(schema.attachmentApplications.status, status));
+        if (county) conditions.push(eq(schema.attachmentApplications.county, county));
+
+        const applications = await db
+            .select({
+                id: schema.attachmentApplications.id,
+                studentId: schema.attachmentApplications.student_id,
+                status: schema.attachmentApplications.status,
+                county: schema.attachmentApplications.county,
+                nearestTown: schema.attachmentApplications.nearest_town,
+                companyName: schema.attachmentApplications.company_name,
+                comments: schema.attachmentApplications.comments,
+                reviewedBy: schema.attachmentApplications.reviewed_by,
+                reviewedAt: schema.attachmentApplications.reviewed_at,
+                createdAt: schema.attachmentApplications.created_at,
+                studentName: schema.students.name,
+                admissionNumber: schema.students.admission_number,
+                course: schema.students.course,
+            })
+            .from(schema.attachmentApplications)
+            .innerJoin(schema.students, eq(schema.students.id, schema.attachmentApplications.student_id))
+            .where(conditions.length ? and(...conditions) : undefined)
+            .orderBy(desc(schema.attachmentApplications.created_at));
+
         res.json({
             success: true,
             applications,
             total: applications.length
         });
-        
+
     } catch (error) {
         console.error('Error fetching attachment applications:', error);
         res.status(500).json({ message: 'Error fetching applications' });
@@ -5615,33 +5642,36 @@ app.patch('/api/ilo/applications/:type/:applicationId/status', verifyToken, auth
             return res.status(400).json({ message: 'Invalid application type' });
         }
         
+        // Validate status against the enum allowed for this application type.
+        const allowedStatuses = type === 'graduation'
+            ? ['pending', 'verifying', 'approved', 'rejected']
+            : ['pending', 'approved', 'completed', 'rejected'];
+        if (!status || !allowedStatuses.includes(status)) {
+            return res.status(400).json({ message: `Invalid status for ${type} application. Allowed: ${allowedStatuses.join(', ')}` });
+        }
+
         const Model = type === 'graduation' ? GraduationApplication : AttachmentApplication;
-        
-        const application = await Model.findById(applicationId);
+
+        // Update via findByIdAndUpdate (returns the updated row). reviewedBy comes from the
+        // verified token, never the client body.
+        const application = await Model.findByIdAndUpdate(applicationId, {
+            status,
+            comments: comments || null,
+            reviewedBy: req.user.userId,
+            reviewedAt: new Date(),
+        });
         if (!application) {
             return res.status(404).json({ message: 'Application not found' });
         }
-        
-        application.status = status;
-        if (comments) application.comments = comments;
-        application.reviewedBy = req.user.userId; // Actor sourced from the verified token, never the client body
-        application.reviewedAt = new Date();
-        
-        await application.save();
-        
-        // Create notification for student
-        const notification = new Notification({
+
+        // Notify the student (recipientId is the student uuid from the application row).
+        await Notification.create({
             recipientId: application.studentId,
             recipientType: 'student',
             title: `${type === 'graduation' ? 'Graduation' : 'Attachment'} Application ${status}`,
-            message: `Your ${type} application has been ${status}${comments ? `: ${comments}` : ''}`,
-            type: 'general',
-            relatedId: applicationId,
-            priority: 'high'
+            body: `Your ${type} application has been ${status}${comments ? `. Note: ${comments}` : '.'}`,
         });
-        
-        await notification.save();
-        
+
         res.json({
             success: true,
             message: 'Application status updated successfully',

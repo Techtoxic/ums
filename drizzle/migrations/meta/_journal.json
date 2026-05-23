@@ -29,6 +29,13 @@
       "when": 1779367795367,
       "tag": "0003_light_anita_blake",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1779562051153,
+      "tag": "0004_lonely_malice",
+      "breakpoints": true
     }
   ]
 }

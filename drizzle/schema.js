@@ -317,7 +317,12 @@ const attachmentApplications = pgTable('attachment_applications', {
     company_name: text('company_name'),
     start_date: date('start_date'),
     end_date: date('end_date'),
+    county: text('county'),
+    nearest_town: text('nearest_town'),
     status: attachmentStatusEnum('status').notNull().default('pending'),
+    comments: text('comments'),
+    reviewed_by: uuid('reviewed_by').references(() => users.id),
+    reviewed_at: timestamp('reviewed_at', { withTimezone: true }),
     created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
@@ -332,6 +337,9 @@ const graduationApplications = pgTable('graduation_applications', {
     applied_at: timestamp('applied_at', { withTimezone: true }).notNull().defaultNow(),
     approved_at: timestamp('approved_at', { withTimezone: true }),
     approved_by: uuid('approved_by').references(() => users.id),
+    comments: text('comments'),
+    reviewed_by: uuid('reviewed_by').references(() => users.id),
+    reviewed_at: timestamp('reviewed_at', { withTimezone: true }),
     created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
