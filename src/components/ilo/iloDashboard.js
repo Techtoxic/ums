@@ -97,24 +97,16 @@ console.log('🔧 showTab function defined and made globally available');
 
 // Setup filter event listeners
 function setupFilterEventListeners() {
-    // Graduation filters
+    // Graduation filters (department filter dropped — backend has no department column)
     const graduationStatusFilter = document.getElementById('graduation-status-filter');
-    const graduationDepartmentFilter = document.getElementById('graduation-department-filter');
-    
+
     if (graduationStatusFilter) {
         graduationStatusFilter.addEventListener('change', () => {
             console.log('🔍 Graduation status filter changed:', graduationStatusFilter.value);
             displayGraduationApplications(graduationApplications);
         });
     }
-    
-    if (graduationDepartmentFilter) {
-        graduationDepartmentFilter.addEventListener('change', () => {
-            console.log('🔍 Graduation department filter changed:', graduationDepartmentFilter.value);
-            displayGraduationApplications(graduationApplications);
-        });
-    }
-    
+
     // Attachment filters
     const attachmentStatusFilter = document.getElementById('attachment-status-filter');
     const attachmentCountyFilter = document.getElementById('attachment-county-filter');
@@ -185,16 +177,13 @@ function displayGraduationApplications(applications) {
     const container = document.getElementById('graduation-applications-list');
     const empty = document.getElementById('graduation-empty');
     
-    // Apply filters
+    // Apply filters (department filter dropped — backend has no department column)
     const statusFilter = document.getElementById('graduation-status-filter').value;
-    const departmentFilter = document.getElementById('graduation-department-filter').value;
-    
+
     const filteredApplications = applications.filter(app => {
-        const statusMatch = !statusFilter || app.status === statusFilter;
-        const departmentMatch = !departmentFilter || app.department === departmentFilter;
-        return statusMatch && departmentMatch;
+        return !statusFilter || app.status === statusFilter;
     });
-    
+
     if (!filteredApplications || filteredApplications.length === 0) {
         container.classList.add('hidden');
         empty.classList.remove('hidden');
@@ -204,26 +193,22 @@ function displayGraduationApplications(applications) {
     empty.classList.add('hidden');
     container.classList.remove('hidden');
 
-    container.innerHTML = filteredApplications.map(app => 
+    container.innerHTML = filteredApplications.map(app =>
         '<div class="border border-gray-200 rounded-lg p-4 mb-4">' +
             '<div class="flex justify-between items-start">' +
                 '<div class="flex-1">' +
                     '<div class="flex items-center mb-2">' +
-                        '<h4 class="text-lg font-semibold text-gray-900">' + escapeHtml(app.name) + '</h4>' +
-                        '<span class="ml-3 px-2 py-1 text-xs font-medium rounded-full ' + getStatusClass(app.status) + '">' + escapeHtml(app.status.replace('_', ' ')) + '</span>' +
+                        '<h4 class="text-lg font-semibold text-gray-900">' + escapeHtml(app.studentName) + '</h4>' +
+                        '<span class="ml-3 px-2 py-1 text-xs font-medium rounded-full ' + getStatusClass(app.status) + '">' + escapeHtml(app.status?.replace('_', ' ') || app.status) + '</span>' +
                     '</div>' +
-                    '<div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600">' +
+                    '<div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm text-gray-600">' +
                         '<div><strong>Admission:</strong> ' + escapeHtml(app.admissionNumber) + '</div>' +
                         '<div><strong>Course:</strong> ' + escapeHtml(formatCourseName(app.course)) + '</div>' +
-                        '<div><strong>Level:</strong> ' + escapeHtml(app.level) + '</div>' +
-                        '<div><strong>Year:</strong> ' + escapeHtml(app.yearOfStudy) + '</div>' +
-                        '<div><strong>Department:</strong> ' + escapeHtml(app.department.replace('_', ' ')) + '</div>' +
-                        '<div><strong>Applied:</strong> ' + new Date(app.applicationDate).toLocaleDateString() + '</div>' +
-                        '<div><strong>Academic Year:</strong> ' + escapeHtml(app.academicYear) + '</div>' +
+                        '<div><strong>Applied:</strong> ' + new Date(app.appliedAt).toLocaleDateString() + '</div>' +
                     '</div>' +
                 '</div>' +
                 '<div class="ml-4 flex space-x-2">' +
-                    '<button onclick="reviewApplication(\'graduation\', \'' + escapeAttr(app._id) + '\')" class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">' +
+                    '<button onclick="reviewApplication(\'graduation\', \'' + escapeAttr(app.id) + '\')" class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">' +
                         '<i class="ri-eye-line mr-1"></i>Review' +
                     '</button>' +
                 '</div>' +
@@ -256,26 +241,23 @@ function displayAttachmentApplications(applications) {
     empty.classList.add('hidden');
     container.classList.remove('hidden');
 
-    container.innerHTML = filteredApplications.map(app => 
+    container.innerHTML = filteredApplications.map(app =>
         '<div class="border border-gray-200 rounded-lg p-4 mb-4">' +
             '<div class="flex justify-between items-start">' +
                 '<div class="flex-1">' +
                     '<div class="flex items-center mb-2">' +
-                        '<h4 class="text-lg font-semibold text-gray-900">' + escapeHtml(app.name) + '</h4>' +
-                        '<span class="ml-3 px-2 py-1 text-xs font-medium rounded-full ' + getStatusClass(app.status) + '">' + escapeHtml(app.status.replace('_', ' ')) + '</span>' +
+                        '<h4 class="text-lg font-semibold text-gray-900">' + escapeHtml(app.studentName) + '</h4>' +
+                        '<span class="ml-3 px-2 py-1 text-xs font-medium rounded-full ' + getStatusClass(app.status) + '">' + escapeHtml(app.status?.replace('_', ' ') || app.status) + '</span>' +
                     '</div>' +
-                    '<div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600">' +
+                    '<div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm text-gray-600">' +
                         '<div><strong>Admission:</strong> ' + escapeHtml(app.admissionNumber) + '</div>' +
                         '<div><strong>Course:</strong> ' + escapeHtml(formatCourseName(app.course)) + '</div>' +
                         '<div><strong>Location:</strong> ' + escapeHtml(app.county) + ', ' + escapeHtml(app.nearestTown) + '</div>' +
-                        '<div><strong>Year:</strong> ' + escapeHtml(app.yearOfStudy) + '</div>' +
-                        '<div><strong>Department:</strong> ' + escapeHtml(app.department.replace('_', ' ')) + '</div>' +
-                        '<div><strong>Applied:</strong> ' + new Date(app.applicationDate).toLocaleDateString() + '</div>' +
-                        '<div><strong>Academic Year:</strong> ' + escapeHtml(app.academicYear) + '</div>' +
+                        '<div><strong>Applied:</strong> ' + new Date(app.createdAt).toLocaleDateString() + '</div>' +
                     '</div>' +
                 '</div>' +
                 '<div class="ml-4 flex space-x-2">' +
-                    '<button onclick="reviewApplication(\'attachment\', \'' + escapeAttr(app._id) + '\')" class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">' +
+                    '<button onclick="reviewApplication(\'attachment\', \'' + escapeAttr(app.id) + '\')" class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">' +
                         '<i class="ri-eye-line mr-1"></i>Review' +
                     '</button>' +
                 '</div>' +
@@ -318,32 +300,27 @@ function reviewApplication(type, applicationId) {
     currentApplicationId = applicationId;
     
     const applications = type === 'graduation' ? graduationApplications : attachmentApplications;
-    const app = applications.find(a => a._id === applicationId);
-    
+    const app = applications.find(a => a.id === applicationId);
+
     if (!app) return;
-    
+
     document.getElementById('modal-title').textContent = 'Review ' + type.charAt(0).toUpperCase() + type.slice(1) + ' Application';
-    
+
+    // Attachment endpoint sends createdAt; graduation sends appliedAt.
+    const appliedDate = type === 'attachment' ? app.createdAt : app.appliedAt;
     const modalContent = document.getElementById('modal-content');
-    modalContent.innerHTML = 
+    modalContent.innerHTML =
         '<div class="space-y-4">' +
             '<div class="grid grid-cols-2 gap-4">' +
-                '<div><strong>Name:</strong> ' + escapeHtml(app.name) + '</div>' +
+                '<div><strong>Name:</strong> ' + escapeHtml(app.studentName) + '</div>' +
                 '<div><strong>Admission Number:</strong> ' + escapeHtml(app.admissionNumber) + '</div>' +
-                '<div><strong>ID Number:</strong> ' + escapeHtml(app.idNumber) + '</div>' +
-                '<div><strong>Phone:</strong> ' + escapeHtml(app.phoneNumber) + '</div>' +
                 '<div><strong>Course:</strong> ' + escapeHtml(formatCourseName(app.course)) + '</div>' +
-                '<div><strong>Department:</strong> ' + escapeHtml(app.department.replace('_', ' ')) + '</div>' +
-                '<div><strong>Level:</strong> ' + escapeHtml(app.level) + '</div>' +
-                '<div><strong>Year of Study:</strong> ' + escapeHtml(app.yearOfStudy) + '</div>' +
-                '<div><strong>KCSE Grade:</strong> ' + escapeHtml(app.kcseGrade) + '</div>' +
-                '<div><strong>Admission Type:</strong> ' + escapeHtml(app.admissionType) + '</div>' +
-                (type === 'attachment' ? 
+                (type === 'attachment' ?
                     '<div><strong>County:</strong> ' + escapeHtml(app.county) + '</div>' +
                     '<div><strong>Nearest Town:</strong> ' + escapeHtml(app.nearestTown) + '</div>'
                 : '') +
-                '<div><strong>Application Date:</strong> ' + new Date(app.applicationDate).toLocaleDateString() + '</div>' +
-                '<div><strong>Status:</strong> <span class="px-2 py-1 text-xs rounded-full ' + getStatusClass(app.status) + '">' + escapeHtml(app.status.replace('_', ' ')) + '</span></div>' +
+                '<div><strong>Application Date:</strong> ' + new Date(appliedDate).toLocaleDateString() + '</div>' +
+                '<div><strong>Status:</strong> <span class="px-2 py-1 text-xs rounded-full ' + getStatusClass(app.status) + '">' + escapeHtml(app.status?.replace('_', ' ') || app.status) + '</span></div>' +
             '</div>' +
             (app.comments ? '<div class="mt-4"><strong>Comments:</strong><br>' + escapeHtml(app.comments) + '</div>' : '') +
             '<div class="mt-4">' +
@@ -411,25 +388,20 @@ function refreshAttachmentApplications() {
 function printGraduationList() {
     const printWindow = window.open('', '_blank');
     
-    // Apply same filters as display
+    // Apply same filters as display (department filter dropped)
     const statusFilter = document.getElementById('graduation-status-filter').value;
-    const departmentFilter = document.getElementById('graduation-department-filter').value;
-    
+
     const applications = graduationApplications.filter(app => {
-        const statusMatch = !statusFilter || app.status === statusFilter;
-        const departmentMatch = !departmentFilter || app.department === departmentFilter;
-        return statusMatch && departmentMatch;
+        return !statusFilter || app.status === statusFilter;
     });
 
-    const tableRows = applications.map(app => 
+    const tableRows = applications.map(app =>
         '<tr>' +
-            '<td>' + escapeHtml(app.name) + '</td>' +
+            '<td>' + escapeHtml(app.studentName) + '</td>' +
             '<td>' + escapeHtml(app.admissionNumber) + '</td>' +
             '<td>' + escapeHtml(formatCourseName(app.course)) + '</td>' +
-            '<td>' + escapeHtml(app.level) + '</td>' +
-            '<td>' + escapeHtml(app.yearOfStudy) + '</td>' +
             '<td>' + escapeHtml(app.status) + '</td>' +
-            '<td>' + new Date(app.applicationDate).toLocaleDateString() + '</td>' +
+            '<td>' + new Date(app.appliedAt).toLocaleDateString() + '</td>' +
         '</tr>'
     ).join('');
 
@@ -447,8 +419,6 @@ function printGraduationList() {
                             '<th>Name</th>' +
                             '<th>Admission Number</th>' +
                             '<th>Course</th>' +
-                            '<th>Level</th>' +
-                            '<th>Year</th>' +
                             '<th>Status</th>' +
                             '<th>Application Date</th>' +
                         '</tr>' +
@@ -479,14 +449,14 @@ function printAttachmentList() {
         return statusMatch && countyMatch;
     });
 
-    const tableRows = applications.map(app => 
+    const tableRows = applications.map(app =>
         '<tr>' +
-            '<td>' + escapeHtml(app.name) + '</td>' +
+            '<td>' + escapeHtml(app.studentName) + '</td>' +
             '<td>' + escapeHtml(app.admissionNumber) + '</td>' +
             '<td>' + escapeHtml(formatCourseName(app.course)) + '</td>' +
             '<td>' + escapeHtml(app.county) + ', ' + escapeHtml(app.nearestTown) + '</td>' +
             '<td>' + escapeHtml(app.status) + '</td>' +
-            '<td>' + new Date(app.applicationDate).toLocaleDateString() + '</td>' +
+            '<td>' + new Date(app.createdAt).toLocaleDateString() + '</td>' +
         '</tr>'
     ).join('');
 
