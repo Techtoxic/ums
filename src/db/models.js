@@ -508,8 +508,8 @@ const CommonUnit               = makeModel(schema.units, { fieldMap: { programId
 const CommonUnitAssignment     = makeModel(schema.commonUnitAssignments, { fieldMap: { unitId: 'unit_id', programId: 'program_id' } });
 const TrainerAssignment        = makeModel(schema.trainerAssignments, { fieldMap: { trainerId: 'trainer_id', unitId: 'unit_id', academicYear: 'academic_year' } });
 const StudentUnitRegistration  = makeModel(schema.unitRegistrations, { fieldMap: { studentId: 'student_id', unitId: 'unit_id', academicYear: 'academic_year' } });
-const ToolRequest              = makeModel(schema.toolRequests, { fieldMap: { trainerId: 'trainer_id' } });
-const ToolsOfTrade             = ToolRequest; // V1 name alias
+const ToolRequest              = makeModel(schema.toolRequests, { fieldMap: { toolType: 'tool_type', targetType: 'target_type', targetTrainerId: 'target_trainer_id', targetDepartment: 'target_department', dueDate: 'due_date', requestedBy: 'requested_by' } });
+const ToolUpload               = makeModel(schema.toolUploads, { fieldMap: { requestId: 'request_id', trainerId: 'trainer_id', toolType: 'tool_type', fileName: 'file_name', originalName: 'original_name', s3Key: 's3_key', s3Bucket: 's3_bucket', fileSize: 'file_size', mimeType: 'mime_type', reviewedBy: 'reviewed_by', reviewedAt: 'reviewed_at' } });
 const AttachmentApplication    = makeModel(schema.attachmentApplications, { fieldMap: { studentId: 'student_id', companyName: 'company_name', startDate: 'start_date', endDate: 'end_date', nearestTown: 'nearest_town', reviewedBy: 'reviewed_by', reviewedAt: 'reviewed_at' } });
 const GraduationApplication    = makeModel(schema.graduationApplications, { fieldMap: { studentId: 'student_id', appliedAt: 'applied_at', approvedAt: 'approved_at', approvedBy: 'approved_by', reviewedBy: 'reviewed_by', reviewedAt: 'reviewed_at' } });
 const Notification             = makeModel(schema.notifications, { fieldMap: { recipientId: 'recipient_id', recipientType: 'recipient_type', isRead: 'is_read' } });
@@ -532,7 +532,7 @@ module.exports = {
     AdminStaff, Trainer, HOD,
     Program, Unit, CommonUnit, CommonUnitAssignment,
     TrainerAssignment, StudentUnitRegistration,
-    ToolRequest, ToolsOfTrade,
+    ToolRequest, ToolUpload,
     AttachmentApplication, GraduationApplication,
     Notification, StudentNote, StudentUpload,
     AuditLog, SystemSettings, PasswordReset, LoginOTP,

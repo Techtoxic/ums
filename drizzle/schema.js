@@ -295,17 +295,43 @@ const unitRegistrations = pgTable(
 // ============================================================================
 // TOOL REQUESTS  (trainers ordering teaching tools)
 // ============================================================================
+// Tools-of-Trade requests: a Deputy asks a trainer/department/faculty to submit a tool
+// (course outline, exam, TVET license, ...). Repurposed from the never-built equipment-request
+// table. tool_type / target_type / status are text (not enums) to add new kinds without migrations.
 const toolRequests = pgTable('tool_requests', {
     id: uuid('id').primaryKey().defaultRandom(),
-    trainer_id: uuid('trainer_id').notNull().references(() => users.id),
-    description: text('description').notNull(),
-    quantity: integer('quantity').notNull(),
-    status: toolRequestStatusEnum('status').notNull().default('pending'),
-    requested_at: timestamp('requested_at', { withTimezone: true }).notNull().defaultNow(),
-    responded_at: timestamp('responded_at', { withTimezone: true }),
-    responded_by: uuid('responded_by').references(() => users.id),
+    tool_type: text('tool_type').notNull(),               // e.g. 'course_outline','exam','tvet_license'
+    target_type: text('target_type').notNull(),           // 'trainer' | 'department' | 'faculty'
+    target_trainer_id: uuid('target_trainer_id').references(() => users.id), // only when target_type='trainer'
+    target_department: text('target_department'),         // only when target_type='department'
+    due_date: date('due_date'),
+    instructions: text('instructions'),
+    status: text('status').notNull().default('open'),     // 'open' | 'fulfilled' | 'closed'
+    requested_by: uuid('requested_by').notNull().references(() => users.id), // the Deputy
     created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    deleted_at: timestamp('deleted_at', { withTimezone: true }),
+});
+
+// Tools-of-Trade uploads: a trainer submits a file (optionally fulfilling a tool_requests row).
+// S3-only — s3_key is NOT NULL; the upload endpoint rejects uploads when S3 isn't configured.
+const toolUploads = pgTable('tool_uploads', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    request_id: uuid('request_id').references(() => toolRequests.id), // nullable: upload may have no prior request
+    trainer_id: uuid('trainer_id').notNull().references(() => users.id),
+    tool_type: text('tool_type').notNull(),
+    file_name: text('file_name').notNull(),               // server-generated storage name (UUID.ext)
+    original_name: text('original_name').notNull(),       // sanitised display name
+    s3_key: text('s3_key').notNull(),                     // S3 object key (S3-only)
+    s3_bucket: text('s3_bucket'),
+    file_size: integer('file_size'),
+    mime_type: text('mime_type'),
+    status: text('status').notNull().default('submitted'), // 'submitted' | 'reviewed' | 'rejected'
+    reviewed_by: uuid('reviewed_by').references(() => users.id), // the Dean
+    reviewed_at: timestamp('reviewed_at', { withTimezone: true }),
+    created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    deleted_at: timestamp('deleted_at', { withTimezone: true }),
 });
 
 // ============================================================================
@@ -530,6 +556,7 @@ module.exports = {
     studentEnrollments,
     unitRegistrations,
     toolRequests,
+    toolUploads,
     attachmentApplications,
     graduationApplications,
     notifications,
