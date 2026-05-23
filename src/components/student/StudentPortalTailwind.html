@@ -1326,10 +1326,8 @@
                     const detailsDiv = document.getElementById('graduation-existing-details');
                     const app = data.existingApplication;
                     detailsDiv.innerHTML = `
-                        <p><strong>Application Date:</strong> ${new Date(app.applicationDate).toLocaleDateString()}</p>
-                        <p><strong>Status:</strong> <span class="capitalize">${escapeHtml(app.status.replace('_', ' '))}</span></p>
-                        <p><strong>Academic Year:</strong> ${escapeHtml(app.academicYear)}</p>
-                        <p><strong>Semester:</strong> ${escapeHtml(app.semester)}</p>
+                        <p><strong>Application Date:</strong> ${app.appliedAt ? new Date(app.appliedAt).toLocaleDateString() : 'N/A'}</p>
+                        <p><strong>Status:</strong> <span class="capitalize">${escapeHtml((app.status || '').replace('_', ' '))}</span></p>
                         ${app.comments ? `<p><strong>Comments:</strong> ${escapeHtml(app.comments)}</p>` : ''}
                     `;
                 } else if (!data.canApply) {
@@ -1404,11 +1402,9 @@
                     const detailsDiv = document.getElementById('attachment-existing-details');
                     const app = data.existingApplication;
                     detailsDiv.innerHTML = `
-                        <p><strong>Application Date:</strong> ${new Date(app.applicationDate).toLocaleDateString()}</p>
-                        <p><strong>Status:</strong> <span class="capitalize">${escapeHtml(app.status.replace('_', ' '))}</span></p>
-                        <p><strong>Location:</strong> ${escapeHtml(app.county)}, ${escapeHtml(app.nearestTown)}</p>
-                        <p><strong>Academic Year:</strong> ${escapeHtml(app.academicYear)}</p>
-                        <p><strong>Semester:</strong> ${escapeHtml(app.semester)}</p>
+                        <p><strong>Application Date:</strong> ${app.createdAt ? new Date(app.createdAt).toLocaleDateString() : 'N/A'}</p>
+                        <p><strong>Status:</strong> <span class="capitalize">${escapeHtml((app.status || '').replace('_', ' '))}</span></p>
+                        <p><strong>Location:</strong> ${escapeHtml(app.county || '')}, ${escapeHtml(app.nearestTown || '')}</p>
                         ${app.comments ? `<p><strong>Comments:</strong> ${escapeHtml(app.comments)}</p>` : ''}
                     `;
                 } else if (!data.canApply) {
