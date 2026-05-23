@@ -2299,84 +2299,69 @@ function generateIntakeCode(intake, intakeYear) {
 app.get('/api/units/course/:courseCode', async (req, res) => {
     try {
         const { courseCode } = req.params;
-        const { studentId } = req.query; // Optional parameter for registration status
-        
+        const { studentId } = req.query; // Optional admission number for registration status
+
         // Validate course code
         if (!courseCode || courseCode.trim() === '') {
             return res.status(400).json({ message: 'Course code is required' });
         }
 
-        // Find department units for the course
-        const departmentUnits = await Unit.getUnitsByCourse(courseCode.toLowerCase());
-        
-        // Get all common units
-        const commonUnits = await CommonUnit.getActiveUnits();
-        
-        // Get current academic settings
-        const currentAcademicYear = await SystemSettings.getSetting('current_academic_year', '2024/2025');
-        const currentSemester = await SystemSettings.getSetting('current_semester', '1');
-        
-        // Get student's registrations if studentId is provided
-        let studentRegistrations = [];
+        // Fetch the course's units. A unit belongs to a program via program_id;
+        // "units for course AC6" = units whose program has programs.code = 'AC6'.
+        // Program codes are stored uppercase, so match on .toUpperCase().
+        // Modeled on the GET /api/units/department/:department endpoint below.
+        const unitRows = await db
+            .select({
+                _id: schema.units.id,
+                unitCode: schema.units.code,
+                unitName: schema.units.name,
+                year: schema.units.year,
+                semester: schema.units.semester,
+                isCommon: schema.units.is_common,
+                courseCode: schema.programs.code,
+                courseName: schema.programs.name,
+            })
+            .from(schema.units)
+            .innerJoin(schema.programs, eq(schema.programs.id, schema.units.program_id))
+            .where(and(
+                eq(schema.programs.code, courseCode.toUpperCase()),
+                isNull(schema.units.deleted_at),
+            ))
+            .orderBy(schema.units.year, schema.units.code);
+
+        // Registration status — only when an admission number is supplied.
+        // studentId arrives as an admission number; resolve it to the student uuid,
+        // then collect the unit_id uuids the student is registered for. A unit counts
+        // as registered if any registration row exists for that student + unit.
+        let registeredUnitIds = new Set();
         if (studentId) {
-            studentRegistrations = await StudentUnitRegistration.find({
-                studentId: studentId,
-                academicYear: currentAcademicYear,
-                semester: currentSemester,
-                status: 'registered',
-                isActive: true
-            });
-        }
-        
-        // Create a map for quick lookup of registered units
-        const registrationMap = new Map();
-        studentRegistrations.forEach(reg => {
-            registrationMap.set(reg.unitCode, reg);
-        });
-        
-        // Format common units to match the department units structure
-        const formattedCommonUnits = commonUnits.map(unit => ({
-            _id: unit._id,
-            unitName: unit.unitName,
-            unitCode: unit.unitCode,
-            courseCode: unit.courseCode,
-            department: 'common',
-            level: unit.level,
-            description: unit.description,
-            isActive: unit.isActive,
-            type: 'common',
-            isRegistered: registrationMap.has(unit.unitCode),
-            registrationId: registrationMap.get(unit.unitCode)?._id || null
-        }));
-        
-        // Format department units
-        const formattedDepartmentUnits = departmentUnits.map(unit => ({
-            ...unit.toObject(),
-            type: 'department',
-            isRegistered: registrationMap.has(unit.unitCode),
-            registrationId: registrationMap.get(unit.unitCode)?._id || null
-        }));
-        
-        // Combine both types of units
-        const allUnits = [...formattedDepartmentUnits, ...formattedCommonUnits];
-        
-        if (allUnits.length === 0) {
-            return res.status(404).json({ message: 'No units found for this course' });
+            const student = await Student.findOne({ admissionNumber: studentId });
+            if (student) {
+                const regs = await StudentUnitRegistration.find({ studentId: student.id });
+                registeredUnitIds = new Set(regs.map(r => r.unitId));
+            }
         }
 
-        // Count registered units
-        const registeredUnits = allUnits.filter(unit => unit.isRegistered).length;
+        // Common units are just units rows with is_common = true (already included above).
+        const units = unitRows.map(u => ({
+            ...u,
+            department: u.isCommon ? 'common' : 'department',
+            type: u.isCommon ? 'common' : 'department',
+            isRegistered: registeredUnitIds.has(u._id),
+        }));
+
+        if (units.length === 0) {
+            return res.status(404).json({ message: 'No units found for this course' });
+        }
 
         res.json({
             success: true,
             courseCode: courseCode,
-            totalUnits: allUnits.length,
-            departmentUnits: formattedDepartmentUnits.length,
-            commonUnits: formattedCommonUnits.length,
-            registeredUnits: registeredUnits,
-            academicYear: currentAcademicYear,
-            semester: currentSemester,
-            units: allUnits
+            totalUnits: units.length,
+            departmentUnits: units.filter(u => !u.isCommon).length,
+            commonUnits: units.filter(u => u.isCommon).length,
+            registeredUnits: units.filter(u => u.isRegistered).length,
+            units: units,
         });
     } catch (error) {
         console.error('Error fetching units by course:', error);
