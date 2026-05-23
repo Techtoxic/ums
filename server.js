@@ -4776,28 +4776,24 @@ app.use((req, res, next) => {
 // Tools of Trade API Endpoints
 
 // Upload Tools of Trade
-app.post('/api/tools/upload', verifyToken, authorize('admin', 'trainer', 'hod'), upload.single('file'), async (req, res) => {
+app.post('/api/tools/upload', verifyToken, authorize('admin', 'trainer'), upload.single('file'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ message: 'No file uploaded' });
         }
 
-        const { trainerId, unitId, commonUnitId, toolType, academicYear, semester } = req.body;
+        const { trainerId, toolType, requestId } = req.body;
 
-        if (!trainerId || !toolType || !academicYear || !semester) {
-            return res.status(400).json({ message: 'Missing required fields' });
+        if (!trainerId || !toolType) {
+            return res.status(400).json({ message: 'Missing required fields: trainerId and toolType are required' });
         }
 
         // SEV-H-007: a trainer may only upload as themselves. Trust the token,
-        // not the body trainerId, unless the caller is admin or hod.
-        if (!['admin', 'hod'].includes(req.user.role)) {
+        // not the body trainerId, unless the caller is admin.
+        if (req.user.role !== 'admin') {
             if (String(trainerId) !== String(req.user.userId)) {
                 return res.status(403).json({ message: 'You can only upload tools for your own account.' });
             }
-        }
-
-        if (!unitId && !commonUnitId) {
-            return res.status(400).json({ message: 'Either unitId or commonUnitId is required' });
         }
 
         // SEV-H-011: authoritative magic-byte validation of the in-memory buffer.
@@ -4806,92 +4802,78 @@ app.post('/api/tools/upload', verifyToken, authorize('admin', 'trainer', 'hod'),
             return res.status(v.status).json({ message: v.message });
         }
 
-        // SEV-H-011: storage name is a server-generated UUID; the original name
-        // is kept only as sanitised display metadata. toolType is a server-side
-        // enum-ish path segment — sanitised defensively, never the user filename.
-        const safeToolType = String(toolType).replace(/[^A-Za-z0-9._-]/g, '_');
-        const fileName = `${crypto.randomUUID()}.${v.ext}`;
-        let filePath = null, s3Key = null, s3Bucket = null, storageType;
-
-        if (isS3Configured()) {
-            console.log('📤 Uploading tool to S3...');
-            const folder = `tools-of-trade/${safeToolType}`;
-            const s3Result = await uploadToS3(
-                req.file.buffer,
-                fileName,
-                req.file.mimetype,
-                folder,
-                { displayName: v.displayName, inlineImage: v.isImage }
-            );
-            s3Key = s3Result.key;
-            s3Bucket = s3Result.bucket;
-            filePath = s3Result.location;
-            storageType = 's3';
-            console.log('✅ Tool uploaded to S3:', s3Key);
-        } else {
-            console.log('💾 S3 not configured, using local storage...');
-            const correctFolder = path.join(uploadsDir, 'tools-of-trade', safeToolType);
-            if (!fs.existsSync(correctFolder)) {
-                fs.mkdirSync(correctFolder, { recursive: true });
-            }
-            const newPath = path.join(correctFolder, fileName);
-            // memoryStorage: persist the validated buffer ourselves.
-            fs.writeFileSync(newPath, req.file.buffer);
-            filePath = newPath;
-            storageType = 'local';
-            console.log('✅ Tool saved locally:', fileName);
+        // S3-only: never fall back to local disk. Reject when storage isn't configured.
+        if (!isS3Configured()) {
+            return res.status(503).json({ message: 'File storage is not configured. Uploads are temporarily unavailable.' });
         }
 
-        const toolSubmission = new ToolsOfTrade({
+        // SEV-H-011: storage name is a server-generated UUID; the original name is kept
+        // only as sanitised display metadata. toolType is sanitised for the path segment.
+        const safeToolType = String(toolType).replace(/[^A-Za-z0-9._-]/g, '_');
+        const fileName = `${crypto.randomUUID()}.${v.ext}`;
+
+        console.log('📤 Uploading tool to S3...');
+        const s3Result = await uploadToS3(
+            req.file.buffer,
+            fileName,
+            req.file.mimetype,
+            `tools-of-trade/${safeToolType}`,
+            { displayName: v.displayName, inlineImage: v.isImage }
+        );
+        console.log('✅ Tool uploaded to S3:', s3Result.key);
+
+        const newUpload = await ToolUpload.create({
+            requestId: requestId || null,
             trainerId,
-            unitId: unitId || null,
-            commonUnitId: commonUnitId || null,
             toolType,
-            fileName: fileName,
-            originalFileName: v.displayName,
-            filePath: filePath,
-            s3Key: s3Key || null,
-            s3Bucket: s3Bucket || null,
-            storageType: storageType,
+            fileName,
+            originalName: v.displayName,
+            s3Key: s3Result.key,
+            s3Bucket: s3Result.bucket,
             fileSize: req.file.size,
             mimeType: req.file.mimetype,
-            academicYear,
-            semester
         });
 
-        await toolSubmission.save();
+        // If this upload fulfils a specific request, mark that request fulfilled.
+        // Don't fail the upload if the request id is missing or invalid.
+        if (requestId) {
+            try {
+                const reqRow = await ToolRequest.findById(requestId);
+                if (reqRow) {
+                    await ToolRequest.findByIdAndUpdate(requestId, { status: 'fulfilled' });
+                }
+            } catch (e) {
+                console.warn('Could not mark tool request fulfilled:', e.message);
+            }
+        }
 
-        // Create notification for HOD
-        const notification = new Notification({
-            recipientId: 'hod', // This should be the actual HOD ID
-            recipientType: 'hod',
-            title: 'New Tools of Trade Submission',
-            message: `New ${toolType.replace(/_/g, ' ')} submitted by trainer`,
-            type: 'tool_request',
-            relatedId: toolSubmission._id.toString(),
-            priority: 'medium'
-        });
-
-        await notification.save();
+        // Notify the Dean(s) — they review submissions.
+        const deans = await User.find({ role: 'dean' });
+        for (const dean of deans) {
+            await Notification.create({
+                recipientId: dean.id,
+                recipientType: 'user',
+                title: 'New Tools of Trade Submission',
+                body: `A trainer submitted a ${toolType.replace(/_/g, ' ')}.`,
+            });
+        }
 
         res.json({
             success: true,
-            message: `File uploaded successfully to ${storageType === 's3' ? 'S3' : 'local storage'}`,
+            message: 'File uploaded',
             data: {
-                id: toolSubmission._id,
-                fileName: toolSubmission.fileName,
-                originalFileName: toolSubmission.originalFileName,
-                fileSize: toolSubmission.fileSize,
-                toolType: toolSubmission.toolType,
-                status: toolSubmission.status,
-                storageType: storageType
+                id: newUpload.id,
+                fileName: newUpload.fileName,
+                originalName: newUpload.originalName,
+                toolType: newUpload.toolType,
+                status: newUpload.status,
             }
         });
     } catch (error) {
         console.error('❌ Error uploading file:', error);
-        res.status(500).json({ 
-            message: 'Error uploading file', 
-            error: error.message 
+        res.status(500).json({
+            message: 'Error uploading file',
+            error: error.message
         });
     }
 });
@@ -4900,18 +4882,15 @@ app.post('/api/tools/upload', verifyToken, authorize('admin', 'trainer', 'hod'),
 app.get('/api/tools/trainer/:trainerId', verifyToken, authorize('admin', 'trainer', 'hod'), verifyOwnership('trainerId'), async (req, res) => {
     try {
         const { trainerId } = req.params;
-        const { toolType, status, academicYear, semester } = req.query;
+        const { toolType, status } = req.query;
 
-        let query = { trainerId };
-        if (toolType) query.toolType = toolType;
-        if (status) query.status = status;
-        if (academicYear) query.academicYear = academicYear;
-        if (semester) query.semester = semester;
+        const filter = { trainerId };
+        if (toolType) filter.toolType = toolType;
+        if (status) filter.status = status;
 
-        const tools = await ToolsOfTrade.find(query)
-            .populate('unitId', 'unitName courseCode')
-            .populate('commonUnitId', 'unitName unitCode')
-            .sort({ submittedAt: -1 });
+        // Sort in the DB (chained .sort() on the shim result is a no-op); drop soft-deleted in JS.
+        const rows = await ToolUpload.find(filter, null, { sort: { createdAt: -1 } });
+        const tools = rows.filter(r => !r.deletedAt);
 
         res.json(tools);
     } catch (error) {
@@ -4923,30 +4902,44 @@ app.get('/api/tools/trainer/:trainerId', verifyToken, authorize('admin', 'traine
 // Get all Tools of Trade (for HOD/Deputy)
 app.get('/api/tools', verifyToken, authorize('admin', 'trainer', 'hod', 'registrar', 'deputy'), async (req, res) => {
     try {
-        const { status, toolType, department, academicYear, semester } = req.query;
+        const { status, toolType, department } = req.query;
 
-        let query = {};
-        if (status) query.status = status;
-        if (toolType) query.toolType = toolType;
-        if (academicYear) query.academicYear = academicYear;
-        if (semester) query.semester = semester;
+        // Drizzle join to users (the trainer) for the trainer's name/department.
+        const conditions = [];
+        if (status) conditions.push(eq(schema.toolUploads.status, status));
+        if (toolType) conditions.push(eq(schema.toolUploads.tool_type, toolType));
 
-        const tools = await ToolsOfTrade.find(query)
-            .populate('unitId', 'unitName courseCode department')
-            .populate('commonUnitId', 'unitName unitCode')
-            .populate('trainerId', 'name department')
-            .sort({ submittedAt: -1 });
+        const rows = await db
+            .select({
+                id: schema.toolUploads.id,
+                requestId: schema.toolUploads.request_id,
+                trainerId: schema.toolUploads.trainer_id,
+                toolType: schema.toolUploads.tool_type,
+                fileName: schema.toolUploads.file_name,
+                originalName: schema.toolUploads.original_name,
+                s3Key: schema.toolUploads.s3_key,
+                fileSize: schema.toolUploads.file_size,
+                mimeType: schema.toolUploads.mime_type,
+                status: schema.toolUploads.status,
+                reviewedBy: schema.toolUploads.reviewed_by,
+                reviewedAt: schema.toolUploads.reviewed_at,
+                createdAt: schema.toolUploads.created_at,
+                deletedAt: schema.toolUploads.deleted_at,
+                trainerName: schema.users.name,
+                trainerDepartment: schema.users.department,
+            })
+            .from(schema.toolUploads)
+            .innerJoin(schema.users, eq(schema.users.id, schema.toolUploads.trainer_id))
+            .where(conditions.length ? and(...conditions) : undefined)
+            .orderBy(desc(schema.toolUploads.created_at));
 
-        // Filter by department if specified
-        let filteredTools = tools;
+        // Exclude soft-deleted; optional department filter applied to the joined trainer's dept.
+        let filteredUploads = rows.filter(r => !r.deletedAt);
         if (department) {
-            filteredTools = tools.filter(tool => {
-                const toolDepartment = tool.unitId?.department || tool.trainerId?.department;
-                return toolDepartment === department;
-            });
+            filteredUploads = filteredUploads.filter(r => r.trainerDepartment === department);
         }
 
-        res.json(filteredTools);
+        res.json(filteredUploads);
     } catch (error) {
         console.error('Error fetching tools:', error);
         res.status(500).json({ message: 'Error fetching tools' });
