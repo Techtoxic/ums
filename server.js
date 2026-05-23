@@ -5271,28 +5271,22 @@ app.patch('/api/notifications/:userId/read-all', verifyToken, authorize('admin',
 // Create notification
 app.post('/api/notifications', verifyToken, authorize('admin', 'registrar', 'hod', 'cibec', 'ilo', 'dean', 'finance'), async (req, res) => {
     try {
-        const { recipientId, recipientType, title, message, type, relatedId, priority = 'medium' } = req.body;
+        const { recipientId, recipientType, title } = req.body;
+        const body = req.body.body || req.body.message; // accept legacy `message` as a fallback
 
-        if (!recipientId || !recipientType || !title || !message || !type) {
+        if (!recipientId || !recipientType || !title || !body) {
             return res.status(400).json({ message: 'Missing required fields' });
         }
+        if (recipientType !== 'student' && recipientType !== 'user') {
+            return res.status(400).json({ message: 'recipientType must be student or user' });
+        }
 
-        const notification = new Notification({
-            recipientId,
-            recipientType,
-            title,
-            message,
-            type,
-            relatedId,
-            priority
-        });
-
-        await notification.save();
+        const data = await Notification.create({ recipientId, recipientType, title, body });
 
         res.json({
             success: true,
             message: 'Notification created successfully',
-            data: notification
+            data
         });
     } catch (error) {
         console.error('Error creating notification:', error);
@@ -5303,39 +5297,39 @@ app.post('/api/notifications', verifyToken, authorize('admin', 'registrar', 'hod
 // Broadcast notification to all users of a type
 app.post('/api/notifications/broadcast', verifyToken, authorize('admin', 'registrar', 'deputy'), async (req, res) => {
     try {
-        const { recipientType, title, message, type, relatedId, priority = 'medium' } = req.body;
+        const { role, title } = req.body;
+        const body = req.body.body || req.body.message; // accept legacy `message` as a fallback
 
-        if (!recipientType || !title || !message || !type) {
+        if (!role || !title || !body) {
             return res.status(400).json({ message: 'Missing required fields' });
         }
 
-        // Get all users of the specified type
-        let users = [];
-        if (recipientType === 'trainer') {
-            users = await Trainer.find({}, '_id');
-        } else if (recipientType === 'student') {
-            users = await Student.find({}, '_id');
-        } else if (recipientType === 'hod') {
-            users = await HOD.find({}, '_id');
+        // Resolve recipients. Students live in the students table; every staff role
+        // lives in the users table → recipient_type 'user'.
+        let recipients = [];
+        let recipientType;
+        if (role === 'student') {
+            recipients = await Student.find({});
+            recipientType = 'student';
+        } else {
+            recipients = await User.find({ role });
+            recipientType = 'user';
         }
 
-        // Create notifications for all users
-        const notifications = users.map(user => ({
-            recipientId: user._id,
-            recipientType,
-            title,
-            message,
-            type,
-            relatedId,
-            priority
-        }));
-
-        await Notification.insertMany(notifications);
+        // The Notification shim has no insertMany — create one row per recipient.
+        for (const recipient of recipients) {
+            await Notification.create({
+                recipientId: recipient.id,
+                recipientType,
+                title,
+                body,
+            });
+        }
 
         res.json({
             success: true,
-            message: `Notification sent to ${users.length} ${recipientType}s`,
-            count: users.length
+            message: `Notification sent to ${recipients.length} recipient(s)`,
+            count: recipients.length
         });
     } catch (error) {
         console.error('Error broadcasting notification:', error);
@@ -5965,16 +5959,16 @@ app.post('/api/student-uploads', verifyToken, authorize('admin', 'registrar', 's
             }
         });
 
-        // Notify CIBEC
-        await Notification.create({
-            recipientId: 'cibec',
-            recipientType: 'cibec',
-            title: `New ${uploadType.replace(/_/g, ' ')} Upload`,
-            message: `${student.name} (${student.admissionNumber}) uploaded ${uploadType.replace(/_/g, ' ')}${unitName ? ` for ${unitName}` : ''}`,
-            type: 'student_upload',
-            relatedId: newUpload._id.toString(),
-            priority: 'medium'
-        });
+        // Notify all CIBEC officers (they are users with role 'cibec')
+        const cibecUsers = await User.find({ role: 'cibec' });
+        for (const cibec of cibecUsers) {
+            await Notification.create({
+                recipientId: cibec.id,
+                recipientType: 'user',
+                title: `New ${uploadType.replace(/_/g, ' ')} Upload`,
+                body: `${student.name} (${student.admissionNumber}) uploaded ${uploadType.replace(/_/g, ' ')}${unitName ? ` for ${unitName}` : ''}.`,
+            });
+        }
 
         res.json({
             success: true,
@@ -6519,15 +6513,12 @@ app.post('/api/payslips/generate', verifyToken, authorize('admin', 'finance'), a
             await payslip.save();
             payslips.push(payslip);
             
-            // Create notification for trainer (use email as recipientId)
+            // Create notification for trainer (a trainer is a user; trainer.id is its users.id uuid)
             await Notification.create({
-                recipientId: trainer.email,
-                recipientType: 'trainer',
+                recipientId: trainer.id,
+                recipientType: 'user',
                 title: 'New Payslip Generated',
-                message: `Your payslip for ${period} has been generated. Amount: KES ${amount.toLocaleString()}`,
-                type: 'payment',
-                relatedId: payslip._id.toString(),
-                priority: 'medium'
+                body: `Your payslip for ${period} has been generated. Amount: KES ${amount.toLocaleString()}`,
             });
         }
         
