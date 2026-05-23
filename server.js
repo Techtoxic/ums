@@ -57,7 +57,7 @@ const {
     Student, User, AdminStaff, Trainer, HOD,
     Program, Unit, CommonUnit, CommonUnitAssignment,
     TrainerAssignment, StudentUnitRegistration,
-    ToolRequest, ToolsOfTrade,
+    ToolRequest,
     AttachmentApplication, GraduationApplication,
     Notification, StudentNote, StudentUpload,
     AuditLog, SystemSettings, PasswordReset, LoginOTP,
@@ -4947,63 +4947,38 @@ app.get('/api/tools', verifyToken, authorize('admin', 'trainer', 'hod', 'registr
 });
 
 // Update tool status (for Deputy only)
-app.patch('/api/tools/:toolId/status', verifyToken, authorize('admin', 'deputy'), async (req, res) => {
+app.patch('/api/tools/:toolId/status', verifyToken, authorize('admin', 'dean'), async (req, res) => {
     try {
         const { toolId } = req.params;
         const { status, feedback } = req.body;
 
-        console.log('Status update request:', { toolId, status, feedback, reviewedBy: req.user.userId });
+        // tool_uploads.status values. Note: tool_uploads has NO feedback column —
+        // feedback is not persisted; it only reaches the trainer via the notification below.
+        if (!['reviewed', 'rejected', 'submitted'].includes(status)) {
+            return res.status(400).json({ message: "status must be 'reviewed', 'rejected' or 'submitted'" });
+        }
 
-        const tool = await ToolsOfTrade.findById(toolId);
-        if (!tool) {
+        const updated = await ToolUpload.findByIdAndUpdate(toolId, {
+            status,
+            reviewedBy: req.user.userId, // actor sourced from the verified token, never the client body
+            reviewedAt: new Date(),
+        });
+        if (!updated) {
             return res.status(404).json({ message: 'Tool not found' });
         }
 
-        console.log('Tool before update:', tool.status);
-        
-        // Only update if status is provided and not undefined
-        if (status && status !== undefined && status !== '') {
-            tool.status = status;
-            console.log('Tool after update:', tool.status);
-        } else {
-            console.log('⚠️ Status is undefined or empty, not updating');
-            return res.status(400).json({ message: 'Status is required' });
-        }
-        
-        if (feedback) tool.feedback = feedback;
-        tool.reviewedBy = req.user.userId; // Actor sourced from the verified token, never the client body
-        tool.reviewedAt = new Date();
-
-        const savedTool = await tool.save();
-        
-        console.log('Tool after save:', savedTool.status);
-        console.log('Tool document after save:', { 
-            id: savedTool._id, 
-            status: savedTool.status, 
-            feedback: savedTool.feedback,
-            reviewedBy: savedTool.reviewedBy 
+        // Notify the trainer. updated.trainerId is the trainer's user uuid → recipientType 'user'.
+        await Notification.create({
+            recipientId: updated.trainerId,
+            recipientType: 'user',
+            title: `Tools of Trade ${status}`,
+            body: `Your ${(updated.toolType || 'tool').replace(/_/g, ' ')} submission has been ${status}.${feedback ? ' Feedback: ' + feedback : ''}`,
         });
-
-        // Create notification for trainer
-        const statusText = status ? status.replace(/_/g, ' ') : 'updated';
-        const toolTypeText = tool.toolType ? tool.toolType.replace(/_/g, ' ') : 'tool';
-        
-        const notification = new Notification({
-            recipientId: tool.trainerId,
-            recipientType: 'trainer',
-            title: `Tools of Trade ${statusText}`,
-            message: `Your ${toolTypeText} has been ${statusText}`,
-            type: status === 'approved' ? 'tool_approved' : status === 'rejected' ? 'tool_rejected' : 'tool_revision_needed',
-            relatedId: toolId,
-            priority: 'medium'
-        });
-
-        await notification.save();
 
         res.json({
             success: true,
-            message: 'Tool status updated successfully',
-            data: tool
+            message: 'Tool status updated',
+            data: updated
         });
     } catch (error) {
         console.error('Error updating tool status:', error);
@@ -5012,41 +4987,29 @@ app.patch('/api/tools/:toolId/status', verifyToken, authorize('admin', 'deputy')
 });
 
 // Get presigned URL for downloading a file from S3
-app.get('/api/tools/:toolId/download', verifyToken, authorize('admin', 'trainer', 'hod'), async (req, res) => {
+app.get('/api/tools/:toolId/download', verifyToken, authorize('admin', 'dean', 'trainer'), async (req, res) => {
     try {
         const { toolId } = req.params;
 
-        const tool = await ToolsOfTrade.findById(toolId);
+        const tool = await ToolUpload.findById(toolId);
         // SEV-H-007 pattern: 403 for both not-found and not-owner.
         if (!tool) {
             return res.status(403).json({ message: 'Forbidden' });
         }
-        // SEV-H-012: ownership — admin/hod may access any tool; otherwise the
+        // SEV-H-012: ownership — admin/dean may access any tool; otherwise the
         // requester must be the owning trainer.
-        if (!['admin', 'hod'].includes(req.user.role) &&
+        if (!['admin', 'dean'].includes(req.user.role) &&
             String(tool.trainerId) !== String(req.user.userId)) {
             return res.status(403).json({ message: 'Forbidden' });
         }
 
+        // S3-only: tool_uploads rows always carry an s3Key.
+        // SEV-H-011: 15-min cap + safe disposition are enforced in s3Service.
         const isImg = FILE_IMAGE_EXT_RE.test(tool.fileName || '');
-        if (tool.storageType === 's3' && tool.s3Key) {
-            // SEV-H-011: 15-min cap + safe disposition are enforced in s3Service.
-            const presignedUrl = await getPresignedUrl(tool.s3Key, 900, {
-                displayName: tool.originalFileName, inlineImage: isImg, contentType: tool.mimeType
-            });
-            res.json({ success: true, url: presignedUrl, fileName: tool.originalFileName, storageType: 's3' });
-        } else {
-            // SEV-H-012: no more /uploads/ static path. Hand back a short-lived
-            // signed capability URL to the authenticated streaming route so the
-            // existing window.open flow still works for local storage.
-            const grant = signFileGrant({ cat: 'tool', id: String(tool._id) });
-            res.json({
-                success: true,
-                url: `/api/files/tool/${tool._id}/download?t=${encodeURIComponent(grant)}`,
-                fileName: tool.originalFileName,
-                storageType: 'local'
-            });
-        }
+        const presignedUrl = await getPresignedUrl(tool.s3Key, 900, {
+            displayName: tool.originalName, inlineImage: isImg, contentType: tool.mimeType
+        });
+        res.json({ success: true, url: presignedUrl, fileName: tool.originalName });
     } catch (error) {
         console.error('❌ Error getting download URL:', error);
         res.status(500).json({
@@ -5086,34 +5049,22 @@ app.get('/api/files/:category/:id/download', fileDownloadAuth, async (req, res) 
         }
 
         if (category === 'tool') {
-            const tool = await ToolsOfTrade.findById(id);
+            const tool = await ToolUpload.findById(id);
             if (!tool) return res.status(403).json({ success: false, message: 'Forbidden' });
             if (!req.fileGrant) {
                 const role = req.user && req.user.role;
-                if (!['admin', 'hod'].includes(role) &&
+                if (!['admin', 'dean'].includes(role) &&
                     String(tool.trainerId) !== String(req.user && req.user.userId)) {
                     return res.status(403).json({ success: false, message: 'Forbidden' });
                 }
             }
+            // S3-only: tool_uploads rows always carry an s3Key.
             const isImg = FILE_IMAGE_EXT_RE.test(tool.fileName || '');
-            if (tool.storageType === 's3' && tool.s3Key) {
-                const url = await getPresignedUrl(tool.s3Key, 900, {
-                    displayName: tool.originalFileName, inlineImage: isImg, contentType: tool.mimeType
-                });
-                res.set('X-Content-Type-Options', 'nosniff');
-                return res.redirect(url);
-            }
-            // Local storage: stream from disk after a path-traversal check that
-            // the resolved path is inside the uploads directory.
-            const abs = path.resolve(tool.filePath || '');
-            const root = path.resolve(uploadsDir) + path.sep;
-            if (!abs.startsWith(root) || !fs.existsSync(abs)) {
-                return res.status(403).json({ success: false, message: 'Forbidden' });
-            }
+            const url = await getPresignedUrl(tool.s3Key, 900, {
+                displayName: tool.originalName, inlineImage: isImg, contentType: tool.mimeType
+            });
             res.set('X-Content-Type-Options', 'nosniff');
-            res.set('Content-Type', 'application/octet-stream');
-            res.set('Content-Disposition', `attachment; filename="${sanitizeDisplayName(tool.originalFileName)}"`);
-            return res.sendFile(abs);
+            return res.redirect(url);
         }
 
         return res.status(400).json({ success: false, message: 'Unknown file category' });
@@ -5124,37 +5075,27 @@ app.get('/api/files/:category/:id/download', fileDownloadAuth, async (req, res) 
 });
 
 // Delete tool submission
-app.delete('/api/tools/:toolId', verifyToken, authorize('admin', 'trainer', 'hod'), async (req, res) => {
+app.delete('/api/tools/:toolId', verifyToken, authorize('admin', 'dean'), async (req, res) => {
     try {
         const { toolId } = req.params;
 
-        const tool = await ToolsOfTrade.findById(toolId);
+        const tool = await ToolUpload.findById(toolId);
         if (!tool) {
             return res.status(404).json({ message: 'Tool not found' });
         }
 
-        // Delete the file from storage
-        if (tool.storageType === 's3' && tool.s3Key) {
-            // Delete from S3
-            await deleteFromS3(tool.s3Key);
-            console.log('✅ File deleted from S3:', tool.s3Key);
-        } else if (tool.filePath && fs.existsSync(tool.filePath)) {
-            // Delete from local filesystem
-            fs.unlinkSync(tool.filePath);
-            console.log('✅ File deleted from local storage:', tool.filePath);
-        }
-
-        await ToolsOfTrade.findByIdAndDelete(toolId);
+        // Soft delete: hide the row, keep the S3 file. No hard delete, no S3 deletion.
+        await ToolUpload.findByIdAndUpdate(toolId, { deletedAt: new Date() });
 
         res.json({
             success: true,
-            message: 'Tool submission deleted successfully'
+            message: 'Tool submission removed'
         });
     } catch (error) {
         console.error('❌ Error deleting tool:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             message: 'Error deleting tool',
-            error: error.message 
+            error: error.message
         });
     }
 });
