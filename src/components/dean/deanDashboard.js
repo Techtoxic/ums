@@ -61,7 +61,7 @@ async function loadDepartments() {
         if (!response.ok) throw new Error('Failed to load departments');
         
         const programs = await response.json();
-        const departments = [...new Set(programs.map(p => p.department))].sort();
+        const departments = [...new Set(programs.map(p => p.departmentName).filter(Boolean))].sort();
         
         const select = document.getElementById('filter-department');
         departments.forEach(dept => {

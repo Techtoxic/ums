@@ -3813,7 +3813,7 @@ app.patch('/api/students/:id', verifyToken, authorize('admin', 'registrar'), asy
                     
                     if (program) {
                         const programCostNum = toMoneyNumber(program.programCost); // SEV-H-016
-                        console.log(`✅ Program found: ${program.programName}, Cost: KES ${programCostNum}`);
+                        console.log(`✅ Program found: ${program.name}, Cost: KES ${programCostNum}`);
 
                         if (programCostNum > 0) {
                             // SEV-H-016 TODO: `balance` is NOT a field on the Student
@@ -3829,7 +3829,7 @@ app.patch('/api/students/:id', verifyToken, authorize('admin', 'registrar'), asy
                             console.log(`💰 Adding program cost KES ${programCostNum.toLocaleString()} to existing balance KES ${existingBalance.toLocaleString()}`);
                             console.log(`💳 New balance will be: KES ${newBalance.toLocaleString()}`);
                         } else {
-                            console.warn(`⚠️ Program cost is not set or is zero for ${program.programName}`);
+                            console.warn(`⚠️ Program cost is not set or is zero for ${program.name}`);
                         }
                     } else {
                         console.warn(`⚠️ Program not found for course: ${currentStudent.course} (mapped to: ${programName})`);
@@ -4193,7 +4193,7 @@ app.put('/api/students/:id', verifyToken, authorize('admin', 'registrar'), async
                     
                     if (program) {
                         const programCostNum = toMoneyNumber(program.programCost); // SEV-H-016
-                        console.log(`✅ Program found: ${program.programName}, Cost: KES ${programCostNum}`);
+                        console.log(`✅ Program found: ${program.name}, Cost: KES ${programCostNum}`);
 
                         if (programCostNum > 0) {
                             // SEV-H-016 TODO: `balance` is NOT a field on the Student
@@ -4209,7 +4209,7 @@ app.put('/api/students/:id', verifyToken, authorize('admin', 'registrar'), async
                             console.log(`💰 Adding program cost KES ${programCostNum.toLocaleString()} to existing balance KES ${existingBalance.toLocaleString()}`);
                             console.log(`💳 New balance will be: KES ${newBalance.toLocaleString()}`);
                         } else {
-                            console.warn(`⚠️ Program cost is not set or is zero for ${program.programName}`);
+                            console.warn(`⚠️ Program cost is not set or is zero for ${program.name}`);
                         }
                     } else {
                         console.warn(`⚠️ Program not found for course: ${currentStudent.course} (mapped to: ${programName})`);
