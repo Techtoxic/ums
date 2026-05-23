@@ -160,51 +160,32 @@
                     return;
                 }
 
-                // Create notification for trainers
-                const notification = {
-                    recipientType: 'trainer',
-                    title: 'Tools of Trade Request',
-                    message: `Please submit your ${toolType} by ${dueDate}. Instructions: ${instructions}`,
-                    type: 'tool_request',
-                    priority: 'high'
+                // Map the "send to" choice to the request's target type.
+                const targetTypeMap = { all_trainers: 'faculty', by_department: 'department', specific_trainer: 'trainer' };
+                const targetType = targetTypeMap[sendTo];
+
+                // Create the tool_requests row; the backend fans out the notifications.
+                const requestBody = {
+                    toolType,
+                    targetType,
+                    targetTrainerId: sendTo === 'specific_trainer' ? (trainerSelection || null) : null,
+                    targetDepartment: sendTo === 'by_department' ? (department || null) : null,
+                    dueDate,
+                    instructions: instructions || null
                 };
 
-                let response;
-                if (sendTo === 'all_trainers') {
-                    // Send to all trainers
-                    response = await window.AUTH.fetch(`${API_BASE_URL}/notifications/broadcast`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(notification)
-                    });
-                } else if (sendTo === 'by_department') {
-                    // Send to department trainers
-                    notification.message = `Please submit your ${toolType} for ${department} department by ${dueDate}. Instructions: ${instructions}`;
-                    response = await window.AUTH.fetch(`${API_BASE_URL}/notifications/broadcast`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(notification)
-                    });
-                } else if (sendTo === 'specific_trainer') {
-                    // Send to specific trainer
-                    notification.recipientId = trainerSelection;
-                    
-                    response = await window.AUTH.fetch(`${API_BASE_URL}/notifications`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(notification)
-                    });
-                }
+                // window.AUTH.fetch attaches the Authorization + CSRF headers for state-changing requests.
+                const response = await window.AUTH.fetch(`${API_BASE_URL}/tool-requests`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestBody)
+                });
 
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({}));
-                    throw new Error(errorData.message || `Failed to send notification: ${response.status} ${response.statusText}`);
+                    throw new Error(errorData.message || `Failed to create tool request: ${response.status} ${response.statusText}`);
                 }
 
                 showToast('Tool request sent to trainers successfully!');
