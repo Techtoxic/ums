@@ -129,51 +129,51 @@ function showProfileUpdateModal(needsEmailUpdate, needsPhoneUpdate) {
     }
     
     modal.innerHTML = `
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-md transform transition-all duration-300 scale-95">
-            <div class="p-6 border-b border-gray-200">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md transform transition-all duration-300 scale-95">
+            <div class="p-6 border-b border-gray-200 dark:border-gray-700">
                 <div class="flex items-center justify-between">
-                    <h3 class="text-lg font-semibold text-gray-800">${escapeHtml(title)}</h3>
-                    <button onclick="closeProfileUpdateModal()" class="p-2 hover:bg-gray-100 rounded-lg">
-                        <i class="ri-close-line text-xl text-gray-600"></i>
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">${escapeHtml(title)}</h3>
+                    <button onclick="closeProfileUpdateModal()" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                        <i class="ri-close-line text-xl text-gray-600 dark:text-gray-400"></i>
                     </button>
                 </div>
             </div>
             <form id="profile-update-form" class="p-6">
                 <div class="space-y-4">
-                    <p class="text-gray-600 text-sm">${escapeHtml(description)}</p>
-                    
+                    <p class="text-gray-600 dark:text-gray-400 text-sm">${escapeHtml(description)}</p>
+
                     <div>
-                        <label for="hod-email" class="block text-sm font-medium text-gray-700 mb-2">
+                        <label for="hod-email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             <i class="ri-mail-line mr-2 text-blue-600"></i>Email Address
                         </label>
-                        <input 
-                            type="email" 
-                            id="hod-email" 
+                        <input
+                            type="email"
+                            id="hod-email"
                             value="${currentHOD.email || ''}"
                             placeholder="Enter your email address"
-                            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-400"
                             ${needsEmailUpdate ? 'required' : ''}
                         >
                     </div>
-                    
+
                     <div>
-                        <label for="hod-phone" class="block text-sm font-medium text-gray-700 mb-2">
+                        <label for="hod-phone" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             <i class="ri-phone-line mr-2 text-blue-600"></i>Phone Number
                         </label>
-                        <input 
-                            type="tel" 
-                            id="hod-phone" 
+                        <input
+                            type="tel"
+                            id="hod-phone"
                             value="${currentHOD.phone || ''}"
                             placeholder="Enter your phone number"
-                            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-400"
                             ${needsPhoneUpdate ? 'required' : ''}
                         >
                     </div>
-                    
-                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+
+                    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
                         <div class="flex items-start">
                             <i class="ri-information-line text-blue-600 mr-2 mt-0.5"></i>
-                            <div class="text-sm text-blue-700">
+                            <div class="text-sm text-blue-700 dark:text-blue-300">
                                 <p class="font-medium mb-1">Important Notes:</p>
                                 <ul class="list-disc list-inside space-y-1 text-xs">
                                     <li>Use a valid email address you have access to</li>
@@ -185,7 +185,7 @@ function showProfileUpdateModal(needsEmailUpdate, needsPhoneUpdate) {
                     </div>
                 </div>
                 <div class="flex gap-3 pt-6">
-                    <button type="button" onclick="closeProfileUpdateModal()" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                    <button type="button" onclick="closeProfileUpdateModal()" class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                         Skip for now
                     </button>
                     <button type="submit" class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
@@ -674,15 +674,15 @@ function populateAssignmentsDisplay() {
         tableBody.innerHTML = unassignedUnits.map(unit => `
             <tr>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <input type="checkbox" class="assignment-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500" value="${escapeAttr(unit._id)}">
+                    <input type="checkbox" class="assignment-checkbox rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500" value="${escapeAttr(unit._id)}">
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div>
-                        <div class="text-sm font-medium text-gray-900">${escapeHtml(unit.unitCode)}</div>
-                        <div class="text-sm text-gray-500">${escapeHtml(unit.unitName)}</div>
+                        <div class="text-sm font-medium text-gray-900 dark:text-gray-100">${escapeHtml(unit.unitCode)}</div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">${escapeHtml(unit.unitName)}</div>
                     </div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                     ${escapeHtml(formatCourseName(unit.courseCode))}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
@@ -690,8 +690,8 @@ function populateAssignmentsDisplay() {
                         Unassigned
                     </span>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">-</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">—</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">-</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">—</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <button
                         onclick="assignUnitToTrainer('${escapeAttr(unit._id)}')"
@@ -708,25 +708,25 @@ function populateAssignmentsDisplay() {
     tableBody.innerHTML = displayAssignments.map(assignment => `
         <tr>
             <td class="px-6 py-4 whitespace-nowrap">
-                <input type="checkbox" class="assignment-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500" value="${escapeAttr(assignment.unitId ? assignment.unitId._id : '')}">
+                <input type="checkbox" class="assignment-checkbox rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500" value="${escapeAttr(assignment.unitId ? assignment.unitId._id : '')}">
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
                 <div>
-                    <div class="text-sm font-medium text-gray-900">${escapeHtml(assignment.unitId ? assignment.unitId.unitCode : 'Unknown Unit')}</div>
-                    <div class="text-sm text-gray-500">${escapeHtml(assignment.unitId ? assignment.unitId.unitName : 'No unit name')}</div>
+                    <div class="text-sm font-medium text-gray-900 dark:text-gray-100">${escapeHtml(assignment.unitId ? assignment.unitId.unitCode : 'Unknown Unit')}</div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">${escapeHtml(assignment.unitId ? assignment.unitId.unitName : 'No unit name')}</div>
                 </div>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                 ${escapeHtml(assignment.unitId ? formatCourseName(assignment.unitId.courseCode) : 'Unknown Course')}
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm text-gray-900">${escapeHtml(assignment.trainerId ? assignment.trainerId.name : 'Unknown Trainer')}</div>
-                <div class="text-sm text-gray-500">${escapeHtml(assignment.trainerId ? assignment.trainerId.email : 'No email')}</div>
+                <div class="text-sm text-gray-900 dark:text-gray-100">${escapeHtml(assignment.trainerId ? assignment.trainerId.name : 'Unknown Trainer')}</div>
+                <div class="text-sm text-gray-500 dark:text-gray-400">${escapeHtml(assignment.trainerId ? assignment.trainerId.email : 'No email')}</div>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                 ${assignment.createdAt ? new Date(assignment.createdAt).toLocaleDateString() : 'N/A'}
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                 ${assignment.hours != null ? assignment.hours : '—'}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
