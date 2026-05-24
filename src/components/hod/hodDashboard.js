@@ -616,18 +616,18 @@ function populateTrainersDisplay() {
                     ${trainerAssignments.length > 0 ? `
                         <div class="space-y-1">
                             ${trainerAssignments.slice(0, 3).map(assignment => `
-                                <div class="text-xs bg-gray-50 rounded px-2 py-1">
+                                <div class="text-xs bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded px-2 py-1">
                                     ${escapeHtml(assignment.unitId ? assignment.unitId.unitCode : 'Unknown')} - ${escapeHtml(assignment.unitId ? assignment.unitId.unitName : 'Unknown Unit')}
                                 </div>
                             `).join('')}
                             ${trainerAssignments.length > 3 ? `
-                                <div class="text-xs text-gray-500">
+                                <div class="text-xs text-gray-500 dark:text-gray-400">
                                     +${trainerAssignments.length - 3} more units
                                 </div>
                             ` : ''}
                         </div>
                     ` : `
-                        <p class="text-sm text-gray-500 italic">No units assigned</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 italic">No units assigned</p>
                     `}
                 </div>
                 
@@ -959,14 +959,14 @@ function populateModalUnits() {
     console.log('populateModalUnits - unassignedUnits:', unassignedUnits);
     
     unitsList.innerHTML = unassignedUnits.map(unit => `
-        <label class="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded">
-            <input type="checkbox" class="modal-unit-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500" value="${escapeAttr(unit._id)}">
+        <label class="flex items-center space-x-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded">
+            <input type="checkbox" class="modal-unit-checkbox rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500" value="${escapeAttr(unit._id)}">
             <div class="flex-1">
-                <div class="text-sm font-medium text-gray-900">${escapeHtml(unit.unitCode)}</div>
-                <div class="text-sm text-gray-500">${escapeHtml(unit.unitName)}</div>
-                <div class="text-xs text-gray-400">${escapeHtml(formatCourseName(unit.courseCode))}</div>
+                <div class="text-sm font-medium text-gray-900 dark:text-gray-100">${escapeHtml(unit.unitCode)}</div>
+                <div class="text-sm text-gray-500 dark:text-gray-400">${escapeHtml(unit.unitName)}</div>
+                <div class="text-xs text-gray-400 dark:text-gray-500">${escapeHtml(formatCourseName(unit.courseCode))}</div>
             </div>
-            <input type="number" min="1" placeholder="Hrs/wk" class="modal-unit-hours w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" data-unit-id="${escapeAttr(unit._id)}">
+            <input type="number" min="1" placeholder="Hrs/wk" class="modal-unit-hours w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-400" data-unit-id="${escapeAttr(unit._id)}">
         </label>
     `).join('');
     
