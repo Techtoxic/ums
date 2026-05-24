@@ -3047,6 +3047,7 @@ app.get('/api/assignments/department/:department', verifyToken, authorize('admin
             .select({
                 assignmentId:   schema.trainerAssignments.id,
                 assignedAt:     schema.trainerAssignments.created_at,
+                hours:          schema.trainerAssignments.hours,
                 unitUid:        schema.units.id,
                 unitCode:       schema.units.code,
                 unitName:       schema.units.name,
@@ -3070,6 +3071,7 @@ app.get('/api/assignments/department/:department', verifyToken, authorize('admin
         const assignments = rows.map(r => ({
             _id: r.assignmentId,
             assignedAt: r.assignedAt,
+            hours: r.hours,          // integer or null
             unitId: {
                 _id:        r.unitUid,
                 unitCode:   r.unitCode,

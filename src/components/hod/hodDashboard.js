@@ -724,7 +724,7 @@ function populateAssignmentsDisplay() {
                 <div class="text-sm text-gray-500 dark:text-gray-400">${escapeHtml(assignment.trainerId ? assignment.trainerId.email : 'No email')}</div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                ${assignment.createdAt ? new Date(assignment.createdAt).toLocaleDateString() : 'N/A'}
+                ${assignment.assignedAt ? new Date(assignment.assignedAt).toLocaleDateString() : 'N/A'}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                 ${assignment.hours != null ? assignment.hours : '—'}
