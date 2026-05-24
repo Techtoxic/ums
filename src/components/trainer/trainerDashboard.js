@@ -1382,16 +1382,7 @@ async function uploadBulkTools() {
         
         let successCount = 0;
         let errorCount = 0;
-        
-        // Get selected unit
-        const unitSelect = document.getElementById('unitSelect');
-        const selectedUnitId = unitSelect.value;
-        
-        if (!selectedUnitId) {
-            showToast('Please select a unit first', 'error');
-            return;
-        }
-        
+
         for (let i = 0; i < bulkFiles.length; i++) {
             const file = bulkFiles[i];
             const progress = ((i + 1) / bulkFiles.length) * 100;
@@ -1403,10 +1394,7 @@ async function uploadBulkTools() {
                 const formData = new FormData();
                 formData.append('file', file);
                 formData.append('trainerId', currentTrainer._id);
-                formData.append('unitId', selectedUnitId); // Use selected unit
                 formData.append('toolType', bulkToolType);
-                formData.append('academicYear', '2024/2025');
-                formData.append('semester', '1');
                 
                 const response = await authFetch(`${API_BASE_URL}/tools/upload`, {
                     method: 'POST',
