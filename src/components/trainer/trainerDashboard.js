@@ -1133,9 +1133,11 @@ function createToolCard(tool) {
                     <button onclick="downloadTool('${escapeAttr(tool.id)}')" class="text-primary hover:text-secondary text-sm font-medium transition-colors">
                         <i class="ri-download-line mr-1"></i>Download
                     </button>
+                    ${tool.status === 'submitted' ? `
                     <button onclick="deleteTool('${escapeAttr(tool.id)}')" class="text-red-500 hover:text-red-700 text-sm font-medium transition-colors">
                         <i class="ri-delete-bin-line mr-1"></i>Delete
                     </button>
+                    ` : ''}
                 </div>
             </div>
         </div>

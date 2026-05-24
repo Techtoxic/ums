@@ -5075,13 +5075,25 @@ app.get('/api/files/:category/:id/download', fileDownloadAuth, async (req, res) 
 });
 
 // Delete tool submission
-app.delete('/api/tools/:toolId', verifyToken, authorize('admin', 'dean'), async (req, res) => {
+app.delete('/api/tools/:toolId', verifyToken, authorize('admin', 'deputy', 'trainer'), async (req, res) => {
     try {
         const { toolId } = req.params;
 
         const tool = await ToolUpload.findById(toolId);
         if (!tool) {
             return res.status(404).json({ message: 'Tool not found' });
+        }
+
+        // Delete policy: a trainer may delete only their OWN upload, and only
+        // while it is still 'submitted' (not yet reviewed). admin/deputy may
+        // delete any upload, any status. Other roles are blocked by authorize().
+        if (req.user.role === 'trainer') {
+            if (String(tool.trainerId) !== String(req.user.userId)) {
+                return res.status(403).json({ message: 'You can only delete your own uploads.' });
+            }
+            if (tool.status !== 'submitted') {
+                return res.status(403).json({ message: 'This upload has already been reviewed and can no longer be deleted.' });
+            }
         }
 
         // Soft delete: hide the row, keep the S3 file. No hard delete, no S3 deletion.

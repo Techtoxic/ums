@@ -110,6 +110,8 @@
                             <button onclick="reviewTool('${escapeAttr(tool.id)}')" class="text-sm text-primary hover:text-secondary transition-colors">Review</button>
                             <span class="text-slate-300 dark:text-slate-600">|</span>
                             <button onclick="downloadTool('${escapeAttr(tool.id)}')" class="text-sm text-slate-500 hover:text-slate-600 transition-colors">Download</button>
+                            <span class="text-slate-300 dark:text-slate-600">|</span>
+                            <button onclick="deleteToolDeputy('${escapeAttr(tool.id)}')" class="text-sm text-red-500 hover:text-red-700 transition-colors">Delete</button>
                         </div>
                     </div>
                 `;
@@ -245,6 +247,25 @@
             } catch (error) {
                 console.error('❌ Error downloading tool:', error);
                 showToast('Failed to download file: ' + error.message, 'error');
+            }
+        }
+
+        // Delete tool function (Deputy may delete any upload, any status — soft delete)
+        async function deleteToolDeputy(toolId) {
+            if (!confirm('Delete this tool submission? This cannot be undone.')) return;
+            try {
+                const response = await window.AUTH.fetch(`${API_BASE_URL}/tools/${toolId}`, {
+                    method: 'DELETE'
+                });
+                if (!response.ok) {
+                    const data = await response.json().catch(() => ({}));
+                    throw new Error(data.message || `HTTP ${response.status}`);
+                }
+                showToast('Tool submission deleted', 'success');
+                fetchToolsOfTrade();
+            } catch (error) {
+                console.error('❌ Error deleting tool:', error);
+                showToast('Failed to delete tool: ' + error.message, 'error');
             }
         }
 
