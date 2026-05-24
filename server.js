@@ -3234,120 +3234,99 @@ app.put('/api/trainers/:trainerId/email', verifyToken, authorize('admin', 'train
 app.get('/api/trainers/:trainerId/assignments', verifyToken, authorize('admin', 'hod', 'registrar', 'trainer'), verifyOwnership('trainerId'), async (req, res) => {
     try {
         const { trainerId } = req.params;
-        
+
         // Validate trainerId format
         if (!isValidId(trainerId)) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Invalid trainer ID format' 
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid trainer ID format'
             });
         }
-        
+
         // Verify trainer exists
         const trainer = await Trainer.findById(trainerId);
         if (!trainer) {
-            return res.status(404).json({ 
-                success: false, 
-                message: 'Trainer not found' 
+            return res.status(404).json({
+                success: false,
+                message: 'Trainer not found'
             });
         }
-        
-        // Get regular assignments with proper population
-        const assignments = await TrainerAssignment.find({
-            trainerId: trainerId,
-            status: 'active'
-        })
-        .populate({
-            path: 'unitId',
-            select: 'unitName unitCode courseCode level department',
-            match: { isActive: true }
-        })
-        .sort({ assignedAt: -1 })
-        .lean();
-        
-        // Get common unit assignments
-        const commonUnitAssignments = await CommonUnitAssignment.find({
-            trainerId: trainerId,
-            status: 'active'
-        })
-        .populate({
-            path: 'commonUnitId',
-            select: 'unitName unitCode courseCode level description',
-            match: { isActive: true }
-        })
-        .sort({ assignedAt: -1 })
-        .lean();
-        
-        // Filter out assignments with null/missing unit data
-        const validAssignments = assignments.filter(assignment => 
-            assignment.unitId && assignment.unitId.unitCode
-        );
-        
-        const validCommonUnitAssignments = commonUnitAssignments.filter(assignment => 
-            assignment.commonUnitId && assignment.commonUnitId.unitCode
-        );
-        
-        // Format department unit assignments
-        const formattedAssignments = validAssignments.map(assignment => ({
-            _id: assignment._id,
-            type: 'department',
+
+        // A trainer's assignments come ONLY from trainer_assignments. Common units
+        // are assigned to a PROGRAM (common_unit_assignments has no trainer_id),
+        // so there is no "common assignments by trainer" — that half is gone.
+        // Join trainer_assignments → units (on unit_id), then units → programs
+        // (for a course code / department-ish label). Exclude soft-deleted units.
+        const conds = [
+            eq(schema.trainerAssignments.trainer_id, trainerId),
+            isNull(schema.units.deleted_at),
+        ];
+        // Optional narrowing by academic_year / semester when supplied as query
+        // params; absent → all of the trainer's assignments (no settings lookup).
+        const academicYear = req.query.academicYear;
+        const semester = req.query.semester;
+        if (academicYear !== undefined && academicYear !== '' && !Number.isNaN(Number(academicYear))) {
+            conds.push(eq(schema.trainerAssignments.academic_year, Number(academicYear)));
+        }
+        if (semester !== undefined && semester !== '' && !Number.isNaN(Number(semester))) {
+            conds.push(eq(schema.trainerAssignments.semester, Number(semester)));
+        }
+
+        const rows = await db
+            .select({
+                assignmentId: schema.trainerAssignments.id,
+                academicYear: schema.trainerAssignments.academic_year,
+                semester: schema.trainerAssignments.semester,
+                createdAt: schema.trainerAssignments.created_at,
+                unitId: schema.units.id,
+                unitCode: schema.units.code,
+                unitName: schema.units.name,
+                unitYear: schema.units.year,
+                isCommon: schema.units.is_common,
+                programCode: schema.programs.code,
+                programName: schema.programs.name,
+            })
+            .from(schema.trainerAssignments)
+            .innerJoin(schema.units, eq(schema.units.id, schema.trainerAssignments.unit_id))
+            .leftJoin(schema.programs, eq(schema.programs.id, schema.units.program_id))
+            .where(and(...conds))
+            .orderBy(desc(schema.trainerAssignments.created_at));
+
+        // Shape each row to what the trainer dashboard renders. The frontend
+        // requires unitId.unitCode, unitId.unitName and a truthy status (else it
+        // filters the card out), reads top-level courseCode for its course stat,
+        // and renders unitId.level + the assignment createdAt date. There is no
+        // status column in V2, so it is synthesized as 'active'. Real columns are
+        // mapped to the legacy names: units.code→unitCode, units.name→unitName,
+        // units.year→level, programs.code→courseCode, programs.name→department.
+        const assignments = rows.map(r => ({
+            _id: r.assignmentId,
+            type: r.isCommon ? 'common' : 'department',
+            status: 'active',
+            courseCode: r.programCode || 'N/A',
+            academicYear: r.academicYear,
+            semester: r.semester,
+            createdAt: r.createdAt,
             unitId: {
-                _id: assignment.unitId._id,
-                unitName: assignment.unitId.unitName,
-                unitCode: assignment.unitId.unitCode,
-                courseCode: assignment.unitId.courseCode,
-                level: assignment.unitId.level,
-                department: assignment.unitId.department
+                id: r.unitId,
+                _id: r.unitId,
+                unitCode: r.unitCode,
+                unitName: r.unitName,
+                courseCode: r.programCode || 'N/A',
+                level: r.unitYear,
+                year: r.unitYear,
+                isCommon: r.isCommon,
+                department: r.programName || 'N/A',
             },
-            courseCode: assignment.courseCode,
-            unitCode: assignment.unitCode,
-            unitName: assignment.unitName,
-            department: assignment.department,
-            assignedBy: assignment.assignedBy,
-            assignedAt: assignment.assignedAt,
-            status: assignment.status,
-            notes: assignment.notes || '',
-            semester: assignment.semester || 'current'
         }));
-        
-        // Format common unit assignments
-        const formattedCommonAssignments = validCommonUnitAssignments.map(assignment => ({
-            _id: assignment._id,
-            type: 'common',
-            unitId: {
-                _id: assignment.commonUnitId._id,
-                unitName: assignment.commonUnitId.unitName,
-                unitCode: assignment.commonUnitId.unitCode,
-                courseCode: assignment.commonUnitId.courseCode,
-                level: assignment.commonUnitId.level,
-                department: 'common'
-            },
-            courseCode: assignment.commonUnitId.courseCode,
-            unitCode: assignment.commonUnitId.unitCode,
-            unitName: assignment.commonUnitId.unitName,
-            department: 'common',
-            assignedBy: assignment.assignedBy,
-            assignedAt: assignment.assignedAt,
-            status: assignment.status,
-            notes: assignment.notes || '',
-            assignedByDepartment: assignment.assignedByDepartment,
-            trainerDepartment: assignment.trainerDepartment
-        }));
-        
-        // Combine both types of assignments
-        const allAssignments = [...formattedAssignments, ...formattedCommonAssignments]
-            .sort((a, b) => new Date(b.assignedAt) - new Date(a.assignedAt));
-        
-        console.log(`✅ Fetched ${formattedAssignments.length} department assignments and ${formattedCommonAssignments.length} common unit assignments for trainer ${trainer.name}`);
-        
+
+        console.log(`✅ Fetched ${assignments.length} assignments for trainer ${trainer.name}`);
+
         res.json({
             success: true,
-            count: allAssignments.length,
-            departmentAssignments: formattedAssignments.length,
-            commonUnitAssignments: formattedCommonAssignments.length,
-            assignments: allAssignments
+            count: assignments.length,
+            assignments
         });
-        
     } catch (error) {
         console.error('❌ Error fetching trainer assignments:', error);
         res.status(500).json({ 
