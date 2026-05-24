@@ -3074,25 +3074,113 @@ app.get('/api/assignments/department/:department', verifyToken, authorize('admin
     }
 });
 
+// Resolve the current academic period (integer year + semester) from
+// system_settings. The value column is jsonb, so values come back already
+// parsed (usually JS strings like "2024/2025" / "1"); read defensively in case
+// a value is stored as JSON-encoded text. CONVENTION: academic_year uses the
+// START year of the "YYYY/YYYY" range (2024/2025 → 2024) — both
+// trainer_assignments and unit_registrations follow this so the /students join
+// agrees. Missing settings fall back to (2024, 1) with a warning rather than
+// crashing.
+async function resolveAcademicPeriod() {
+    const unwrap = (v) => {
+        if (v === null || v === undefined) return null;
+        if (typeof v === 'number') return String(v);
+        if (typeof v === 'string') {
+            const s = v.trim();
+            if (s.length >= 2 && s[0] === '"' && s[s.length - 1] === '"') {
+                try { return String(JSON.parse(s)); } catch { return s.slice(1, -1); }
+            }
+            return s;
+        }
+        return String(v);
+    };
+
+    const rows = await db
+        .select({ key: schema.systemSettings.key, value: schema.systemSettings.value })
+        .from(schema.systemSettings)
+        .where(inArray(schema.systemSettings.key, ['current_academic_year', 'current_semester']));
+
+    const map = {};
+    for (const r of rows) map[r.key] = unwrap(r.value);
+
+    let academicYear = parseInt(String(map.current_academic_year || '').split('/')[0], 10);
+    if (!Number.isInteger(academicYear)) {
+        console.warn('⚠️ current_academic_year setting missing/unparseable — defaulting to 2024');
+        academicYear = 2024;
+    }
+    let semester = parseInt(map.current_semester, 10);
+    if (!Number.isInteger(semester)) {
+        console.warn('⚠️ current_semester setting missing/unparseable — defaulting to 1');
+        semester = 1;
+    }
+    return { academicYear, semester };
+}
+
 // Assign units to trainer
 app.post('/api/assignments/assign', verifyToken, authorize('admin', 'hod'), async (req, res) => {
     try {
-        const { trainerId, unitIds, assignedBy, department } = req.body;
+        const { trainerId, unitIds } = req.body;
+        // assignedBy / department are sent by the HOD UI but have no columns — ignore.
 
-        if (!trainerId || !unitIds || !Array.isArray(unitIds) || unitIds.length === 0) {
+        if (!trainerId || !isValidId(trainerId) || !unitIds || !Array.isArray(unitIds) || unitIds.length === 0) {
             return res.status(400).json({ message: 'Trainer ID and unit IDs are required' });
         }
 
-        const assignments = await TrainerAssignment.assignUnitsToTrainer(
-            trainerId, 
-            unitIds, 
-            assignedBy, 
-            department
-        );
+        // Academic period: prefer numeric values explicitly sent in the body,
+        // otherwise derive from system_settings. (The HOD UI sends neither.)
+        const period = await resolveAcademicPeriod();
+        const bodyYear = Number(req.body.academicYear);
+        const bodySem = Number(req.body.semester);
+        const academicYear = Number.isInteger(bodyYear) && bodyYear > 0 ? bodyYear : period.academicYear;
+        const semester = Number.isInteger(bodySem) && bodySem > 0 ? bodySem : period.semester;
+
+        const uniqueUnitIds = [...new Set(unitIds.filter(isValidId))];
+
+        // Only assign units that actually exist and are not soft-deleted; invalid
+        // ids are skipped rather than failing the whole batch.
+        const validUnits = uniqueUnitIds.length
+            ? await db
+                .select({ id: schema.units.id })
+                .from(schema.units)
+                .where(and(inArray(schema.units.id, uniqueUnitIds), isNull(schema.units.deleted_at)))
+            : [];
+        const validSet = new Set(validUnits.map(u => u.id));
+
+        // Duplicate guard: trainer_assignments has NO unique constraint on
+        // (trainer_id, unit_id, academic_year, semester) — only a non-unique
+        // index — so onConflictDoNothing is not possible. Pre-check existing rows
+        // for this trainer/period and skip unit_ids already assigned.
+        const existing = uniqueUnitIds.length
+            ? await db
+                .select({ unitId: schema.trainerAssignments.unit_id })
+                .from(schema.trainerAssignments)
+                .where(and(
+                    eq(schema.trainerAssignments.trainer_id, trainerId),
+                    eq(schema.trainerAssignments.academic_year, academicYear),
+                    eq(schema.trainerAssignments.semester, semester),
+                    inArray(schema.trainerAssignments.unit_id, uniqueUnitIds),
+                ))
+            : [];
+        const existingSet = new Set(existing.map(r => r.unitId));
+
+        const toInsert = uniqueUnitIds
+            .filter(id => validSet.has(id) && !existingSet.has(id))
+            .map(unitId => ({
+                trainer_id: trainerId,
+                unit_id: unitId,
+                academic_year: academicYear,
+                semester,
+            }));
+
+        let assignments = [];
+        if (toInsert.length > 0) {
+            assignments = await db.insert(schema.trainerAssignments).values(toInsert).returning();
+        }
 
         res.json({
             message: 'Units assigned successfully',
-            assignments: assignments
+            assignments
         });
     } catch (error) {
         console.error('Error assigning units:', error);
@@ -3109,7 +3197,22 @@ app.post('/api/assignments/unassign', verifyToken, authorize('admin', 'hod'), as
             return res.status(400).json({ message: 'Unit IDs are required' });
         }
 
-        await TrainerAssignment.unassignUnits(unitIds);
+        const uniqueUnitIds = [...new Set(unitIds.filter(isValidId))];
+        if (uniqueUnitIds.length === 0) {
+            return res.json({ message: 'Units unassigned successfully' });
+        }
+
+        // Scope the delete to the CURRENT academic period so historical
+        // assignments from prior years/semesters are preserved. This is per-unit
+        // (matches the UI): it removes whoever currently holds the unit this period.
+        const { academicYear, semester } = await resolveAcademicPeriod();
+        await db
+            .delete(schema.trainerAssignments)
+            .where(and(
+                inArray(schema.trainerAssignments.unit_id, uniqueUnitIds),
+                eq(schema.trainerAssignments.academic_year, academicYear),
+                eq(schema.trainerAssignments.semester, semester),
+            ));
 
         res.json({
             message: 'Units unassigned successfully'
