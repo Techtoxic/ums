@@ -57,7 +57,7 @@ const {
     Student, User, AdminStaff, Trainer, HOD,
     Program, Unit, CommonUnit, CommonUnitAssignment,
     TrainerAssignment, StudentUnitRegistration,
-    ToolRequest,
+    ToolRequest, ToolUpload,
     AttachmentApplication, GraduationApplication,
     Notification, StudentNote, StudentUpload,
     AuditLog, SystemSettings, PasswordReset, LoginOTP,
