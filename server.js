@@ -2828,23 +2828,38 @@ app.delete('/api/common-unit-assignments/:assignmentId', verifyToken, authorize(
 });
 
 // Get trainers from all departments for common unit assignment
-app.get('/api/trainers/all-departments', verifyToken, authorize('admin', 'hod', 'registrar', 'deputy'), async (req, res) => {
+app.get('/api/trainers/all-departments', verifyToken, authorize('admin', 'hod', 'registrar', 'deputy', 'finance'), async (req, res) => {
     try {
-        const trainers = await Trainer.find({ isActive: true })
-            .select('name email department specialization')
-            .sort({ department: 1, name: 1 });
-        
-        // Group trainers by department
+        // A trainer is a users row with role = 'trainer'. Select only real
+        // columns (the old V1 select referenced a field that has no column).
+        // Finance lists these to pick whose payslips to generate, then posts
+        // the ids to /api/payslips/generate.
+        const trainers = await db
+            .select({
+                id: schema.users.id,
+                name: schema.users.name,
+                email: schema.users.email,
+                department: schema.users.department,
+            })
+            .from(schema.users)
+            .where(and(
+                eq(schema.users.role, 'trainer'),
+                eq(schema.users.is_active, true),
+            ))
+            .orderBy(schema.users.department, schema.users.name);
+
+        // Group by department. Trainers with no department land under 'Unassigned'.
         const trainersByDepartment = trainers.reduce((acc, trainer) => {
-            if (!acc[trainer.department]) {
-                acc[trainer.department] = [];
+            const dept = trainer.department || 'Unassigned';
+            if (!acc[dept]) {
+                acc[dept] = [];
             }
-            acc[trainer.department].push(trainer);
+            acc[dept].push(trainer);
             return acc;
         }, {});
-        
-        res.json({ 
-            success: true, 
+
+        res.json({
+            success: true,
             trainers: trainers,
             trainersByDepartment: trainersByDepartment,
             departments: Object.keys(trainersByDepartment).sort()
