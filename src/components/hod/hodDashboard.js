@@ -691,9 +691,10 @@ function populateAssignmentsDisplay() {
                     </span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">-</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">—</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button 
-                        onclick="assignUnitToTrainer('${escapeAttr(unit._id)}')" 
+                    <button
+                        onclick="assignUnitToTrainer('${escapeAttr(unit._id)}')"
                         class="text-blue-600 hover:text-blue-900"
                     >
                         Assign
@@ -725,9 +726,12 @@ function populateAssignmentsDisplay() {
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 ${assignment.createdAt ? new Date(assignment.createdAt).toLocaleDateString() : 'N/A'}
             </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                ${assignment.hours != null ? assignment.hours : '—'}
+            </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                <button 
-                    onclick="unassignUnit('${escapeAttr(assignment.unitId ? assignment.unitId._id : '')}')" 
+                <button
+                    onclick="unassignUnit('${escapeAttr(assignment.unitId ? assignment.unitId._id : '')}')"
                     class="text-red-600 hover:text-red-900"
                     ${!assignment.unitId ? 'disabled' : ''}
                 >
@@ -962,6 +966,7 @@ function populateModalUnits() {
                 <div class="text-sm text-gray-500">${escapeHtml(unit.unitName)}</div>
                 <div class="text-xs text-gray-400">${escapeHtml(formatCourseName(unit.courseCode))}</div>
             </div>
+            <input type="number" min="1" placeholder="Hrs/wk" class="modal-unit-hours w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" data-unit-id="${escapeAttr(unit._id)}">
         </label>
     `).join('');
     
@@ -983,13 +988,24 @@ function updateAssignButtonState() {
 // Assign selected units
 async function assignSelectedUnits() {
     const trainerId = document.getElementById('modalTrainerSelect').value;
-    const selectedUnits = Array.from(document.querySelectorAll('.modal-unit-checkbox:checked')).map(cb => cb.value);
-    
-    if (!trainerId || selectedUnits.length === 0) {
+    const checkedBoxes = Array.from(document.querySelectorAll('.modal-unit-checkbox:checked'));
+
+    if (!trainerId || checkedBoxes.length === 0) {
         showToast('Please select a trainer and at least one unit', 'error');
         return;
     }
-    
+
+    // Pair each checked unit with its Hrs/week input. Empty or non-positive-integer
+    // hours are sent as null (the server coerces too, but send clean data).
+    const units = checkedBoxes.map(cb => {
+        const unitId = cb.value;
+        const hoursInput = document.querySelector(`.modal-unit-hours[data-unit-id="${cb.value}"]`);
+        const raw = hoursInput ? hoursInput.value.trim() : '';
+        const num = Number(raw);
+        const hours = (raw !== '' && Number.isInteger(num) && num > 0) ? num : null;
+        return { unitId, hours };
+    });
+
     try {
         const response = await authFetch('/api/assignments/assign', {
             method: 'POST',
@@ -998,9 +1014,7 @@ async function assignSelectedUnits() {
             },
             body: JSON.stringify({
                 trainerId: trainerId,
-                unitIds: selectedUnits,
-                assignedBy: currentHOD.email,
-                department: currentHOD.department
+                units: units
             })
         });
         
