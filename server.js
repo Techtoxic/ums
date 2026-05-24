@@ -4998,7 +4998,7 @@ app.get('/api/tools/:toolId/download', verifyToken, authorize('admin', 'dean', '
         }
         // SEV-H-012: ownership — admin/dean may access any tool; otherwise the
         // requester must be the owning trainer.
-        if (!['admin', 'dean'].includes(req.user.role) &&
+        if (!['admin', 'dean', 'deputy'].includes(req.user.role) &&
             String(tool.trainerId) !== String(req.user.userId)) {
             return res.status(403).json({ message: 'Forbidden' });
         }
@@ -5053,7 +5053,7 @@ app.get('/api/files/:category/:id/download', fileDownloadAuth, async (req, res) 
             if (!tool) return res.status(403).json({ success: false, message: 'Forbidden' });
             if (!req.fileGrant) {
                 const role = req.user && req.user.role;
-                if (!['admin', 'dean'].includes(role) &&
+                if (!['admin', 'dean', 'deputy'].includes(role) &&
                     String(tool.trainerId) !== String(req.user && req.user.userId)) {
                     return res.status(403).json({ success: false, message: 'Forbidden' });
                 }
