@@ -43,6 +43,13 @@
       "when": 1779569236101,
       "tag": "0005_wealthy_shooting_star",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1779655542265,
+      "tag": "0006_robust_oracle",
+      "breakpoints": true
     }
   ]
 }
