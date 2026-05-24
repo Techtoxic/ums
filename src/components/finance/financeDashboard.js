@@ -1122,8 +1122,8 @@ async function handleGeneratePayslips(e) {
             return;
         }
         
-        // Extract trainer IDs (server returns _id as an alias for the row UUID)
-        const trainerIds = trainers.map(trainer => trainer._id);
+        // Extract trainer IDs — /api/trainers/all-departments returns each trainer with `id`
+        const trainerIds = trainers.map(trainer => trainer.id).filter(Boolean);
         
         // SEV-H-008: actor identity is sourced server-side from the JWT.
         showNotification(`Generating payslips for ${trainerIds.length} trainers...`, 'info');
