@@ -3135,10 +3135,29 @@ async function resolveAcademicPeriod() {
 // Assign units to trainer
 app.post('/api/assignments/assign', verifyToken, authorize('admin', 'hod'), async (req, res) => {
     try {
-        const { trainerId, unitIds } = req.body;
+        const { trainerId } = req.body;
         // assignedBy / department are sent by the HOD UI but have no columns — ignore.
 
-        if (!trainerId || !isValidId(trainerId) || !unitIds || !Array.isArray(unitIds) || unitIds.length === 0) {
+        // Accept BOTH request shapes (backward-compatible):
+        //   old: { unitIds: [uuid, ...] }                       — no hours
+        //   new: { units: [ { unitId, hours }, ... ] }          — per-unit hours
+        // Normalize to a single list of { unitId, hours }, where hours is a
+        // positive integer or null. hours is OPTIONAL: a missing/zero/negative/
+        // non-numeric value becomes null, never a 400.
+        const coerceHours = (h) => {
+            const n = Number(h);
+            return Number.isInteger(n) && n > 0 ? n : null;
+        };
+        let entries;
+        if (Array.isArray(req.body.units) && req.body.units.length > 0) {
+            entries = req.body.units.map(u => ({ unitId: u && u.unitId, hours: coerceHours(u && u.hours) }));
+        } else if (Array.isArray(req.body.unitIds) && req.body.unitIds.length > 0) {
+            entries = req.body.unitIds.map(id => ({ unitId: id, hours: null }));
+        } else {
+            entries = [];
+        }
+
+        if (!trainerId || !isValidId(trainerId) || entries.length === 0) {
             return res.status(400).json({ message: 'Trainer ID and unit IDs are required' });
         }
 
@@ -3150,7 +3169,13 @@ app.post('/api/assignments/assign', verifyToken, authorize('admin', 'hod'), asyn
         const academicYear = Number.isInteger(bodyYear) && bodyYear > 0 ? bodyYear : period.academicYear;
         const semester = Number.isInteger(bodySem) && bodySem > 0 ? bodySem : period.semester;
 
-        const uniqueUnitIds = [...new Set(unitIds.filter(isValidId))];
+        // Dedupe by unitId (first occurrence wins for hours), keeping only valid ids.
+        const hoursByUnit = new Map();
+        for (const e of entries) {
+            if (!isValidId(e.unitId)) continue;
+            if (!hoursByUnit.has(e.unitId)) hoursByUnit.set(e.unitId, e.hours);
+        }
+        const uniqueUnitIds = [...hoursByUnit.keys()];
 
         // Only assign units that actually exist and are not soft-deleted; invalid
         // ids are skipped rather than failing the whole batch.
@@ -3186,6 +3211,7 @@ app.post('/api/assignments/assign', verifyToken, authorize('admin', 'hod'), asyn
                 unit_id: unitId,
                 academic_year: academicYear,
                 semester,
+                hours: hoursByUnit.get(unitId),   // integer or null
             }));
 
         let assignments = [];
