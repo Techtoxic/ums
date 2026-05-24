@@ -4947,7 +4947,7 @@ app.get('/api/tools', verifyToken, authorize('admin', 'trainer', 'hod', 'registr
 });
 
 // Update tool status (for Deputy only)
-app.patch('/api/tools/:toolId/status', verifyToken, authorize('admin', 'dean'), async (req, res) => {
+app.patch('/api/tools/:toolId/status', verifyToken, authorize('admin', 'dean', 'deputy'), async (req, res) => {
     try {
         const { toolId } = req.params;
         const { status, feedback } = req.body;
@@ -4987,7 +4987,7 @@ app.patch('/api/tools/:toolId/status', verifyToken, authorize('admin', 'dean'), 
 });
 
 // Get presigned URL for downloading a file from S3
-app.get('/api/tools/:toolId/download', verifyToken, authorize('admin', 'dean', 'trainer'), async (req, res) => {
+app.get('/api/tools/:toolId/download', verifyToken, authorize('admin', 'dean', 'trainer', 'deputy'), async (req, res) => {
     try {
         const { toolId } = req.params;
 
