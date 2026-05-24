@@ -723,7 +723,7 @@ function populateAssignmentsDisplay() {
                 <div class="text-sm text-gray-500">${escapeHtml(assignment.trainerId ? assignment.trainerId.email : 'No email')}</div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                ${new Date(assignment.assignedAt).toLocaleDateString()}
+                ${assignment.createdAt ? new Date(assignment.createdAt).toLocaleDateString() : 'N/A'}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                 <button 
@@ -1461,7 +1461,7 @@ function populateCommonUnitAssignmentsDisplay() {
     }
     
     const assignmentsHtml = commonUnitAssignmentsData.map(assignment => {
-        const assignedDate = new Date(assignment.assignedAt).toLocaleDateString();
+        const assignedDate = assignment.createdAt ? new Date(assignment.createdAt).toLocaleDateString() : 'N/A';
         const statusBadge = getStatusBadge(assignment.status);
         
         return `

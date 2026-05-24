@@ -437,7 +437,7 @@ function createAssignmentCard(assignment) {
     const courseCode = assignment.unitId?.courseCode || assignment.courseCode || 'N/A';
     const level = assignment.unitId?.level || 'N/A';
     const status = assignment.status || 'active';
-    const assignedAt = assignment.assignedAt ? new Date(assignment.assignedAt).toLocaleDateString() : 'N/A';
+    const assignedAt = assignment.createdAt ? new Date(assignment.createdAt).toLocaleDateString() : 'N/A';
     const assignedBy = assignment.assignedBy || 'System';
     const semester = assignment.semester || 'Current';
     const notes = assignment.notes || '';
@@ -1789,11 +1789,6 @@ function showPayslipModal(payslip) {
                         <span class="px-3 py-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-xs font-medium rounded-full">
                             ${payslip.status || 'Active'}
                         </span>
-                        ${payslip.isViewed ? `
-                            <span class="px-3 py-1 bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 text-xs font-medium rounded-full">
-                                Viewed on ${new Date(payslip.viewedAt).toLocaleDateString()}
-                            </span>
-                        ` : ''}
                     </div>
                     <div class="flex space-x-3">
                         <button onclick="downloadPayslipPDF('${escapeAttr(payslip._id)}')" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center">
@@ -1994,7 +1989,6 @@ async function markPayslipAsViewed(payslipId) {
         const payslip = trainerPayslips.find(p => p._id === payslipId);
         if (payslip) {
             payslip.isViewed = true;
-            payslip.viewedAt = new Date();
         }
         
         // Refresh display
