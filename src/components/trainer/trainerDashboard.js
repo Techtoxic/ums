@@ -1504,18 +1504,17 @@ function createNotificationCard(notification) {
             <div class="flex items-start justify-between">
                 <div class="flex-1">
                     <div class="flex items-center space-x-2 mb-2">
-                        <h3 class="font-semibold text-gray-900 dark:text-white">${escapeHtml(notification.title)}</h3>
+                        <h3 class="font-semibold text-gray-900 dark:text-white">${escapeHtml(notification.title || '')}</h3>
                         ${!isRead ? '<span class="w-2 h-2 bg-red-500 rounded-full"></span>' : ''}
                     </div>
-                    <p class="text-gray-600 dark:text-gray-400 text-sm mb-2">${escapeHtml(notification.message)}</p>
+                    <p class="text-gray-600 dark:text-gray-400 text-sm mb-2">${escapeHtml(notification.body || '')}</p>
                     <div class="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-500">
                         <span>${timeAgo}</span>
-                        <span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-full">${escapeHtml(notification.type.replace('_', ' '))}</span>
                     </div>
                 </div>
                 <div class="flex items-center space-x-2 ml-4">
                     ${!isRead ? `
-                        <button onclick="markAsRead('${escapeAttr(notification._id)}')" class="text-primary hover:text-secondary text-sm font-medium transition-colors">
+                        <button onclick="markAsRead('${escapeAttr(notification.id)}')" class="text-primary hover:text-secondary text-sm font-medium transition-colors">
                             Mark as Read
                         </button>
                     ` : ''}
