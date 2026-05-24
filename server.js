@@ -3431,118 +3431,82 @@ app.put('/api/trainers/:trainerId/profile', verifyToken, authorize('admin', 'tra
 app.get('/api/trainers/:trainerId/students', verifyToken, authorize('admin', 'hod', 'registrar', 'trainer'), verifyOwnership('trainerId'), async (req, res) => {
     try {
         const { trainerId } = req.params;
-        
-        // Get trainer's assignments (both department and common units)
-        const departmentAssignments = await TrainerAssignment.getAssignmentsByTrainer(trainerId);
-        const commonAssignments = await CommonUnitAssignment.getAssignmentsByTrainer(trainerId);
-        
-        if ((!departmentAssignments || departmentAssignments.length === 0) && 
-            (!commonAssignments || commonAssignments.length === 0)) {
+
+        if (!isValidId(trainerId)) {
+            return res.status(400).json({ message: 'Invalid trainer id' });
+        }
+
+        // A trainer's students = students registered in any unit the trainer is
+        // assigned to. Path: trainer_assignments → unit_ids → unit_registrations
+        // → student_ids → students. Common units are assigned to a PROGRAM
+        // (common_unit_assignments has no trainer_id), so there is no
+        // "common assignments by trainer" — a trainer's units come only from
+        // trainer_assignments.
+
+        // Optional narrowing by academic_year / semester when supplied as query
+        // params; absent → all of the trainer's assignments (no settings lookup).
+        const assignmentConds = [eq(schema.trainerAssignments.trainer_id, trainerId)];
+        const academicYear = req.query.academicYear;
+        const semester = req.query.semester;
+        if (academicYear !== undefined && academicYear !== '' && !Number.isNaN(Number(academicYear))) {
+            assignmentConds.push(eq(schema.trainerAssignments.academic_year, Number(academicYear)));
+        }
+        if (semester !== undefined && semester !== '' && !Number.isNaN(Number(semester))) {
+            assignmentConds.push(eq(schema.trainerAssignments.semester, Number(semester)));
+        }
+
+        const assignmentRows = await db
+            .select({ unitId: schema.trainerAssignments.unit_id })
+            .from(schema.trainerAssignments)
+            .where(and(...assignmentConds));
+
+        const unitIds = [...new Set(assignmentRows.map(r => r.unitId))];
+        if (unitIds.length === 0) {
             return res.json({ students: [], courseStats: {} });
         }
-        
-        // Get unit codes from all assignments
-        const departmentUnitCodes = departmentAssignments.map(assignment => {
-            return assignment.unitId?.unitCode || assignment.courseCode;
-        }).filter(Boolean);
-        
-        const commonUnitCodes = commonAssignments.map(assignment => {
-            return assignment.commonUnitId?.unitCode;
-        }).filter(Boolean);
-        
-        const allUnitCodes = [...departmentUnitCodes, ...commonUnitCodes];
-        
-        console.log(`🔍 Trainer ${trainerId} has ${departmentAssignments.length} department assignments and ${commonAssignments.length} common assignments`);
-        console.log(`🎯 Unit codes for registered student search:`, allUnitCodes);
-        
-        if (allUnitCodes.length === 0) {
+
+        // Students registered in any of those units.
+        const registrationRows = await db
+            .select({ studentId: schema.unitRegistrations.student_id })
+            .from(schema.unitRegistrations)
+            .where(inArray(schema.unitRegistrations.unit_id, unitIds));
+
+        const studentIds = [...new Set(registrationRows.map(r => r.studentId))];
+        if (studentIds.length === 0) {
             return res.json({ students: [], courseStats: {} });
         }
-        
-        // Get current academic settings
-        const currentAcademicYear = await SystemSettings.getSetting('current_academic_year', '2024/2025');
-        const currentSemester = await SystemSettings.getSetting('current_semester', '1');
-        
-        // Find students who are registered for these units
-        const studentRegistrations = await StudentUnitRegistration.find({
-            unitCode: { $in: allUnitCodes },
-            academicYear: currentAcademicYear,
-            semester: currentSemester,
-            status: 'registered',
-            isActive: true
-        }).populate('unitId').populate('commonUnitId');
-        
-        console.log(`🔍 Searching for registrations with criteria:`, {
-            unitCodes: allUnitCodes,
-            academicYear: currentAcademicYear,
-            semester: currentSemester,
-            status: 'registered',
-            isActive: true
-        });
-        
-        console.log(`📋 Found ${studentRegistrations.length} student registrations:`, 
-            studentRegistrations.map(reg => ({
-                studentId: reg.studentId,
-                unitCode: reg.unitCode,
-                unitName: reg.unitName,
-                academicYear: reg.academicYear,
-                semester: reg.semester,
-                status: reg.status
-            }))
-        );
-        
-        // Get unique student IDs
-        const enrolledStudentIds = [...new Set(studentRegistrations.map(reg => reg.studentId))];
-        
-        console.log(`📋 Found ${studentRegistrations.length} registrations for ${enrolledStudentIds.length} unique students`);
-        
-        if (enrolledStudentIds.length === 0) {
-            return res.json({ students: [], courseStats: {} });
-        }
-        
-        // Fetch student details for enrolled students only
-        const students = await Student.find({
-            admissionNumber: { $in: enrolledStudentIds }
-        }).select('name admissionNumber course intake year email phone totalPaid balance');
-        
-        console.log(`Found ${students.length} enrolled students for trainer ${trainerId}:`, students.map(s => ({ name: s.name, course: s.course })));
-        
-        // Group students by course and calculate stats
-        const courseStats = {};
+
+        // Fetch the enrolled students (unique by id via the studentIds set).
+        const students = await db
+            .select({
+                id: schema.students.id,
+                name: schema.students.name,
+                admissionNumber: schema.students.admission_number,
+                course: schema.students.course,
+                intake: schema.students.intake,
+                year: schema.students.year,
+                email: schema.students.email,
+                phone: schema.students.phone_number,
+            })
+            .from(schema.students)
+            .where(and(
+                inArray(schema.students.id, studentIds),
+                isNull(schema.students.deleted_at),
+            ));
+
+        // Group by course and count. The response preserves the existing
+        // { students: { [course]: [...] }, courseStats: { [course]: count } }
+        // shape that the trainer dashboard consumes (it flattens students by course).
         const studentsByCourse = {};
-        
-        // Get unique course codes from enrolled students
-        const courseCodes = [...new Set(students.map(s => s.course))];
-        
-        courseCodes.forEach(courseCode => {
-            const courseStudents = students.filter(student => student.course === courseCode);
-            studentsByCourse[courseCode] = courseStudents;
-            
-            // Count units assigned to this trainer for this course
-            const courseUnitCodes = studentRegistrations
-                .filter(reg => {
-                    const student = students.find(s => s.admissionNumber === reg.studentId);
-                    return student && student.course === courseCode;
-                })
-                .map(reg => reg.unitCode);
-            
-            const uniqueUnitsForCourse = [...new Set(courseUnitCodes)];
-            
-            courseStats[courseCode] = {
-                totalStudents: courseStudents.length,
-                courseName: formatCourseNameServer(courseCode),
-                unitsAssigned: uniqueUnitsForCourse.length
-            };
-        });
-        
-        res.json({
-            students: studentsByCourse,
-            courseStats: courseStats,
-            totalStudents: students.length,
-            totalCourses: courseCodes.length,
-            academicYear: currentAcademicYear,
-            semester: currentSemester
-        });
+        const courseStats = {};
+        for (const student of students) {
+            const course = student.course;
+            if (!studentsByCourse[course]) studentsByCourse[course] = [];
+            studentsByCourse[course].push(student);
+            courseStats[course] = (courseStats[course] || 0) + 1;
+        }
+
+        res.json({ students: studentsByCourse, courseStats });
         
     } catch (error) {
         console.error('Error fetching trainer students:', error);
