@@ -1296,6 +1296,10 @@ app.get('/student/portal', noCacheAuthPages, (req, res) => {
     res.sendFile(path.join(__dirname, 'src', 'components', 'student', 'StudentPortalTailwind.html'));
 });
 
+app.get('/student/portal/transcript', noCacheAuthPages, (req, res) => {
+    res.sendFile(path.join(__dirname, 'src', 'components', 'student', 'transcript.html'));
+});
+
 // Finance routes
 app.get('/finance/login', (req, res) => res.redirect('/admin/login'));
 
