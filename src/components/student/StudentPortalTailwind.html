@@ -1699,46 +1699,71 @@
             const contentSections = document.querySelectorAll('.content-section');
             const pageTitle = document.getElementById('page-title');
 
+            // Activate a tab by section id: highlight its nav link, show its
+            // section, set the title, and run any section-specific checks. Shared
+            // by the click handler and the load-time / back-forward restore below.
+            function activateTab(targetId) {
+                // Update active nav link
+                navLinks.forEach(nl => nl.classList.remove('active', 'bg-primary', 'text-white'));
+                const activeLink = document.querySelector('.nav-link[href="#' + targetId + '"]');
+                if (activeLink) activeLink.classList.add('active', 'bg-primary', 'text-white');
+
+                // Show target section
+                contentSections.forEach(section => section.classList.add('hidden'));
+                document.getElementById(targetId)?.classList.remove('hidden');
+
+                // Update page title
+                const titles = {
+                    'dashboard': 'Dashboard',
+                    'profile': 'Profile',
+                    'financial': 'Financial Information',
+                    'payments': 'Payment History',
+                    'uploads': 'Uploads',
+                    'notes': 'Notes',
+                    'units': 'Units & Courses',
+                    'transcript': 'Transcript',
+                    'graduation': 'Apply for Graduation',
+                    'attachment': 'Apply for Attachment'
+                };
+                pageTitle.textContent = titles[targetId] || 'Dashboard';
+
+                // Trigger eligibility checks for application sections
+                console.log('🧭 Navigation clicked for section:', targetId);
+                if (targetId === 'graduation') {
+                    console.log('📍 Triggering graduation eligibility check');
+                    setTimeout(checkGraduationEligibility, 100);
+                } else if (targetId === 'attachment') {
+                    console.log('📍 Triggering attachment eligibility check');
+                    setTimeout(checkAttachmentEligibility, 100);
+                }
+
+                // Close mobile menu
+                sidebar.classList.remove('mobile-open');
+                mobileOverlay.classList.add('hidden');
+            }
+
             navLinks.forEach(link => {
                 link.addEventListener('click', (e) => {
                     e.preventDefault();
                     const targetId = link.getAttribute('href').substring(1);
-                    
-                    // Update active nav link
-                    navLinks.forEach(nl => nl.classList.remove('active', 'bg-primary', 'text-white'));
-                    link.classList.add('active', 'bg-primary', 'text-white');
-                    
-                    // Show target section
-                    contentSections.forEach(section => section.classList.add('hidden'));
-                    document.getElementById(targetId)?.classList.remove('hidden');
-                    
-                    // Update page title
-                    const titles = {
-                        'dashboard': 'Dashboard',
-                        'profile': 'Profile',
-                        'financial': 'Financial Information',
-                        'payments': 'Payment History',
-                        'units': 'Units & Courses',
-                        'transcript': 'Transcript',
-                        'graduation': 'Apply for Graduation',
-                        'attachment': 'Apply for Attachment'
-                    };
-                    pageTitle.textContent = titles[targetId] || 'Dashboard';
-
-                    // Trigger eligibility checks for application sections
-                    console.log('🧭 Navigation clicked for section:', targetId);
-                    if (targetId === 'graduation') {
-                        console.log('📍 Triggering graduation eligibility check');
-                        setTimeout(checkGraduationEligibility, 100);
-                    } else if (targetId === 'attachment') {
-                        console.log('📍 Triggering attachment eligibility check');
-                        setTimeout(checkAttachmentEligibility, 100);
-                    }
-
-                    // Close mobile menu
-                    sidebar.classList.remove('mobile-open');
-                    mobileOverlay.classList.add('hidden');
+                    // Sync the URL hash so a refresh restores this tab. replaceState
+                    // avoids a per-click back-button entry and a scroll-jump.
+                    history.replaceState(null, '', '#' + targetId);
+                    activateTab(targetId);
                 });
+            });
+
+            // Restore the tab from the URL hash on page load / refresh.
+            function getValidTabFromHash() {
+                const VALID_TABS = ['dashboard','profile','financial','payments','uploads','notes','units','transcript','graduation','attachment'];
+                const h = (location.hash || '').replace('#', '');
+                return VALID_TABS.includes(h) ? h : 'dashboard';
+            }
+            activateTab(getValidTabFromHash());
+
+            // Also respond to back/forward navigation.
+            window.addEventListener('hashchange', () => {
+                activateTab(getValidTabFromHash());
             });
 
             // Dark mode toggle
