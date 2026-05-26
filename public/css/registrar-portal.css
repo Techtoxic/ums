@@ -1,0 +1,15 @@
+/* registrar-portal.css — portal-specific styles extracted verbatim from the
+   RegistrarDashboardNew.html inline <style> block during the SPA refactor.
+   Loaded alongside dashboard-styles.css (which owns the design system). */
+        /* Custom scrollbar styling (kept — registrar-only utility, not in design system). */
+        .scrollbar-thin { scrollbar-width: thin; }
+        .scrollbar-thin::-webkit-scrollbar { width: 6px; }
+        .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+        .scrollbar-thin::-webkit-scrollbar-thumb { background-color: #d1d5db; border-radius: 3px; }
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover { background-color: #9ca3af; }
+        html.dark .scrollbar-thin::-webkit-scrollbar-thumb { background-color: #4b5563; }
+        html.dark .scrollbar-thin::-webkit-scrollbar-thumb:hover { background-color: #6b7280; }
+
+        /* Section panels keep their backgrounds transparent so the dashboard-main
+           background tone shows through (matches the design-system demo). */
+        .content-section { background: transparent; }

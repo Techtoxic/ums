@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrar Dashboard - University Management System</title>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/public/js/auth.js"></script>
+    <link rel="stylesheet" href="/public/css/dashboard-styles.css">
+    <!-- Theme controller: in <head>, after styles, runs pre-paint (no flash) -->
+    <script src="/public/js/dashboard-theme.js"></script>
+
+    <!-- Frontend Config (Load First!) -->
+    <script src="/public/js/config.js"></script>
+
+    <script>
+        // Tailwind alias palette realigned to the EDTTI design system so any
+        // remaining utility usage (bg-primary, text-primary, etc.) inside the
+        // existing markup picks up maroon/gold instead of the old blue. The
+        // canonical colors live in public/css/dashboard-styles.css custom
+        // properties; this block exists only to keep Tailwind utility classes
+        // visually consistent until each is migrated to .btn/.stat-card/etc.
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#7A0C0C',     // maroon
+                        secondary: '#5C0808',   // maroon-dark
+                        accent: '#D4A017',      // gold
+                        success: '#10b981',
+                        warning: '#D4A017',
+                        danger: '#E74C3C',
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="/public/css/registrar-portal.css">
+</head>
+<body class="bg-slate-50 dark:bg-gray-900 text-slate-800 dark:text-white overflow-x-hidden">
+    <!-- Auth gate: covers the dashboard until requireAuth() resolves, suppressing
+         the bfcache back-button flash. Skeleton matches registrar layout (10 nav
+         items: Dashboard, Admission, Management, Promotion, Course Mgmt, Enrollment,
+         Graduation, Faculty, Department, Reports; 4 tiles: Total Students,
+         New Admissions, Active Courses, Departments). -->
+    <div id="authGate" class="auth-gate" aria-live="polite" aria-busy="true">
+        <aside class="skel-sidebar">
+            <div class="skel skel-sidebar__logo"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__user"></div>
+        </aside>
+        <main class="skel-main">
+            <div class="skel-topbar">
+                <div class="skel skel-topbar__title"></div>
+                <div class="skel skel-topbar__action"></div>
+            </div>
+            <div class="skel skel-welcome"></div>
+            <div class="skel-tiles" style="--tile-count: 4;">
+                <div class="skel skel-tile"></div>
+                <div class="skel skel-tile"></div>
+                <div class="skel skel-tile"></div>
+                <div class="skel skel-tile"></div>
+            </div>
+            <div class="skel skel-content"></div>
+        </main>
+    </div>
+
+    <div class="dashboard-shell">
+        <!-- Sidebar backdrop for mobile -->
+        <div class="dashboard-sidebar__backdrop" id="sbBackdrop" onclick="closeSidebar()"></div>
+
+        <!-- Sidebar (Logout only — no Login button) -->
+        <aside class="dashboard-sidebar" id="sidebar">
+            <div class="dashboard-sidebar__logo">
+                <i class="ri-graduation-cap-line"></i>
+                <span>EDTTI</span>
+            </div>
+            <nav class="dashboard-sidebar__nav">
+                <a class="nav-link active" data-section="dashboard" href="/registrar/dashboard/dashboard">
+                    <i class="ri-dashboard-line"></i><span>Dashboard</span>
+                </a>
+                <a class="nav-link" data-section="admission" href="/registrar/dashboard/admission">
+                    <i class="ri-user-add-line"></i><span>Student Admission</span>
+                </a>
+                <a class="nav-link" data-section="management" href="/registrar/dashboard/management">
+                    <i class="ri-team-line"></i><span>Student Management</span>
+                </a>
+                <a class="nav-link" data-section="promotion" href="/registrar/dashboard/promotion">
+                    <i class="ri-arrow-up-line"></i><span>Student Promotion</span>
+                </a>
+                <a class="nav-link" data-section="courses" href="/registrar/dashboard/courses">
+                    <i class="ri-book-open-line"></i><span>Course Management</span>
+                </a>
+                <a class="nav-link" data-section="enrollment" href="/registrar/dashboard/enrollment">
+                    <i class="ri-file-list-3-line"></i><span>Enrollment</span>
+                </a>
+                <a class="nav-link" data-section="graduation" href="/registrar/dashboard/graduation">
+                    <i class="ri-graduation-cap-line"></i><span>Graduation</span>
+                </a>
+                <a class="nav-link" data-section="faculty" href="/registrar/dashboard/faculty">
+                    <i class="ri-user-star-line"></i><span>Faculty Management</span>
+                </a>
+                <a class="nav-link" data-section="department" href="/registrar/dashboard/department">
+                    <i class="ri-building-line"></i><span>Department Management</span>
+                </a>
+                <a class="nav-link" data-section="reports" href="/registrar/dashboard/reports">
+                    <i class="ri-file-chart-line"></i><span>Reports & Analytics</span>
+                </a>
+            </nav>
+            <div class="dashboard-sidebar__profile">
+                <div class="dashboard-sidebar__avatar" id="userAvatar">R</div>
+                <div class="dashboard-sidebar__profile-text">
+                    <div class="font-semibold text-body-sm" id="userName">Registrar</div>
+                    <div class="text-body-sm" style="color:var(--text-muted)">Registrar</div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main column: topbar + content -->
+        <div>
+            <header class="dashboard-topbar">
+                <button class="btn btn--ghost btn--icon lg:hidden" onclick="openSidebar()" aria-label="Open menu">
+                    <i class="ri-menu-line"></i>
+                </button>
+                <div class="dashboard-topbar__title">Registrar Dashboard</div>
+                <div class="dashboard-topbar__actions">
+                    <button class="btn btn--primary" onclick="openAdmissionModal()">
+                        <i class="ri-user-add-line"></i> Add Student
+                    </button>
+                    <button class="btn btn--secondary" onclick="showPromotionModal()">
+                        <i class="ri-arrow-up-line"></i> Promote Students
+                    </button>
+                    <button class="btn btn--ghost" id="export-students-btn" onclick="showExportModal()">
+                        <i class="ri-download-line"></i> Export
+                    </button>
+                    <button data-theme-toggle class="theme-toggle" aria-label="Toggle dark mode">
+                        <i class="ri-sun-line theme-icon-light"></i>
+                        <i class="ri-moon-line theme-icon-dark"></i>
+                    </button>
+                    <button id="logoutBtn" class="btn btn--danger btn--icon" aria-label="Logout">
+                        <i class="ri-logout-box-line"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Content area: the router injects each tab's partial here -->
+            <main class="dashboard-main" id="tab-root"></main>
+        </div>
+    </div><!-- /.dashboard-shell -->
+
+    <!-- Global modals (portal-wide) -->
+    <div id="export-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md transform transition-all duration-300 scale-95">
+            <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-headline-sm text-gray-800 dark:text-white">Export Students</h3>
+                    <button onclick="closeExportModal()" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                        <i class="ri-close-line text-xl text-gray-600 dark:text-gray-300"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-6">
+                <form id="export-form" onsubmit="handleExport(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Export Type</label>
+                        <select id="export-type" onchange="toggleExportFilters()" class="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                            <option value="all">All Students</option>
+                            <option value="department">By Department Only</option>
+                            <option value="year">By Year Only</option>
+                            <option value="intake">By Intake Only</option>
+                            <option value="department_year">Department + Year</option>
+                            <option value="department_intake">Department + Intake</option>
+                            <option value="year_intake">Year + Intake</option>
+                            <option value="department_year_intake">Department + Year + Intake</option>
+                            <option value="admission-type">By Admission Type</option>
+                            <option value="custom">Custom Filters</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Always show all filter options for custom filtering -->
+                    <div class="space-y-4" id="filter-options">
+                        <div id="department-filter" class="hidden">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Department</label>
+                            <select id="export-department" class="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                                <option value="">All Departments</option>
+                                <option value="applied_science">Applied Science Department</option>
+                                <option value="agriculture">Agriculture Department</option>
+                                <option value="building_civil">Building and Civil Department</option>
+                                <option value="electromechanical">Electromechanical Department</option>
+                                <option value="hospitality">Hospitality Department</option>
+                                <option value="business_liberal">Business and Liberal Studies</option>
+                                <option value="computing_informatics">Computing and Informatics</option>
+                            </select>
+                        </div>
+                        
+                        <div id="year-filter" class="hidden">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Year of Study</label>
+                            <select id="export-year" class="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                                <option value="">All Years</option>
+                                <option value="1">Year 1</option>
+                                <option value="2">Year 2</option>
+                            </select>
+                        </div>
+                        
+                        <div id="intake-filter" class="hidden">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Intake</label>
+                            <select id="export-intake" class="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                                <option value="">All Intakes</option>
+                                <option value="january">January</option>
+                                <option value="september">September</option>
+                            </select>
+                        </div>
+                        
+                        <div id="intake-year-filter" class="hidden">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Intake Year</label>
+                            <select id="export-intake-year" class="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                                <option value="">All Years</option>
+                                <option value="2024">2024</option>
+                                <option value="2025">2025</option>
+                                <option value="2026">2026</option>
+                            </select>
+                        </div>
+                        
+                        <div id="admission-type-filter" class="hidden">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Admission Type</label>
+                            <select id="export-admission-type" class="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                                <option value="">All Types</option>
+                                <option value="walk-in">Walk-in</option>
+                                <option value="KUCCPS">KUCCPS</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Export Format</label>
+                        <select id="export-format" class="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                            <option value="csv">CSV</option>
+                            <option value="json">JSON</option>
+                            <option value="pdf">PDF</option>
+                        </select>
+                    </div>
+                    
+                    <div class="flex gap-3 pt-4">
+                        <button type="button" onclick="closeExportModal()" class="flex-1 px-4 py-2 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" class="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors">
+                            Export
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="fixed bottom-4 right-4 z-50"></div>
+
+    <div id="admissionLetterModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <!-- Modal Header -->
+            <div class="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-600 no-print">
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-white">
+                    <i class="ri-graduation-cap-line mr-2 text-blue-600"></i>
+                    Admission Letter Generated
+                </h2>
+                <div class="flex space-x-2">
+                    <button onclick="printLetter()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+                        <i class="ri-printer-line"></i>
+                        <span>Print</span>
+                    </button>
+                    <button onclick="downloadPDF()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+                        <i class="ri-file-pdf-line"></i>
+                        <span>PDF</span>
+                    </button>
+                    <button onclick="closeAdmissionLetterModal()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+                        <i class="ri-close-line"></i>
+                        <span>Close</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Letter Content -->
+            <div id="letterContent" class="p-8 bg-white dark:bg-gray-800 text-black dark:text-white" style="font-family: 'Times New Roman', serif; line-height: 1.6;">
+                <!-- Letterhead -->
+                <div class="text-center border-b-4 border-blue-600 pb-6 mb-8">
+                    <div class="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center text-white text-2xl mx-auto mb-4">
+                        <i class="ri-graduation-cap-line"></i>
+                    </div>
+                    <h1 class="text-3xl font-bold text-blue-800 dark:text-blue-400 mb-2">EMURUA DIKIRR TECHNICAL TRAINING INSTITUTE</h1>
+                    <div class="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                        P.O. Box 49, Emurua Dikirr - 20500<br>
+                        Tel: +254 729 123 456 | Email: info@emurua-tech.ac.ke<br>
+                        Website: www.emurua-tech.ac.ke
+                    </div>
+                    <div class="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        <strong>ISO 9001:2015 Certified Institution</strong>
+                    </div>
+                </div>
+
+                <!-- Reference and Date -->
+                <div class="flex justify-between mb-6">
+                    <div></div>
+                    <div class="text-right">
+                        <div class="font-bold">Ref: EDTTI/ADMISSIONS/<span id="refYear">2024</span>/<span id="refNumber">001</span></div>
+                        <div id="letterDate" class="mt-2"></div>
+                    </div>
+                </div>
+
+                <!-- Letter Title -->
+                <div class="text-center text-headline underline mb-8 uppercase">
+                    LETTER OF ADMISSION
+                </div>
+
+                <!-- Letter Body -->
+                <div class="text-justify text-base leading-relaxed">
+                    <p class="mb-4"><strong>Dear <span id="studentName">[Student Name]</span>,</strong></p>
+
+                    <p class="mb-6">Following your application for admission to <strong>Emurua Dikirr Technical Training Institute</strong>, I am pleased to inform you that you have been <strong>SUCCESSFULLY ADMITTED</strong> to pursue the following course:</p>
+
+                    <div class="bg-yellow-50 dark:bg-yellow-900 border-l-4 border-yellow-400 dark:border-yellow-500 p-4 mb-6">
+                        <p class="mb-2 text-gray-800 dark:text-gray-200"><strong>Course:</strong> <span id="courseName">[Course Name]</span></p>
+                        <p class="mb-2 text-gray-800 dark:text-gray-200"><strong>Admission Number:</strong> <span id="letterAdmissionNumber">[Admission Number]</span></p>
+                        <p class="text-gray-800 dark:text-gray-200"><strong>Academic Year:</strong> <span id="intakeYear">[Intake Year]</span></p>
+                    </div>
+
+                    <p class="mb-4">This admission is subject to:</p>
+                    <ol class="list-decimal list-inside mb-6 space-y-1">
+                        <li>Payment of required fees as per the institute's fee structure</li>
+                        <li>Submission of original academic certificates and other required documents</li>
+                        <li>Compliance with the institute's rules and regulations</li>
+                        <li>Medical examination and fitness certification</li>
+                    </ol>
+
+                    <div class="bg-blue-50 dark:bg-blue-900 border-2 border-blue-200 dark:border-blue-700 rounded-lg p-6 mb-6">
+                        <h3 class="text-lg font-bold mb-3 text-blue-800 dark:text-blue-200 flex items-center">
+                            <i class="ri-computer-line mr-2"></i>STUDENT PORTAL ACCESS INSTRUCTIONS
+                        </h3>
+                        <p class="mb-3 text-gray-800 dark:text-gray-200"><strong>To access your student portal and academic services:</strong></p>
+                        <div class="bg-white dark:bg-gray-700 p-4 rounded border border-gray-200 dark:border-gray-600 mb-3">
+                            <p class="mb-2 text-gray-800 dark:text-gray-200"><strong>🌐 Website:</strong> <span class="text-blue-600 dark:text-blue-400 font-mono">https://ums.emurua-tech.ac.ke/login</span></p>
+                            <p class="mb-2 text-gray-800 dark:text-gray-200"><strong>👤 Username:</strong> <span class="font-mono bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-gray-200 px-2 py-1 rounded" id="portalUsername">[Admission Number]</span></p>
+                            <p class="text-gray-800 dark:text-gray-200"><strong>🔑 Initial Password:</strong> <span class="font-mono bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-gray-200 px-2 py-1 rounded" id="portalPassword">[Your Phone Number]</span></p>
+                        </div>
+                        <div class="bg-yellow-50 dark:bg-yellow-900 border border-yellow-200 dark:border-yellow-700 rounded p-3">
+                            <p class="text-sm text-gray-800 dark:text-gray-200"><strong>⚠️ IMPORTANT:</strong> On your first login, you will be required to:</p>
+                            <ul class="list-disc list-inside text-sm mt-2 space-y-1 text-gray-800 dark:text-gray-200">
+                                <li>Change your password to a secure one</li>
+                                <li>Provide a valid Gmail account for password recovery</li>
+                                <li>Update your profile information</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <p class="mb-4">We congratulate you on this achievement and look forward to welcoming you to our prestigious institution. Should you require any clarification, please do not hesitate to contact our admissions office.</p>
+
+                    <p class="mb-8"><strong>Welcome to Emurua Dikirr Technical Training Institute!</strong></p>
+                </div>
+
+                <!-- Signature Section -->
+                <div class="flex justify-between mt-12">
+                    <div class="text-center w-48">
+                        <div class="border-b-2 border-black h-16 mb-2"></div>
+                        <p><strong>REGISTRAR</strong><br>
+                        Emurua Dikirr Technical Training Institute</p>
+                    </div>
+                    <div class="text-center w-48">
+                        <div class="border-b-2 border-black h-16 mb-2"></div>
+                        <p><strong>PRINCIPAL</strong><br>
+                        Emurua Dikirr Technical Training Institute</p>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="text-center mt-10 pt-6 border-t border-gray-300 dark:border-gray-600 text-xs text-gray-500 dark:text-gray-400">
+                    <p><em>This is an official admission letter from Emurua Dikirr Technical Training Institute</em></p>
+                    <p>Generated on <span id="generationDate"></span> | Student Portal: ums.emurua-tech.ac.ke</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="admissionModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-[9999]">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg w-full max-w-lg mx-4">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-headline text-gray-800 dark:text-white">New Student Admission</h3>
+                    <button onclick="closeAdmissionModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                        <i class="ri-close-line text-2xl"></i>
+                    </button>
+                </div>
+                <form id="admissionForm" onsubmit="handleAdmission(event)" class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name</label>
+                        <input type="text" name="name" required class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ID/Birth Certificate Number</label>
+                        <input type="text" name="idNumber" required class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">KCSE Grade</label>
+                        <select name="kcseGrade" required class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                            <option value="">Select Grade</option>
+                            <option value="A">A</option>
+                            <option value="A-">A-</option>
+                            <option value="B+">B+</option>
+                            <option value="B">B</option>
+                            <option value="B-">B-</option>
+                            <option value="C+">C+</option>
+                            <option value="C">C</option>
+                            <option value="C-">C-</option>
+                            <option value="D+">D+</option>
+                            <option value="D">D</option>
+                            <option value="D-">D-</option>
+                            <option value="E">E</option>
+                        </select>
+                    </div>
+                    <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone Number</label>
+        <input type="tel" name="phonenumber" required pattern="[0-9]{10}" placeholder="Enter 10-digit phone number" class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+    </div>
+    <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Admission Type</label>
+        <select name="admissionType" required class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+            <option value="">Select Admission Type</option>
+            <option value="walk-in">Walk-in</option>
+            <option value="KUCCPS">KUCCPS</option>
+        </select>
+    </div>
+                                        <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Year of Study</label>
+                        <select name="year" class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white" required>
+                            <option value="1" selected>Year 1</option>
+                            <option value="2">Year 2</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Intake</label>
+                        <select name="intake" id="intake-select" class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white" required onchange="updateIntakeYear(); regenerateAdmissionOnIntakeChange()">
+                            <option value="">Select Intake</option>
+                            <option value="january">January</option>
+                            <option value="september">September</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Intake Year</label>
+                        <input type="number" name="intakeYear" id="intake-year" class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white" readonly required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Department</label>
+                        <select name="department" id="department" required class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white" disabled>
+                            <option value="">Department will be auto-selected</option>
+                            <option value="applied_science">Applied Science Department</option>
+                            <option value="agriculture">Agriculture Department</option>
+                            <option value="building_civil">Building and Civil Department</option>
+                            <option value="electromechanical">Electromechanical Department</option>
+                            <option value="hospitality">Hospitality Department</option>
+                            <option value="business_liberal">Business and Liberal Studies</option>
+                            <option value="computing_informatics">Computing and Informatics</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Course</label>
+                        <select name="course" id="course" required onchange="handleCourseSelection()" class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                            <option value="">Select Course</option>
+                            <optgroup label="Applied Science Department">
+                                <option value="applied_biology_6">Applied Biology Level 6 (AP6)</option>
+                                <option value="analytical_chemistry_6">Analytical Chemistry Level 6 (AC6)</option>
+                                <option value="science_laboratory_technology_5">Science Lab Technology Level 5 (SLT5)</option>
+                            </optgroup>
+                            <optgroup label="Agriculture Department">
+                                <option value="general_agriculture_4">General Agriculture Level 4 (GA4)</option>
+                                <option value="sustainable_agriculture_5">Sustainable Agriculture Level 5 (SA5)</option>
+                                <option value="agricultural_extension_6">Agricultural Extension Level 6 (AE6)</option>
+                            </optgroup>
+                            <optgroup label="Building and Civil Department">
+                                <option value="building_technician_4">Building Technician Level 4 (BT4)</option>
+                                <option value="building_technician_6">Building Technician Level 6 (BT6)</option>
+                                <option value="civil_engineering_6">Civil Engineering Level 6 (CE6)</option>
+                                <option value="plumbing_4">Plumbing Level 4 (PL4)</option>
+                                <option value="plumbing_5">Plumbing Level 5 (PL5)</option>
+                            </optgroup>
+                            <optgroup label="Electromechanical Department">
+                                <option value="electrical_engineering_4">Electrical Engineering Level 4 (EE4)</option>
+                                <option value="electrical_engineering_5">Electrical Engineering Level 5 (EE5)</option>
+                                <option value="electrical_engineering_6">Electrical Engineering Level 6 (EE6)</option>
+                                <option value="automotive_engineering_5">Automotive Engineering Level 5 (AM5)</option>
+                                <option value="automotive_engineering_6">Automotive Engineering Level 6 (AM6)</option>
+                            </optgroup>
+                            <optgroup label="Hospitality Department">
+                                <option value="food_and_beverage_4">Food and Beverage Level 4 (FB4)</option>
+                                <option value="food_and_beverage_5">Food & Beverage Level 5 (FB5)</option>
+                                <option value="food_and_beverage_6">Food & Beverage Level 6 (FB6)</option>
+                                <option value="fashion_and_design_4">Fashion & Design Level 4 (FD4)</option>
+                                <option value="fashion_and_design_5">Fashion and Design Level 5 (FD5)</option>
+                                <option value="fashion_and_design_6">Fashion and Design Level 6 (FD6)</option>
+                                <option value="hairdressing_4">Hairdressing Level 4 (HD4)</option>
+                                <option value="hairdressing_5">Hairdressing Level 5 (HD5)</option>
+                                <option value="hairdressing_6">Hairdressing Level 6 (HD6)</option>
+                                <option value="tourism_management_5">Tourism Management Level 5 (TM5)</option>
+                                <option value="tourism_management_6">Tourism Management Level 6 (TM6)</option>
+                            </optgroup>
+                            <optgroup label="Business and Liberal Studies">
+                                <option value="social_work_5">Social Work Level 5 (SW5)</option>
+                                <option value="social_work_6">Social Work Level 6 (SW6)</option>
+                                <option value="office_administration_5">Office Administration Level 5 (OA5)</option>
+                                <option value="office_administration_6">Office Administration Level 6 (OA6)</option>
+                            </optgroup>
+                            <optgroup label="Computing and Informatics">
+                                <option value="ict_5">ICT Level 5 (ICT5)</option>
+                                <option value="ict_6">ICT Level 6 (ICT6)</option>
+                                <option value="information_science_5">Information Science Level 5 (IS5)</option>
+                                <option value="information_science_6">Information Science Level 6 (IS6)</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Admission Number</label>
+                        <input type="text" id="admissionNumber" readonly class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary dark:text-white" placeholder="Select a course first">
+                    </div>
+                    <div class="flex justify-end gap-4 mt-6">
+                        <button type="button" onclick="closeAdmissionModal()" class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">Cancel</button>
+                        <button type="submit" class="px-4 py-2 bg-primary hover:bg-secondary text-white rounded-lg transition-colors">Register Student</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="promotionModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-[9999] p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-6xl max-h-[90vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-headline text-gray-800 dark:text-white flex items-center">
+                        <i class="ri-arrow-up-line text-green-600 mr-2"></i>
+                        Student Promotion
+                    </h3>
+                    <button onclick="closePromotionModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+                        <i class="ri-close-line text-2xl"></i>
+                    </button>
+                </div>
+                
+                <!-- Promotion Controls -->
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6">
+                    <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
+                        <div class="flex flex-col md:flex-row gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Filter by Level</label>
+                                <select id="modalLevelFilter" class="px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-600 dark:text-white">
+                                    <option value="all">All Levels</option>
+                                    <option value="5">Level 5</option>
+                                    <option value="6">Level 6</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Filter by Department</label>
+                                <select id="modalDeptFilter" class="px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-600 dark:text-white">
+                                    <option value="all">All Departments</option>
+                                    <option value="applied_science">Applied Science</option>
+                                    <option value="agriculture">Agriculture</option>
+                                    <option value="building_civil">Building & Civil</option>
+                                    <option value="electromechanical">Electromechanical</option>
+                                    <option value="hospitality">Hospitality</option>
+                                    <option value="business_liberal">Business & Liberal</option>
+                                    <option value="computing_informatics">Computing & Informatics</option>
+                                </select>
+                            </div>
+                            <div class="flex items-end">
+                                <button onclick="loadModalPromotionStudents()" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors">
+                                    <i class="ri-refresh-line mr-2"></i>Load Students
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="promoteAllModalStudents()" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
+                                <i class="ri-arrow-up-line mr-2"></i>Promote All
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Promotion Rules -->
+                <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 mb-6">
+                    <h4 class="font-semibold text-blue-800 dark:text-blue-300 mb-2">Promotion Rules</h4>
+                    <ul class="text-sm text-blue-700 dark:text-blue-300 space-y-1">
+                        <li>• Level 5 students can be promoted up to Year 2 (2 years total)</li>
+                        <li>• Level 6 students can be promoted up to Year 3 (3 years total)</li>
+                        <li>• Students who have reached maximum years cannot be promoted further</li>
+                    </ul>
+                </div>
+
+                <!-- Students Table -->
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead class="bg-gray-50 dark:bg-gray-700">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    <input type="checkbox" id="selectAllStudents" class="rounded border-gray-300">
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Student</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Course</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Current Year</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Level</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Max Year</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modalPromotionTableBody" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                            <tr>
+                                <td colspan="7" class="px-6 py-4 text-center text-gray-500">
+                                    Click "Load Students" to view eligible students for promotion
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Promotion Progress -->
+                <div id="modalPromotionProgress" class="hidden mt-6">
+                    <div class="bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                        <div id="modalProgressBar" class="bg-green-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                    <p id="modalProgressText" class="text-sm text-gray-600 dark:text-gray-400 mt-2">Preparing promotion...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="/src/components/registrar/exportUtils.js"></script>
+    <script src="/src/components/registrar/portal-core.js"></script>
+    <script src="/src/components/registrar/portal-router.js"></script>
+    <script src="/src/components/registrar/tabs/dashboard.js"></script>
+    <script src="/src/components/registrar/tabs/admission.js"></script>
+    <script src="/src/components/registrar/tabs/management.js"></script>
+    <script src="/src/components/registrar/tabs/promotion.js"></script>
+    <script src="/src/components/registrar/tabs/courses.js"></script>
+    <script src="/src/components/registrar/tabs/enrollment.js"></script>
+    <script src="/src/components/registrar/tabs/graduation.js"></script>
+    <script src="/src/components/registrar/tabs/faculty.js"></script>
+    <script src="/src/components/registrar/tabs/department.js"></script>
+    <script src="/src/components/registrar/tabs/reports.js"></script>
+</body>
+</html>

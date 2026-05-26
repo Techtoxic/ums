@@ -1327,8 +1327,27 @@ app.get('/finance/dashboard', noCacheAuthPages, (req, res) => {
 // Registrar routes
 app.get('/registrar/login', (req, res) => res.redirect('/admin/login'));
 
-app.get('/registrar/dashboard', noCacheAuthPages, (req, res) => {
-    res.sendFile(path.join(__dirname, 'src', 'components', 'registrar', 'RegistrarDashboardNew.html'));
+// Registrar portal SPA shell. Served for the base path AND every tab path
+// (/registrar/dashboard/<tab>) — the client router (portal-router.js) reads the
+// tab from the URL and shows it. The server stays tab-agnostic.
+const serveRegistrarPortalShell = (req, res) => {
+    res.sendFile(path.join(__dirname, 'src', 'components', 'registrar', 'portal-shell.html'));
+};
+app.get('/registrar/dashboard', noCacheAuthPages, serveRegistrarPortalShell);
+app.get('/registrar/dashboard/:tab', noCacheAuthPages, serveRegistrarPortalShell);
+
+// Registrar portal tab partials (HTML fragments the router injects into #tab-root).
+// Whitelist the 10 known tab names so this can never serve an arbitrary file.
+const REGISTRAR_PARTIALS = new Set([
+    'dashboard', 'admission', 'management', 'promotion', 'courses',
+    'enrollment', 'graduation', 'faculty', 'department', 'reports'
+]);
+app.get('/registrar/partials/:name.html', noCacheAuthPages, (req, res) => {
+    const name = req.params.name;
+    if (!REGISTRAR_PARTIALS.has(name)) {
+        return res.status(404).send('Not found');
+    }
+    res.sendFile(path.join(__dirname, 'src', 'components', 'registrar', 'partials', `${name}.html`));
 });
 
 // Dean routes
