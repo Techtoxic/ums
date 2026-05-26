@@ -42,6 +42,7 @@ const { escapeRegex, isValidId } = require('./src/utils/validators');
 const { hodDepartmentDisplayName, toMoneyNumber, toDecimal128, formatCourseNameServer, DEPT_TEXT_TO_SHORT } = require('./src/utils/formatters');
 const { resolveAcademicPeriod } = require('./src/utils/academicPeriod');
 const { upload, validateUploadBuffer, sniffMagic, sanitizeDisplayName, fileDownloadAuth, verifyFileGrant, b64url, FILE_IMAGE_EXT_RE, MAX_IMAGE_BYTES, UPLOAD_ALLOWLIST } = require('./src/utils/uploads');
+const { generateStudentInitialPassword, generateIntakeCode, isEligibleToApply } = require('./src/utils/studentHelpers');
 const {
     Student, User, AdminStaff, Trainer, HOD,
     Program, Unit, CommonUnit, CommonUnitAssignment,
@@ -1738,24 +1739,6 @@ app.post('/api/tool-requests', verifyToken, authorize('admin', 'deputy'), async 
 // Student Routes
 
 // Registration Endpoint
-// SEV-H-014: generate a strong random initial password (>=12 chars, with
-// lowercase, uppercase, digit and symbol). Uses crypto, not Math.random.
-function generateStudentInitialPassword() {
-    const lower = 'abcdefghijkmnpqrstuvwxyz';
-    const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
-    const digits = '23456789';
-    const symbols = '@$!%*?&#';
-    const all = lower + upper + digits + symbols;
-    const pick = (set) => set[crypto.randomInt(0, set.length)];
-    const chars = [pick(lower), pick(upper), pick(digits), pick(symbols)];
-    while (chars.length < 14) chars.push(pick(all));
-    // Fisher-Yates shuffle so the required classes are not always in front.
-    for (let i = chars.length - 1; i > 0; i--) {
-        const j = crypto.randomInt(0, i + 1);
-        [chars[i], chars[j]] = [chars[j], chars[i]];
-    }
-    return chars.join('');
-}
 
 app.post('/api/students/register', verifyToken, authorize('admin', 'registrar'), async (req, res) => {
     try {
@@ -1868,13 +1851,6 @@ app.post('/api/students/register', verifyToken, authorize('admin', 'registrar'),
         res.status(500).json({ message: 'Error registering student' });
     }
 });
-
-// Generate intake code based on intake and year
-function generateIntakeCode(intake, intakeYear) {
-    const yearSuffix = intakeYear.toString().slice(-2); // Get last 2 digits of year
-    const intakePrefix = intake === 'january' ? 'J' : 'S';
-    return `${intakePrefix}${yearSuffix}`;
-}
 
 // Units API Routes
 
@@ -4200,13 +4176,6 @@ app.use('/api/notifications', require('./src/routes/notifications'));
 // ========================================
 // GRADUATION APPLICATION ENDPOINTS
 // ========================================
-
-// Eligibility rule (recovered from the V1 GraduationApplication/AttachmentApplication eligibility
-// static dropped in the Postgres migration): a student may apply in the final year of
-// their level — Year (level - 3). Level 4 → Year 1, Level 5 → Year 2, Level 6 → Year 3.
-function isEligibleToApply(level, yearOfStudy) {
-    return yearOfStudy === (level - 3);
-}
 
 // Check if student can apply for graduation
 app.get('/api/students/:studentId/graduation-eligibility', verifyToken, authorize('admin', 'registrar', 'student'), verifyOwnership('studentId'), async (req, res) => {
