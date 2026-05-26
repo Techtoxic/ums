@@ -302,11 +302,6 @@ const FILE_GRANT_TTL_MS = 15 * 60 * 1000;
 function b64url(buf) {
     return Buffer.from(buf).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
-function signFileGrant(grant) {
-    const payload = b64url(JSON.stringify({ cat: grant.cat, id: String(grant.id), exp: Date.now() + FILE_GRANT_TTL_MS }));
-    const sig = b64url(crypto.createHmac('sha256', config.jwt.secret).update(payload).digest());
-    return `${payload}.${sig}`;
-}
 function verifyFileGrant(token) {
     try {
         const [payload, sig] = String(token).split('.');
@@ -1364,75 +1359,6 @@ app.get('/src/components/registrar/AdmissionLetter.html', (req, res) => {
     serveHTML(res, path.join(__dirname, 'src', 'components', 'registrar', 'AdmissionLetter.html'));
 });
 
-// Function to initialize programs in database
-async function initializePrograms() {
-    try {
-        const programs = [
-            // Applied Science Department
-            { programName: 'Applied Biology Level 6', programCost: 67189, department: 'applied_science' },
-            { programName: 'Analytical Chemistry Level 6', programCost: 67189, department: 'applied_science' },
-            { programName: 'Science Lab Technology Level 5', programCost: 67189, department: 'applied_science' },
-            
-            // Agriculture Department
-            { programName: 'General Agriculture Level 4', programCost: 67189, department: 'agriculture' },
-            { programName: 'Sustainable Agriculture Level 5', programCost: 67189, department: 'agriculture' },
-            { programName: 'Agricultural Extension Level 6', programCost: 67189, department: 'agriculture' },
-            
-            // Building and Civil Department
-            { programName: 'Building Technician Level 4', programCost: 67189, department: 'building_civil' },
-            { programName: 'Building Technician Level 6', programCost: 67189, department: 'building_civil' },
-            { programName: 'Civil Engineering Level 6', programCost: 67189, department: 'building_civil' },
-            { programName: 'Plumbing Level 4', programCost: 67189, department: 'building_civil' },
-            { programName: 'Plumbing Level 5', programCost: 67189, department: 'building_civil' },
-            
-            // Electromechanical Department
-            { programName: 'Electrical Engineering Level 4', programCost: 67189, department: 'electromechanical' },
-            { programName: 'Electrical Engineering Level 5', programCost: 67189, department: 'electromechanical' },
-            { programName: 'Electrical Engineering Level 6', programCost: 67189, department: 'electromechanical' },
-            { programName: 'Automotive Engineering Level 5', programCost: 67189, department: 'electromechanical' },
-            { programName: 'Automotive Engineering Level 6', programCost: 67189, department: 'electromechanical' },
-            
-            // Hospitality Department
-            { programName: 'Food and Beverage Level 4', programCost: 67189, department: 'hospitality' },
-            { programName: 'Food & Beverage Level 5', programCost: 67189, department: 'hospitality' },
-            { programName: 'Food & Beverage Level 6', programCost: 67189, department: 'hospitality' },
-            { programName: 'Fashion & Design Level 4', programCost: 67189, department: 'hospitality' },
-            { programName: 'Fashion and Design Level 5', programCost: 67189, department: 'hospitality' },
-            { programName: 'Fashion and Design Level 6', programCost: 67189, department: 'hospitality' },
-            { programName: 'Hairdressing Level 4', programCost: 67189, department: 'hospitality' },
-            { programName: 'Hairdressing Level 5', programCost: 67189, department: 'hospitality' },
-            { programName: 'Hairdressing Level 6', programCost: 67189, department: 'hospitality' },
-            { programName: 'Tourism Management Level 5', programCost: 67189, department: 'hospitality' },
-            { programName: 'Tourism Management Level 6', programCost: 67189, department: 'hospitality' },
-            
-            // Business and Liberal Studies Department
-            { programName: 'Social Work Level 5', programCost: 67189, department: 'business_liberal' },
-            { programName: 'Social Work Level 6', programCost: 67189, department: 'business_liberal' },
-            { programName: 'Office Administration Level 5', programCost: 67189, department: 'business_liberal' },
-            { programName: 'Office Administration Level 6', programCost: 67189, department: 'business_liberal' },
-            
-            // Computing and Informatics Department
-            { programName: 'ICT Level 5', programCost: 67189, department: 'computing_informatics' },
-            { programName: 'ICT Level 6', programCost: 67189, department: 'computing_informatics' },
-            { programName: 'Information Science Level 5', programCost: 67189, department: 'computing_informatics' },
-            { programName: 'Information Science Level 6', programCost: 67189, department: 'computing_informatics' }
-        ];
-
-        for (const programData of programs) {
-            const existingProgram = await Program.findOne({ programName: programData.programName });
-            if (!existingProgram) {
-                const program = new Program(programData);
-                await program.save();
-                console.log(`Program created: ${programData.programName}`);
-            }
-        }
-
-        console.log('Programs initialization completed!');
-    } catch (error) {
-        console.error('Error initializing programs:', error);
-    }
-}
-
 // Function to filter out common units from course units
 function filterCommonUnits(units) {
     // Define common unit names that should be excluded from department units
@@ -1464,91 +1390,6 @@ function filterCommonUnits(units) {
         );
         return !isCommonUnit;
     });
-}
-
-// Function to initialize units in database
-async function initializeUnits() {
-    try {
-        // Import course units data
-        const { courseUnits } = require('./src/data/courseUnits');
-        
-        // Check if units already exist
-        const existingUnitsCount = await Unit.countDocuments();
-        if (existingUnitsCount > 0) {
-            console.log(`Units already initialized (${existingUnitsCount} units found)`);
-            // Check if we have all the course codes from courseUnits
-            const courseCodesInDb = await Unit.distinct('courseCode');
-            const courseCodesInMapping = Object.keys(courseUnits);
-            const missingCourses = courseCodesInMapping.filter(code => !courseCodesInDb.includes(code));
-            
-            if (missingCourses.length > 0) {
-                console.log(`Found ${missingCourses.length} missing course codes: ${missingCourses.join(', ')}`);
-                console.log('Adding missing units...');
-                
-                // Add units for missing courses
-                let unitsAdded = 0;
-                for (const courseCode of missingCourses) {
-                    const courseData = courseUnits[courseCode];
-                    const { department, level, units } = courseData;
-
-                    // Filter out common units
-                    const departmentUnits = filterCommonUnits(units);
-
-                    for (const unitData of departmentUnits) {
-                        const unit = new Unit({
-                            unitName: unitData.unitName,
-                            unitCode: unitData.unitCode,
-                            courseCode: courseCode,
-                            department: department,
-                            level: level,
-                            description: `${unitData.unitName} - Part of ${courseCode.replace(/_/g, ' ').toUpperCase()} program`,
-                            isActive: true
-                        });
-
-                        await unit.save();
-                        unitsAdded++;
-                    }
-                }
-                console.log(`Successfully added ${unitsAdded} units for ${missingCourses.length} missing courses`);
-            }
-            return;
-        }
-
-        console.log('Initializing units...');
-        let totalUnitsAdded = 0;
-
-        // Process each course and its units
-        for (const [courseCode, courseData] of Object.entries(courseUnits)) {
-            const { department, level, units } = courseData;
-            
-            // Filter out common units
-            const departmentUnits = filterCommonUnits(units);
-            const filteredCount = units.length - departmentUnits.length;
-            if (filteredCount > 0) {
-                console.log(`  📋 ${courseCode}: Filtered out ${filteredCount} common units, keeping ${departmentUnits.length} department-specific units`);
-            }
-
-            // Create units for this course
-            for (const unitData of departmentUnits) {
-                const unit = new Unit({
-                    unitName: unitData.unitName,
-                    unitCode: unitData.unitCode,
-                    courseCode: courseCode,
-                    department: department,
-                    level: level,
-                    description: `${unitData.unitName} - Part of ${courseCode.replace(/_/g, ' ').toUpperCase()} program`,
-                    isActive: true
-                });
-
-                await unit.save();
-                totalUnitsAdded++;
-            }
-        }
-
-        console.log(`Successfully initialized ${totalUnitsAdded} units across ${Object.keys(courseUnits).length} courses`);
-    } catch (error) {
-        console.error('Error initializing units:', error);
-    }
 }
 
 // Function to initialize trainers in database
@@ -1760,34 +1601,6 @@ async function fixBrokenUnitReferences() {
         
     } catch (error) {
         console.error('❌ Error fixing broken unit references:', error);
-    }
-}
-
-// Function to initialize HODs in database
-async function initializeHODs() {
-    try {
-        const existingHODsCount = await HOD.countDocuments();
-        if (existingHODsCount > 0) {
-            console.log(`HODs already initialized (${existingHODsCount} HODs found)`);
-            return;
-        }
-
-        const departments = HOD.getAllDepartments();
-        console.log(`Initializing ${departments.length} HODs...`);
-
-        for (const dept of departments) {
-            const hod = new HOD({
-                department: dept.code,
-                name: `HOD ${dept.name}`,
-                email: `hod.${dept.code}@ace.ac.ke`,
-                password: 'HOD' // Will be hashed automatically
-            });
-            await hod.save();
-        }
-
-        console.log(`Successfully initialized ${departments.length} HODs!`);
-    } catch (error) {
-        console.error('Error initializing HODs:', error);
     }
 }
 
