@@ -12,17 +12,19 @@
 // Load order: after portal-core.js, before/with the tab modules.
 
 window.RegistrarRouter = (function () {
-    const BASE = '/registrar/dashboard';
+    const BASE = '/registrar';
     const VALID_TABS = ['dashboard', 'admission', 'management', 'promotion', 'courses', 'enrollment', 'graduation', 'faculty', 'department', 'reports'];
 
     // tab -> injected pane element (cache; partials are fetched once).
     const panes = {};
 
-    // Pull the tab id out of a /registrar/dashboard[/<tab>] path (or a data-section).
+    // Pull the tab id from a /registrar/<tab> path: take the last path segment;
+    // the role name or an empty path defaults to dashboard. (Also tolerates the
+    // legacy /registrar/dashboard/<tab> shape — the last segment is still the tab.)
     function tabFromPath(pathname) {
-        const clean = (pathname || '').replace(/\/+$/, '');
-        const m = clean.match(/^\/registrar\/dashboard(?:\/([^\/?#]+))?/);
-        const tab = m && m[1];
+        const segs = (pathname || '').split(/[?#]/)[0].replace(/\/+$/, '').split('/').filter(Boolean);
+        const tab = segs[segs.length - 1];
+        if (!tab || tab === 'registrar') return 'dashboard';
         return VALID_TABS.includes(tab) ? tab : 'dashboard';
     }
 
@@ -92,7 +94,7 @@ window.RegistrarRouter = (function () {
         });
 
         // First load: render the tab from the URL. Normalise a bare
-        // /registrar/dashboard to /registrar/dashboard/dashboard.
+        // /registrar to /registrar/dashboard.
         const initial = tabFromPath(location.pathname);
         if (location.pathname.replace(/\/+$/, '') === BASE) {
             history.replaceState({ tab: initial }, '', `${BASE}/${initial}`);

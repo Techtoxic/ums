@@ -10,7 +10,7 @@
 // Load order: after portal-core.js, before/with the tab modules.
 
 window.StudentRouter = (function () {
-    const BASE = '/student/portal';
+    const BASE = '/student';
     const VALID_TABS = ['dashboard', 'profile', 'financial', 'payments', 'uploads', 'notes', 'units', 'transcript', 'graduation', 'attachment'];
 
     // Page titles — same map the monolith's activateTab() used.
@@ -30,11 +30,13 @@ window.StudentRouter = (function () {
     // tab -> injected pane element (cache; partials are fetched once).
     const panes = {};
 
-    // Pull the tab id out of a /student/portal[/<tab>] path (or an href).
+    // Pull the tab id from a /student/<tab> path (or an href): take the last path
+    // segment; the role name or an empty path defaults to dashboard. (Also tolerates
+    // the legacy /student/portal/<tab> shape — the last segment is still the tab.)
     function tabFromPath(pathname) {
-        const clean = (pathname || '').replace(/\/+$/, '');
-        const m = clean.match(/^\/student\/portal(?:\/([^\/?#]+))?/);
-        const tab = m && m[1];
+        const segs = (pathname || '').split(/[?#]/)[0].replace(/\/+$/, '').split('/').filter(Boolean);
+        const tab = segs[segs.length - 1];
+        if (!tab || tab === 'student') return 'dashboard';
         return VALID_TABS.includes(tab) ? tab : 'dashboard';
     }
 
@@ -112,7 +114,7 @@ window.StudentRouter = (function () {
         });
 
         // First load: render the tab from the URL. Normalise a bare
-        // /student/portal to /student/portal/dashboard so the URL has a tab.
+        // /student to /student/dashboard so the URL has a tab.
         const initial = tabFromPath(location.pathname);
         if (location.pathname.replace(/\/+$/, '') === BASE) {
             history.replaceState({ tab: initial }, '', `${BASE}/${initial}`);

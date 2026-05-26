@@ -729,11 +729,8 @@ app.get('/trainer/dashboard', noCacheAuthPages, (req, res) => {
     serveHTML(res, path.join(__dirname, 'src', 'components', 'trainer', 'TrainerDashboard.html'));
 });
 
-// Serve student pages (legacy alias — serves the SPA shell; the router shows
-// the dashboard tab by default).
-app.get('/student/dashboard', noCacheAuthPages, (req, res) => {
-    serveHTML(res, path.join(__dirname, 'src', 'components', 'student', 'portal-shell.html'));
-});
+// (The legacy /student/dashboard alias was removed — /student/<tab> now serves
+// the student SPA shell; see the Student routes block further below.)
 
 // Serve admission letter template
 app.get('/src/components/registrar/AdmissionLetter.html', (req, res) => {
@@ -1293,28 +1290,44 @@ app.get('/student/login', noCacheAuthPages, (req, res) => {
     res.sendFile(path.join(__dirname, 'src', 'login.html'));
 });
 
-// Student portal SPA shell. Served for the base path AND every tab path
-// (/student/portal/<tab>) — the client router (portal-router.js) reads the tab
-// from the URL and shows it. The server stays tab-agnostic; it just serves the
-// shell for any /student/portal/* page request.
-const serveStudentPortalShell = (req, res) => {
-    res.sendFile(path.join(__dirname, 'src', 'components', 'student', 'portal-shell.html'));
-};
-app.get('/student/portal', noCacheAuthPages, serveStudentPortalShell);
-app.get('/student/portal/:tab', noCacheAuthPages, serveStudentPortalShell);
-
-// Student portal tab partials (HTML fragments the router injects into #tab-root).
-// Whitelist the 10 known tab names so this can never serve an arbitrary file.
-const STUDENT_PARTIALS = new Set([
+// Student portal SPA. Tabs are served at /student/<tab>; the client router
+// (portal-router.js) reads the tab from the last path segment. "dashboard" is the
+// default. Registration ORDER matters: /student/login (above), the partials route,
+// and the legacy /student/portal redirects ALL precede the /student/:tab catch-all
+// so it cannot shadow them.
+const STUDENT_TABS = new Set([
     'dashboard', 'profile', 'financial', 'payments', 'uploads',
     'notes', 'units', 'transcript', 'graduation', 'attachment'
 ]);
+const serveStudentPortalShell = (req, res) => {
+    res.sendFile(path.join(__dirname, 'src', 'components', 'student', 'portal-shell.html'));
+};
+
+// Tab partials (HTML fragments the router injects into #tab-root). Whitelisted so
+// this can never serve an arbitrary file. (Two-segment path — never collides with
+// the /student/:tab catch-all — but registered before it regardless.)
 app.get('/student/partials/:name.html', noCacheAuthPages, (req, res) => {
     const name = req.params.name;
-    if (!STUDENT_PARTIALS.has(name)) {
+    if (!STUDENT_TABS.has(name)) {
         return res.status(404).send('Not found');
     }
     res.sendFile(path.join(__dirname, 'src', 'components', 'student', 'partials', `${name}.html`));
+});
+
+// Backward-compat: old /student/portal[/<tab>] URLs 301-redirect to /student/<tab>.
+// Must precede the catch-all ("portal" is not a whitelisted tab, so the catch-all
+// would otherwise next() these into a 404).
+app.get('/student/portal', (req, res) => res.redirect(301, '/student/dashboard'));
+app.get('/student/portal/:tab', (req, res) => res.redirect(301, `/student/${req.params.tab}`));
+
+// Bare /student → default tab.
+app.get('/student', (req, res) => res.redirect(302, '/student/dashboard'));
+
+// Catch-all: serve the shell only for a whitelisted tab; otherwise next() so
+// unrelated /student/* routes (and a real 404) still work.
+app.get('/student/:tab', noCacheAuthPages, (req, res, next) => {
+    if (!STUDENT_TABS.has(req.params.tab)) return next();
+    serveStudentPortalShell(req, res);
 });
 
 // Finance routes
@@ -1327,27 +1340,40 @@ app.get('/finance/dashboard', noCacheAuthPages, (req, res) => {
 // Registrar routes
 app.get('/registrar/login', (req, res) => res.redirect('/admin/login'));
 
-// Registrar portal SPA shell. Served for the base path AND every tab path
-// (/registrar/dashboard/<tab>) — the client router (portal-router.js) reads the
-// tab from the URL and shows it. The server stays tab-agnostic.
-const serveRegistrarPortalShell = (req, res) => {
-    res.sendFile(path.join(__dirname, 'src', 'components', 'registrar', 'portal-shell.html'));
-};
-app.get('/registrar/dashboard', noCacheAuthPages, serveRegistrarPortalShell);
-app.get('/registrar/dashboard/:tab', noCacheAuthPages, serveRegistrarPortalShell);
-
-// Registrar portal tab partials (HTML fragments the router injects into #tab-root).
-// Whitelist the 10 known tab names so this can never serve an arbitrary file.
-const REGISTRAR_PARTIALS = new Set([
+// Registrar portal SPA. Tabs are served at /registrar/<tab>; /registrar/dashboard
+// is simply the dashboard tab. The client router reads the tab from the last path
+// segment. Registration ORDER: /registrar/login (above), the partials route, and
+// the legacy /registrar/dashboard/<tab> redirect all precede the /registrar/:tab
+// catch-all so it cannot shadow them.
+const REGISTRAR_TABS = new Set([
     'dashboard', 'admission', 'management', 'promotion', 'courses',
     'enrollment', 'graduation', 'faculty', 'department', 'reports'
 ]);
+const serveRegistrarPortalShell = (req, res) => {
+    res.sendFile(path.join(__dirname, 'src', 'components', 'registrar', 'portal-shell.html'));
+};
+
+// Tab partials (HTML fragments the router injects into #tab-root). Whitelisted.
 app.get('/registrar/partials/:name.html', noCacheAuthPages, (req, res) => {
     const name = req.params.name;
-    if (!REGISTRAR_PARTIALS.has(name)) {
+    if (!REGISTRAR_TABS.has(name)) {
         return res.status(404).send('Not found');
     }
     res.sendFile(path.join(__dirname, 'src', 'components', 'registrar', 'partials', `${name}.html`));
+});
+
+// Backward-compat: old /registrar/dashboard/<tab> URLs 301-redirect to
+// /registrar/<tab>. (Bare /registrar/dashboard is already correct under the new
+// scheme — it's the dashboard tab, handled by the catch-all below.)
+app.get('/registrar/dashboard/:tab', (req, res) => res.redirect(301, `/registrar/${req.params.tab}`));
+
+// Bare /registrar → default tab.
+app.get('/registrar', (req, res) => res.redirect(302, '/registrar/dashboard'));
+
+// Catch-all: serve the shell only for a whitelisted tab; otherwise next().
+app.get('/registrar/:tab', noCacheAuthPages, (req, res, next) => {
+    if (!REGISTRAR_TABS.has(req.params.tab)) return next();
+    serveRegistrarPortalShell(req, res);
 });
 
 // Dean routes
