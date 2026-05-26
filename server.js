@@ -39,20 +39,9 @@ const { db, client, schema } = require('./src/db');
 const { eq, and, sql, inArray, isNull, desc } = require('drizzle-orm');
 const userService = require('./src/services/userService');
 
-// Inline helper for V1's HOD.getDepartmentDisplayName static. Used by the HOD
-// login response so the frontend keeps receiving a human-readable label.
-function hodDepartmentDisplayName(code) {
-    const map = {
-        applied_science:        'Applied Science',
-        agriculture:            'Agriculture',
-        building_civil:         'Building & Civil Engineering',
-        electromechanical:      'Electromechanical Engineering',
-        hospitality:            'Hospitality',
-        business_liberal:       'Business & Liberal Studies',
-        computing_informatics:  'Computing & Informatics',
-    };
-    return map[code] || code;
-}
+const { escapeRegex, isValidId } = require('./src/utils/validators');
+const { hodDepartmentDisplayName, toMoneyNumber, toDecimal128, formatCourseNameServer, DEPT_TEXT_TO_SHORT } = require('./src/utils/formatters');
+const { resolveAcademicPeriod } = require('./src/utils/academicPeriod');
 const {
     Student, User, AdminStaff, Trainer, HOD,
     Program, Unit, CommonUnit, CommonUnitAssignment,
@@ -94,75 +83,6 @@ try {
 
 // Import data parsers
 const { getAllTrainers, parseTrainersFile } = require('./src/data/trainerData');
-
-// SEV-H-019: escape user/DB-supplied values before using them inside a RegExp
-// (or the shim's $regex translator), to prevent regex injection and ReDoS.
-function escapeRegex(value) {
-    return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-// V2: validate Postgres UUID v4/v5 ids before using them in WHERE clauses.
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-function isValidId(id) {
-    return typeof id === 'string' && UUID_RE.test(id);
-}
-
-// V2: maps the snake_case department codes used in users/students.department
-// to the 2-letter codes in the departments table. Used by endpoints that
-// need to JOIN through programs → departments.
-const DEPT_TEXT_TO_SHORT = {
-    applied_science:        'AS',
-    agriculture:            'AG',
-    building_civil:         'BC',
-    electromechanical:      'EM',
-    hospitality:            'HO',
-    business_liberal:       'BL',
-    computing_informatics:  'IT',
-};
-
-// SEV-H-016: money is stored as Decimal128 for exactness. These helpers
-// convert at the boundary. Choice (documented in STAGE2A_REPORT.md):
-// arithmetic/comparisons are done in Number space via parseFloat(String(...));
-// KES amounts are well within JS safe-integer range, and storage stays exact.
-function toMoneyNumber(v) {
-    if (v === null || v === undefined) return 0;
-    if (typeof v === 'number') return v;
-    const n = parseFloat(v.toString());
-    return Number.isFinite(n) ? n : 0;
-}
-function toDecimal128(v) {
-    // V2: Postgres numeric() accepts strings. Return a fixed-2 decimal string
-    // for compatibility with all call sites that used to pass Decimal128.
-    const n = toMoneyNumber(v);
-    return n.toFixed(2);
-}
-
-// Utility function to format course names
-function formatCourseNameServer(courseCode) {
-    if (!courseCode) return 'Unknown Course';
-    
-    // Course name mappings
-    const courseNames = {
-        'analytical_chemistry_6': 'Analytical Chemistry',
-        'sustainable_agriculture_5': 'Sustainable Agriculture',
-        'building_technology_6': 'Building Technology',
-        'electrical_installation_6': 'Electrical Installation',
-        'food_beverage_6': 'Food & Beverage Service',
-        'business_management_6': 'Business Management',
-        'computer_science_6': 'Computer Science',
-        'fashion_design_4': 'Fashion & Design',
-        'science_laboratory_technology_6': 'Science Laboratory Technology',
-        'crop_production_6': 'Crop Production',
-        'civil_engineering_6': 'Civil Engineering',
-        'mechanical_engineering_6': 'Mechanical Engineering',
-        'hospitality_management_6': 'Hospitality Management',
-        'accounting_6': 'Accounting',
-        'information_technology_6': 'Information Technology',
-        'interior_design_4': 'Interior Design'
-    };
-    
-    return courseNames[courseCode] || courseCode.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-}
 
 const adminAuthRoutes = require('./src/routes/adminAuth');
 
@@ -2903,49 +2823,6 @@ app.get('/api/assignments/department/:department', verifyToken, authorize('admin
         res.status(500).json({ message: 'Failed to fetch assignments' });
     }
 });
-
-// Resolve the current academic period (integer year + semester) from
-// system_settings. The value column is jsonb, so values come back already
-// parsed (usually JS strings like "2024/2025" / "1"); read defensively in case
-// a value is stored as JSON-encoded text. CONVENTION: academic_year uses the
-// START year of the "YYYY/YYYY" range (2024/2025 → 2024) — both
-// trainer_assignments and unit_registrations follow this so the /students join
-// agrees. Missing settings fall back to (2024, 1) with a warning rather than
-// crashing.
-async function resolveAcademicPeriod() {
-    const unwrap = (v) => {
-        if (v === null || v === undefined) return null;
-        if (typeof v === 'number') return String(v);
-        if (typeof v === 'string') {
-            const s = v.trim();
-            if (s.length >= 2 && s[0] === '"' && s[s.length - 1] === '"') {
-                try { return String(JSON.parse(s)); } catch { return s.slice(1, -1); }
-            }
-            return s;
-        }
-        return String(v);
-    };
-
-    const rows = await db
-        .select({ key: schema.systemSettings.key, value: schema.systemSettings.value })
-        .from(schema.systemSettings)
-        .where(inArray(schema.systemSettings.key, ['current_academic_year', 'current_semester']));
-
-    const map = {};
-    for (const r of rows) map[r.key] = unwrap(r.value);
-
-    let academicYear = parseInt(String(map.current_academic_year || '').split('/')[0], 10);
-    if (!Number.isInteger(academicYear)) {
-        console.warn('⚠️ current_academic_year setting missing/unparseable — defaulting to 2024');
-        academicYear = 2024;
-    }
-    let semester = parseInt(map.current_semester, 10);
-    if (!Number.isInteger(semester)) {
-        console.warn('⚠️ current_semester setting missing/unparseable — defaulting to 1');
-        semester = 1;
-    }
-    return { academicYear, semester };
-}
 
 // Assign units to trainer
 app.post('/api/assignments/assign', verifyToken, authorize('admin', 'hod'), async (req, res) => {
