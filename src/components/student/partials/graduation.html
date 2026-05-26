@@ -1,0 +1,107 @@
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                    <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                        <h2 class="text-base md:text-sm md:text-base font-semibold text-gray-800 dark:text-white">Apply for Graduation</h2>
+                        <p class="text-gray-600 dark:text-gray-400 mt-1">Submit your graduation application</p>
+                    </div>
+                    <div class="p-6">
+                        <!-- Eligibility Status -->
+                        <div id="graduation-eligibility" class="mb-6">
+                            <div class="flex items-center justify-center py-4">
+                                <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                                <span class="ml-2 text-gray-600 dark:text-gray-400">Checking eligibility...</span>
+                            </div>
+                        </div>
+
+                        <!-- Graduation Application Form -->
+                        <div id="graduation-form" class="hidden">
+                            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+                                <div class="flex items-start">
+                                    <i class="ri-information-line text-blue-600 text-xl mr-3 mt-0.5"></i>
+                                    <div>
+                                        <h3 class="text-blue-800 dark:text-blue-200 font-medium mb-2">Graduation Application Requirements</h3>
+                                        <ul class="text-sm text-blue-700 dark:text-blue-300 space-y-1">
+                                            <li>• Level 4 students can apply in Year 1</li>
+                                            <li>• Level 5 students can apply in Year 2</li>
+                                            <li>• Level 6 students can apply in Year 3</li>
+                                            <li>• All required units must be completed</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Student Information Display -->
+                            <div class="grid md:grid-cols-2 gap-2 mb-3">
+                                <div class="space-y-2">
+                                    <h3 class="text-headline-sm text-gray-800 dark:text-white">Student Information</h3>
+                                    <div class="space-y-3">
+                                        <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                                            <span class="text-gray-600 dark:text-gray-400">Name:</span>
+                                            <span class="font-medium text-gray-800 dark:text-white graduation-student-name">Loading...</span>
+                                        </div>
+                                        <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                                            <span class="text-gray-600 dark:text-gray-400">Admission Number:</span>
+                                            <span class="font-medium text-gray-800 dark:text-white graduation-student-admission">Loading...</span>
+                                        </div>
+                                        <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                                            <span class="text-gray-600 dark:text-gray-400">Course:</span>
+                                            <span class="font-medium text-gray-800 dark:text-white graduation-student-course">Loading...</span>
+                                        </div>
+                                        <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                                            <span class="text-gray-600 dark:text-gray-400">Level:</span>
+                                            <span class="font-medium text-gray-800 dark:text-white graduation-student-level">Loading...</span>
+                                        </div>
+                                        <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                                            <span class="text-gray-600 dark:text-gray-400">Year of Study:</span>
+                                            <span class="font-medium text-gray-800 dark:text-white graduation-student-year">Loading...</span>
+                                        </div>
+                                        <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                                            <span class="text-gray-600 dark:text-gray-400">Intake:</span>
+                                            <span class="font-medium text-gray-800 dark:text-white graduation-student-intake">Loading...</span>
+                                        </div>
+                                        <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                                            <span class="text-gray-600 dark:text-gray-400">Phone Number:</span>
+                                            <span class="font-medium text-gray-800 dark:text-white graduation-student-phone">Loading...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="space-y-2">
+                                    <h3 class="text-headline-sm text-gray-800 dark:text-white">Application Status</h3>
+                                    <div id="graduation-status-info" class="space-y-3">
+                                        <!-- Status will be populated by JavaScript -->
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Application Actions -->
+                            <div class="flex justify-end space-x-4">
+                                <button id="submit-graduation" class="px-3 py-1.5 text-xs md:text-sm bg-primary text-white rounded-lg hover:bg-secondary transition-colors font-medium">
+                                    <i class="ri-graduation-cap-line mr-2"></i>Submit Graduation Application
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Existing Application Display -->
+                        <div id="graduation-existing" class="hidden">
+                            <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6">
+                                <div class="flex items-center mb-4">
+                                    <i class="ri-check-circle-line text-green-600 text-2xl mr-3"></i>
+                                    <h3 class="text-green-800 dark:text-green-200 font-medium text-lg">Application Submitted</h3>
+                                </div>
+                                <div id="graduation-existing-details" class="space-y-2 text-sm text-green-700 dark:text-green-300">
+                                    <!-- Details will be populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Ineligible Display -->
+                        <div id="graduation-ineligible" class="hidden">
+                            <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6">
+                                <div class="flex items-center mb-4">
+                                    <i class="ri-close-circle-line text-red-600 text-2xl mr-3"></i>
+                                    <h3 class="text-red-800 dark:text-red-200 font-medium text-lg">Not Eligible</h3>
+                                </div>
+                                <p id="graduation-ineligible-reason" class="text-red-700 dark:text-red-300"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>

@@ -1,0 +1,92 @@
+                <div class="space-y-2">
+                    <!-- Financial Overview -->
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                            <h2 class="text-base md:text-sm md:text-base font-semibold text-gray-800 dark:text-white">Financial Information</h2>
+                            <p class="text-gray-600 dark:text-gray-400 mt-1">Your payment status and program costs</p>
+                        </div>
+                        <div class="p-6">
+                            <div class="grid md:grid-cols-3 gap-2 mb-3">
+                                <div class="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+                                    <div class="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                                        <i class="ri-price-tag-3-line text-white text-xl"></i>
+                                    </div>
+                                    <p class="text-headline-lg text-blue-600 program-cost">KES 0</p>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">Program Cost</p>
+                                </div>
+                                <div class="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-xl">
+                                    <div class="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                                        <i class="ri-check-double-line text-white text-xl"></i>
+                                    </div>
+                                    <p class="text-headline-lg text-green-600 total-paid">KES 0</p>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">Total Paid</p>
+                                </div>
+                                <div class="text-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl">
+                                    <div class="w-12 h-12 bg-orange-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                                        <i class="ri-wallet-3-line text-white text-xl"></i>
+                                    </div>
+                                    <p class="text-headline-lg text-orange-600 balance">KES 0</p>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">Balance</p>
+                                </div>
+                            </div>
+
+                            <!-- Payment Progress Chart -->
+                            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-2 md:p-3">
+                                <h3 class="text-sm md:text-base font-semibold text-gray-800 dark:text-white mb-4">Payment Progress</h3>
+                                <div class="flex items-center gap-3">
+                                    <div class="flex-1">
+                                        <div class="flex justify-between items-center mb-2">
+                                            <span class="text-sm text-gray-600 dark:text-gray-400">Progress</span>
+                                            <span id="financial-payment-percentage" class="text-sm font-medium text-gray-800 dark:text-white">0%</span>
+                                        </div>
+                                        <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-4">
+                                            <div id="financial-payment-progress" class="bg-gradient-to-r from-primary to-secondary h-4 rounded-full transition-all duration-500" style="width: 0%"></div>
+                                        </div>
+                                    </div>
+                                    <div class="w-16 h-16 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-sm">
+                                        <span id="financial-progress-icon" class="text-2xl">📊</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Program Details -->
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                            <h3 class="text-sm md:text-base font-semibold text-gray-800 dark:text-white">Program Details</h3>
+                        </div>
+                        <div class="p-6">
+                            <div class="grid md:grid-cols-2 gap-3">
+                                <div class="space-y-2">
+                                    <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                                        <span class="text-gray-600 dark:text-gray-400">Program Name:</span>
+                                        <span class="font-medium text-gray-800 dark:text-white student-course-name">Loading...</span>
+                                    </div>
+                                    <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                                        <span class="text-gray-600 dark:text-gray-400">Department:</span>
+                                        <span class="font-medium text-gray-800 dark:text-white student-department">Loading...</span>
+                                    </div>
+                                    <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                                        <span class="text-gray-600 dark:text-gray-400">Year of Study:</span>
+                                        <span class="font-medium text-gray-800 dark:text-white student-year-text">Loading...</span>
+                                    </div>
+                                </div>
+                                <div class="space-y-2">
+                                    <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                                        <span class="text-gray-600 dark:text-gray-400">Program Cost:</span>
+                                        <span class="font-medium text-primary program-cost">Loading...</span>
+                                    </div>
+                                    <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                                        <span class="text-gray-600 dark:text-gray-400">Amount Paid:</span>
+                                        <span class="font-medium text-green-600 total-paid">KES 0</span>
+                                    </div>
+                                    <div class="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                                        <span class="text-gray-600 dark:text-gray-400">Outstanding:</span>
+                                        <span class="font-medium text-orange-600 balance">KES 0</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>

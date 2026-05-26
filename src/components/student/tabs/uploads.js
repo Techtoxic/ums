@@ -1,3 +1,9 @@
+// tabs/uploads.js — uploads tab: contents of the old uploadSection.js, verbatim.
+
+// MUST load LAST among the tab modules: its showToast/showLoading/hideLoading
+// intentionally shadow the portal-core copies — exactly as uploadSection.js
+// (the last script) did in the monolith. Do not reorder.
+
 // ========================================
 // STUDENT UPLOAD SECTION
 // ========================================
@@ -610,3 +616,18 @@ window.uploadFile = uploadFile;
 window.replaceUpload = replaceUpload;
 
 console.log('✅ Upload section loaded and functions exposed globally');
+
+window.StudentTabs = window.StudentTabs || {};
+window.StudentTabs.uploads = {
+    // Mirrors the monolith's one-time uploads init (the old inline 'a[href=#uploads]'
+    // click handler guarded by window.uploadsInitialized).
+    init() {
+        if (window.uploadsInitialized) return;
+        if (typeof initializeUploadsSection === 'function') {
+            window.uploadsInitialized = true;
+            initializeUploadsSection().catch(err => console.error('Error initializing uploads:', err));
+        } else {
+            console.error('initializeUploadsSection function not found!');
+        }
+    }
+};

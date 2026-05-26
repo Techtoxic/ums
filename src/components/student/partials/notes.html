@@ -1,0 +1,51 @@
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                    <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h2 class="text-base md:text-sm md:text-base font-semibold text-gray-800 dark:text-white">Notes & Messages</h2>
+                                <p class="text-gray-600 dark:text-gray-400 mt-1">Important notes from the Dean's office</p>
+                            </div>
+                            <button id="refresh-notes-btn" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                                <i class="ri-refresh-line text-xl text-gray-600 dark:text-gray-400"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Filter Tabs -->
+                    <div class="px-6 pt-4">
+                        <div class="flex items-center space-x-2 border-b border-gray-200 dark:border-gray-700">
+                            <button class="notes-filter-tab px-4 py-2 text-sm font-medium border-b-2 border-primary text-primary transition-colors" data-filter="all">
+                                All
+                            </button>
+                            <button class="notes-filter-tab px-4 py-2 text-sm font-medium border-b-2 border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors" data-filter="unread">
+                                Unread
+                                <span id="unread-count" class="ml-1 px-2 py-0.5 text-xs bg-red-500 text-white rounded-full hidden">0</span>
+                            </button>
+                            <button class="notes-filter-tab px-4 py-2 text-sm font-medium border-b-2 border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors" data-filter="read">
+                                Read
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="p-6">
+                        <!-- Loading State -->
+                        <div id="notes-loading" class="hidden text-center py-8">
+                            <i class="ri-loader-4-line text-4xl text-primary animate-spin mb-4"></i>
+                            <p class="text-gray-600 dark:text-gray-400">Loading notes...</p>
+                        </div>
+                        
+                        <!-- Empty State -->
+                        <div id="notes-empty" class="hidden text-center py-8">
+                            <div class="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="ri-message-3-line text-2xl text-gray-400"></i>
+                            </div>
+                            <p class="text-gray-600 dark:text-gray-400">No notes or messages yet</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-500 mt-2">Notes from the Dean will appear here</p>
+                        </div>
+                        
+                        <!-- Notes List -->
+                        <div id="notes-list" class="space-y-3">
+                            <!-- Notes will be loaded here dynamically -->
+                        </div>
+                    </div>
+                </div>

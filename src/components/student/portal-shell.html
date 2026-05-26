@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EDTTI Student Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.0.0/fonts/remixicon.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Frontend Config (Load First!) -->
+    <script src="/public/js/config.js"></script>
+
+    <!-- Global fetch interceptor: ensure the httpOnly auth cookie attaches to
+         every /api/ call. Bearer-token injection remains as a fallback for any
+         legacy sessionStorage token still in the wild — but post-migration this
+         will be a no-op and the cookie carries identity. -->
+    <script>
+        (function() {
+            const _origFetch = window.fetch;
+            window.fetch = function(url, options) {
+                options = options || {};
+                if (typeof url === 'string' && url.includes('/api/')) {
+                    options.credentials = options.credentials || 'include';
+                    const token = sessionStorage.getItem('studentToken')
+                               || localStorage.getItem('studentToken');
+                    if (token) {
+                        options.headers = Object.assign({}, options.headers, {
+                            'Authorization': 'Bearer ' + token
+                        });
+                    }
+                }
+                return _origFetch(url, options);
+            };
+        })();
+    </script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#7A0C0C',
+                        secondary: '#8B2A2A',
+                        success: '#10b981',
+                        warning: '#f59e0b',
+                        danger: '#ef4444',
+                        gray: {
+                            50: '#f9fafb',
+                            100: '#f3f4f6',
+                            200: '#e5e7eb',
+                            300: '#d1d5db',
+                            400: '#9ca3af',
+                            500: '#6b7280',
+                            600: '#4b5563',
+                            700: '#374151',
+                            800: '#1f2937',
+                            900: '#111827'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-in-out',
+                        'slide-up': 'slideUp 0.3s ease-out',
+                        'bounce-gentle': 'bounceGentle 2s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' }
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(100%)' },
+                            '100%': { transform: 'translateY(0)' }
+                        },
+                        bounceGentle: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-5px)' }
+                        }
+                    }
+                }
+            },
+            darkMode: 'class'
+        }
+    </script>
+    <link rel="stylesheet" href="/public/css/dashboard-styles.css">
+    <link rel="stylesheet" href="/public/css/student-portal.css">
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 font-sans">
+    <!-- Auth gate: covers the portal until requireAuth() resolves, suppressing
+         the bfcache back-button flash. Skeleton matches student portal layout
+         (10 sidebar items: Dashboard, Profile, Financial, Payments, Uploads,
+         Notes, Units, Transcript, Graduation, Attachment; 3 tiles: Program
+         Cost, Total Paid, Outstanding Balance). -->
+    <div id="authGate" class="auth-gate" aria-live="polite" aria-busy="true">
+        <aside class="skel-sidebar">
+            <div class="skel skel-sidebar__logo"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__user"></div>
+        </aside>
+        <main class="skel-main">
+            <div class="skel-topbar">
+                <div class="skel skel-topbar__title"></div>
+                <div class="skel skel-topbar__action"></div>
+            </div>
+            <div class="skel skel-welcome"></div>
+            <div class="skel-tiles" style="--tile-count: 3;">
+                <div class="skel skel-tile"></div>
+                <div class="skel skel-tile"></div>
+                <div class="skel skel-tile"></div>
+            </div>
+            <div class="skel skel-row"></div>
+            <div class="skel skel-row"></div>
+            <div class="skel skel-content"></div>
+        </main>
+    </div>
+
+    <!-- Mobile Menu Overlay -->
+    <div id="mobile-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden md:hidden"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar fixed left-0 top-0 h-full w-64 bg-white dark:bg-gray-800 shadow-xl z-50 transition-all duration-300 flex flex-col">
+        <!-- Header -->
+        <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                    <i class="ri-graduation-cap-line text-white text-lg"></i>
+                </div>
+                <div class="sidebar-title">
+                    <h1 class="text-lg font-bold text-gray-800 dark:text-white">EDTTI Portal</h1>
+                </div>
+            </div>
+            <button id="sidebar-toggle" class="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg md:hidden">
+                <i class="ri-close-line text-xl text-gray-600 dark:text-gray-300"></i>
+            </button>
+        </div>
+
+        <!-- User Profile -->
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-gradient-to-r from-primary to-secondary rounded-full flex items-center justify-center">
+                    <i class="ri-user-line text-white text-lg"></i>
+                </div>
+                <div class="sidebar-text flex-1 min-w-0">
+                    <p class="text-sm font-semibold text-gray-800 dark:text-white truncate student-name">Loading...</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 truncate student-admission">Loading...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="flex-1 p-4 overflow-y-auto">
+            <ul class="space-y-2">
+                <li>
+                    <a href="/student/portal/dashboard" class="nav-link flex items-center gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors active">
+                        <i class="ri-dashboard-3-line text-lg"></i>
+                        <span class="sidebar-text">Dashboard</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/student/portal/profile" class="nav-link flex items-center gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                        <i class="ri-user-3-line text-lg"></i>
+                        <span class="sidebar-text">Profile</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/student/portal/financial" class="nav-link flex items-center gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                        <i class="ri-money-dollar-circle-line text-lg"></i>
+                        <span class="sidebar-text">Financial Info</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/student/portal/payments" class="nav-link flex items-center gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                        <i class="ri-receipt-line text-lg"></i>
+                        <span class="sidebar-text">Payment History</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/student/portal/uploads" class="nav-link flex items-center gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                        <i class="ri-upload-cloud-line text-lg"></i>
+                        <span class="sidebar-text">Uploads</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/student/portal/notes" class="nav-link flex items-center gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                        <i class="ri-message-3-line text-lg"></i>
+                        <span class="sidebar-text">Notes & Messages</span>
+                        <span id="notes-badge" class="hidden ml-auto px-2 py-0.5 text-xs font-semibold text-white bg-red-500 rounded-full">0</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/student/portal/units" class="nav-link flex items-center gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                        <i class="ri-book-open-line text-lg"></i>
+                        <span class="sidebar-text">Units & Courses</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/student/portal/transcript" class="nav-link flex items-center gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                        <i class="ri-file-text-line text-lg"></i>
+                        <span class="sidebar-text">Transcript</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/student/portal/graduation" class="nav-link flex items-center gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                        <i class="ri-graduation-cap-line text-lg"></i>
+                        <span class="sidebar-text">Apply for Graduation</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/student/portal/attachment" class="nav-link flex items-center gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                        <i class="ri-briefcase-line text-lg"></i>
+                        <span class="sidebar-text">Apply for Attachment</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Footer Actions -->
+        <div class="p-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
+            <div class="space-y-2">
+                <button id="dark-mode-toggle" class="w-full flex items-center gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                    <i class="ri-moon-line text-lg dark:ri-sun-line"></i>
+                    <span class="sidebar-text">Dark Mode</span>
+                </button>
+                <button id="logout-btn" class="w-full flex items-center gap-3 px-3 py-2.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
+                    <i class="ri-logout-box-line text-lg"></i>
+                    <span class="sidebar-text">Logout</span>
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div id="main-content" class="md:ml-64 transition-all duration-300">
+        <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30">
+            <div class="flex items-center justify-between px-2 py-1.5 text-xs">
+                <div class="flex items-center gap-2">
+                    <button id="mobile-menu-btn" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg md:hidden">
+                        <i class="ri-menu-line text-xl text-gray-600 dark:text-gray-300"></i>
+                    </button>
+                    <button id="desktop-sidebar-toggle" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg hidden md:block">
+                        <i class="ri-menu-fold-line text-xl text-gray-600 dark:text-gray-300"></i>
+                    </button>
+                    <h2 id="page-title" class="text-base md:text-sm md:text-base font-semibold text-gray-800 dark:text-white">Dashboard</h2>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="hidden sm:flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                        <i class="ri-time-line"></i>
+                        <span id="current-time">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Content Area: the router injects each tab's partial here -->
+        <main id="tab-root" class="p-2 md:p-4 space-y-3"></main>
+    </div>
+
+    <!-- Global modals (portal-wide; shared by tabs) -->
+            <!-- Payment Receipt Modal -->
+            <div id="receipt-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md transform transition-all duration-300 scale-95">
+                    <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-sm md:text-base font-semibold text-gray-800 dark:text-white">Payment Receipt</h3>
+                            <button id="close-receipt-modal" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                                <i class="ri-close-line text-xl text-gray-600 dark:text-gray-300"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="receipt-content" class="p-6">
+                        <!-- Receipt content will be populated here -->
+                    </div>
+                    <div class="p-6 border-t border-gray-200 dark:border-gray-700 flex gap-3">
+                        <button id="export-receipt" class="flex-1 bg-primary text-white px-4 py-2 rounded-lg hover:bg-secondary transition-colors flex items-center justify-center gap-2">
+                            <i class="ri-download-line"></i>
+                            Export Receipt
+                        </button>
+                        <button id="print-receipt" class="flex-1 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center justify-center gap-2">
+                            <i class="ri-printer-line"></i>
+                            Print
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Email Update Modal -->
+            <div id="email-update-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md transform transition-all duration-300 scale-95">
+                    <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-sm md:text-base font-semibold text-gray-800 dark:text-white">Update Email Address</h3>
+                            <button onclick="closeEmailUpdateModal()" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                                <i class="ri-close-line text-xl text-gray-600 dark:text-gray-300"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <form id="email-update-form" class="p-6">
+                        <div class="space-y-2">
+                            <div>
+                                <label for="new-email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    <i class="ri-mail-line mr-2 text-primary"></i>New Email Address
+                                </label>
+                                <input 
+                                    type="email" 
+                                    id="new-email" 
+                                    placeholder="Enter your new email address"
+                                    class="w-full px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                    required
+                                >
+                            </div>
+                            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                                <div class="flex items-start">
+                                    <i class="ri-information-line text-blue-600 dark:text-blue-400 mr-2 mt-0.5"></i>
+                                    <div class="text-sm text-blue-700 dark:text-blue-300">
+                                        <p class="font-medium mb-1">Important Notes:</p>
+                                        <ul class="list-disc list-inside space-y-1 text-xs">
+                                            <li>Use a valid email address you have access to</li>
+                                            <li>This will be used for important notifications</li>
+                                            <li>Make sure the email is spelled correctly</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex gap-3 pt-6">
+                            <button type="button" onclick="closeEmailUpdateModal()" class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                Cancel
+                            </button>
+                            <button type="submit" class="flex-1 bg-primary text-white px-4 py-2 rounded-lg hover:bg-secondary transition-colors">
+                                <span id="email-update-btn-text">Update Email</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-6 flex items-center gap-2">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <span class="text-gray-700 dark:text-gray-300">Loading...</span>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" onerror="loadFallbackPDF()"></script>
+    <script>
+        function loadFallbackPDF() {
+            // Fallback CDN if primary fails
+            const script = document.createElement('script');
+            script.src = 'https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js';
+            script.onerror = function() {
+                console.error('All PDF CDNs failed to load');
+            };
+            document.head.appendChild(script);
+        }
+    </script>
+    <script src="/public/js/auth.js"></script>
+    <script src="/src/components/student/portal-core.js"></script>
+    <script src="/src/components/student/portal-router.js"></script>
+    <script src="/src/components/student/tabs/dashboard.js"></script>
+    <script src="/src/components/student/tabs/profile.js"></script>
+    <script src="/src/components/student/tabs/financial.js"></script>
+    <script src="/src/components/student/tabs/payments.js"></script>
+    <script src="/src/components/student/tabs/notes.js"></script>
+    <script src="/src/components/student/tabs/units.js"></script>
+    <script src="/src/components/student/tabs/transcript.js"></script>
+    <script src="/src/components/student/tabs/graduation.js"></script>
+    <script src="/src/components/student/tabs/attachment.js"></script>
+    <!-- uploads.js LAST: its showToast/showLoading/hideLoading intentionally
+         shadow the portal-core copies, matching the monolith load order. -->
+    <script src="/src/components/student/tabs/uploads.js"></script>
+</body>
+</html>

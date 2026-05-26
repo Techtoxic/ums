@@ -1,0 +1,95 @@
+                <!-- Welcome Card -->
+                <div class="bg-gradient-to-r from-primary to-secondary rounded-lg p-3 md:p-4 text-white mb-3 card-hover">
+                    <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
+                        <div>
+                            <h1 class="text-base md:text-lg font-bold mb-1">Welcome, <span class="student-name">Student</span>!</h1>
+                            <p class="text-white/80 text-xs md:text-sm">Hope you're having a great day learning.</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="text-center">
+                                <div class="text-lg md:text-xl font-bold student-year">-</div>
+                                <div class="text-xs text-white/70">Year</div>
+                            </div>
+                            <div class="w-10 h-10 md:w-12 md:h-12 bg-white/20 rounded-full flex items-center justify-center">
+                                <i class="ri-graduation-cap-line text-xl md:text-2xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-2 mb-3">
+                    <!-- Program Cost Card -->
+                    <div class="bg-white dark:bg-gray-800 rounded-lg p-2 md:p-3 shadow-sm border border-gray-200 dark:border-gray-700 card-hover">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="w-8 h-8 md:w-10 md:h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+                                <i class="ri-price-tag-3-line text-blue-600 text-sm md:text-base"></i>
+                            </div>
+                            <span class="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded-full">Program</span>
+                        </div>
+                        <div>
+                            <p class="text-base md:text-lg font-bold text-gray-800 dark:text-white program-cost">Loading...</p>
+                            <p class="text-xs text-gray-600 dark:text-gray-400">Total Program Cost</p>
+                        </div>
+                    </div>
+
+                    <!-- Total Paid Card -->
+                    <div class="bg-white dark:bg-gray-800 rounded-lg p-2 md:p-3 shadow-sm border border-gray-200 dark:border-gray-700 card-hover">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="w-8 h-8 md:w-10 md:h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
+                                <i class="ri-check-double-line text-green-600 text-sm md:text-base"></i>
+                            </div>
+                            <span class="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded-full">Paid</span>
+                        </div>
+                        <div>
+                            <p class="text-base md:text-lg font-bold text-green-600 total-paid">KES 0</p>
+                            <p class="text-xs text-gray-600 dark:text-gray-400">Total Paid</p>
+                        </div>
+                    </div>
+
+                    <!-- Balance Card -->
+                    <div class="bg-white dark:bg-gray-800 rounded-lg p-2 md:p-3 shadow-sm border border-gray-200 dark:border-gray-700 card-hover">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="w-8 h-8 md:w-10 md:h-10 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
+                                <i class="ri-wallet-3-line text-orange-600 text-sm md:text-base"></i>
+                            </div>
+                            <span class="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded-full">Balance</span>
+                        </div>
+                        <div>
+                            <p class="text-base md:text-lg font-bold text-orange-600 balance">KES 0</p>
+                            <p class="text-xs text-gray-600 dark:text-gray-400">Outstanding Balance</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Progress -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-2 md:p-3 shadow-sm border border-gray-200 dark:border-gray-700 mb-3">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-sm md:text-base font-semibold text-gray-800 dark:text-white">Payment Progress</h3>
+                        <span id="payment-percentage" class="text-xs font-medium text-gray-600 dark:text-gray-400">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-1">
+                        <div id="payment-progress" class="bg-gradient-to-r from-primary to-secondary h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                    <div class="flex justify-between text-xs text-gray-600 dark:text-gray-400">
+                        <span>KES 0</span>
+                        <span class="program-cost-text">KES 0</span>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-2 md:p-3 shadow-sm border border-gray-200 dark:border-gray-700">
+                    <h3 class="text-sm md:text-base font-semibold text-gray-800 dark:text-white mb-2">Recent Activity</h3>
+                    <div id="recent-activity" class="space-y-2">
+                        <div class="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <div class="w-6 h-6 md:w-8 md:h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+                                <i class="ri-user-line text-blue-600 text-xs md:text-sm"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-xs md:text-sm font-medium text-gray-800 dark:text-white">Profile updated</p>
+                                <p class="text-xs text-gray-600 dark:text-gray-400">Welcome to the portal</p>
+                            </div>
+                            <span class="text-xs text-gray-500 dark:text-gray-400">Just now</span>
+                        </div>
+                    </div>
+                </div>

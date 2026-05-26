@@ -1,0 +1,73 @@
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                    <div class="p-2 md:p-3 border-b border-gray-200 dark:border-gray-700">
+                        <h2 class="text-base md:text-sm md:text-base font-semibold text-gray-800 dark:text-white">Student Profile</h2>
+                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-0.5">Your academic information and details</p>
+                    </div>
+                    <div class="p-2 md:p-3">
+                        <div class="grid md:grid-cols-2 gap-3">
+                            <!-- Profile Info -->
+                            <div class="space-y-3">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-r from-primary to-secondary rounded-full flex items-center justify-center">
+                                        <i class="ri-user-line text-white text-lg md:text-2xl"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-sm md:text-base font-semibold text-gray-800 dark:text-white student-name">Loading...</h3>
+                                        <p class="text-xs text-gray-600 dark:text-gray-400 student-admission">Loading...</p>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 gap-2">
+                                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
+                                        <label class="text-xs font-medium text-gray-600 dark:text-gray-400">ID Number</label>
+                                        <p class="text-xs md:text-sm text-gray-800 dark:text-white font-medium student-id">Loading...</p>
+                                    </div>
+                                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
+                                        <label class="text-xs font-medium text-gray-600 dark:text-gray-400">Phone Number</label>
+                                        <p class="text-xs md:text-sm text-gray-800 dark:text-white font-medium student-phone">Loading...</p>
+                                    </div>
+                                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
+                                        <label class="text-xs font-medium text-gray-600 dark:text-gray-400">Email Address</label>
+                                        <div class="flex items-center justify-between">
+                                            <p class="text-xs md:text-sm text-gray-800 dark:text-white font-medium student-email">Not set</p>
+                                            <button onclick="openEmailUpdateModal()" class="text-primary hover:text-secondary text-xs font-medium">
+                                                <i class="ri-edit-line mr-1"></i>Update
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
+                                        <label class="text-xs font-medium text-gray-600 dark:text-gray-400">KCSE Grade</label>
+                                        <p class="text-xs md:text-sm text-gray-800 dark:text-white font-medium student-kcse">Loading...</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Academic Info -->
+                            <div class="space-y-2">
+                                <h4 class="text-sm md:text-base font-semibold text-gray-800 dark:text-white">Academic Information</h4>
+                                <div class="grid grid-cols-1 gap-2">
+                                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                                        <label class="text-sm font-medium text-gray-600 dark:text-gray-400">Course</label>
+                                        <p class="text-gray-800 dark:text-white font-medium student-course-name">Loading...</p>
+                                    </div>
+                                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                                        <label class="text-sm font-medium text-gray-600 dark:text-gray-400">Department</label>
+                                        <p class="text-gray-800 dark:text-white font-medium student-department">Loading...</p>
+                                    </div>
+                                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                                        <label class="text-sm font-medium text-gray-600 dark:text-gray-400">Year of Study</label>
+                                        <p class="text-gray-800 dark:text-white font-medium student-year-text">Loading...</p>
+                                    </div>
+                                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                                        <label class="text-sm font-medium text-gray-600 dark:text-gray-400">Intake</label>
+                                        <p class="text-gray-800 dark:text-white font-medium student-intake-combined">Loading...</p>
+                                    </div>
+                                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                                        <label class="text-sm font-medium text-gray-600 dark:text-gray-400">Admission Type</label>
+                                        <p class="text-gray-800 dark:text-white font-medium student-admission-type">Loading...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>

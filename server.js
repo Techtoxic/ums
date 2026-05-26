@@ -729,9 +729,10 @@ app.get('/trainer/dashboard', noCacheAuthPages, (req, res) => {
     serveHTML(res, path.join(__dirname, 'src', 'components', 'trainer', 'TrainerDashboard.html'));
 });
 
-// Serve student pages
+// Serve student pages (legacy alias — serves the SPA shell; the router shows
+// the dashboard tab by default).
 app.get('/student/dashboard', noCacheAuthPages, (req, res) => {
-    serveHTML(res, path.join(__dirname, 'src', 'components', 'student', 'StudentPortalTailwind.html'));
+    serveHTML(res, path.join(__dirname, 'src', 'components', 'student', 'portal-shell.html'));
 });
 
 // Serve admission letter template
@@ -1292,12 +1293,28 @@ app.get('/student/login', noCacheAuthPages, (req, res) => {
     res.sendFile(path.join(__dirname, 'src', 'login.html'));
 });
 
-app.get('/student/portal', noCacheAuthPages, (req, res) => {
-    res.sendFile(path.join(__dirname, 'src', 'components', 'student', 'StudentPortalTailwind.html'));
-});
+// Student portal SPA shell. Served for the base path AND every tab path
+// (/student/portal/<tab>) — the client router (portal-router.js) reads the tab
+// from the URL and shows it. The server stays tab-agnostic; it just serves the
+// shell for any /student/portal/* page request.
+const serveStudentPortalShell = (req, res) => {
+    res.sendFile(path.join(__dirname, 'src', 'components', 'student', 'portal-shell.html'));
+};
+app.get('/student/portal', noCacheAuthPages, serveStudentPortalShell);
+app.get('/student/portal/:tab', noCacheAuthPages, serveStudentPortalShell);
 
-app.get('/student/portal/transcript', noCacheAuthPages, (req, res) => {
-    res.sendFile(path.join(__dirname, 'src', 'components', 'student', 'transcript.html'));
+// Student portal tab partials (HTML fragments the router injects into #tab-root).
+// Whitelist the 10 known tab names so this can never serve an arbitrary file.
+const STUDENT_PARTIALS = new Set([
+    'dashboard', 'profile', 'financial', 'payments', 'uploads',
+    'notes', 'units', 'transcript', 'graduation', 'attachment'
+]);
+app.get('/student/partials/:name.html', noCacheAuthPages, (req, res) => {
+    const name = req.params.name;
+    if (!STUDENT_PARTIALS.has(name)) {
+        return res.status(404).send('Not found');
+    }
+    res.sendFile(path.join(__dirname, 'src', 'components', 'student', 'partials', `${name}.html`));
 });
 
 // Finance routes
