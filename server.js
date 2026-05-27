@@ -23,8 +23,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
-const { cspReportLimiter, generalApiLimiter, authLimiter } = require('./src/middleware/rateLimiters');
-const bcrypt = require('bcryptjs');
+const { cspReportLimiter, generalApiLimiter } = require('./src/middleware/rateLimiters');
 const crypto = require('crypto');
 const path = require('path');
 const fs = require('fs');
@@ -35,23 +34,17 @@ const csp = require('./src/config/csp'); // SEV-M-025: CSP (Report-Only by defau
 // The shim exposes the legacy V1 model APIs backed by Drizzle/Postgres, so the
 // existing call sites in this file keep working AS-IS. See src/db/models.js.
 const { db, client, schema } = require('./src/db');
-const { eq, and, sql, inArray, isNull, desc } = require('drizzle-orm');
+const { eq, and, sql } = require('drizzle-orm');
 const userService = require('./src/services/userService');
 
-const { escapeRegex, isValidId } = require('./src/utils/validators');
-const { hodDepartmentDisplayName, toMoneyNumber, toDecimal128, formatCourseNameServer, DEPT_TEXT_TO_SHORT } = require('./src/utils/formatters');
-const { resolveAcademicPeriod } = require('./src/utils/academicPeriod');
-const { upload, validateUploadBuffer, sniffMagic, sanitizeDisplayName, fileDownloadAuth, verifyFileGrant, b64url, FILE_IMAGE_EXT_RE, MAX_IMAGE_BYTES, UPLOAD_ALLOWLIST } = require('./src/utils/uploads');
-const { generateStudentInitialPassword, generateIntakeCode, isEligibleToApply } = require('./src/utils/studentHelpers');
+const { hodDepartmentDisplayName } = require('./src/utils/formatters');
 const {
     Student, User, AdminStaff, Trainer, HOD,
-    Program, Unit, CommonUnit, CommonUnitAssignment,
-    TrainerAssignment, StudentUnitRegistration,
-    ToolRequest, ToolUpload,
-    AttachmentApplication, GraduationApplication,
-    Notification, StudentNote, StudentUpload,
-    AuditLog, SystemSettings, PasswordReset, LoginOTP,
-    Payment, Payslip,
+    Program, Unit, CommonUnit,
+    TrainerAssignment,
+    ToolRequest,
+    SystemSettings,
+    Payment,
 } = require('./src/db/models');
 
 // Student Schema
@@ -60,10 +53,9 @@ const {
 
 // Import services
 const EmailService = require('./src/utils/emailService');
-const { uploadToS3, getPresignedUrl, deleteFromS3, isS3Configured } = require('./src/utils/s3Service');
 
 // Import authentication middleware
-const { verifyToken, authorize, verifyOwnership, optionalAuth, enforceStudentFirstLogin, signToken, setAuthCookie, clearAuthCookie, generateCsrfToken, setCsrfCookie, clearCsrfCookie, requireCsrfToken } = require('./src/middleware/auth');
+const { verifyToken, enforceStudentFirstLogin, clearAuthCookie, generateCsrfToken, setCsrfCookie, clearCsrfCookie, requireCsrfToken } = require('./src/middleware/auth');
 const jwt = require('jsonwebtoken');
 
 // Initialize email service
@@ -83,7 +75,7 @@ try {
 }
 
 // Import data parsers
-const { getAllTrainers, parseTrainersFile } = require('./src/data/trainerData');
+const { parseTrainersFile } = require('./src/data/trainerData');
 
 const adminAuthRoutes = require('./src/routes/adminAuth');
 
@@ -1275,7 +1267,6 @@ app.use('/api', require('./src/routes/ilo'));
 // ========================================
 
 // Admin routes are defined at the top of the file (after API routes)
-// See lines 630-659
 
 // Student portal pages. The login serves the shared src/login.html. The legacy
 // alias is 'portal' (NOT 'dashboard'): /student/portal[/<tab>] -> /student[/<tab>];
@@ -1347,18 +1338,7 @@ app.get('/', (req, res) => {
 });
 
 // Serve static files after routes
-// Prevent caching for admin dashboard JS file
-app.use(express.static(path.join(__dirname, 'src', 'components'), {
-    setHeaders: (res, filePath) => {
-        if (filePath.includes('adminDashboard.js')) {
-            res.set({
-                'Cache-Control': 'no-cache, no-store, must-revalidate',
-                'Pragma': 'no-cache',
-                'Expires': '0'
-            });
-        }
-    }
-}));
+app.use(express.static(path.join(__dirname, 'src', 'components')));
 // SEV-C-003: `app.use(express.static('.'))` was removed. Serving the project
 // root exposed source, configs and temp_diff.txt to anonymous download. Client
 // assets are served by the explicit mounts above (/src/components, /public,
