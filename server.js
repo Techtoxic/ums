@@ -650,6 +650,9 @@ function noCacheAuthPages(req, res, next) {
     next();
 }
 
+// Tabbed-SPA portal page routing — one reusable registrar for all 9 portals.
+const { registerPortal } = require('./src/routes/portalPages');
+const portalDeps = { serveHTML, noCacheAuthPages, path, __dirname };
 // Minimal request logger - method, path, status only. Never log headers or bodies.
 app.use((req, res, next) => {
     const start = Date.now();
@@ -686,53 +689,13 @@ app.get('/design-system', (req, res) => {
 // Admin staff authentication routes
 app.use('/api/admin/auth', adminAuthRoutes);
 
-// Admin portal pages (MUST BE BEFORE GENERIC ROUTES)
-app.get('/admin/login', noCacheAuthPages, (req, res) => {
-    const filePath = path.join(__dirname, 'src', 'components', 'admin', 'AdminLogin.html');
-    console.log('🔐 Admin login requested');
-    console.log('📂 File path:', filePath);
-    console.log('📁 File exists:', fs.existsSync(filePath));
-    
-    serveHTML(res, filePath);
-});
-
-app.get('/admin/first-login', noCacheAuthPages, (req, res) => {
-    console.log('📝 First login page requested');
-    serveHTML(res, path.join(__dirname, 'src', 'components', 'admin', 'FirstLogin.html'));
-});
-
-// Admin portal SPA. Tabs are served at /admin/<tab>; the client router
-// (portal-router.js) reads the tab from the last path segment. Registration
-// ORDER: /admin/login + /admin/first-login (above), the partials route, the
-// legacy /admin/dashboard/<tab> redirect, and /admin (bare) all precede the
-// /admin/:tab catch-all so it cannot shadow them. /admin/dashboard is now simply
-// the :tab="dashboard" case (handled by the catch-all).
-const ADMIN_TABS = new Set([
-    'dashboard', 'students', 'trainers', 'financial', 'programs', 'reports', 'settings'
-]);
-const serveAdminPortalShell = (req, res) => {
-    serveHTML(res, path.join(__dirname, 'src', 'components', 'admin', 'portal-shell.html'));
-};
-
-// Tab partials (HTML fragments the router injects into #tab-root). Whitelisted.
-app.get('/admin/partials/:name.html', noCacheAuthPages, (req, res) => {
-    const name = req.params.name;
-    if (!ADMIN_TABS.has(name)) {
-        return res.status(404).send('Not found');
-    }
-    res.sendFile(path.join(__dirname, 'src', 'components', 'admin', 'partials', `${name}.html`));
-});
-
-// Backward-compat: legacy /admin/dashboard/<tab> 301-redirects to /admin/<tab>.
-app.get('/admin/dashboard/:tab', (req, res) => res.redirect(301, `/admin/${req.params.tab}`));
-
-// Bare /admin → default tab.
-app.get('/admin', (req, res) => res.redirect(302, '/admin/dashboard'));
-
-// Catch-all: serve the shell only for a whitelisted tab; otherwise next().
-app.get('/admin/:tab', noCacheAuthPages, (req, res, next) => {
-    if (!ADMIN_TABS.has(req.params.tab)) return next();
-    serveAdminPortalShell(req, res);
+// Admin portal pages (login, first-login, SPA tabs). MUST precede generic routes.
+registerPortal(app, portalDeps, {
+    role: 'admin',
+    tabs: ['dashboard', 'students', 'trainers', 'financial', 'programs', 'reports', 'settings'],
+    defaultTab: 'dashboard',
+    login: { file: 'AdminLogin.html' },
+    extraPages: [{ path: '/admin/first-login', file: 'FirstLogin.html' }],
 });
 
 // Serve main login page (Student/Trainer combined)
@@ -740,85 +703,22 @@ app.get('/login', noCacheAuthPages, (req, res) => {
     serveHTML(res, path.join(__dirname, 'src', 'login.html'));
 });
 
-// Serve HOD pages
-app.get('/hod/login', noCacheAuthPages, (req, res) => {
-    serveHTML(res, path.join(__dirname, 'src', 'components', 'hod', 'HODLogin.html'));
+// HOD portal pages. defaultTab 'overview' != 'dashboard', so the legacy
+// /hod/dashboard bare redirect is enabled.
+registerPortal(app, portalDeps, {
+    role: 'hod',
+    tabs: ['overview', 'courses', 'trainers', 'common-units', 'assignments', 'analytics', 'profile'],
+    defaultTab: 'overview',
+    login: { file: 'HODLogin.html' },
+    legacyDashboardRedirect: true,
 });
 
-// HOD portal SPA. Tabs are served at /hod/<tab>; the client router (portal-router.js)
-// reads the tab from the last path segment. The DEFAULT tab is "overview" (there is
-// no "dashboard" tab). Registration ORDER: /hod/login (above), the partials route,
-// the two legacy redirects, and /hod (bare) all precede the /hod/:tab catch-all so it
-// cannot shadow them.
-const HOD_TABS = new Set([
-    'overview', 'courses', 'trainers', 'common-units', 'assignments', 'analytics', 'profile'
-]);
-const serveHODPortalShell = (req, res) => {
-    serveHTML(res, path.join(__dirname, 'src', 'components', 'hod', 'portal-shell.html'));
-};
-
-// Tab partials (HTML fragments the router injects into #tab-root). Whitelisted.
-app.get('/hod/partials/:name.html', noCacheAuthPages, (req, res) => {
-    const name = req.params.name;
-    if (!HOD_TABS.has(name)) {
-        return res.status(404).send('Not found');
-    }
-    res.sendFile(path.join(__dirname, 'src', 'components', 'hod', 'partials', `${name}.html`));
-});
-
-// Backward-compat: the old monolith route was /hod/dashboard. There is no
-// "dashboard" tab now, so it 301-redirects to the default tab /hod/overview.
-app.get('/hod/dashboard', (req, res) => res.redirect(301, '/hod/overview'));
-// Legacy-shape redirect: /hod/dashboard/<tab> → /hod/<tab>.
-app.get('/hod/dashboard/:tab', (req, res) => res.redirect(301, `/hod/${req.params.tab}`));
-
-// Bare /hod → default tab.
-app.get('/hod', (req, res) => res.redirect(302, '/hod/overview'));
-
-// Catch-all: serve the shell only for a whitelisted tab; otherwise next().
-app.get('/hod/:tab', noCacheAuthPages, (req, res, next) => {
-    if (!HOD_TABS.has(req.params.tab)) return next();
-    serveHODPortalShell(req, res);
-});
-
-// Serve trainer pages
-app.get('/trainer/login', noCacheAuthPages, (req, res) => {
-    serveHTML(res, path.join(__dirname, 'src', 'components', 'trainer', 'TrainerLogin.html'));
-});
-
-// Trainer portal SPA. Tabs are served at /trainer/<tab>; the client router
-// (portal-router.js) reads the tab from the last path segment. Registration
-// ORDER: /trainer/login (above), the partials route, the legacy redirect, and
-// /trainer (bare) all precede the /trainer/:tab catch-all so it cannot shadow them.
-const TRAINER_TABS = new Set([
-    'dashboard', 'assignments', 'students', 'tools-of-trade',
-    'payslips', 'notifications', 'profile'
-]);
-const serveTrainerPortalShell = (req, res) => {
-    serveHTML(res, path.join(__dirname, 'src', 'components', 'trainer', 'portal-shell.html'));
-};
-
-// Tab partials (HTML fragments the router injects into #tab-root). Whitelisted.
-app.get('/trainer/partials/:name.html', noCacheAuthPages, (req, res) => {
-    const name = req.params.name;
-    if (!TRAINER_TABS.has(name)) {
-        return res.status(404).send('Not found');
-    }
-    res.sendFile(path.join(__dirname, 'src', 'components', 'trainer', 'partials', `${name}.html`));
-});
-
-// Backward-compat: legacy /trainer/dashboard/<tab> 301-redirects to /trainer/<tab>.
-// (Bare /trainer/dashboard is already correct — it's the dashboard tab, handled
-// by the catch-all below.)
-app.get('/trainer/dashboard/:tab', (req, res) => res.redirect(301, `/trainer/${req.params.tab}`));
-
-// Bare /trainer → default tab.
-app.get('/trainer', (req, res) => res.redirect(302, '/trainer/dashboard'));
-
-// Catch-all: serve the shell only for a whitelisted tab; otherwise next().
-app.get('/trainer/:tab', noCacheAuthPages, (req, res, next) => {
-    if (!TRAINER_TABS.has(req.params.tab)) return next();
-    serveTrainerPortalShell(req, res);
+// Trainer portal pages.
+registerPortal(app, portalDeps, {
+    role: 'trainer',
+    tabs: ['dashboard', 'assignments', 'students', 'tools-of-trade', 'payslips', 'notifications', 'profile'],
+    defaultTab: 'dashboard',
+    login: { file: 'TrainerLogin.html' },
 });
 
 // (The legacy /student/dashboard alias was removed — /student/<tab> now serves
@@ -1377,237 +1277,61 @@ app.use('/api', require('./src/routes/ilo'));
 // Admin routes are defined at the top of the file (after API routes)
 // See lines 630-659
 
-// Student routes
-app.get('/student/login', noCacheAuthPages, (req, res) => {
-    res.sendFile(path.join(__dirname, 'src', 'login.html'));
+// Student portal pages. The login serves the shared src/login.html. The legacy
+// alias is 'portal' (NOT 'dashboard'): /student/portal[/<tab>] -> /student[/<tab>];
+// there is intentionally no /student/dashboard/:tab redirect ('dashboard' is a
+// real tab, served by the catch-all).
+registerPortal(app, portalDeps, {
+    role: 'student',
+    tabs: ['dashboard', 'profile', 'financial', 'payments', 'uploads', 'notes', 'units', 'transcript', 'graduation', 'attachment'],
+    defaultTab: 'dashboard',
+    login: { fileSegments: ['src', 'login.html'] },
+    legacyAlias: 'portal',
+    legacyDashboardRedirect: true,
 });
 
-// Student portal SPA. Tabs are served at /student/<tab>; the client router
-// (portal-router.js) reads the tab from the last path segment. "dashboard" is the
-// default. Registration ORDER matters: /student/login (above), the partials route,
-// and the legacy /student/portal redirects ALL precede the /student/:tab catch-all
-// so it cannot shadow them.
-const STUDENT_TABS = new Set([
-    'dashboard', 'profile', 'financial', 'payments', 'uploads',
-    'notes', 'units', 'transcript', 'graduation', 'attachment'
-]);
-const serveStudentPortalShell = (req, res) => {
-    res.sendFile(path.join(__dirname, 'src', 'components', 'student', 'portal-shell.html'));
-};
-
-// Tab partials (HTML fragments the router injects into #tab-root). Whitelisted so
-// this can never serve an arbitrary file. (Two-segment path — never collides with
-// the /student/:tab catch-all — but registered before it regardless.)
-app.get('/student/partials/:name.html', noCacheAuthPages, (req, res) => {
-    const name = req.params.name;
-    if (!STUDENT_TABS.has(name)) {
-        return res.status(404).send('Not found');
-    }
-    res.sendFile(path.join(__dirname, 'src', 'components', 'student', 'partials', `${name}.html`));
+// Finance portal pages.
+registerPortal(app, portalDeps, {
+    role: 'finance',
+    tabs: ['dashboard', 'analytics', 'reports', 'revenue', 'expenditure', 'collections', 'payslips', 'settings'],
+    defaultTab: 'dashboard',
+    login: { redirectTo: '/admin/login' },
 });
 
-// Backward-compat: old /student/portal[/<tab>] URLs 301-redirect to /student/<tab>.
-// Must precede the catch-all ("portal" is not a whitelisted tab, so the catch-all
-// would otherwise next() these into a 404).
-app.get('/student/portal', (req, res) => res.redirect(301, '/student/dashboard'));
-app.get('/student/portal/:tab', (req, res) => res.redirect(301, `/student/${req.params.tab}`));
-
-// Bare /student → default tab.
-app.get('/student', (req, res) => res.redirect(302, '/student/dashboard'));
-
-// Catch-all: serve the shell only for a whitelisted tab; otherwise next() so
-// unrelated /student/* routes (and a real 404) still work.
-app.get('/student/:tab', noCacheAuthPages, (req, res, next) => {
-    if (!STUDENT_TABS.has(req.params.tab)) return next();
-    serveStudentPortalShell(req, res);
+// Registrar portal pages.
+registerPortal(app, portalDeps, {
+    role: 'registrar',
+    tabs: ['dashboard', 'admission', 'management', 'promotion', 'courses', 'enrollment', 'graduation', 'faculty', 'department', 'reports'],
+    defaultTab: 'dashboard',
+    login: { redirectTo: '/admin/login' },
 });
 
-// Finance routes
-app.get('/finance/login', (req, res) => res.redirect('/admin/login'));
-
-// Finance portal SPA. Tabs are served at /finance/<tab>; the client router
-// (portal-router.js) reads the tab from the last path segment. Registration
-// ORDER: /finance/login (above), the partials route, the legacy
-// /finance/dashboard/<tab> redirect, and /finance (bare) all precede the
-// /finance/:tab catch-all so it cannot shadow them. /finance/dashboard is now the
-// :tab="dashboard" case (handled by the catch-all).
-const FINANCE_TABS = new Set([
-    'dashboard', 'analytics', 'reports', 'revenue',
-    'expenditure', 'collections', 'payslips', 'settings'
-]);
-const serveFinancePortalShell = (req, res) => {
-    res.sendFile(path.join(__dirname, 'src', 'components', 'finance', 'portal-shell.html'));
-};
-
-// Tab partials (HTML fragments the router injects into #tab-root). Whitelisted.
-app.get('/finance/partials/:name.html', noCacheAuthPages, (req, res) => {
-    const name = req.params.name;
-    if (!FINANCE_TABS.has(name)) {
-        return res.status(404).send('Not found');
-    }
-    res.sendFile(path.join(__dirname, 'src', 'components', 'finance', 'partials', `${name}.html`));
+// Dean portal pages. defaultTab 'students' != 'dashboard', so the legacy
+// /dean/dashboard bare redirect is enabled.
+registerPortal(app, portalDeps, {
+    role: 'dean',
+    tabs: ['students', 'notes', 'tools-of-trade'],
+    defaultTab: 'students',
+    login: { redirectTo: '/admin/login' },
+    legacyDashboardRedirect: true,
 });
 
-// Backward-compat: legacy /finance/dashboard/<tab> 301-redirects to /finance/<tab>.
-app.get('/finance/dashboard/:tab', (req, res) => res.redirect(301, `/finance/${req.params.tab}`));
-
-// Bare /finance → default tab.
-app.get('/finance', (req, res) => res.redirect(302, '/finance/dashboard'));
-
-// Catch-all: serve the shell only for a whitelisted tab; otherwise next().
-app.get('/finance/:tab', noCacheAuthPages, (req, res, next) => {
-    if (!FINANCE_TABS.has(req.params.tab)) return next();
-    serveFinancePortalShell(req, res);
+// Deputy portal pages.
+registerPortal(app, portalDeps, {
+    role: 'deputy',
+    tabs: ['dashboard', 'students', 'trainers', 'courses', 'units', 'tools', 'notifications'],
+    defaultTab: 'dashboard',
+    login: { redirectTo: '/admin/login' },
 });
 
-// Registrar routes
-app.get('/registrar/login', (req, res) => res.redirect('/admin/login'));
-
-// Registrar portal SPA. Tabs are served at /registrar/<tab>; /registrar/dashboard
-// is simply the dashboard tab. The client router reads the tab from the last path
-// segment. Registration ORDER: /registrar/login (above), the partials route, and
-// the legacy /registrar/dashboard/<tab> redirect all precede the /registrar/:tab
-// catch-all so it cannot shadow them.
-const REGISTRAR_TABS = new Set([
-    'dashboard', 'admission', 'management', 'promotion', 'courses',
-    'enrollment', 'graduation', 'faculty', 'department', 'reports'
-]);
-const serveRegistrarPortalShell = (req, res) => {
-    res.sendFile(path.join(__dirname, 'src', 'components', 'registrar', 'portal-shell.html'));
-};
-
-// Tab partials (HTML fragments the router injects into #tab-root). Whitelisted.
-app.get('/registrar/partials/:name.html', noCacheAuthPages, (req, res) => {
-    const name = req.params.name;
-    if (!REGISTRAR_TABS.has(name)) {
-        return res.status(404).send('Not found');
-    }
-    res.sendFile(path.join(__dirname, 'src', 'components', 'registrar', 'partials', `${name}.html`));
-});
-
-// Backward-compat: old /registrar/dashboard/<tab> URLs 301-redirect to
-// /registrar/<tab>. (Bare /registrar/dashboard is already correct under the new
-// scheme — it's the dashboard tab, handled by the catch-all below.)
-app.get('/registrar/dashboard/:tab', (req, res) => res.redirect(301, `/registrar/${req.params.tab}`));
-
-// Bare /registrar → default tab.
-app.get('/registrar', (req, res) => res.redirect(302, '/registrar/dashboard'));
-
-// Catch-all: serve the shell only for a whitelisted tab; otherwise next().
-app.get('/registrar/:tab', noCacheAuthPages, (req, res, next) => {
-    if (!REGISTRAR_TABS.has(req.params.tab)) return next();
-    serveRegistrarPortalShell(req, res);
-});
-
-// Dean routes
-app.get('/dean/login', (req, res) => res.redirect('/admin/login'));
-
-// Dean portal SPA. Tabs are served at /dean/<tab>; the client router
-// (portal-router.js) reads the tab from the last path segment. The DEFAULT tab is
-// "students" (there is no "dashboard" tab). Registration ORDER: /dean/login
-// (above), the partials route, the two legacy redirects, and /dean (bare) all
-// precede the /dean/:tab catch-all so it cannot shadow them.
-const DEAN_TABS = new Set(['students', 'notes', 'tools-of-trade']);
-const serveDeanPortalShell = (req, res) => {
-    res.sendFile(path.join(__dirname, 'src', 'components', 'dean', 'portal-shell.html'));
-};
-
-// Tab partials (HTML fragments the router injects into #tab-root). Whitelisted.
-app.get('/dean/partials/:name.html', noCacheAuthPages, (req, res) => {
-    const name = req.params.name;
-    if (!DEAN_TABS.has(name)) {
-        return res.status(404).send('Not found');
-    }
-    res.sendFile(path.join(__dirname, 'src', 'components', 'dean', 'partials', `${name}.html`));
-});
-
-// Backward-compat: the old monolith route was /dean/dashboard. There is no
-// "dashboard" tab, so it 301-redirects to the default tab /dean/students.
-app.get('/dean/dashboard', (req, res) => res.redirect(301, '/dean/students'));
-// Legacy-shape redirect: /dean/dashboard/<tab> → /dean/<tab>.
-app.get('/dean/dashboard/:tab', (req, res) => res.redirect(301, `/dean/${req.params.tab}`));
-
-// Bare /dean → default tab.
-app.get('/dean', (req, res) => res.redirect(302, '/dean/students'));
-
-// Catch-all: serve the shell only for a whitelisted tab; otherwise next().
-app.get('/dean/:tab', noCacheAuthPages, (req, res, next) => {
-    if (!DEAN_TABS.has(req.params.tab)) return next();
-    serveDeanPortalShell(req, res);
-});
-
-// Deputy routes
-app.get('/deputy/login', (req, res) => res.redirect('/admin/login'));
-
-// Deputy portal SPA. Tabs are served at /deputy/<tab>; the client router
-// (portal-router.js) reads the tab from the last path segment. Registration
-// ORDER: /deputy/login (above), the partials route, the legacy
-// /deputy/dashboard/<tab> redirect, and /deputy (bare) all precede the
-// /deputy/:tab catch-all so it cannot shadow them. /deputy/dashboard is now the
-// :tab="dashboard" case (handled by the catch-all).
-const DEPUTY_TABS = new Set([
-    'dashboard', 'students', 'trainers', 'courses', 'units', 'tools', 'notifications'
-]);
-const serveDeputyPortalShell = (req, res) => {
-    res.sendFile(path.join(__dirname, 'src', 'components', 'deputy', 'portal-shell.html'));
-};
-
-// Tab partials (HTML fragments the router injects into #tab-root). Whitelisted.
-app.get('/deputy/partials/:name.html', noCacheAuthPages, (req, res) => {
-    const name = req.params.name;
-    if (!DEPUTY_TABS.has(name)) {
-        return res.status(404).send('Not found');
-    }
-    res.sendFile(path.join(__dirname, 'src', 'components', 'deputy', 'partials', `${name}.html`));
-});
-
-// Backward-compat: legacy /deputy/dashboard/<tab> 301-redirects to /deputy/<tab>.
-app.get('/deputy/dashboard/:tab', (req, res) => res.redirect(301, `/deputy/${req.params.tab}`));
-
-// Bare /deputy → default tab.
-app.get('/deputy', (req, res) => res.redirect(302, '/deputy/dashboard'));
-
-// Catch-all: serve the shell only for a whitelisted tab; otherwise next().
-app.get('/deputy/:tab', noCacheAuthPages, (req, res, next) => {
-    if (!DEPUTY_TABS.has(req.params.tab)) return next();
-    serveDeputyPortalShell(req, res);
-});
-
-// ILO routes (Industrial Liaison Office)
-app.get('/ilo/login', (req, res) => res.redirect('/admin/login'));
-
-// ILO portal SPA. Tabs are served at /ilo/<tab>; the client router
-// (portal-router.js) reads the tab from the last path segment. The DEFAULT tab is
-// "graduation-applications" (there is no "dashboard" tab). Registration ORDER:
-// /ilo/login (above), the partials route, the two legacy redirects, and /ilo
-// (bare) all precede the /ilo/:tab catch-all so it cannot shadow them.
-const ILO_TABS = new Set(['graduation-applications', 'attachment-applications']);
-const serveIloPortalShell = (req, res) => {
-    res.sendFile(path.join(__dirname, 'src', 'components', 'ilo', 'portal-shell.html'));
-};
-
-// Tab partials (HTML fragments the router injects into #tab-root). Whitelisted.
-app.get('/ilo/partials/:name.html', noCacheAuthPages, (req, res) => {
-    const name = req.params.name;
-    if (!ILO_TABS.has(name)) {
-        return res.status(404).send('Not found');
-    }
-    res.sendFile(path.join(__dirname, 'src', 'components', 'ilo', 'partials', `${name}.html`));
-});
-
-// Backward-compat: the old monolith route was /ilo/dashboard. There is no
-// "dashboard" tab, so it 301-redirects to the default tab /ilo/graduation-applications.
-app.get('/ilo/dashboard', (req, res) => res.redirect(301, '/ilo/graduation-applications'));
-// Legacy-shape redirect: /ilo/dashboard/<tab> → /ilo/<tab>.
-app.get('/ilo/dashboard/:tab', (req, res) => res.redirect(301, `/ilo/${req.params.tab}`));
-
-// Bare /ilo → default tab.
-app.get('/ilo', (req, res) => res.redirect(302, '/ilo/graduation-applications'));
-
-// Catch-all: serve the shell only for a whitelisted tab; otherwise next().
-app.get('/ilo/:tab', noCacheAuthPages, (req, res, next) => {
-    if (!ILO_TABS.has(req.params.tab)) return next();
-    serveIloPortalShell(req, res);
+// ILO portal pages. defaultTab 'graduation-applications' != 'dashboard', so the
+// legacy /ilo/dashboard bare redirect is enabled.
+registerPortal(app, portalDeps, {
+    role: 'ilo',
+    tabs: ['graduation-applications', 'attachment-applications'],
+    defaultTab: 'graduation-applications',
+    login: { redirectTo: '/admin/login' },
+    legacyDashboardRedirect: true,
 });
 
 // CIBEC routes (Competency-Based Education & Training Center)
