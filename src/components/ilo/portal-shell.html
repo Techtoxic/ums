@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ILO Dashboard - University Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/public/css/dashboard-styles.css">
+    <script src="/public/js/dashboard-theme.js"></script>
+    <script>
+        // Tailwind alias palette realigned to the EDTTI design system.
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#7A0C0C',     // maroon
+                        secondary: '#5C0808',   // maroon-dark
+                        accent: '#D4A017',      // gold
+                        success: '#10B981',
+                        warning: '#F59E0B',
+                        danger: '#EF4444',
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="/public/js/auth.js"></script>
+    <link rel="stylesheet" href="/public/css/ilo-portal.css">
+</head>
+<body class="bg-gray-50 dark:bg-gray-900">
+    <!-- Header -->
+    <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <h1 class="text-xl font-semibold text-gray-900 dark:text-gray-100">ILO Dashboard</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-sm text-gray-500 dark:text-gray-400" id="current-time"></span>
+                    <button data-theme-toggle class="theme-toggle" aria-label="Toggle dark mode">
+                        <i class="ri-sun-line theme-icon-light"></i>
+                        <i class="ri-moon-line theme-icon-dark"></i>
+                    </button>
+                    <button id="logoutBtn" class="btn btn--danger btn--icon" aria-label="Logout">
+                        <i class="ri-logout-circle-line"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <!-- Tab Navigation -->
+        <div class="mb-6">
+            <div class="border-b border-gray-200 dark:border-gray-700">
+                <nav class="-mb-px flex space-x-8">
+                    <button onclick="showTab('graduation-applications')"
+                            class="tab-button btn btn--primary">
+                        <i class="ri-graduation-cap-line mr-2"></i>
+                        Graduation Applications
+                    </button>
+                    <button onclick="showTab('attachment-applications')"
+                            class="tab-button btn btn--ghost">
+                        <i class="ri-briefcase-line mr-2"></i>
+                        Attachment Applications
+                    </button>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Content area: the router injects each tab's partial here -->
+        <main id="tab-root"></main>
+    </div>
+
+    <!-- Global modals (portal-wide) -->
+    <!-- Review Modal -->
+    <div id="review-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white dark:bg-gray-800">
+            <div class="mt-3">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100" id="modal-title">Review Application</h3>
+                    <button onclick="closeReviewModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="ri-close-line text-xl"></i>
+                    </button>
+                </div>
+                
+                <div id="modal-content" class="mb-6">
+                    <!-- Content will be loaded here -->
+                </div>
+                
+                <div class="flex justify-end space-x-3">
+                    <button onclick="updateApplicationStatus('rejected')" 
+                            class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                        <i class="ri-close-circle-line mr-1"></i>Reject
+                    </button>
+                    <button onclick="updateApplicationStatus('under_review')" 
+                            class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700">
+                        <i class="ri-time-line mr-1"></i>Under Review
+                    </button>
+                    <button onclick="updateApplicationStatus('approved')" 
+                            class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                        <i class="ri-check-circle-line mr-1"></i>Approve
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg transform translate-y-full transition-transform duration-300 z-50">
+        <div class="flex items-center">
+            <i class="ri-check-circle-line mr-2"></i>
+            <span id="toast-message">Success!</span>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/src/components/ilo/portal-core.js"></script>
+    <script src="/src/components/ilo/portal-router.js"></script>
+    <script src="/src/components/ilo/tabs/graduation-applications.js"></script>
+    <script src="/src/components/ilo/tabs/attachment-applications.js"></script>
+</body>
+</html>

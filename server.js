@@ -1576,8 +1576,38 @@ app.get('/deputy/:tab', noCacheAuthPages, (req, res, next) => {
 // ILO routes (Industrial Liaison Office)
 app.get('/ilo/login', (req, res) => res.redirect('/admin/login'));
 
-app.get('/ilo/dashboard', noCacheAuthPages, (req, res) => {
-    res.sendFile(path.join(__dirname, 'src', 'components', 'ilo', 'ILODashboard.html'));
+// ILO portal SPA. Tabs are served at /ilo/<tab>; the client router
+// (portal-router.js) reads the tab from the last path segment. The DEFAULT tab is
+// "graduation-applications" (there is no "dashboard" tab). Registration ORDER:
+// /ilo/login (above), the partials route, the two legacy redirects, and /ilo
+// (bare) all precede the /ilo/:tab catch-all so it cannot shadow them.
+const ILO_TABS = new Set(['graduation-applications', 'attachment-applications']);
+const serveIloPortalShell = (req, res) => {
+    res.sendFile(path.join(__dirname, 'src', 'components', 'ilo', 'portal-shell.html'));
+};
+
+// Tab partials (HTML fragments the router injects into #tab-root). Whitelisted.
+app.get('/ilo/partials/:name.html', noCacheAuthPages, (req, res) => {
+    const name = req.params.name;
+    if (!ILO_TABS.has(name)) {
+        return res.status(404).send('Not found');
+    }
+    res.sendFile(path.join(__dirname, 'src', 'components', 'ilo', 'partials', `${name}.html`));
+});
+
+// Backward-compat: the old monolith route was /ilo/dashboard. There is no
+// "dashboard" tab, so it 301-redirects to the default tab /ilo/graduation-applications.
+app.get('/ilo/dashboard', (req, res) => res.redirect(301, '/ilo/graduation-applications'));
+// Legacy-shape redirect: /ilo/dashboard/<tab> → /ilo/<tab>.
+app.get('/ilo/dashboard/:tab', (req, res) => res.redirect(301, `/ilo/${req.params.tab}`));
+
+// Bare /ilo → default tab.
+app.get('/ilo', (req, res) => res.redirect(302, '/ilo/graduation-applications'));
+
+// Catch-all: serve the shell only for a whitelisted tab; otherwise next().
+app.get('/ilo/:tab', noCacheAuthPages, (req, res, next) => {
+    if (!ILO_TABS.has(req.params.tab)) return next();
+    serveIloPortalShell(req, res);
 });
 
 // CIBEC routes (Competency-Based Education & Training Center)

@@ -1,0 +1,35 @@
+            <div class="bg-white dark:bg-gray-800 shadow rounded-lg">
+                <div class="px-4 py-5 sm:p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">Graduation Applications</h2>
+                        <div class="flex space-x-4">
+                            <select id="graduation-status-filter" class="border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1 text-sm">
+                                <option value="">All Status</option>
+                                <option value="pending">Pending</option>
+                                <option value="approved">Approved</option>
+                                <option value="rejected">Rejected</option>
+                                <option value="under_review">Under Review</option>
+                            </select>
+                            <select id="graduation-department-filter" class="border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1 text-sm">
+                                <option value="">All Departments</option>
+                                <option value="engineering_technology">Engineering Technology</option>
+                                <option value="business_studies">Business Studies</option>
+                                <option value="applied_sciences">Applied Sciences</option>
+                            </select>
+                            <button onclick="printGraduationList()" class="px-4 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700">
+                                <i class="ri-printer-line mr-1"></i>Print
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="graduation-applications-list" class="space-y-4">
+                        <!-- Applications will be loaded here -->
+                    </div>
+                    
+                    <div id="graduation-empty" class="text-center py-12 hidden">
+                        <i class="ri-graduation-cap-line text-4xl text-gray-400 mb-4"></i>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No Graduation Applications</h3>
+                        <p class="text-gray-500 dark:text-gray-400">No graduation applications have been submitted yet.</p>
+                    </div>
+                </div>
+            </div>
