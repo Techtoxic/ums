@@ -1,0 +1,36 @@
+                <div class="space-y-6">
+                    <!-- Payslips Header -->
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+                                <div>
+                                    <h2 class="text-headline-sm text-gray-900 dark:text-white">My Payslips</h2>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">View and manage your salary payslips</p>
+                                </div>
+                                <button onclick="refreshPayslips()" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/80 transition-colors text-sm font-medium">
+                                    <i class="ri-refresh-line mr-2"></i>Refresh
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Loading State -->
+                        <div id="payslips-loading" class="hidden px-6 py-12 text-center">
+                            <i class="ri-loader-4-line text-4xl text-primary animate-spin mb-4"></i>
+                            <p class="text-gray-600 dark:text-gray-400">Loading payslips...</p>
+                        </div>
+                        
+                        <!-- Empty State -->
+                        <div id="payslips-empty" class="hidden px-6 py-12 text-center">
+                            <div class="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="ri-file-text-line text-2xl text-gray-400"></i>
+                            </div>
+                            <p class="text-gray-600 dark:text-gray-400 font-medium">No Payslips Yet</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-500 mt-2">Your payslips will appear here once generated</p>
+                        </div>
+                        
+                        <!-- Payslips List -->
+                        <div id="payslips-list" class="divide-y divide-gray-200 dark:divide-gray-700">
+                            <!-- Payslips will be loaded here dynamically -->
+                        </div>
+                    </div>
+                </div>

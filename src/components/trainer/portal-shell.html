@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EDTTI Trainer Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.0.0/fonts/remixicon.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#7A0C0C',
+                        secondary: '#8B2A2A',
+                        success: '#10b981',
+                        warning: '#f59e0b',
+                        danger: '#ef4444',
+                        gray: {
+                            50: '#f9fafb',
+                            100: '#f3f4f6',
+                            200: '#e5e7eb',
+                            300: '#d1d5db',
+                            400: '#9ca3af',
+                            500: '#6b7280',
+                            600: '#4b5563',
+                            700: '#374151',
+                            800: '#1f2937',
+                            900: '#111827'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-in-out',
+                        'slide-up': 'slideUp 0.3s ease-out',
+                        'bounce-gentle': 'bounceGentle 2s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' }
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(100%)' },
+                            '100%': { transform: 'translateY(0)' }
+                        },
+                        bounceGentle: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-5px)' }
+                        }
+                    }
+                }
+            },
+            darkMode: 'class'
+        }
+    </script>
+    <link rel="stylesheet" href="/public/css/dashboard-styles.css">
+    <link rel="stylesheet" href="/public/css/trainer-portal.css">
+    <script src="/public/js/auth.js"></script>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 font-sans transition-colors duration-300">
+    <!-- Auth gate: covers the dashboard until requireAuth() resolves, suppressing
+         the bfcache back-button flash. Skeleton matches trainer layout (7 sidebar
+         nav items: Dashboard, Assignments, Students, Tools, Payslips, Notifications,
+         Profile; 4 stat tiles: Active Assignments, My Students, Courses, Department). -->
+    <div id="authGate" class="auth-gate" aria-live="polite" aria-busy="true">
+        <aside class="skel-sidebar">
+            <div class="skel skel-sidebar__logo"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__user"></div>
+        </aside>
+        <main class="skel-main">
+            <div class="skel-topbar">
+                <div class="skel skel-topbar__title"></div>
+                <div class="skel skel-topbar__action"></div>
+            </div>
+            <div class="skel skel-welcome"></div>
+            <div class="skel-tiles" style="--tile-count: 4;">
+                <div class="skel skel-tile"></div>
+                <div class="skel skel-tile"></div>
+                <div class="skel skel-tile"></div>
+                <div class="skel skel-tile"></div>
+            </div>
+            <div class="skel skel-content"></div>
+        </main>
+    </div>
+
+    <!-- Mobile Menu Overlay -->
+    <div id="mobileOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden md:hidden"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar fixed left-0 top-0 h-full w-64 bg-white dark:bg-gray-800 shadow-xl z-50 transition-all duration-300 ease-in-out border-r border-gray-200 dark:border-gray-700">
+        <!-- Logo Section -->
+        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 gradient-bg rounded-xl flex items-center justify-center">
+                        <i class="ri-graduation-cap-line text-white text-xl"></i>
+                    </div>
+                    <div class="sidebar-title">
+                        <h1 class="text-lg font-bold text-gray-900 dark:text-white">EDTTI</h1>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Trainer Portal</p>
+                    </div>
+                </div>
+                <button id="sidebarToggle" class="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                    <i class="ri-menu-fold-line text-gray-600 dark:text-gray-300"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="p-4 space-y-2">
+            <a href="/trainer/dashboard" id="nav-dashboard" class="nav-item flex items-center space-x-3 p-3 rounded-xl bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-light transition-all duration-200">
+                <i class="ri-dashboard-3-line text-lg"></i>
+                <span class="sidebar-text font-medium">Dashboard</span>
+            </a>
+            
+            <a href="/trainer/assignments" id="nav-assignments" class="nav-item flex items-center space-x-3 p-3 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-all duration-200">
+                <i class="ri-task-line text-lg"></i>
+                <span class="sidebar-text font-medium">My Assignments</span>
+            </a>
+            
+            <a href="/trainer/students" id="nav-students" class="nav-item flex items-center space-x-3 p-3 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-all duration-200">
+                <i class="ri-group-line text-lg"></i>
+                <span class="sidebar-text font-medium">My Students</span>
+            </a>
+            
+            <a href="/trainer/tools-of-trade" id="nav-tools-of-trade" class="nav-item flex items-center space-x-3 p-3 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-all duration-200">
+                <i class="ri-tools-line text-lg"></i>
+                <span class="sidebar-text font-medium">Tools of Trade</span>
+            </a>
+            
+            <a href="/trainer/payslips" id="nav-payslips" class="nav-item flex items-center space-x-3 p-3 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-all duration-200 relative">
+                <i class="ri-file-text-line text-lg"></i>
+                <span class="sidebar-text font-medium">My Payslips</span>
+                <span id="payslip-unread-badge" class="hidden absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">0</span>
+            </a>
+            
+            <a href="/trainer/notifications" id="nav-notifications" class="nav-item flex items-center space-x-3 p-3 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-all duration-200 relative">
+                <i class="ri-notification-3-line text-lg"></i>
+                <span class="sidebar-text font-medium">Notifications</span>
+                <span id="notification-badge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">0</span>
+            </a>
+            
+            <a href="/trainer/profile" id="nav-profile" class="nav-item flex items-center space-x-3 p-3 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-all duration-200">
+                <i class="ri-user-settings-line text-lg"></i>
+                <span class="sidebar-text font-medium">Profile</span>
+            </a>
+        </nav>
+
+        <!-- User Profile Section -->
+        <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 dark:border-gray-700">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
+                    <i class="ri-user-line text-white"></i>
+                </div>
+                <div class="sidebar-title flex-1 min-w-0">
+                    <p class="text-sm font-medium text-gray-900 dark:text-white truncate" id="sidebarTrainerName">Loading...</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 truncate" id="sidebarDepartment">Loading...</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div id="mainContent" class="md:ml-64 transition-all duration-300 ease-in-out">
+        <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30">
+            <div class="flex items-center justify-between px-4 py-3">
+                <div class="flex items-center gap-4">
+                    <button id="mobileMenuToggle" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg md:hidden">
+                        <i class="ri-menu-line text-xl text-gray-600 dark:text-gray-300"></i>
+                    </button>
+                    <button id="desktopSidebarToggle" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg hidden md:block">
+                        <i class="ri-menu-fold-line text-xl text-gray-600 dark:text-gray-300"></i>
+                    </button>
+                    <h2 id="pageTitle" class="text-headline text-gray-800 dark:text-white">Dashboard</h2>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="hidden sm:flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                        <i class="ri-time-line"></i>
+                        <span id="currentTime">Loading...</span>
+                    </div>
+                    <button id="themeToggle" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                        <i class="ri-moon-line text-gray-600 dark:text-gray-300 dark:hidden"></i>
+                        <i class="ri-sun-line text-gray-300 hidden dark:block"></i>
+                    </button>
+                    <button onclick="logout()" class="px-3 py-1.5 bg-danger text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium">
+                        <i class="ri-logout-circle-r-line text-sm mr-1 sm:mr-2"></i>
+                        <span class="hidden sm:inline">Logout</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Content Area: the router injects each tab's partial here -->
+        <main id="tab-root" class="p-4 md:p-6 space-y-6"></main>
+    </div>
+
+    <!-- Global elements / modals (portal-wide) -->
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="fixed top-4 right-4 space-y-2 z-50"></div>
+
+    <!-- Bulk Upload Modal -->
+    <div id="bulkUploadModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-xl max-w-4xl w-full p-6 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-headline text-gray-900 dark:text-white">Bulk Upload Tools of Trade</h3>
+                <button onclick="closeBulkUploadModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                    <i class="ri-close-line text-2xl"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-6">
+                <!-- Tool Type Selection -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Select Tool Type for Bulk Upload</label>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        <button onclick="selectBulkToolType('course_outline')" class="bulk-tool-type-btn p-4 border-2 border-gray-200 dark:border-gray-600 rounded-lg hover:border-primary hover:bg-primary/5 transition-all text-center">
+                            <i class="ri-file-text-line text-2xl text-gray-400 mb-2"></i>
+                            <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Course Outline</p>
+                        </button>
+                        <button onclick="selectBulkToolType('learning_plan')" class="bulk-tool-type-btn p-4 border-2 border-gray-200 dark:border-gray-600 rounded-lg hover:border-primary hover:bg-primary/5 transition-all text-center">
+                            <i class="ri-book-open-line text-2xl text-gray-400 mb-2"></i>
+                            <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Learning Plan</p>
+                        </button>
+                        <button onclick="selectBulkToolType('record_of_work')" class="bulk-tool-type-btn p-4 border-2 border-gray-200 dark:border-gray-600 rounded-lg hover:border-primary hover:bg-primary/5 transition-all text-center">
+                            <i class="ri-clipboard-line text-2xl text-gray-400 mb-2"></i>
+                            <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Record of Work</p>
+                        </button>
+                        <button onclick="selectBulkToolType('session_plan')" class="bulk-tool-type-btn p-4 border-2 border-gray-200 dark:border-gray-600 rounded-lg hover:border-primary hover:bg-primary/5 transition-all text-center">
+                            <i class="ri-calendar-line text-2xl text-gray-400 mb-2"></i>
+                            <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Session Plan</p>
+                        </button>
+                        <button onclick="selectBulkToolType('exam')" class="bulk-tool-type-btn p-4 border-2 border-gray-200 dark:border-gray-600 rounded-lg hover:border-primary hover:bg-primary/5 transition-all text-center">
+                            <i class="ri-file-list-3-line text-2xl text-gray-400 mb-2"></i>
+                            <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Exam</p>
+                        </button>
+                        <button onclick="selectBulkToolType('tvet_license')" class="bulk-tool-type-btn p-4 border-2 border-gray-200 dark:border-gray-600 rounded-lg hover:border-primary hover:bg-primary/5 transition-all text-center">
+                            <i class="ri-award-line text-2xl text-gray-400 mb-2"></i>
+                            <p class="text-sm font-medium text-gray-700 dark:text-gray-300">TVET License</p>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- File Upload Area -->
+                <div id="bulkUploadArea" class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center hover:border-primary hover:bg-primary/5 transition-all cursor-pointer" onclick="document.getElementById('bulkFileInput').click()">
+                    <i class="ri-upload-cloud-2-line text-4xl text-gray-400 mb-4"></i>
+                    <p class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">Click to upload multiple files or drag and drop</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">PDF, DOC, or DOCX files only (Max 1MB each)</p>
+                    <input type="file" id="bulkFileInput" class="hidden" accept=".pdf,.doc,.docx" multiple onchange="handleBulkFileSelect(event)">
+                </div>
+
+                <!-- Selected Files List -->
+                <div id="bulkFilesList" class="hidden">
+                    <h4 class="text-lg font-medium text-gray-900 dark:text-white mb-3">Selected Files</h4>
+                    <div id="bulkFilesContainer" class="space-y-2 max-h-60 overflow-y-auto">
+                        <!-- Files will be listed here -->
+                    </div>
+                </div>
+
+                <!-- Upload Progress -->
+                <div id="bulkUploadProgress" class="hidden">
+                    <div class="bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-2">
+                        <div id="bulkProgressBar" class="bg-primary h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                    <p id="bulkProgressText" class="text-sm text-gray-600 dark:text-gray-400">Uploading files...</p>
+                </div>
+            </div>
+
+            <div class="flex justify-end space-x-3 mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                <button onclick="closeBulkUploadModal()" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    Cancel
+                </button>
+                <button id="bulkUploadBtn" onclick="uploadBulkTools()" disabled class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i class="ri-upload-2-line mr-2"></i>Upload All Files
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Phone Update Modal -->
+    <div id="phoneUpdateModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-xl max-w-md w-full p-6">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="ri-phone-line text-primary text-2xl"></i>
+                </div>
+                <h3 class="text-headline-sm text-gray-900 dark:text-white mb-2">Update Contact Information</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400">Help us keep your contact information up to date</p>
+            </div>
+            
+            <form id="phoneUpdateForm" class="space-y-4">
+                <div>
+                    <label for="modalPhone" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Phone Number (Optional)</label>
+                    <input type="tel" id="modalPhone" placeholder="Enter your phone number" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                </div>
+                
+                <div>
+                    <label for="modalEmail" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email Address (Optional)</label>
+                    <input type="email" id="modalEmail" placeholder="Update your email address" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                </div>
+                
+                <div class="flex space-x-3 pt-4">
+                    <button type="button" onclick="closePhoneModal()" class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm font-medium">
+                        Skip for now
+                    </button>
+                    <button type="submit" class="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors text-sm font-medium">
+                        Update
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/src/components/trainer/portal-core.js"></script>
+    <script src="/src/components/trainer/portal-router.js"></script>
+    <script src="/src/components/trainer/tabs/dashboard.js"></script>
+    <script src="/src/components/trainer/tabs/assignments.js"></script>
+    <script src="/src/components/trainer/tabs/students.js"></script>
+    <script src="/src/components/trainer/tabs/tools-of-trade.js"></script>
+    <script src="/src/components/trainer/tabs/payslips.js"></script>
+    <script src="/src/components/trainer/tabs/notifications.js"></script>
+    <script src="/src/components/trainer/tabs/profile.js"></script>
+</body>
+</html>

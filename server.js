@@ -725,8 +725,39 @@ app.get('/trainer/login', noCacheAuthPages, (req, res) => {
     serveHTML(res, path.join(__dirname, 'src', 'components', 'trainer', 'TrainerLogin.html'));
 });
 
-app.get('/trainer/dashboard', noCacheAuthPages, (req, res) => {
-    serveHTML(res, path.join(__dirname, 'src', 'components', 'trainer', 'TrainerDashboard.html'));
+// Trainer portal SPA. Tabs are served at /trainer/<tab>; the client router
+// (portal-router.js) reads the tab from the last path segment. Registration
+// ORDER: /trainer/login (above), the partials route, the legacy redirect, and
+// /trainer (bare) all precede the /trainer/:tab catch-all so it cannot shadow them.
+const TRAINER_TABS = new Set([
+    'dashboard', 'assignments', 'students', 'tools-of-trade',
+    'payslips', 'notifications', 'profile'
+]);
+const serveTrainerPortalShell = (req, res) => {
+    serveHTML(res, path.join(__dirname, 'src', 'components', 'trainer', 'portal-shell.html'));
+};
+
+// Tab partials (HTML fragments the router injects into #tab-root). Whitelisted.
+app.get('/trainer/partials/:name.html', noCacheAuthPages, (req, res) => {
+    const name = req.params.name;
+    if (!TRAINER_TABS.has(name)) {
+        return res.status(404).send('Not found');
+    }
+    res.sendFile(path.join(__dirname, 'src', 'components', 'trainer', 'partials', `${name}.html`));
+});
+
+// Backward-compat: legacy /trainer/dashboard/<tab> 301-redirects to /trainer/<tab>.
+// (Bare /trainer/dashboard is already correct — it's the dashboard tab, handled
+// by the catch-all below.)
+app.get('/trainer/dashboard/:tab', (req, res) => res.redirect(301, `/trainer/${req.params.tab}`));
+
+// Bare /trainer → default tab.
+app.get('/trainer', (req, res) => res.redirect(302, '/trainer/dashboard'));
+
+// Catch-all: serve the shell only for a whitelisted tab; otherwise next().
+app.get('/trainer/:tab', noCacheAuthPages, (req, res, next) => {
+    if (!TRAINER_TABS.has(req.params.tab)) return next();
+    serveTrainerPortalShell(req, res);
 });
 
 // (The legacy /student/dashboard alias was removed — /student/<tab> now serves
