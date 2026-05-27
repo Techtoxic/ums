@@ -1,3 +1,7 @@
+// tabs/analytics.js — finance analytics dashboard + charts.
+window.FinanceTabs = window.FinanceTabs || {};
+
+// ---- financeAnalytics.js (verbatim) ----
 // Finance Analytics Module
 // Production-level analytics and reporting for Finance Dashboard
 
@@ -492,3 +496,69 @@ class FinanceAnalytics {
 
 // Export the class for use in other modules
 window.FinanceAnalytics = FinanceAnalytics;
+
+// ---- analytics glue (verbatim inline block) ----
+        // Navigation and Analytics functionality
+        let financeAnalytics = null;
+        
+        // Initialize analytics
+        async function initializeAnalytics() {
+            try {
+                financeAnalytics = new FinanceAnalytics();
+                await financeAnalytics.loadData();
+                updateAnalyticsDashboard();
+            } catch (error) {
+                console.error('Failed to initialize analytics:', error);
+            }
+        }
+
+        // Update analytics dashboard
+        function updateAnalyticsDashboard() {
+            if (!financeAnalytics) return;
+            
+            // Update summary cards
+            document.getElementById('total-revenue').textContent = 
+                financeAnalytics.formatCurrency(financeAnalytics.getTotalRevenue());
+            document.getElementById('outstanding-balance').textContent = 
+                financeAnalytics.formatCurrency(financeAnalytics.getOutstandingBalance());
+            document.getElementById('active-students').textContent = 
+                financeAnalytics.students.length.toLocaleString();
+                
+            const expectedRevenue = financeAnalytics.getExpectedRevenue();
+            const actualRevenue = financeAnalytics.getTotalRevenue();
+            const collectionRate = expectedRevenue > 0 ? ((actualRevenue / expectedRevenue) * 100).toFixed(1) : 0;
+            document.getElementById('collection-rate').textContent = `${collectionRate}%`;
+            
+            // Update department analysis
+            const departmentStats = financeAnalytics.getDepartmentRevenue();
+            const departmentContainer = document.getElementById('department-analysis');
+            
+            let departmentHTML = '';
+            Object.entries(departmentStats).forEach(([dept, stats]) => {
+                const deptName = dept.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                departmentHTML += `
+                    <div class="flex justify-between items-center p-4 bg-slate-50 dark:bg-slate-700 rounded-lg">
+                        <div>
+                            <h4 class="font-medium text-slate-800 dark:text-white">${escapeHtml(deptName)}</h4>
+                            <p class="text-sm text-slate-500 dark:text-slate-400">${stats.studentCount} students</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-semibold text-slate-800 dark:text-white">${financeAnalytics.formatCurrency(stats.actualRevenue)}</p>
+                            <p class="text-sm text-slate-500 dark:text-slate-400">of ${financeAnalytics.formatCurrency(stats.expectedRevenue)}</p>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            departmentContainer.innerHTML = departmentHTML;
+        }
+
+window.FinanceTabs.analytics = {
+    // Render once: updateAnalyticsDashboard() builds Chart.js charts; re-running on
+    // revisit would hit "Canvas is already in use". The cached pane keeps them.
+    init() {
+        if (window.__financeAnalyticsRendered) return;
+        window.__financeAnalyticsRendered = true;
+        initializeAnalytics();
+    }
+};

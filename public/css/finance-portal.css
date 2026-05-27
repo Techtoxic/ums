@@ -1,0 +1,89 @@
+/* finance-portal.css — portal-specific styles extracted verbatim from the
+   FinanceDashboard.html inline <style> block during the SPA refactor.
+   Loaded alongside dashboard-styles.css (which owns the design system). */
+        /* Deriv-inspired Dark Theme */
+        .dark {
+            background: linear-gradient(135deg, #0E1217 0%, #1A1D29 100%);
+            color: #F2F3F4;
+        }
+        
+        .dark body {
+            background: linear-gradient(135deg, #0E1217 0%, #1A1D29 100%);
+            min-height: 100vh;
+        }
+        
+        .dark .bg-white {
+            background: linear-gradient(145deg, #1A1D29 0%, #242835 100%) !important;
+            border: 1px solid #2A2D3A !important;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+        }
+        
+        .dark .sidebar {
+            background: linear-gradient(180deg, #1A1D29 0%, #242835 100%) !important;
+            border-right: 1px solid #2A2D3A !important;
+        }
+        
+        .dark .text-slate-800 { color: #F2F3F4 !important; }
+        .dark .text-slate-600 { color: #C2C2C2 !important; }
+        .dark .text-slate-500 { color: #999999 !important; }
+        .dark .text-slate-700 { color: #E6E9EA !important; }
+        
+        .dark .border-slate-200 { border-color: #2A2D3A !important; }
+        .dark .border-slate-300 { border-color: #3A3D4A !important; }
+        
+        .dark .bg-slate-50 { background-color: #2A2D3A !important; }
+        .dark .bg-slate-100 { background-color: #3A3D4A !important; }
+        
+        .dark .hover\\:bg-slate-50:hover { background-color: #3A3D4A !important; }
+        .dark .hover\\:bg-slate-100:hover { background-color: #4A4D5A !important; }
+        .dark .hover\\:bg-gray-50:hover { background-color: #3A3D4A !important; }
+        
+        .dark tr:hover { background-color: rgba(58, 61, 74, 0.5) !important; }
+        .dark th {
+            background: linear-gradient(145deg, #2A2D3A 0%, #3A3D4A 100%) !important;
+            color: #F2F3F4 !important;
+            border-bottom: 1px solid #3A3D4A !important;
+        }
+        .dark td {
+            border-bottom: 1px solid #2A2D3A !important;
+            color: #E6E9EA !important;
+        }
+        
+        .dark input, .dark select, .dark textarea {
+            background: linear-gradient(145deg, #2A2D3A 0%, #3A3D4A 100%) !important;
+            border: 1px solid #4A4D5A !important;
+            color: #F2F3F4 !important;
+        }
+        
+        .dark input:focus, .dark select:focus, .dark textarea:focus {
+            border-color: #FF444F !important;
+            box-shadow: 0 0 0 3px rgba(255, 68, 79, 0.1) !important;
+        }
+        
+        .dark input::placeholder { color: #999999 !important; }
+        
+        .dark .bg-primary {
+            background: linear-gradient(135deg, #FF444F 0%, #FF6B7A 100%) !important;
+        }
+        
+        .dark .bg-primary:hover {
+            background: linear-gradient(135deg, #E63946 0%, #FF5A6A 100%) !important;
+        }
+
+        /* Native <select> option list readability — options are JS-injected so
+           must be styled by element selector, not per-element class. Chrome renders
+           the option popup semi-natively; explicit bg+color on option is required. */
+        select option {
+            background-color: #ffffff;
+            color: #0f172a;
+        }
+        html.dark select option {
+            background-color: #1f2937;
+            color: #f3f4f6;
+        }
+        /* The collapsed select control itself */
+        html.dark select {
+            background-color: #1f2937;
+            color: #f3f4f6;
+            border-color: #4b5563;
+        }

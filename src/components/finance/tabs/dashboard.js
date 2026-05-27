@@ -1,148 +1,8 @@
-// Finance Dashboard JavaScript
+// tabs/dashboard.js — finance dashboard: student fees table, payment modal, programs.
+// The confirmationModal + payment-modal markup ships inside dashboard.html.
+window.FinanceTabs = window.FinanceTabs || {};
 
-// Course to Program Name Mapping (same as student portal)
-
-// Authenticated fetch wrapper — guarded against double-declaration.
-// financeAnalytics.js also defines this; both load as classic scripts so a
-// bare top-level `const` collides in global scope. window assignment is
-// idempotent. Bare authFetch(...) call sites resolve to window.authFetch via
-// global-scope lookup, so they stay unchanged.
-window.authFetch = window.authFetch || (async (url, options = {}) => {
-    return window.AUTH.fetch(url, options);
-});
-
-const courseToProgram = {
-    'applied_biology_6': 'Applied Biology Level 6',
-    'analytical_chemistry_6': 'Analytical Chemistry Level 6',
-    'science_lab_technology_5': 'Science Lab Technology Level 5',
-    'general_agriculture_4': 'General Agriculture Level 4',
-    'sustainable_agriculture_5': 'Sustainable Agriculture Level 5',
-    'agricultural_extension_6': 'Agricultural Extension Level 6',
-    'building_technician_4': 'Building Technician Level 4',
-    'building_technician_6': 'Building Technician Level 6',
-    'civil_engineering_6': 'Civil Engineering Level 6',
-    'plumbing_4': 'Plumbing Level 4',
-    'plumbing_5': 'Plumbing Level 5',
-    'electrical_engineering_4': 'Electrical Engineering Level 4',
-    'electrical_engineering_5': 'Electrical Engineering Level 5',
-    'electrical_engineering_6': 'Electrical Engineering Level 6',
-    'automotive_engineering_5': 'Automotive Engineering Level 5',
-    'automotive_engineering_6': 'Automotive Engineering Level 6',
-    'food_beverage_4': 'Food and Beverage Level 4',
-    'food_beverage_5': 'Food & Beverage Level 5',
-    'food_beverage_6': 'Food & Beverage Level 6',
-    'food_and_beverage_4': 'Food and Beverage Level 4',
-    'food_and_beverage_5': 'Food & Beverage Level 5',
-    'food_and_beverage_6': 'Food & Beverage Level 6',
-    'fashion_design_4': 'Fashion & Design Level 4',
-    'fashion_design_5': 'Fashion and Design Level 5',
-    'fashion_design_6': 'Fashion and Design Level 6',
-    'fashion_and_design_4': 'Fashion & Design Level 4',
-    'fashion_and_design_5': 'Fashion and Design Level 5',
-    'fashion_and_design_6': 'Fashion and Design Level 6',
-    'hairdressing_4': 'Hairdressing Level 4',
-    'hairdressing_5': 'Hairdressing Level 5',
-    'hairdressing_6': 'Hairdressing Level 6',
-    'tourism_management_5': 'Tourism Management Level 5',
-    'tourism_management_6': 'Tourism Management Level 6',
-    'social_work_5': 'Social Work Level 5',
-    'social_work_6': 'Social Work Level 6',
-    'office_administration_5': 'Office Administration Level 5',
-    'office_administration_6': 'Office Administration Level 6',
-    'ict_5': 'ICT Level 5',
-    'ict_6': 'ICT Level 6',
-    'information_science_5': 'Information Science Level 5',
-    'information_science_6': 'Information Science Level 6',
-    // Additional variations for comprehensive mapping
-    'science_lab_tech_5': 'Science Lab Technology Level 5',
-    'science_laboratory_technology_5': 'Science Lab Technology Level 5',
-    'applied_bio_6': 'Applied Biology Level 6',
-    'analytical_chem_6': 'Analytical Chemistry Level 6',
-    'general_agric_4': 'General Agriculture Level 4',
-    'sustainable_agric_5': 'Sustainable Agriculture Level 5',
-    'agricultural_ext_6': 'Agricultural Extension Level 6',
-    'building_tech_4': 'Building Technician Level 4',
-    'building_tech_6': 'Building Technician Level 6',
-    'civil_eng_6': 'Civil Engineering Level 6',
-    'electrical_eng_4': 'Electrical Engineering Level 4',
-    'electrical_eng_5': 'Electrical Engineering Level 5',
-    'electrical_eng_6': 'Electrical Engineering Level 6',
-    'automotive_eng_5': 'Automotive Engineering Level 5',
-    'automotive_eng_6': 'Automotive Engineering Level 6',
-    'tourism_mgmt_5': 'Tourism Management Level 5',
-    'tourism_mgmt_6': 'Tourism Management Level 6',
-    'office_admin_5': 'Office Administration Level 5',
-    'office_admin_6': 'Office Administration Level 6',
-    'info_science_5': 'Information Science Level 5',
-    'info_science_6': 'Information Science Level 6',
-    // Additional course code variations to ensure all formats work
-    'agricultural_extension_6': 'Agricultural Extension Level 6',
-    'agricultural_ext_6': 'Agricultural Extension Level 6',
-    'agric_extension_6': 'Agricultural Extension Level 6',
-    'building_technician_4': 'Building Technician Level 4',
-    'building_technician_6': 'Building Technician Level 6',
-    'building_tech_4': 'Building Technician Level 4',
-    'building_tech_6': 'Building Technician Level 6'
-};
-
-// Function to format course names for display
-function formatCourseName(courseCode) {
-    // First try to get the proper program name from our mapping
-    const programName = courseToProgram[courseCode];
-    if (programName) {
-        return programName;
-    }
-    
-    // If not found in mapping, format the course code nicely
-    if (!courseCode) return 'Unknown Course';
-    
-    // Replace underscores with spaces and capitalize
-    return courseCode
-        .split('_')
-        .map(word => {
-            // Handle numbers at the end (convert to "Level X")
-            if (/^\d+$/.test(word)) {
-                return `Level ${word}`;
-            }
-            // Capitalize first letter of each word
-            return word.charAt(0).toUpperCase() + word.slice(1);
-        })
-        .join(' ');
-}
-
-// DOM Elements
-// DOM Elements
-const studentTable = document.getElementById('student-table-body');
-const searchInput = document.getElementById('search-student');
-const departmentFilter = document.getElementById('department-filter');
-const yearFilter = document.getElementById('year-filter');
-const paymentModal = document.getElementById('payment-modal');
-const closeModalBtn = document.getElementById('close-modal');
-const paymentForm = document.getElementById('payment-form');
-const studentIdInput = document.getElementById('student-id');
-const studentNameInput = document.getElementById('student-name');
-const paymentModeSelect = document.getElementById('payment-mode');
-const bankDetailsDiv = document.getElementById('bank-details');
-const bankSelect = document.getElementById('bank-name');
-const amountInput = document.getElementById('payment-amount');
-const updateProgramForm = document.getElementById('update-program-form');
-const programsTable = document.getElementById('recent-programs-body');
-const selectProgramDropdown = document.getElementById('select-program');
-const programDepartmentDisplay = document.getElementById('program-department-display');
-const programCostUpdate = document.getElementById('program-cost-update');
-
-// Pagination and UI controls
-const prevProgramsBtn = document.getElementById('prevPrograms');
-const nextProgramsBtn = document.getElementById('nextPrograms');
-const programsInfo = document.getElementById('programsInfo');
-const toggleSidebar = document.getElementById('toggleSidebar');
-const sidebar = document.getElementById('sidebar');
-const sidebarTitle = document.getElementById('sidebar-title');
-const studentCountSpan = document.getElementById('student-count');
-
-// API Base URL
-const API_BASE_URL = window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : `${window.location.protocol}//${window.location.host}/api`;
-
+// ---- dashboard state (verbatim financeDashboard.js) ----
 // Global variables for pagination and filtering
 let currentProgramPage = 0;
 let allPrograms = [];
@@ -151,8 +11,45 @@ let filteredStudents = [];
 const PROGRAMS_PER_PAGE = 5;
 let sidebarCollapsed = false;
 
-// Initialize the dashboard
+// Dashboard element refs. In the monolith these were top-level consts captured
+// at script-load; under lazy partials the dashboard markup is injected later,
+// so they are declared here and (re)captured by cacheDashboardEls(), invoked at
+// the top of init() once the partial is in the DOM.
+let studentTable, searchInput, departmentFilter, yearFilter, paymentModal, closeModalBtn, paymentForm, studentIdInput, studentNameInput, paymentModeSelect, bankDetailsDiv, bankSelect, amountInput, updateProgramForm, programsTable, selectProgramDropdown, programDepartmentDisplay, programCostUpdate, prevProgramsBtn, nextProgramsBtn, programsInfo, toggleSidebar, sidebar, sidebarTitle, studentCountSpan;
+function cacheDashboardEls() {
+studentTable = document.getElementById('student-table-body');
+searchInput = document.getElementById('search-student');
+departmentFilter = document.getElementById('department-filter');
+yearFilter = document.getElementById('year-filter');
+paymentModal = document.getElementById('payment-modal');
+closeModalBtn = document.getElementById('close-modal');
+paymentForm = document.getElementById('payment-form');
+studentIdInput = document.getElementById('student-id');
+studentNameInput = document.getElementById('student-name');
+paymentModeSelect = document.getElementById('payment-mode');
+bankDetailsDiv = document.getElementById('bank-details');
+bankSelect = document.getElementById('bank-name');
+amountInput = document.getElementById('payment-amount');
+updateProgramForm = document.getElementById('update-program-form');
+programsTable = document.getElementById('recent-programs-body');
+selectProgramDropdown = document.getElementById('select-program');
+programDepartmentDisplay = document.getElementById('program-department-display');
+programCostUpdate = document.getElementById('program-cost-update');
+
+// Pagination and UI controls
+prevProgramsBtn = document.getElementById('prevPrograms');
+nextProgramsBtn = document.getElementById('nextPrograms');
+programsInfo = document.getElementById('programsInfo');
+toggleSidebar = document.getElementById('toggleSidebar');
+sidebar = document.getElementById('sidebar');
+sidebarTitle = document.getElementById('sidebar-title');
+studentCountSpan = document.getElementById('student-count');
+}
+
+// initializeDashboard — verbatim body, prefixed with cacheDashboardEls() so the
+// element refs are captured after the dashboard partial is injected.
 async function initializeDashboard() {
+    cacheDashboardEls();
     await Promise.all([
         loadStudents(),
         loadPrograms()
@@ -161,6 +58,7 @@ async function initializeDashboard() {
     setupSidebar();
 }
 
+// ---- dashboard functions (verbatim financeDashboard.js) ----
 // Load all students with financial information
 async function loadStudents() {
     try {
@@ -717,42 +615,6 @@ function generateReference(paymentMode, details = {}) {
     }
 }
 
-// Show toast notification
-function showToast(message, type = 'info') {
-    const toast = document.getElementById('toast');
-    if (!toast) return;
-    
-    // Set toast color based on type
-    let bgColor = '';
-    switch (type) {
-        case 'success':
-            bgColor = 'bg-success';
-            break;
-        case 'error':
-            bgColor = 'bg-danger';
-            break;
-        case 'warning':
-            bgColor = 'bg-warning';
-            break;
-        default:
-            bgColor = 'bg-primary';
-    }
-    
-    // Set toast content and style
-    toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-xl text-white transform translate-y-full opacity-0 transition-all duration-300 shadow-lg z-50 ${bgColor}`;
-    toast.textContent = message;
-    
-    // Show toast
-    setTimeout(() => {
-        toast.classList.remove('translate-y-full', 'opacity-0');
-    }, 100);
-    
-    // Hide toast after 3 seconds
-    setTimeout(() => {
-        toast.classList.add('translate-y-full', 'opacity-0');
-    }, 3000);
-}
-
 // Load programs
 async function loadPrograms() {
     try {
@@ -889,12 +751,6 @@ function closeConfirmationModal() {
     if (confirmationModal) {
         confirmationModal.classList.add('hidden');
     }
-}
-
-// Generate fees statement function (placeholder)
-function generateFeesStatement() {
-    showToast('Generating fees statement...', 'info');
-    // Implementation would go here
 }
 
 // Populate program dropdown
@@ -1038,263 +894,175 @@ function setupSidebar() {
     }
 }
 
-// ========================================
-// UTILITY FUNCTIONS
-// ========================================
+// ---- payment receipt PDF (verbatim inline block) ----
+                // Generate individual payment receipt (formal payslip-style format)
+        function generatePaymentReceipt(payment, student = null) {
+            try {
+                // Create PDF receipt
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF('p', 'mm', 'a4');
 
-// Show notification toast
-function showNotification(message, type = 'info') {
-    // Create toast element
-    const toast = document.createElement('div');
-    toast.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg text-white transform transition-all duration-300 ${
-        type === 'success' ? 'bg-green-500' :
-        type === 'error' ? 'bg-red-500' :
-        type === 'warning' ? 'bg-yellow-500' :
-        'bg-blue-500'
-    }`;
-    toast.innerHTML = `
-        <div class="flex items-center space-x-2">
-            <i class="ri-${type === 'success' ? 'check' : type === 'error' ? 'error-warning' : 'information'}-line"></i>
-            <span>${escapeHtml(message)}</span>
-        </div>
-    `;
-    
-    document.body.appendChild(toast);
-    
-    // Animate in
-    setTimeout(() => toast.style.transform = 'translateX(0)', 10);
-    
-    // Remove after 3 seconds
-    setTimeout(() => {
-        toast.style.transform = 'translateX(400px)';
-        setTimeout(() => toast.remove(), 300);
-    }, 3000);
-}
+                // Dark red/maroon color for header (RGB: 122, 12, 12)
+                const headerColor = [122, 12, 12];
+                const pageWidth = doc.internal.pageSize.getWidth();
+                const pageHeight = doc.internal.pageSize.getHeight();
 
-// ========================================
-// PAYSLIP MANAGEMENT
-// ========================================
+                // ========================================
+                // HEADER BANNER (Dark Red Background)
+                // ========================================
+                doc.setFillColor(...headerColor);
+                doc.rect(0, 0, pageWidth, 40, 'F');
 
-let allPayslips = [];
-let filteredPayslips = [];
+                // Institution Name (White text on red background)
+                doc.setTextColor(255, 255, 255); // White
+                doc.setFontSize(16);
+                doc.setFont(undefined, 'bold');
+                doc.text('EMURUA DIKIRR TECHNICAL TRAINING INSTITUTE', pageWidth / 2, 12, { align: 'center' });
 
-// Initialize payslips on section load
-async function initializePayslips() {
-    await loadPayslips();
-    
-    // Add form submit listener
-    const form = document.getElementById('generate-payslip-form');
-    if (form) {
-        form.addEventListener('submit', handleGeneratePayslips);
-    }
-}
+                // Contact Information
+                doc.setFontSize(9);
+                doc.setFont(undefined, 'normal');
+                doc.text('P.O. Box 49, Emurua Dikirr - 20500', pageWidth / 2, 18, { align: 'center' });
+                doc.text('Tel: +254 729 123 456 | Email: info@emurua-tech.ac.ke', pageWidth / 2, 23, { align: 'center' });
+                doc.text('Website: www.emurua-tech.ac.ke', pageWidth / 2, 28, { align: 'center' });
+                doc.setFontSize(8);
+                doc.text('ISO 9001:2015 Certified Institution', pageWidth / 2, 34, { align: 'center' });
 
-// Generate payslips for all trainers
-async function handleGeneratePayslips(e) {
-    e.preventDefault();
-    
-    const month = document.getElementById('payslip-month').value;
-    const year = document.getElementById('payslip-year').value;
-    const amount = document.getElementById('payslip-amount').value;
-    const description = document.getElementById('payslip-description').value;
-    
-    if (!month || !year || !amount) {
-        showNotification('Please fill in all required fields', 'error');
-        return;
-    }
-    
-    if (parseFloat(amount) <= 0) {
-        showNotification('Amount must be greater than 0', 'error');
-        return;
-    }
-    
-    try {
-        // First, fetch all trainers to get their IDs
-        showNotification('Fetching trainers...', 'info');
-        const trainersResponse = await authFetch(`${API_BASE_URL}/trainers/all-departments`);
-        if (!trainersResponse.ok) throw new Error('Failed to fetch trainers');
-        
-        const trainersData = await trainersResponse.json();
-        const trainers = trainersData.trainers || [];
-        
-        if (trainers.length === 0) {
-            showNotification('No trainers found to generate payslips for', 'error');
-            return;
+                // ========================================
+                // RECEIPT TITLE AND REFERENCE
+                // ========================================
+                doc.setTextColor(0, 0, 0); // Black text
+                doc.setFontSize(18);
+                doc.setFont(undefined, 'bold');
+                doc.text('PAYMENT RECEIPT', pageWidth / 2, 55, { align: 'center' });
+
+                // Receipt date
+                const paymentDate = payment.paymentDate ? new Date(payment.paymentDate) : new Date();
+                const monthYear = paymentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                doc.setFontSize(12);
+                doc.setFont(undefined, 'normal');
+                doc.text(monthYear, pageWidth / 2, 62, { align: 'center' });
+
+                // Reference and Date (left and right aligned)
+                const receiptRef = `Ref: EDTTI/RECEIPT/2025/${payment._id ? payment._id.slice(-6) : (payment.reference || 'N/A').slice(-6)}`;
+                const formattedDate = paymentDate.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                
+                doc.setFontSize(10);
+                doc.text(receiptRef, 20, 70);
+                doc.text(`Date: ${formattedDate}`, pageWidth - 20, 70, { align: 'right' });
+
+                // ========================================
+                // STUDENT INFORMATION SECTION
+                // ========================================
+                let yPos = 85;
+                doc.setFontSize(12);
+                doc.setFont(undefined, 'bold');
+                doc.text('STUDENT INFORMATION', 20, yPos);
+                
+                yPos += 8;
+                doc.setFontSize(10);
+                doc.setFont(undefined, 'normal');
+                
+                // Use program name if available, otherwise format course code
+                let programDisplay = 'N/A';
+                if (student?.programName) {
+                    programDisplay = student.programName;
+                } else if (student?.course) {
+                    // Fallback: Convert course code to readable format
+                    programDisplay = student.course.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                }
+
+                doc.text(`Name: ${student?.name || 'N/A'}`, 20, yPos);
+                yPos += 7;
+                doc.text(`Admission Number: ${payment.studentId || student?.admissionNumber || 'N/A'}`, 20, yPos);
+                yPos += 7;
+                doc.text(`Program: ${programDisplay}`, 20, yPos);
+                if (student?.department) {
+                    yPos += 7;
+                    const deptName = student.department.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    doc.text(`Department: ${deptName}`, 20, yPos);
+                }
+
+                // ========================================
+                // PAYMENT DETAILS SECTION (Table Style)
+                // ========================================
+                yPos += 15;
+                doc.setFontSize(12);
+                doc.setFont(undefined, 'bold');
+                doc.text('PAYMENT DETAILS', 20, yPos);
+
+                // Table header background (dark red)
+                yPos += 8;
+                doc.setFillColor(...headerColor);
+                doc.rect(20, yPos - 5, pageWidth - 40, 8, 'F');
+
+                // Table headers (white text)
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(10);
+                doc.setFont(undefined, 'bold');
+                doc.text('Description', 25, yPos);
+                doc.text('Amount (KES)', pageWidth - 25, yPos, { align: 'right' });
+
+                // Table content (black text on white background)
+                yPos += 8;
+                doc.setTextColor(0, 0, 0);
+                doc.setFontSize(10);
+                doc.setFont(undefined, 'normal');
+                
+                // Format payment mode properly
+                let paymentModeDisplay = 'N/A';
+                if (payment.paymentMode) {
+                    const modes = {
+                        'mpesa': 'M-Pesa Payment',
+                        'bank': 'Bank Transfer',
+                        'bursary': 'CDF Bursary'
+                    };
+                    paymentModeDisplay = modes[payment.paymentMode] || payment.paymentMode;
+                }
+
+                doc.text(paymentModeDisplay, 25, yPos);
+                doc.text(Number(payment.amount || 0).toLocaleString(), pageWidth - 25, yPos, { align: 'right' });
+
+                // Add reference details below
+                yPos += 10;
+                doc.setFontSize(9);
+                if (payment.paymentMode === 'bursary' && payment.bursaryReference) {
+                    doc.text(`Bursary Reference: ${payment.bursaryReference}`, 25, yPos);
+                    yPos += 6;
+                } else if (payment.paymentMode === 'mpesa' && payment.mpesaTransactionId) {
+                    doc.text(`M-Pesa Transaction ID: ${payment.mpesaTransactionId}`, 25, yPos);
+                    yPos += 6;
+                } else if (payment.paymentMode === 'bank' && payment.receiptNumber) {
+                    doc.text(`Bank Receipt Number: ${payment.receiptNumber}`, 25, yPos);
+                    yPos += 6;
+                    if (payment.bankName) {
+                        doc.text(`Bank: ${payment.bankName}`, 25, yPos);
+                        yPos += 6;
+                    }
+                }
+
+                // ========================================
+                // FOOTER
+                // ========================================
+                doc.setFontSize(9);
+                doc.setFont(undefined, 'normal');
+                doc.text('This is an official payment receipt from Emurua Dikirr Technical Training Institute', pageWidth / 2, pageHeight - 20, { align: 'center' });
+                doc.text(`Generated on ${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })} | Student Portal: ums.emurua-tech.ac.ke`, pageWidth / 2, pageHeight - 15, { align: 'center' });
+
+                // Save the PDF
+                const filename = `payment_receipt_${(payment.studentId || 'student').replace(/\//g, '_')}_${Date.now()}.pdf`;
+                doc.save(filename);
+
+                showToast('Payment receipt generated successfully!', 'success');
+            } catch (error) {
+                console.error('Error generating receipt:', error);
+                showToast('Failed to generate payment receipt', 'error');
+            }
         }
-        
-        // Extract trainer IDs — /api/trainers/all-departments returns each trainer with `id`
-        const trainerIds = trainers.map(trainer => trainer.id).filter(Boolean);
-        
-        // SEV-H-008: actor identity is sourced server-side from the JWT.
-        showNotification(`Generating payslips for ${trainerIds.length} trainers...`, 'info');
-        
-        const response = await authFetch(`${API_BASE_URL}/payslips/generate`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                trainerIds,
-                month,
-                year: parseInt(year),
-                amount: parseFloat(amount),
-                description
-            })
-        });
-        
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || 'Failed to generate payslips');
-        }
-        
-        const result = await response.json();
-        showNotification(`Successfully generated ${result.payslips.length} payslips`, 'success');
-        
-        // Reset form and reload payslips
-        e.target.reset();
-        await loadPayslips();
-        
-    } catch (error) {
-        console.error('Error generating payslips:', error);
-        showNotification(error.message, 'error');
-    }
-}
 
-// Load all payslips
-async function loadPayslips() {
-    try {
-        showPayslipsLoading();
-        
-        const response = await authFetch(`${API_BASE_URL}/payslips`);
-        if (!response.ok) throw new Error('Failed to load payslips');
-        
-        const data = await response.json();
-        allPayslips = data.payslips || [];
-        filteredPayslips = allPayslips;
-        
-        displayPayslips();
-        hidePayslipsLoading();
-        
-    } catch (error) {
-        console.error('Error loading payslips:', error);
-        hidePayslipsLoading();
-        showPayslipsEmpty();
-    }
-}
+        // Add function to generate receipt for a specific payment (for testing)
+        window.generatePaymentReceipt = generatePaymentReceipt;
 
-// Display payslips in table
-function displayPayslips() {
-    const tbody = document.getElementById('payslips-table-body');
-    const empty = document.getElementById('payslips-empty');
-    const tableContainer = document.getElementById('payslips-table-container');
-    
-    if (!tbody) return;
-    
-    if (filteredPayslips.length === 0) {
-        tableContainer.style.display = 'none';
-        empty.classList.remove('hidden');
-        return;
-    }
-    
-    empty.classList.add('hidden');
-    tableContainer.style.display = 'block';
-    
-    // Group payslips by month/year/amount
-    const grouped = {};
-    filteredPayslips.forEach(payslip => {
-        const key = `${payslip.month}-${payslip.year}-${payslip.amount}`;
-        if (!grouped[key]) {
-            grouped[key] = {
-                month: payslip.month,
-                year: payslip.year,
-                amount: payslip.amount,
-                generatedBy: payslip.generatedBy,
-                createdAt: payslip.createdAt,
-                trainers: []
-            };
-        }
-        grouped[key].trainers.push(payslip);
-    });
-    
-    // Convert to array and sort by date (newest first)
-    const groupedArray = Object.values(grouped).sort((a, b) => 
-        new Date(b.createdAt) - new Date(a.createdAt)
-    );
-    
-    tbody.innerHTML = groupedArray.map(group => {
-        const monthNames = ['', 'January', 'February', 'March', 'April', 'May', 'June', 
-                          'July', 'August', 'September', 'October', 'November', 'December'];
-        const monthName = monthNames[parseInt(group.month)];
-        
-        const viewedCount = group.trainers.filter(p => p.isViewed).length;
-        const totalCount = group.trainers.length;
-        
-        const generatedByName = group.generatedBy?.userName || group.generatedBy || 'Unknown';
-        
-        return `
-            <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
-                <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-300">${monthName} ${group.year}</td>
-                <td class="px-4 py-3 text-sm font-semibold text-slate-900 dark:text-white">KES ${Number(group.amount).toLocaleString()}</td>
-                <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-300">${totalCount} trainers</td>
-                <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-300">${escapeHtml(generatedByName)}</td>
-                <td class="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">${new Date(group.createdAt).toLocaleDateString()}</td>
-                <td class="px-4 py-3">
-                    <span class="px-2 py-1 text-xs font-medium rounded-full ${viewedCount === totalCount ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}">
-                        ${viewedCount}/${totalCount} viewed
-                    </span>
-                </td>
-            </tr>
-        `;
-    }).join('');
-}
-
-// Filter payslips
-function filterPayslips() {
-    const month = document.getElementById('filter-payslip-month').value;
-    const year = document.getElementById('filter-payslip-year').value;
-    
-    filteredPayslips = allPayslips.filter(payslip => {
-        if (month && payslip.month !== month) return false;
-        if (year && payslip.year !== year) return false;
-        return true;
-    });
-    
-    displayPayslips();
-}
-
-// Refresh payslips
-async function refreshPayslips() {
-    await loadPayslips();
-    showNotification('Payslips refreshed', 'success');
-}
-
-// Show/hide loading
-function showPayslipsLoading() {
-    const loading = document.getElementById('payslips-loading');
-    const table = document.getElementById('payslips-table-container');
-    const empty = document.getElementById('payslips-empty');
-    
-    if (loading) loading.classList.remove('hidden');
-    if (table) table.style.display = 'none';
-    if (empty) empty.classList.add('hidden');
-}
-
-function hidePayslipsLoading() {
-    const loading = document.getElementById('payslips-loading');
-    if (loading) loading.classList.add('hidden');
-}
-
-function showPayslipsEmpty() {
-    const empty = document.getElementById('payslips-empty');
-    if (empty) empty.classList.remove('hidden');
-}
-
-// Get finance user data (from session or local storage)
-function getFinanceUserData() {
-    // This should be replaced with actual auth logic
-    return {
-        userId: 'finance_admin',
-        name: 'Finance Administrator'
-    };
-}
-
-// Initialize when DOM is loaded
-document.addEventListener('DOMContentLoaded', initializeDashboard);
+window.FinanceTabs.dashboard = {
+    init() { initializeDashboard(); }
+};

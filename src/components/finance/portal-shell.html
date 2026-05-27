@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finance Dashboard - University Management System</title>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/public/css/dashboard-styles.css">
+    <!-- Theme controller: in <head>, after styles, runs pre-paint (no flash) -->
+    <script src="/public/js/dashboard-theme.js"></script>
+
+    <!-- Frontend Config (Load First!) -->
+    <script src="/public/js/config.js"></script>
+    
+    <link rel="stylesheet" href="/public/css/finance-portal.css">
+    
+    <script>
+        // Tailwind alias palette realigned to the EDTTI design system so any
+        // remaining utility usage (bg-primary, text-primary, etc.) inside the
+        // existing finance markup picks up maroon/gold instead of the old blue.
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#7A0C0C',     // maroon
+                        secondary: '#5C0808',   // maroon-dark
+                        accent: '#D4A017',      // gold
+                        success: '#10B981',
+                        warning: '#F59E0B',
+                        danger: '#EF4444',
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="/public/js/auth.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body class="text-slate-800 dark:text-white">
+    <div class="dashboard-shell">
+        <!-- Sidebar backdrop for mobile -->
+        <div class="dashboard-sidebar__backdrop" id="sbBackdrop" onclick="closeSidebar()"></div>
+
+        <!-- Sidebar -->
+        <aside class="dashboard-sidebar" id="sidebar">
+            <div class="dashboard-sidebar__logo">
+                <i class="ri-graduation-cap-line"></i>
+                <span>EDTTI</span>
+            </div>
+            <nav class="dashboard-sidebar__nav">
+                <a href="/finance/dashboard" class="nav-link nav-item active">
+                    <i class="ri-dashboard-line"></i><span>Dashboard</span>
+                </a>
+                <a href="/finance/analytics" class="nav-link nav-item">
+                    <i class="ri-line-chart-line"></i><span>Analytics</span>
+                </a>
+                <a href="/finance/reports" class="nav-link nav-item">
+                    <i class="ri-file-chart-line"></i><span>Reports</span>
+                </a>
+                <a href="/finance/revenue" class="nav-link nav-item">
+                    <i class="ri-money-dollar-circle-line"></i><span>Revenue</span>
+                </a>
+                <a href="/finance/expenditure" class="nav-link nav-item">
+                    <i class="ri-arrow-down-circle-line"></i><span>Expenditure</span>
+                </a>
+                <a href="/finance/collections" class="nav-link nav-item">
+                    <i class="ri-wallet-3-line"></i><span>Collections</span>
+                </a>
+                <a href="/finance/payslips" class="nav-link nav-item">
+                    <i class="ri-file-list-3-line"></i><span>Trainer Payslips</span>
+                </a>
+                <a href="/finance/settings" class="nav-link nav-item">
+                    <i class="ri-settings-3-line"></i><span>Settings</span>
+                </a>
+            </nav>
+            <div class="dashboard-sidebar__profile">
+                <div class="dashboard-sidebar__avatar" id="userAvatar">F</div>
+                <div class="dashboard-sidebar__profile-text">
+                    <div class="font-semibold text-body-sm" id="userName">Finance</div>
+                    <div class="text-body-sm" style="color:var(--text-muted)">Finance Officer</div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main column: topbar + content -->
+        <div>
+            <header class="dashboard-topbar">
+                <button class="btn btn--ghost btn--icon lg:hidden" onclick="openSidebar()" aria-label="Open menu">
+                    <i class="ri-menu-line"></i>
+                </button>
+                <div class="dashboard-topbar__title">Finance Dashboard</div>
+                <div class="dashboard-topbar__actions">
+                    <button class="btn btn--primary" onclick="generateFeesStatement()">
+                        <i class="ri-file-list-line"></i> Statement
+                    </button>
+                    <button class="btn btn--secondary">
+                        <i class="ri-download-line"></i> Export
+                    </button>
+                    <button data-theme-toggle class="theme-toggle" aria-label="Toggle dark mode">
+                        <i class="ri-sun-line theme-icon-light"></i>
+                        <i class="ri-moon-line theme-icon-dark"></i>
+                    </button>
+                    <button id="logoutBtn" class="btn btn--danger btn--icon" aria-label="Logout">
+                        <i class="ri-logout-box-line"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Content area: the router injects each tab's partial here -->
+            <main class="dashboard-main" id="tab-root"></main>
+        </div>
+    </div><!-- /.dashboard-shell -->
+
+    <!-- Global toast -->
+            <div id="toast" class="fixed bottom-4 right-4 px-6 py-3 rounded-xl text-white transform translate-y-full opacity-0 transition-all duration-300 shadow-lg z-50"></div>
+
+    <!-- Scripts -->
+    <script src="/src/components/finance/portal-core.js"></script>
+    <script src="/src/components/finance/portal-router.js"></script>
+    <script src="/src/components/finance/tabs/dashboard.js"></script>
+    <script src="/src/components/finance/tabs/analytics.js"></script>
+    <script src="/src/components/finance/tabs/reports.js"></script>
+    <script src="/src/components/finance/tabs/revenue.js"></script>
+    <script src="/src/components/finance/tabs/expenditure.js"></script>
+    <script src="/src/components/finance/tabs/collections.js"></script>
+    <script src="/src/components/finance/tabs/payslips.js"></script>
+    <script src="/src/components/finance/tabs/settings.js"></script>
+</body>
+</html>

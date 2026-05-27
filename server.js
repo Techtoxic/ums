@@ -1393,8 +1393,39 @@ app.get('/student/:tab', noCacheAuthPages, (req, res, next) => {
 // Finance routes
 app.get('/finance/login', (req, res) => res.redirect('/admin/login'));
 
-app.get('/finance/dashboard', noCacheAuthPages, (req, res) => {
-    res.sendFile(path.join(__dirname, 'src', 'components', 'finance', 'FinanceDashboard.html'));
+// Finance portal SPA. Tabs are served at /finance/<tab>; the client router
+// (portal-router.js) reads the tab from the last path segment. Registration
+// ORDER: /finance/login (above), the partials route, the legacy
+// /finance/dashboard/<tab> redirect, and /finance (bare) all precede the
+// /finance/:tab catch-all so it cannot shadow them. /finance/dashboard is now the
+// :tab="dashboard" case (handled by the catch-all).
+const FINANCE_TABS = new Set([
+    'dashboard', 'analytics', 'reports', 'revenue',
+    'expenditure', 'collections', 'payslips', 'settings'
+]);
+const serveFinancePortalShell = (req, res) => {
+    res.sendFile(path.join(__dirname, 'src', 'components', 'finance', 'portal-shell.html'));
+};
+
+// Tab partials (HTML fragments the router injects into #tab-root). Whitelisted.
+app.get('/finance/partials/:name.html', noCacheAuthPages, (req, res) => {
+    const name = req.params.name;
+    if (!FINANCE_TABS.has(name)) {
+        return res.status(404).send('Not found');
+    }
+    res.sendFile(path.join(__dirname, 'src', 'components', 'finance', 'partials', `${name}.html`));
+});
+
+// Backward-compat: legacy /finance/dashboard/<tab> 301-redirects to /finance/<tab>.
+app.get('/finance/dashboard/:tab', (req, res) => res.redirect(301, `/finance/${req.params.tab}`));
+
+// Bare /finance → default tab.
+app.get('/finance', (req, res) => res.redirect(302, '/finance/dashboard'));
+
+// Catch-all: serve the shell only for a whitelisted tab; otherwise next().
+app.get('/finance/:tab', noCacheAuthPages, (req, res, next) => {
+    if (!FINANCE_TABS.has(req.params.tab)) return next();
+    serveFinancePortalShell(req, res);
 });
 
 // Registrar routes
