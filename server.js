@@ -1502,8 +1502,38 @@ app.get('/registrar/:tab', noCacheAuthPages, (req, res, next) => {
 // Dean routes
 app.get('/dean/login', (req, res) => res.redirect('/admin/login'));
 
-app.get('/dean/dashboard', noCacheAuthPages, (req, res) => {
-    res.sendFile(path.join(__dirname, 'src', 'components', 'dean', 'DeanDashboard.html'));
+// Dean portal SPA. Tabs are served at /dean/<tab>; the client router
+// (portal-router.js) reads the tab from the last path segment. The DEFAULT tab is
+// "students" (there is no "dashboard" tab). Registration ORDER: /dean/login
+// (above), the partials route, the two legacy redirects, and /dean (bare) all
+// precede the /dean/:tab catch-all so it cannot shadow them.
+const DEAN_TABS = new Set(['students', 'notes', 'tools-of-trade']);
+const serveDeanPortalShell = (req, res) => {
+    res.sendFile(path.join(__dirname, 'src', 'components', 'dean', 'portal-shell.html'));
+};
+
+// Tab partials (HTML fragments the router injects into #tab-root). Whitelisted.
+app.get('/dean/partials/:name.html', noCacheAuthPages, (req, res) => {
+    const name = req.params.name;
+    if (!DEAN_TABS.has(name)) {
+        return res.status(404).send('Not found');
+    }
+    res.sendFile(path.join(__dirname, 'src', 'components', 'dean', 'partials', `${name}.html`));
+});
+
+// Backward-compat: the old monolith route was /dean/dashboard. There is no
+// "dashboard" tab, so it 301-redirects to the default tab /dean/students.
+app.get('/dean/dashboard', (req, res) => res.redirect(301, '/dean/students'));
+// Legacy-shape redirect: /dean/dashboard/<tab> → /dean/<tab>.
+app.get('/dean/dashboard/:tab', (req, res) => res.redirect(301, `/dean/${req.params.tab}`));
+
+// Bare /dean → default tab.
+app.get('/dean', (req, res) => res.redirect(302, '/dean/students'));
+
+// Catch-all: serve the shell only for a whitelisted tab; otherwise next().
+app.get('/dean/:tab', noCacheAuthPages, (req, res, next) => {
+    if (!DEAN_TABS.has(req.params.tab)) return next();
+    serveDeanPortalShell(req, res);
 });
 
 // Deputy routes

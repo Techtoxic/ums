@@ -31,13 +31,7 @@
             }
         }
     </script>
-    <style>
-        .content-section { display: none; }
-        .content-section.active { display: block; }
-        /* Purple-gradient .nav-link.active removed — the design-system rule
-           in /public/css/dashboard-styles.css gives the active link a maroon
-           background and white text, matching the rest of the new chrome. */
-    </style>
+    <link rel="stylesheet" href="/public/css/dean-portal.css">
     <script src="/public/js/auth.js"></script>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900">
@@ -68,139 +62,26 @@
         <!-- Sidebar -->
         <aside class="w-64 bg-white dark:bg-gray-800 shadow-lg h-screen fixed overflow-y-auto">
             <nav class="p-4 space-y-2">
-                <a href="#students" class="nav-link flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-purple-50 transition active">
+                <a href="/dean/students" class="nav-link flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-purple-50 transition active">
                     <i class="ri-group-line text-xl mr-3"></i>
                     <span>Students</span>
                 </a>
-                <a href="#notes" class="nav-link flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-purple-50 transition">
+                <a href="/dean/notes" class="nav-link flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-purple-50 transition">
                     <i class="ri-file-list-line text-xl mr-3"></i>
                     <span>All Notes</span>
                 </a>
-                <a href="#tools-of-trade" class="nav-link flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-purple-50 transition">
+                <a href="/dean/tools-of-trade" class="nav-link flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-purple-50 transition">
                     <i class="ri-tools-line text-xl mr-3"></i>
                     <span>Tools of Trade</span>
                 </a>
             </nav>
         </aside>
 
-        <!-- Main Content Area -->
-        <main class="ml-64 flex-1 p-8">
-            <!-- Students Section -->
-            <section id="students" class="content-section active">
-                <!-- Header & Filters -->
-                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
-                    <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4">Student Management & Welfare</h2>
-                    
-                    <!-- Search & Filters -->
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                        <input type="text" id="search-student" placeholder="Search by name, admission number, ID..." 
-                            class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
-                        
-                        <select id="filter-department" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500">
-                            <option value="">All Departments</option>
-                        </select>
-                        
-                        <select id="filter-year" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500">
-                            <option value="">All Years</option>
-                            <option value="1">Year 1</option>
-                            <option value="2">Year 2</option>
-                            <option value="3">Year 3</option>
-                            <option value="4">Year 4</option>
-                        </select>
-                        
-                        <select id="filter-intake" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500">
-                            <option value="">All Intakes</option>
-                            <option value="january">January</option>
-                            <option value="september">September</option>
-                        </select>
-                    </div>
-                    
-                    <button onclick="loadStudents()" class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
-                        <i class="ri-search-line mr-2"></i>Search
-                    </button>
-                </div>
-
-                <!-- Students Table -->
-                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
-                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                        <thead class="bg-gray-50 dark:bg-gray-900">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Student</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Admission No.</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Course</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Year</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Contact</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="students-table-body" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                            <tr>
-                                <td colspan="6" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
-                                    <i class="ri-loader-4-line text-4xl animate-spin mb-4"></i>
-                                    <p>Loading students...</p>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-
-            <!-- All Notes Section -->
-            <section id="notes" class="content-section">
-                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-                    <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6">All Student Notes</h2>
-                    <div id="all-notes-container">
-                        <p class="text-center text-gray-500 dark:text-gray-400 py-8">Select a student to view notes</p>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Tools of Trade Section -->
-            <section id="tools-of-trade" class="content-section">
-                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
-                    <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4">Tools of Trade Submissions</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                        <select id="tools-filter-status" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500">
-                            <option value="">All Statuses</option>
-                            <option value="submitted">Submitted</option>
-                            <option value="reviewed">Reviewed</option>
-                            <option value="rejected">Rejected</option>
-                        </select>
-                        <select id="tools-filter-type" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500">
-                            <option value="">All Tool Types</option>
-                            <option value="course_outline">Course Outline</option>
-                            <option value="learning_plan">Learning Plan</option>
-                            <option value="record_of_work">Record of Work</option>
-                            <option value="session_plan">Session Plan</option>
-                            <option value="exam">Exam</option>
-                            <option value="tvet_license">TVET License</option>
-                        </select>
-                        <button onclick="loadTools()" class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
-                            <i class="ri-refresh-line mr-2"></i>Refresh
-                        </button>
-                    </div>
-                </div>
-                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
-                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                        <thead class="bg-gray-50 dark:bg-gray-900">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Trainer</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tool Type</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">File</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Submitted</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tools-table-body" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                            <tr><td colspan="6" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400"><i class="ri-loader-4-line text-4xl animate-spin mb-4"></i><p>Loading...</p></td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-        </main>
+            <!-- Content area: the router injects each tab's partial here -->
+            <main id="tab-root" class="ml-64 flex-1 p-8"></main>
     </div>
 
+    <!-- Global modals (portal-wide) -->
     <!-- Add Note Modal -->
     <div id="add-note-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto m-4">
@@ -361,27 +242,11 @@
         </div>
     </div>
 
-    <script src="deanDashboard.js"></script>
-    <script>
-        // Cookie-based auth init + topbar logout wiring. The shared
-        // /public/js/auth.js exposes window.AUTH; requireAuth() bounces to
-        // /admin/login on no/expired session and populates #dean-name from
-        // the /api/me user object so the header shows the real name.
-        document.addEventListener('DOMContentLoaded', async () => {
-            if (window.AUTH && typeof window.AUTH.requireAuth === 'function') {
-                const user = await window.AUTH.requireAuth('/admin/login');
-                if (user && user.name) {
-                    const nameEl = document.getElementById('dean-name');
-                    if (nameEl) nameEl.textContent = user.name;
-                }
-            }
-            const logoutBtn = document.getElementById('logoutBtn');
-            if (logoutBtn && window.AUTH && typeof window.AUTH.logout === 'function') {
-                logoutBtn.addEventListener('click', () => window.AUTH.logout({ role: 'admin' }));
-            }
-        });
-    </script>
+    <!-- Scripts -->
+    <script src="/src/components/dean/portal-core.js"></script>
+    <script src="/src/components/dean/portal-router.js"></script>
+    <script src="/src/components/dean/tabs/students.js"></script>
+    <script src="/src/components/dean/tabs/notes.js"></script>
+    <script src="/src/components/dean/tabs/tools-of-trade.js"></script>
 </body>
 </html>
-
-

@@ -1,0 +1,8 @@
+/* dean-portal.css — portal-specific styles extracted verbatim from the
+   DeanDashboard.html inline <style> block during the SPA refactor.
+   Loaded alongside dashboard-styles.css (which owns the design system). */
+        .content-section { display: none; }
+        .content-section.active { display: block; }
+        /* Purple-gradient .nav-link.active removed — the design-system rule
+           in /public/css/dashboard-styles.css gives the active link a maroon
+           background and white text, matching the rest of the new chrome. */
