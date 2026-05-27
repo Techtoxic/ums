@@ -11,7 +11,7 @@ const s3Client = new S3Client({
     }
 });
 
-const BUCKET_NAME = process.env.AWS_S3_BUCKET_NAME;
+const BUCKET_NAME = process.env.AWS_S3_BUCKET_NAME || process.env.AWS_S3_BUCKET;
 
 const MAX_PRESIGN_SECONDS = 900; // SEV-H-011: 15-minute hard cap
 

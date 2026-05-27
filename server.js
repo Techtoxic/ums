@@ -154,24 +154,6 @@ const ensureDB = async (req, res, next) => {
     }
 };
 
-// V2 Phase 1b: /api/health — lightweight Postgres ping for liveness probes.
-// Defined here (before the route registration loop) so it doesn't need ensureDB.
-// (We attach to app below the express() construction; this is just the handler.)
-const healthHandler = async (_req, res) => {
-    try {
-        const start = Date.now();
-        await client`SELECT 1 as ok`;
-        res.json({
-            status: 'ok',
-            db: 'postgres',
-            latency_ms: Date.now() - start,
-            commit: 'v2-postgres Phase 1b',
-        });
-    } catch (err) {
-        res.status(503).json({ status: 'down', error: err.message });
-    }
-};
-
 console.log('Loading middleware and routes...');
 
 // Trust the first proxy (Vercel/Render/Cloudflare). Required for real client IPs in rate limiting.
@@ -720,39 +702,6 @@ registerPortal(app, portalDeps, {
 app.get('/src/components/registrar/AdmissionLetter.html', (req, res) => {
     serveHTML(res, path.join(__dirname, 'src', 'components', 'registrar', 'AdmissionLetter.html'));
 });
-
-// Function to filter out common units from course units
-function filterCommonUnits(units) {
-    // Define common unit names that should be excluded from department units
-    const commonUnitNames = [
-        'Demonstrate Communication Skills',
-        'Communication Skills',
-        'Demonstrate Numeracy Skills', 
-        'Numeracy Skills',
-        'Demonstrate Digital Literacy',
-        'Digital Literacy',
-        'Demonstrate Understanding of Entrepreneurship',
-        'Demonstrate Entrepreneural Skills',
-        'Demonstrate Entrepreneurial Skills',
-        'Entrepreneurial Skills',
-        'Entrepreneural Skills',
-        'Demonstrate Employability Skills',
-        'Employability Skills',
-        'Demonstrate Environmental Literacy',
-        'Environmental Literacy',
-        'Demonstrate Occupational Safety and Health Practices',
-        'Occupational Safety and Health Practices',
-        'OSH Practices'
-    ];
-    
-    return units.filter(unit => {
-        const isCommonUnit = commonUnitNames.some(commonName => 
-            unit.unitName.toLowerCase().includes(commonName.toLowerCase()) ||
-            commonName.toLowerCase().includes(unit.unitName.toLowerCase())
-        );
-        return !isCommonUnit;
-    });
-}
 
 // Function to initialize trainers in database
 async function initializeTrainers() {

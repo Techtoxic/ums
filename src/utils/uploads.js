@@ -12,7 +12,7 @@ const { verifyToken } = require('../middleware/auth');
 const upload = multer({
     storage: multer.memoryStorage(),
     limits: {
-        fileSize: 10 * 1024 * 1024 // 10MB hard cap; multer rejects larger before the full read. Images further capped to 5MB in validateUploadBuffer.
+        fileSize: config.upload.maxFileSize // hard cap (MAX_FILE_SIZE env, default 10MB); multer rejects larger before the full read. Images further capped to 5MB in validateUploadBuffer.
     }
 });
 
