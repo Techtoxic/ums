@@ -80,7 +80,7 @@ async function uploadToS3(fileBuffer, fileName, mimeType, folder = '', options =
 
         const result = await upload.done();
 
-        console.log(`✅ File uploaded successfully to S3: ${key}`);
+        console.log(`File uploaded successfully to S3: ${key}`);
 
         return {
             success: true,
@@ -89,7 +89,7 @@ async function uploadToS3(fileBuffer, fileName, mimeType, folder = '', options =
             bucket: BUCKET_NAME
         };
     } catch (error) {
-        console.error('❌ Error uploading to S3:', error);
+        console.error('Error uploading to S3:', error);
         throw new Error(`S3 upload failed: ${error.message}`);
     }
 }
@@ -129,7 +129,7 @@ async function getPresignedUrl(key, expiresIn = MAX_PRESIGN_SECONDS, options = {
         const url = await getSignedUrl(s3Client, command, { expiresIn: ttl });
         return url;
     } catch (error) {
-        console.error('❌ Error generating presigned URL:', error);
+        console.error('Error generating presigned URL:', error);
         throw new Error(`Failed to generate presigned URL: ${error.message}`);
     }
 }
@@ -152,11 +152,11 @@ async function deleteFromS3(key) {
 
         await s3Client.send(command);
 
-        console.log(`✅ File deleted successfully from S3: ${key}`);
+        console.log(`File deleted successfully from S3: ${key}`);
 
         return { success: true };
     } catch (error) {
-        console.error('❌ Error deleting from S3:', error);
+        console.error('Error deleting from S3:', error);
         throw new Error(`S3 delete failed: ${error.message}`);
     }
 }
@@ -187,7 +187,7 @@ async function getFileFromS3(key) {
         
         return Buffer.concat(chunks);
     } catch (error) {
-        console.error('❌ Error getting file from S3:', error);
+        console.error('Error getting file from S3:', error);
         throw new Error(`Failed to get file from S3: ${error.message}`);
     }
 }

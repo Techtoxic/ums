@@ -11,13 +11,13 @@ let emailService;
 try {
     emailService = new EmailService();
 } catch (err) {
-    console.error('⚠️ Email service failed to initialize:', err.message);
+    console.error('Email service failed to initialize:', err.message);
     // Create stub for build phase
     emailService = {
-        sendOTPEmail: async () => console.log('📧 Email stub: sendOTPEmail'),
-        sendResetLinkEmail: async () => console.log('📧 Email stub: sendResetLinkEmail'),
-        sendPassword: async () => console.log('📧 Email stub: sendPassword'),
-        sendStudentCredentials: async () => console.log('📧 Email stub: sendStudentCredentials')
+        sendOTPEmail: async () => console.log('Email stub: sendOTPEmail'),
+        sendResetLinkEmail: async () => console.log('Email stub: sendResetLinkEmail'),
+        sendPassword: async () => console.log('Email stub: sendPassword'),
+        sendStudentCredentials: async () => console.log('Email stub: sendStudentCredentials')
     };
 }
 

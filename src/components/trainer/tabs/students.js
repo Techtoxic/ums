@@ -7,7 +7,7 @@ window.TrainerTabs = window.TrainerTabs || {};
 // Load students
 async function loadStudents() {
     try {
-        console.log('🔄 Loading students...');
+        console.log('Loading students...');
         
         const response = await authFetch(`${API_BASE_URL}/trainers/${currentTrainer._id}/students`);
         
@@ -31,8 +31,8 @@ async function loadStudents() {
             studentsData = Array.isArray(data) ? data : [];
         }
         
-        console.log(`✅ Successfully loaded ${studentsData.length} students`);
-        console.log('📊 Students data:', studentsData.map(s => ({ name: s.name, course: s.course })));
+        console.log(`Successfully loaded ${studentsData.length} students`);
+        console.log('Students data:', studentsData.map(s => ({ name: s.name, course: s.course })));
         
         // Update stats
         updateStats();
@@ -43,7 +43,7 @@ async function loadStudents() {
         }
         
     } catch (error) {
-        console.error('❌ Error loading students:', error);
+        console.error('Error loading students:', error);
         studentsData = [];
         updateStats();
         if (currentSection === 'students') {
@@ -54,7 +54,7 @@ async function loadStudents() {
 
 // Display students
 function displayStudents() {
-    console.log('🎨 Displaying students...');
+    console.log('Displaying students...');
     
     const filter = document.getElementById('studentsFilter')?.value || '';
     let filteredStudents = [...studentsData];
@@ -82,7 +82,7 @@ function displayStudents() {
     
     studentsGrid.innerHTML = filteredStudents.map(student => createStudentCard(student)).join('');
     
-    console.log(`✅ Displayed ${filteredStudents.length} students`);
+    console.log(`Displayed ${filteredStudents.length} students`);
 }
 
 // Create student card HTML

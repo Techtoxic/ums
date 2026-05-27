@@ -5,7 +5,7 @@ window.TrainerTabs = window.TrainerTabs || {};
 // Load dashboard data
 async function loadDashboardData() {
     try {
-        console.log('📊 Loading dashboard data...');
+        console.log('Loading dashboard data...');
         
         // Load assignments and students in parallel
         await Promise.all([
@@ -13,10 +13,10 @@ async function loadDashboardData() {
             loadStudents()
         ]);
         
-        console.log('✅ Dashboard data loaded successfully');
+        console.log('Dashboard data loaded successfully');
         
     } catch (error) {
-        console.error('❌ Error loading dashboard data:', error);
+        console.error('Error loading dashboard data:', error);
         showToast('Error loading some data', 'error');
     }
 }

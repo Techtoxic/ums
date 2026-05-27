@@ -45,7 +45,7 @@ router.post('/tools/upload', verifyToken, authorize('admin', 'trainer'), upload.
         const safeToolType = String(toolType).replace(/[^A-Za-z0-9._-]/g, '_');
         const fileName = `${crypto.randomUUID()}.${v.ext}`;
 
-        console.log('📤 Uploading tool to S3...');
+        console.log('Uploading tool to S3...');
         const s3Result = await uploadToS3(
             req.file.buffer,
             fileName,
@@ -53,7 +53,7 @@ router.post('/tools/upload', verifyToken, authorize('admin', 'trainer'), upload.
             `tools-of-trade/${safeToolType}`,
             { displayName: v.displayName, inlineImage: v.isImage }
         );
-        console.log('✅ Tool uploaded to S3:', s3Result.key);
+        console.log('Tool uploaded to S3:', s3Result.key);
 
         const newUpload = await ToolUpload.create({
             requestId: requestId || null,
@@ -103,7 +103,7 @@ router.post('/tools/upload', verifyToken, authorize('admin', 'trainer'), upload.
             }
         });
     } catch (error) {
-        console.error('❌ Error uploading file:', error);
+        console.error('Error uploading file:', error);
         res.status(500).json({
             message: 'Error uploading file',
             error: error.message
@@ -244,7 +244,7 @@ router.get('/tools/:toolId/download', verifyToken, authorize('admin', 'dean', 't
         });
         res.json({ success: true, url: presignedUrl, fileName: tool.originalName });
     } catch (error) {
-        console.error('❌ Error getting download URL:', error);
+        console.error('Error getting download URL:', error);
         res.status(500).json({
             message: 'Error getting download URL',
             error: error.message
@@ -282,7 +282,7 @@ router.delete('/tools/:toolId', verifyToken, authorize('admin', 'deputy', 'train
             message: 'Tool submission removed'
         });
     } catch (error) {
-        console.error('❌ Error deleting tool:', error);
+        console.error('Error deleting tool:', error);
         res.status(500).json({
             message: 'Error deleting tool',
             error: error.message

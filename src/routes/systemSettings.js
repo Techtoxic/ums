@@ -18,7 +18,7 @@ router.get('/diagnostics/unassigned-units', verifyToken, authorize('admin', 'reg
             !assignedUnitIds.includes(unit._id.toString())
         );
 
-        console.log(`📊 Diagnostic: ${unassignedUnits.length} units without trainer assignments:`,
+        console.log(`Diagnostic: ${unassignedUnits.length} units without trainer assignments:`,
             unassignedUnits.map(u => ({ unitCode: u.unitCode, unitName: u.unitName }))
         );
 

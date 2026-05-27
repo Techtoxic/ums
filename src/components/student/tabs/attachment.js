@@ -6,25 +6,25 @@ window.StudentTabs = window.StudentTabs || {};
         // Check attachment eligibility and load form
         async function checkAttachmentEligibility() {
             try {
-                console.log('🔍 checkAttachmentEligibility called');
-                console.log('📊 studentData:', studentData);
+                console.log('checkAttachmentEligibility called');
+                console.log('studentData:', studentData);
                 
                 // Refresh studentData from session storage to ensure we have latest data
                 const sessionData = JSON.parse(sessionStorage.getItem('studentData')) || {};
                 if (sessionData && Object.keys(sessionData).length > Object.keys(studentData).length) {
-                    console.log('🔄 Updating studentData from session storage');
+                    console.log('Updating studentData from session storage');
                     studentData = sessionData;
                 }
                 
                 const studentId = studentData?.admissionNumber;
-                console.log('🆔 Student ID:', studentId);
+                console.log('Student ID:', studentId);
                 
                 if (!studentId) {
                     console.error('No student ID found, studentData:', studentData);
                     
                     // Try to wait for studentData to load
                     if (!studentData || !studentData.admissionNumber) {
-                        console.log('⏳ Waiting for student data to load...');
+                        console.log('Waiting for student data to load...');
                         setTimeout(checkAttachmentEligibility, 500);
                         return;
                     }
@@ -32,8 +32,8 @@ window.StudentTabs = window.StudentTabs || {};
                 }
 
                 const url = `${API_BASE_URL}/students/${encodeURIComponent(studentId)}/attachment-eligibility`;
-                console.log('🌐 API_BASE_URL:', API_BASE_URL);
-                console.log('🌐 Fetching URL:', url);
+                console.log('API_BASE_URL:', API_BASE_URL);
+                console.log('Fetching URL:', url);
                 
                 const response = await window.AUTH.fetch(url);
                 const data = await response.json();
@@ -82,10 +82,10 @@ window.StudentTabs = window.StudentTabs || {};
 
         // Populate attachment form with student data
         function populateAttachmentForm(data) {
-            console.log('📝 Populating attachment form with data:', data);
-            console.log('👤 Student data:', studentData);
-            console.log('🔍 Student data keys:', Object.keys(studentData));
-            console.log('🗓️ Intake fields specifically:', {
+            console.log('Populating attachment form with data:', data);
+            console.log('Student data:', studentData);
+            console.log('Student data keys:', Object.keys(studentData));
+            console.log('Intake fields specifically:', {
                 intake: studentData.intake,
                 intakeYear: studentData.intakeYear,
                 hasIntake: 'intake' in studentData,
@@ -100,7 +100,7 @@ window.StudentTabs = window.StudentTabs || {};
             document.querySelector('.attachment-student-year').textContent = `Year ${data.yearOfStudy}`;
             
             // Additional fields - intake formatting (same logic as profile section)
-            console.log('🗓️ Intake data for attachment:', { 
+            console.log('Intake data for attachment:', { 
                 intake: studentData.intake, 
                 intakeYear: studentData.intakeYear,
                 fullStudentData: studentData 
@@ -127,9 +127,9 @@ window.StudentTabs = window.StudentTabs || {};
                     const fullYear = '20' + yearSuffix;
                     const intakeName = intakePrefix === 'J' ? 'January' : 'September';
                     intakeText = `${intakeName} ${fullYear}`;
-                    console.log('✅ Extracted intake from admission number for attachment:', intakeText);
+                    console.log('Extracted intake from admission number for attachment:', intakeText);
                 } else {
-                    console.warn('⚠️ No intake data found in studentData for attachment');
+                    console.warn('No intake data found in studentData for attachment');
                 }
             }
             

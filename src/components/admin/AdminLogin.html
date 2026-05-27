@@ -190,8 +190,8 @@
 
     <script>
         // Version check - NEW OTP LOGIN SYSTEM
-        console.log('🔐 Admin Login System v2.0 - OTP Enabled');
-        console.log('📅 Loaded:', new Date().toISOString());
+        console.log('Admin Login System v2.0 - OTP Enabled');
+        console.log('Loaded:', new Date().toISOString());
         
         let userEmail = '';
         let countdownTimer = null;
@@ -341,8 +341,8 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    console.log('✅ OTP verified successfully!');
-                    console.log('📦 Response data:', {
+                    console.log('OTP verified successfully!');
+                    console.log('Response data:', {
                         hasToken: !!data.data.token,
                         tokenLength: data.data.token ? data.data.token.length : 0,
                         user: data.data.user
@@ -357,10 +357,10 @@
 
                     // Redirect based on first login status
                     if (data.data.user.isFirstLogin) {
-                        console.log('🔄 Redirecting to first-login setup...');
+                        console.log('Redirecting to first-login setup...');
                         window.location.href = '/admin/first-login';
                     } else {
-                        console.log('🔄 Redirecting to dashboard...');
+                        console.log('Redirecting to dashboard...');
                         window.location.href = dashboardUrlForRole(data.data.user.role);
                     }
                 } else {

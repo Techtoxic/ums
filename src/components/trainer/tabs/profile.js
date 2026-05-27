@@ -32,7 +32,7 @@ async function handleProfileUpdate(event) {
         showToast('Profile updated successfully', 'success');
         
     } catch (error) {
-        console.error('❌ Error updating profile:', error);
+        console.error('Error updating profile:', error);
         showToast(`Failed to update profile: ${error.message}`, 'error');
     }
 }

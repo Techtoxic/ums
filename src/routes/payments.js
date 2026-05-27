@@ -19,7 +19,7 @@ router.post('/payments', verifyToken, authorize('admin', 'finance'), async (req,
             paymentDate
         } = req.body;
 
-        console.log('💰 Processing payment:', { studentId, amount, paymentMode, reference });
+        console.log('Processing payment:', { studentId, amount, paymentMode, reference });
 
         if (!studentId || !amount || !paymentMode || !reference) {
             return res.status(400).json({ message: 'Please provide all required payment details' });
@@ -52,7 +52,7 @@ router.post('/payments', verifyToken, authorize('admin', 'finance'), async (req,
 
         await payment.save();
 
-        console.log('✅ Payment saved successfully:', payment._id);
+        console.log('Payment saved successfully:', payment._id);
 
         res.status(201).json({
             message: 'Payment recorded successfully',
@@ -62,11 +62,11 @@ router.post('/payments', verifyToken, authorize('admin', 'finance'), async (req,
     } catch (error) {
         if (error.name === 'ValidationError') {
             const messages = Object.values(error.errors).map(err => err.message);
-            console.error('❌ Payment validation error:', messages);
+            console.error('Payment validation error:', messages);
             return res.status(400).json({ message: messages.join(', ') });
         }
 
-        console.error('❌ Error recording payment:', error);
+        console.error('Error recording payment:', error);
         res.status(500).json({ message: 'Error recording payment' });
     }
 });

@@ -39,7 +39,7 @@ async function brevoFetch(url, { apiKey, method = 'GET', body }) {
 // OTP value, or reset token.
 async function sendEmail(service, { subject, htmlContent, textContent, recipientEmail, recipientName, recipients }) {
     if (!service.apiKey) {
-        console.log('📧 email skipped: BREVO_API_KEY not set');
+        console.log('email skipped: BREVO_API_KEY not set');
         return { success: true, skipped: true };
     }
 
@@ -64,18 +64,18 @@ async function sendEmail(service, { subject, htmlContent, textContent, recipient
         });
 
         if (ok && json && json.messageId) {
-            console.log(`✅ Email sent: ${subject} [${json.messageId}]`);
+            console.log(`Email sent: ${subject} [${json.messageId}]`);
             return { success: true, messageId: json.messageId, recipient: recipientEmail || recipients };
         }
 
         const code = (json && json.code) ? json.code : 'unknown';
-        console.error(`❌ Email failed: ${subject} | status=${status} code=${code}`);
+        console.error(`Email failed: ${subject} | status=${status} code=${code}`);
         return { success: false, error: `brevo responded ${status}` };
     } catch (err) {
         const isTimeout = err && err.name === 'AbortError';
         const status = isTimeout ? 'timeout' : 'network';
         const code = isTimeout ? 'TIMEOUT' : ((err && err.code) ? err.code : 'NETWORK');
-        console.error(`❌ Email failed: ${subject} | status=${status} code=${code}`);
+        console.error(`Email failed: ${subject} | status=${status} code=${code}`);
         return { success: false, error: isTimeout ? 'request timeout' : 'network error' };
     }
 }
@@ -90,11 +90,11 @@ class EmailService {
 
     initializeTransporter() {
         if (!this.apiKey) {
-            console.warn('⚠️ BREVO_API_KEY not set — email service running in degraded mode (emails will be skipped)');
+            console.warn('BREVO_API_KEY not set — email service running in degraded mode (emails will be skipped)');
             return;
         }
         if (!this.senderEmail || !this.senderName) {
-            console.warn('⚠️ BREVO_SENDER_EMAIL / BREVO_SENDER_NAME not set — Brevo sends will fail until configured');
+            console.warn('BREVO_SENDER_EMAIL / BREVO_SENDER_NAME not set — Brevo sends will fail until configured');
         }
 
         // Replaces the old transporter.verify(): a single /v3/account GET
@@ -103,14 +103,14 @@ class EmailService {
         brevoFetch(BREVO_ACCOUNT_URL, { apiKey: this.apiKey, method: 'GET' })
             .then(({ ok, status }) => {
                 if (ok) {
-                    console.log('✅ Email service initialized successfully (Brevo)');
+                    console.log('Email service initialized successfully (Brevo)');
                 } else {
-                    console.error(`❌ Email service initialization failed: Brevo /v3/account returned status=${status}`);
+                    console.error(`Email service initialization failed: Brevo /v3/account returned status=${status}`);
                 }
             })
             .catch((error) => {
                 const isTimeout = error && error.name === 'AbortError';
-                console.error(`❌ Email service initialization failed: ${isTimeout ? 'timeout' : 'network error'}`);
+                console.error(`Email service initialization failed: ${isTimeout ? 'timeout' : 'network error'}`);
             });
     }
 

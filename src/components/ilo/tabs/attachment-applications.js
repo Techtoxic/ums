@@ -5,9 +5,9 @@ window.ILOTabs = window.ILOTabs || {};
 // Load attachment applications
 async function loadAttachmentApplications() {
     try {
-        console.log('📎 Loading attachment applications from:', API_BASE_URL + '/ilo/attachment-applications');
+        console.log('Loading attachment applications from:', API_BASE_URL + '/ilo/attachment-applications');
         const response = await authFetch(API_BASE_URL + '/ilo/attachment-applications');
-        console.log('📎 Response status:', response.status);
+        console.log('Response status:', response.status);
         
         if (!response.ok) {
             throw new Error('HTTP ' + response.status + ': ' + response.statusText);
@@ -15,11 +15,11 @@ async function loadAttachmentApplications() {
         
         const data = await response.json();
         attachmentApplications = data.applications || [];
-        console.log('📎 Found', attachmentApplications.length, 'attachment applications');
+        console.log('Found', attachmentApplications.length, 'attachment applications');
         
         displayAttachmentApplications(attachmentApplications);
     } catch (error) {
-        console.error('❌ Error loading attachment applications:', error);
+        console.error('Error loading attachment applications:', error);
         showToast('Failed to load attachment applications: ' + error.message, 'error');
     }
 }

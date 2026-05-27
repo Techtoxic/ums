@@ -6,7 +6,7 @@ const { Student, Payment, Program, Unit, CommonUnit, SystemSettings, StudentUnit
 
 // Check if student can register (fee threshold check) - MUST be before /:id route
 router.get('/students/:studentId/can-register', verifyToken, authorize('admin', 'registrar', 'student'), verifyOwnership('studentId'), async (req, res) => {
-    console.log('🔍 CAN-REGISTER API called for student:', req.params.studentId);
+    console.log('CAN-REGISTER API called for student:', req.params.studentId);
     try {
         const { studentId } = req.params;
 
@@ -159,7 +159,7 @@ router.post('/students/register-units', verifyToken, authorize('admin', 'registr
 
         const outstandingBalance = totalFees - paidAmount;
 
-        console.log('🔍 Backend register-units balance calculation:', {
+        console.log('Backend register-units balance calculation:', {
             studentId,
             studentCourse: student.course,
             programName: programName,

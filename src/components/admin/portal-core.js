@@ -92,7 +92,7 @@ async function loadPrograms() {
 
 // ---- dark mode (verbatim) ----
 function toggleDarkMode() {
-    console.log('🌙 toggleDarkMode() called!');
+    console.log('toggleDarkMode() called!');
     const html = document.documentElement;
     const icon = document.getElementById('dark-mode-icon');
     
@@ -103,12 +103,12 @@ function toggleDarkMode() {
         html.classList.remove('dark');
         localStorage.setItem('darkMode', 'false');
         if (icon) icon.className = 'ri-moon-line text-2xl';
-        console.log('✅ Dark mode DISABLED - removed "dark" class');
+        console.log('Dark mode DISABLED - removed "dark" class');
     } else {
         html.classList.add('dark');
         localStorage.setItem('darkMode', 'true');
         if (icon) icon.className = 'ri-sun-line text-2xl';
-        console.log('✅ Dark mode ENABLED - added "dark" class');
+        console.log('Dark mode ENABLED - added "dark" class');
     }
     
     // Double-check the class is there

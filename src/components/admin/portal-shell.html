@@ -34,7 +34,7 @@
         }
         
         // Test dark mode immediately after Tailwind loads
-        console.log('✅ Tailwind darkMode configured as:', tailwind.config.darkMode);
+        console.log('Tailwind darkMode configured as:', tailwind.config.darkMode);
         
         // Verify dark mode support
         window.addEventListener('DOMContentLoaded', () => {
@@ -42,7 +42,7 @@
             testEl.className = 'bg-white dark:bg-gray-800';
             document.body.appendChild(testEl);
             const computed = window.getComputedStyle(testEl);
-            console.log('🧪 Dark mode test element created');
+            console.log('Dark mode test element created');
             document.body.removeChild(testEl);
         });
     </script>

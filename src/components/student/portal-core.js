@@ -408,7 +408,7 @@ async function updateFinancialInfo(programCost, payments) {
     // Calculate balance (total fees - total paid)
     const balance = totalFees - totalPaid;
     
-    console.log('🔍 Dashboard balance calculation:', {
+    console.log('Dashboard balance calculation:', {
         programCost,
         yearOfStudy,
         totalFees,

@@ -66,7 +66,7 @@ const departmentNames = {
 
 // Initialize dashboard
 async function initializeDashboard() {
-    console.log('🚀 Initializing CIBEC Dashboard...');
+    console.log('Initializing CIBEC Dashboard...');
     
     // Load statistics
     await loadStatistics();
@@ -77,7 +77,7 @@ async function initializeDashboard() {
     // Setup event listeners
     setupEventListeners();
     
-    console.log('✅ Dashboard initialized');
+    console.log('Dashboard initialized');
 }
 
 // Load statistics

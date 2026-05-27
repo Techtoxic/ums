@@ -238,8 +238,8 @@ router.post('/common-unit-assignments', verifyToken, authorize('admin', 'hod'), 
     try {
         const { commonUnitId, trainerId, assignedBy, assignedByDepartment, trainerDepartment, notes } = req.body;
 
-        console.log('📝 Common unit assignment request body:', req.body);
-        console.log('🔍 Field validation:');
+        console.log('Common unit assignment request body:', req.body);
+        console.log('Field validation:');
         console.log('  commonUnitId:', commonUnitId ? '✅' : '❌');
         console.log('  trainerId:', trainerId ? '✅' : '❌');
         console.log('  assignedBy:', assignedBy ? '✅' : '❌');
@@ -248,7 +248,7 @@ router.post('/common-unit-assignments', verifyToken, authorize('admin', 'hod'), 
 
         // Validate required fields
         if (!commonUnitId || !trainerId || !assignedBy || !assignedByDepartment || !trainerDepartment) {
-            console.log('❌ Validation failed - missing required fields');
+            console.log('Validation failed - missing required fields');
             return res.status(400).json({
                 success: false,
                 message: 'Missing required fields'

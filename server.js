@@ -67,10 +67,10 @@ try {
     console.error('⚠️ Email service failed to initialize:', err.message);
     // Create stub for build phase
     emailService = {
-        sendOTPEmail: async () => console.log('📧 Email stub: sendOTPEmail'),
-        sendResetLinkEmail: async () => console.log('📧 Email stub: sendResetLinkEmail'),
-        sendPassword: async () => console.log('📧 Email stub: sendPassword'),
-        sendStudentCredentials: async () => console.log('📧 Email stub: sendStudentCredentials')
+        sendOTPEmail: async () => console.log('Email stub: sendOTPEmail'),
+        sendResetLinkEmail: async () => console.log('Email stub: sendResetLinkEmail'),
+        sendPassword: async () => console.log('Email stub: sendPassword'),
+        sendStudentCredentials: async () => console.log('Email stub: sendStudentCredentials')
     };
 }
 
@@ -706,16 +706,16 @@ app.get('/src/components/registrar/AdmissionLetter.html', (req, res) => {
 // Function to initialize trainers in database
 async function initializeTrainers() {
     try {
-        console.log('🔄 Initializing trainers (preserving existing ones)...');
+        console.log('Initializing trainers (preserving existing ones)...');
 
         const trainersByDepartment = parseTrainersFile();
-        console.log('📋 Departments found in trainers.txt:', Object.keys(trainersByDepartment));
+        console.log('Departments found in trainers.txt:', Object.keys(trainersByDepartment));
         
         let newTrainersAdded = 0;
         let existingTrainersFound = 0;
         
         for (const [department, trainers] of Object.entries(trainersByDepartment)) {
-            console.log(`🔍 Checking ${trainers.length} trainers for department: ${department}`);
+            console.log(`Checking ${trainers.length} trainers for department: ${department}`);
             
             for (const trainerData of trainers) {
                 // Check if trainer already exists by email (unique identifier)
@@ -737,14 +737,14 @@ async function initializeTrainers() {
                     
                     if (updated) {
                         await existingTrainer.save();
-                        console.log(`  ✏️ Updated trainer: ${trainerData.name}`);
+                        console.log(`  Updated trainer: ${trainerData.name}`);
                     } else {
-                        console.log(`  ✅ Existing trainer: ${trainerData.name}`);
+                        console.log(`  Existing trainer: ${trainerData.name}`);
                     }
                     existingTrainersFound++;
                 } else {
                     // Create new trainer
-                    console.log(`  ➕ Adding new trainer: ${trainerData.name} to department: ${trainerData.department}`);
+                    console.log(`  Adding new trainer: ${trainerData.name} to department: ${trainerData.department}`);
                 // SEV-C-004: Trainer.password is now required with no default.
                 // Seed each new trainer with a unique strong random password
                 // (hashed by the model pre-save hook). It is intentionally not
@@ -758,8 +758,8 @@ async function initializeTrainers() {
             }
         }
 
-        console.log(`✅ Trainer initialization complete!`);
-        console.log(`📊 Summary: ${existingTrainersFound} existing, ${newTrainersAdded} new trainers`);
+        console.log(`Trainer initialization complete!`);
+        console.log(`Summary: ${existingTrainersFound} existing, ${newTrainersAdded} new trainers`);
         
         // Only fix references if we have broken ones
         const allAssignments = await TrainerAssignment.find({ status: 'active' });
@@ -771,10 +771,10 @@ async function initializeTrainers() {
         );
         
         if (brokenAssignments.length > 0) {
-            console.log(`🔧 Found ${brokenAssignments.length} broken trainer references, fixing...`);
+            console.log(`Found ${brokenAssignments.length} broken trainer references, fixing...`);
             await fixBrokenTrainerReferences();
         } else {
-            console.log('✅ All trainer references are valid');
+            console.log('All trainer references are valid');
         }
         
         // Check unit references
@@ -786,14 +786,14 @@ async function initializeTrainers() {
         );
         
         if (brokenUnitAssignments.length > 0) {
-            console.log(`🔧 Found ${brokenUnitAssignments.length} broken unit references, fixing...`);
+            console.log(`Found ${brokenUnitAssignments.length} broken unit references, fixing...`);
             await fixBrokenUnitReferences();
         } else {
-            console.log('✅ All unit references are valid');
+            console.log('All unit references are valid');
         }
         
     } catch (error) {
-        console.error('❌ Error initializing trainers:', error);
+        console.error('Error initializing trainers:', error);
     }
 }
 
@@ -851,17 +851,17 @@ async function fixBrokenTrainerReferences() {
 // Function to fix broken unit references in assignments
 async function fixBrokenUnitReferences() {
     try {
-        console.log('🔧 Fixing broken unit references in assignments...');
+        console.log('Fixing broken unit references in assignments...');
         
         // Get all active assignments
         const allAssignments = await TrainerAssignment.find({ status: 'active' });
-        console.log(`📋 Found ${allAssignments.length} total active assignments`);
+        console.log(`Found ${allAssignments.length} total active assignments`);
         
         // Get all current units
         const currentUnits = await Unit.find({ isActive: true });
         const currentUnitIds = currentUnits.map(u => u._id.toString());
         
-        console.log(`📚 Found ${currentUnits.length} active units in database`);
+        console.log(`Found ${currentUnits.length} active units in database`);
         
         // Find assignments with invalid unit references
         const brokenAssignments = [];
@@ -871,10 +871,10 @@ async function fixBrokenUnitReferences() {
             }
         }
         
-        console.log(`🔍 Found ${brokenAssignments.length} assignments with broken/invalid unit references`);
+        console.log(`Found ${brokenAssignments.length} assignments with broken/invalid unit references`);
         
         if (brokenAssignments.length === 0) {
-            console.log('✅ No broken unit references found');
+            console.log('No broken unit references found');
             return;
         }
         
@@ -892,33 +892,33 @@ async function fixBrokenUnitReferences() {
                 assignment.unitId = unit._id;
                 await assignment.save();
                 
-                console.log(`✅ Fixed unit reference for assignment ${assignment.courseCode} - assigned to unit ${unit.unitCode}`);
+                console.log(`Fixed unit reference for assignment ${assignment.courseCode} - assigned to unit ${unit.unitCode}`);
                 fixedCount++;
             } else {
-                console.warn(`⚠️ No matching units found for assignment ${assignment.courseCode} in department ${assignment.department}`);
+                console.warn(`No matching units found for assignment ${assignment.courseCode} in department ${assignment.department}`);
                 
                 // Try to find any unit with the same course code (ignore department)
                 const anyMatchingUnit = currentUnits.find(u => u.courseCode === assignment.courseCode);
                 if (anyMatchingUnit) {
                     assignment.unitId = anyMatchingUnit._id;
                     await assignment.save();
-                    console.log(`✅ Fixed unit reference for assignment ${assignment.courseCode} - assigned to unit ${anyMatchingUnit.unitCode} (cross-department)`);
+                    console.log(`Fixed unit reference for assignment ${assignment.courseCode} - assigned to unit ${anyMatchingUnit.unitCode} (cross-department)`);
                     fixedCount++;
                 }
             }
         }
         
-        console.log(`✅ Successfully fixed ${fixedCount} broken unit references`);
+        console.log(`Successfully fixed ${fixedCount} broken unit references`);
         
     } catch (error) {
-        console.error('❌ Error fixing broken unit references:', error);
+        console.error('Error fixing broken unit references:', error);
     }
 }
 
 // Initialize Common Units
 async function initializeCommonUnits() {
     try {
-        console.log('🔄 Initializing common units...');
+        console.log('Initializing common units...');
         
         // Common units data from the requirements
         const commonUnits = [
@@ -991,21 +991,21 @@ async function initializeCommonUnits() {
                 Object.assign(existingUnit, unitData);
                 await existingUnit.save();
                 existingCount++;
-                console.log(`  ✅ Updated common unit: ${unitData.unitName}`);
+                console.log(`  Updated common unit: ${unitData.unitName}`);
             } else {
                 // Create new common unit
                 const commonUnit = new CommonUnit(unitData);
                 await commonUnit.save();
                 newCount++;
-                console.log(`  ➕ Created common unit: ${unitData.unitName}`);
+                console.log(`  Created common unit: ${unitData.unitName}`);
             }
         }
 
-        console.log(`✅ Common units initialization complete!`);
-        console.log(`📊 Summary: ${existingCount} existing, ${newCount} new common units`);
+        console.log(`Common units initialization complete!`);
+        console.log(`Summary: ${existingCount} existing, ${newCount} new common units`);
         
     } catch (error) {
-        console.error('❌ Error initializing common units:', error);
+        console.error('Error initializing common units:', error);
     }
 }
 
@@ -1091,7 +1091,7 @@ async function initializeAdminStaff() {
 // Initialize system settings with default values
 async function initializeSystemSettings() {
     try {
-        console.log('🔄 Initializing system settings...');
+        console.log('Initializing system settings...');
         
         // Default settings
         const defaultSettings = [
@@ -1133,15 +1133,15 @@ async function initializeSystemSettings() {
             } else {
                 await SystemSettings.create(settingData);
                 newCount++;
-                console.log(`  ➕ Created setting: ${settingData.key} = ${settingData.value}`);
+                console.log(`  Created setting: ${settingData.key} = ${settingData.value}`);
             }
         }
 
-        console.log(`✅ System settings initialization complete!`);
-        console.log(`📊 Summary: ${existingCount} existing, ${newCount} new settings`);
+        console.log(`System settings initialization complete!`);
+        console.log(`Summary: ${existingCount} existing, ${newCount} new settings`);
         
     } catch (error) {
-        console.error('❌ Error initializing system settings:', error);
+        console.error('Error initializing system settings:', error);
     }
 }
 

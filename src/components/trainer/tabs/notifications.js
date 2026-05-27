@@ -20,13 +20,13 @@ async function loadNotifications() {
 
         const notifications = await response.json();
         
-        console.log(`✅ Successfully loaded ${notifications.length} notifications`);
+        console.log(`Successfully loaded ${notifications.length} notifications`);
 
         displayNotifications(notifications);
         updateNotificationBadge(notifications);
 
     } catch (error) {
-        console.error('❌ Error loading notifications:', error);
+        console.error('Error loading notifications:', error);
         showNotificationsEmptyState();
         showToast(`Failed to load notifications: ${error.message}`, 'error');
     }
@@ -98,7 +98,7 @@ async function markAsRead(notificationId) {
         showToast('Notification marked as read', 'success');
 
     } catch (error) {
-        console.error('❌ Error marking notification as read:', error);
+        console.error('Error marking notification as read:', error);
         showToast(`Failed to mark as read: ${error.message}`, 'error');
     }
 }
@@ -124,7 +124,7 @@ async function markAllAsRead() {
         showToast('All notifications marked as read', 'success');
 
     } catch (error) {
-        console.error('❌ Error marking all notifications as read:', error);
+        console.error('Error marking all notifications as read:', error);
         showToast(`Failed to mark all as read: ${error.message}`, 'error');
     }
 }

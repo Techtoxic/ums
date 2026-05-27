@@ -55,7 +55,7 @@ router.get('/files/:category/:id/download', fileDownloadAuth, async (req, res) =
 
         return res.status(400).json({ success: false, message: 'Unknown file category' });
     } catch (err) {
-        console.error('❌ File download error:', err.message);
+        console.error('File download error:', err.message);
         return res.status(500).json({ success: false, message: 'Error serving file' });
     }
 });

@@ -218,7 +218,7 @@ window.DeputyTabs = window.DeputyTabs || {};
                     throw new Error('Invalid download URL received');
                 }
                 
-                console.log(`📥 Downloading file from ${data.storageType}:`, data.fileName);
+                console.log(`Downloading file from ${data.storageType}:`, data.fileName);
                 
                 // Create download link
                 const a = document.createElement('a');
@@ -231,7 +231,7 @@ window.DeputyTabs = window.DeputyTabs || {};
                 
                 showToast(`Download started (${data.storageType})`, 'success');
             } catch (error) {
-                console.error('❌ Error downloading tool:', error);
+                console.error('Error downloading tool:', error);
                 showToast('Failed to download file: ' + error.message, 'error');
             }
         }
@@ -250,7 +250,7 @@ window.DeputyTabs = window.DeputyTabs || {};
                 showToast('Tool submission deleted', 'success');
                 fetchToolsOfTrade();
             } catch (error) {
-                console.error('❌ Error deleting tool:', error);
+                console.error('Error deleting tool:', error);
                 showToast('Failed to delete tool: ' + error.message, 'error');
             }
         }
@@ -353,7 +353,7 @@ window.DeputyTabs = window.DeputyTabs || {};
                 const statusElement = document.getElementById('reviewStatus');
                 const feedbackElement = document.getElementById('reviewFeedback');
                 
-                console.log('🔍 Debug modal elements:', { 
+                console.log('Debug modal elements:', { 
                     statusElement: statusElement, 
                     feedbackElement: feedbackElement,
                     statusValue: statusElement?.value,
@@ -369,7 +369,7 @@ window.DeputyTabs = window.DeputyTabs || {};
                 const status = statusElement.value;
                 const feedback = feedbackElement.value;
                 
-                console.log('🔍 Debug extracted values:', { status, feedback });
+                console.log('Debug extracted values:', { status, feedback });
 
                 if (!status || status === '') {
                     showToast('Please select a status', 'error');

@@ -17,13 +17,13 @@ const authFetch = async (url, options = {}) => {
     return window.AUTH.fetch(url, options);
 };
 
-console.log('🚀 ILO Dashboard JavaScript loading...');
+console.log('ILO Dashboard JavaScript loading...');
 const API_BASE_URL = window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : `${window.location.protocol}//${window.location.host}/api`;
 let currentApplicationType = '';
 let currentApplicationId = '';
 let graduationApplications = [];
 let attachmentApplications = [];
-console.log('📊 Variables initialized, API_BASE_URL:', API_BASE_URL);
+console.log('Variables initialized, API_BASE_URL:', API_BASE_URL);
 
 // ---- clock + toast (verbatim) ----
 // Update current time

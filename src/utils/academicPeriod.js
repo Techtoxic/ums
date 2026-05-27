@@ -33,12 +33,12 @@ async function resolveAcademicPeriod() {
 
     let academicYear = parseInt(String(map.current_academic_year || '').split('/')[0], 10);
     if (!Number.isInteger(academicYear)) {
-        console.warn('⚠️ current_academic_year setting missing/unparseable — defaulting to 2024');
+        console.warn('current_academic_year setting missing/unparseable — defaulting to 2024');
         academicYear = 2024;
     }
     let semester = parseInt(map.current_semester, 10);
     if (!Number.isInteger(semester)) {
-        console.warn('⚠️ current_semester setting missing/unparseable — defaulting to 1');
+        console.warn('current_semester setting missing/unparseable — defaulting to 1');
         semester = 1;
     }
     return { academicYear, semester };

@@ -5,9 +5,9 @@ window.ILOTabs = window.ILOTabs || {};
 // Load graduation applications
 async function loadGraduationApplications() {
     try {
-        console.log('🎓 Loading graduation applications from:', API_BASE_URL + '/ilo/graduation-applications');
+        console.log('Loading graduation applications from:', API_BASE_URL + '/ilo/graduation-applications');
         const response = await authFetch(API_BASE_URL + '/ilo/graduation-applications');
-        console.log('🎓 Response status:', response.status);
+        console.log('Response status:', response.status);
         
         if (!response.ok) {
             throw new Error('HTTP ' + response.status + ': ' + response.statusText);
@@ -15,11 +15,11 @@ async function loadGraduationApplications() {
         
         const data = await response.json();
         graduationApplications = data.applications || [];
-        console.log('🎓 Found', graduationApplications.length, 'graduation applications');
+        console.log('Found', graduationApplications.length, 'graduation applications');
         
         displayGraduationApplications(graduationApplications);
     } catch (error) {
-        console.error('❌ Error loading graduation applications:', error);
+        console.error('Error loading graduation applications:', error);
         showToast('Failed to load graduation applications: ' + error.message, 'error');
     }
 }

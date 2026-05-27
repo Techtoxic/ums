@@ -49,12 +49,12 @@ try {
 } catch (err) {
     // Pretty-print Zod errors and exit non-zero.
     if (err && err.issues) {
-        console.error('❌ Invalid environment configuration:');
+        console.error('Invalid environment configuration:');
         for (const issue of err.issues) {
             console.error(`   - ${issue.path.join('.') || '(root)'}: ${issue.message}`);
         }
     } else {
-        console.error('❌ Environment validation failed:', err && err.message);
+        console.error('Environment validation failed:', err && err.message);
     }
     process.exit(1);
 }

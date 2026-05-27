@@ -7,7 +7,7 @@ window.TrainerTabs = window.TrainerTabs || {};
 // Load trainer assignments
 async function loadAssignments() {
     try {
-        console.log('🔄 Loading assignments...');
+        console.log('Loading assignments...');
         
         if (currentSection === 'assignments') {
             showLoadingState();
@@ -28,7 +28,7 @@ async function loadAssignments() {
         
         assignmentsData = data.assignments || [];
         
-        console.log(`✅ Successfully loaded ${assignmentsData.length} assignments`);
+        console.log(`Successfully loaded ${assignmentsData.length} assignments`);
         
         // Update stats
         updateStats();
@@ -39,7 +39,7 @@ async function loadAssignments() {
         }
         
     } catch (error) {
-        console.error('❌ Error loading assignments:', error);
+        console.error('Error loading assignments:', error);
         if (currentSection === 'assignments') {
             showErrorState(error.message);
         }
@@ -49,7 +49,7 @@ async function loadAssignments() {
 
 // Display assignments
 function displayAssignments() {
-    console.log('🎨 Displaying assignments...');
+    console.log('Displaying assignments...');
     
     const filter = document.getElementById('assignmentFilter')?.value || '';
     let filteredAssignments = [...assignmentsData];
@@ -61,7 +61,7 @@ function displayAssignments() {
         filteredAssignments = assignmentsData.filter(a => a.semester === 'upcoming');
     }
     
-    console.log(`📊 Filtered assignments: ${filteredAssignments.length} (filter: ${filter || 'none'})`);
+    console.log(`Filtered assignments: ${filteredAssignments.length} (filter: ${filter || 'none'})`);
     
     // Validate assignments have complete data
     const validAssignments = filteredAssignments.filter(assignment => {
@@ -72,7 +72,7 @@ function displayAssignments() {
                assignment.status;
     });
     
-    console.log(`✅ Valid assignments: ${validAssignments.length}`);
+    console.log(`Valid assignments: ${validAssignments.length}`);
     
     if (validAssignments.length === 0) {
         showEmptyState();
@@ -86,7 +86,7 @@ function displayAssignments() {
     // Show assignments grid
     showAssignmentsGrid();
     
-    console.log('✅ Assignments displayed successfully');
+    console.log('Assignments displayed successfully');
 }
 
 // Create assignment card HTML

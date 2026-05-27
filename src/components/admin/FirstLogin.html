@@ -242,17 +242,17 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
-            console.log('🔍 First Login page loading...');
+            console.log('First Login page loading...');
 
             user = await window.AUTH.me();
             if (!user || !user.email) {
-                console.log('❌ No authenticated session — redirecting to login...');
+                console.log('No authenticated session — redirecting to login...');
                 cleanupLegacyLocalStorage();
                 window.location.href = '/admin/login';
                 return;
             }
 
-            console.log('✅ First login page initialized for', user.email);
+            console.log('First login page initialized for', user.email);
             document.getElementById('currentEmail').value = user.email;
         });
 

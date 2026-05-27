@@ -210,7 +210,7 @@ router.get('/trainers/:trainerId/assignments', verifyToken, authorize('admin', '
             },
         }));
 
-        console.log(`✅ Fetched ${assignments.length} assignments for trainer ${trainer.name}`);
+        console.log(`Fetched ${assignments.length} assignments for trainer ${trainer.name}`);
 
         res.json({
             success: true,
@@ -218,7 +218,7 @@ router.get('/trainers/:trainerId/assignments', verifyToken, authorize('admin', '
             assignments
         });
     } catch (error) {
-        console.error('❌ Error fetching trainer assignments:', error);
+        console.error('Error fetching trainer assignments:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error while fetching assignments',
@@ -271,7 +271,7 @@ router.put('/trainers/:trainerId/profile', verifyToken, authorize('admin', 'trai
 
         await trainer.save();
 
-        console.log(`✅ Updated profile for trainer: ${trainer.name}`);
+        console.log(`Updated profile for trainer: ${trainer.name}`);
 
         res.json({
             success: true,
@@ -287,7 +287,7 @@ router.put('/trainers/:trainerId/profile', verifyToken, authorize('admin', 'trai
         });
 
     } catch (error) {
-        console.error('❌ Error updating trainer profile:', error);
+        console.error('Error updating trainer profile:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error while updating profile',

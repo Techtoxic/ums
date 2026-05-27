@@ -252,7 +252,7 @@ async function handlePhoneUpdate(event) {
         showToast('Contact information updated successfully', 'success');
         
     } catch (error) {
-        console.error('❌ Error updating contact info:', error);
+        console.error('Error updating contact info:', error);
         showToast(`Failed to update: ${error.message}`, 'error');
     }
 }

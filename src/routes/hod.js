@@ -149,7 +149,7 @@ router.put('/hod/:hodId/profile', verifyToken, authorize('admin', 'hod'), verify
         hod.updatedAt = new Date();
         await hod.save();
 
-        console.log(`✅ Updated profile for HOD: ${hod.name}`);
+        console.log(`Updated profile for HOD: ${hod.name}`);
 
         res.json({
             message: 'Profile updated successfully',

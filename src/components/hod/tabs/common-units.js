@@ -187,7 +187,7 @@ async function showAssignCommonUnitsModal() {
     if (!modal) return;
     
     // Debug HOD information
-    console.log('🔍 Current HOD when opening modal:', currentHOD);
+    console.log('Current HOD when opening modal:', currentHOD);
     
     // Load data if not already loaded
     if (commonUnitsData.length === 0) await loadCommonUnits();
@@ -343,10 +343,10 @@ async function assignCommonUnit() {
             const refreshed = await window.AUTH.me({ force: true });
             if (refreshed) {
                 currentHOD = refreshed;
-                console.log('🔄 Reloaded HOD data from /api/me:', currentHOD);
+                console.log('Reloaded HOD data from /api/me:', currentHOD);
             }
         } catch (e) {
-            console.error('❌ Error refreshing HOD data from /api/me:', e);
+            console.error('Error refreshing HOD data from /api/me:', e);
         }
 
         // Check again after attempting to reload

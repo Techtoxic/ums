@@ -43,7 +43,7 @@ async function fetchStudentUnits(studentCourse) {
                     const courseKey = studentData.course;
                     const programCost = courseKey ? await fetchProgramCost(courseKey) : (data.programCost || 100000);
                     
-                    console.log('🔍 Units section balance calculation:', {
+                    console.log('Units section balance calculation:', {
                         courseKey,
                         programCost,
                         apiProgramCost: data.programCost,
@@ -472,7 +472,7 @@ async function processBulkRegistration() {
         });
         
         const url = `${API_BASE_URL}/students/register-units`;
-        console.log('🔍 Bulk Registration API call:', {
+        console.log('Bulk Registration API call:', {
             studentId,
             url,
             unitIds,

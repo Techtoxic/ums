@@ -1,332 +1,233 @@
-# University Management System (UMS)
+# EDTTI UMS — University Management System
 
-A comprehensive university management system built with Node.js, Express, PostgreSQL (via Drizzle ORM), and modern web technologies.
+A web-based University Management System for **Emurua Dikirr Technical Training Institute (EDTTI)**. It provides role-specific portals for institutional administration — admissions and registry, finance, academic departments, industrial liaison, and a student self-service portal — backed by a single Node/Express server and a PostgreSQL database.
 
-## Features
-
-### 🎓 **Student Management**
-- Student registration and admission system
-- **Automatic admission letter generation** with PDF export
-- Student portal with course registration
-- Unit registration and fee management
-- Graduation and attachment applications
-
-### 👨‍🏫 **Staff Management**
-- HOD (Head of Department) dashboard
-- Trainer management and assignment
-- Course and unit management
-- Student assignment and monitoring
-
-### 📧 **Communication System**
-- **Forgot password system** with OTP and email reset links
-- Professional email templates
-- Notification system
-- Student portal access instructions
-
-### 📄 **Document Generation**
-- **Professional admission letters** with institute branding
-- PDF export functionality
-- Print-ready documents
-- Portal login credentials included
-
-### 🌙 **Modern UI/UX**
-- **Full dark mode support**
-- Mobile responsive design
-- Professional dashboards
-- Real-time analytics
-
-## 🚀 Setup Instructions
-
-### Prerequisites
-- **Node.js** v20 or higher
-- **PostgreSQL** database — recommended: a free [Neon](https://neon.tech) project (serverless Postgres). Local Postgres also works.
-- **Git**
-
-### Installation Steps
-
-1. **Clone the repository:**
-```bash
-git clone https://github.com/Techtoxic/ums.git
-cd ums
-```
-
-2. **Install dependencies** (use `--legacy-peer-deps` because of an `@aws-sdk` peer-dep quirk):
-```bash
-npm install --legacy-peer-deps
-```
-
-3. **Create environment file:**
-Copy `env.example` to `.env` and fill in real values:
-
-```env
-# Database (PostgreSQL — Neon URL must end with ?sslmode=require)
-DATABASE_URL=postgresql://USER:PASSWORD@HOST/DBNAME?sslmode=require
-
-# JWT (32+ random chars)
-JWT_SECRET=replace_with_at_least_32_random_characters
-JWT_EXPIRES_IN=2h
-SESSION_SECRET=replace_with_at_least_32_random_characters
-
-# Email (Brevo HTTP API — replaces the old Gmail SMTP)
-BREVO_API_KEY=
-BREVO_SENDER_EMAIL=no-reply@yourdomain.tld
-BREVO_SENDER_NAME=EDTTI University Management System
-
-# Server
-PORT=5502
-NODE_ENV=development
-```
-
-4. **Apply database schema:**
-```bash
-npm run db:migrate   # creates 21 tables on your Postgres instance
-npm run db:seed      # idempotent — seeds departments, programs, users, students
-```
-
-5. **Run the application:**
-```bash
-npm run dev
-```
-
-6. **Access the system:**
-   - **Main URL:** `http://localhost:5502`
-   - **Student/Trainer Login:** `http://localhost:5502/login`
-   - **HOD Login:** `http://localhost:5502/hod/login`
-   - **Admin Login:** `http://localhost:5502/admin/login`
-   - **Health check:** `http://localhost:5502/api/health` (returns Postgres latency)
-
-## 🔧 System Architecture
-
-### Backend
-- **Node.js & Express.js** - Server framework
-- **PostgreSQL** (Neon-hosted) with **Drizzle ORM** - Database and query layer
-- **Brevo HTTP API** - Transactional email (replaces the old Gmail SMTP path)
-- **Bcrypt.js** - Password hashing
-- **Multer** - File uploads
-
-### Frontend
-- **HTML5 & CSS3** - Structure and styling
-- **Tailwind CSS** - Utility-first CSS framework
-- **Inter** (Google Fonts) - Primary typeface
-- **Remixicon** - Icon set (auth pages & landing)
-- **Shared stylesheet** - `public/css/auth-styles.css` unifies all auth pages
-- **JavaScript (ES6+)** - Client-side functionality
-- **Chart.js** - Analytics and charts
-- **html2pdf.js** - PDF generation
-
-### Database Collections
-- Students, Trainers, HODs
-- Courses, Units, Unit Registrations
-- Password Resets, Notifications
-- Tools of Trade, Applications
-- System Settings
-
-## 🐘 Database — PostgreSQL via Drizzle ORM
-
-EDTTI UMS runs on **PostgreSQL** (production: a [Neon](https://neon.tech)
-serverless project) via [Drizzle ORM](https://orm.drizzle.team/). The schema
-lives at `drizzle/schema.js` (21 tables, 9 enums, indexed for the hot reads).
-The legacy NoSQL data layer has been retired.
-
-### Schema
-
-21 tables: `users`, `students`, `departments`, `programs`, `units`,
-`common_unit_assignments`, `trainer_assignments`, `student_enrollments`,
-`unit_registrations`, `tool_requests`, `attachment_applications`,
-`graduation_applications`, `notifications`, `student_notes`, `student_uploads`,
-`audit_logs`, `system_settings`, `password_resets`, `login_otps`, `payments`
-(TEMPORARY), `payslips` (TEMPORARY). The two TEMPORARY tables retain the
-legacy flat shape pending a fee-structure redesign.
-
-### npm scripts
-
-```bash
-npm run db:generate   # generate a new migration from schema changes
-npm run db:migrate    # apply pending migrations to DATABASE_URL
-npm run db:push       # dev shortcut: push schema directly (no migration file)
-npm run db:seed       # idempotent seed (7 dept / 11 programs / 18 units / 10 users / 7 students)
-npm run db:studio     # open Drizzle Studio
-npm run db:reset      # custom reset script (see drizzle/reset.js)
-```
-
-### Server data layer
-
-`src/db/index.js` opens a single postgres-js pool (max 20, `prepare: false` so
-it plays well with PgBouncer/Neon). `src/db/models.js` is a thin facade that
-exposes the legacy V1 model API surface (`find`, `findOne`, `create`,
-`findByIdAndUpdate`, etc.) on top of Drizzle, with auto camelCase ↔ snake_case
-translation, `_id` aliasing for frontend compatibility, bcrypt password
-hashing, and `.comparePassword()` on user/student docs.
-
-### Default seeded credentials
-
-| Email | Role | Password |
-|---|---|---|
-| okmomanyi56@gmail.com | admin | `Admin@2026` |
-| calvinnate6@gmail.com | registrar | `Admin@2026` |
-| whitenat16@gmail.com + others | trainer | `Trainer@2026` |
-| nashonbett18@gmail.com (and `+registrar`) | admin / registrar | `Mt5@2026` |
-| Students | student | phone number (e.g. `0712345689`) |
-
-Change these immediately on first login.
-
-## 🎨 Design System & Color Scheme
-
-The UI follows the **EDTTI brand identity** — a maroon-and-gold academic palette
-shared across the public landing page (`src/components/landing/Landing.html`) and
-every authentication page via the single source of truth at
-`public/css/auth-styles.css`.
-
-### Brand Palette
-
-| Token | Hex | Usage |
-|---|---|---|
-| `--edtti-maroon` | `#7A0C0C` | Primary brand color — headings, buttons, page background, focus rings |
-| `--edtti-maroon-dark` | `#5C0808` | Gradient end, button hover/active states |
-| `--edtti-gold` | `#D4A017` | Accent — emphasis, gold CTAs, hover highlights |
-| `--edtti-gold-light` | `#F4D58D` | Soft accent — taglines, emblem icons on maroon |
-| `--edtti-cream` | `#FFF8E7` | Soft surfaces — stat cards, subtle fills |
-| `--edtti-text` | `#1F2937` | Primary body text |
-| `--edtti-text-light` | `#6B7280` | Secondary / muted text |
-| `--edtti-bg-light` | `#F9FAFB` | Light section backgrounds |
-| `--edtti-bg-grey` | `#F5F5F5` | Alternate section backgrounds |
-
-### Typography & Icons
-- **Font:** Inter (300–800 weights), loaded from Google Fonts
-- **Icons:** Remixicon on the landing page and brand chrome; Font Awesome is
-  retained on legacy auth pages where icons are toggled by JavaScript
-
-### Conventions
-- The maroon gradient (`--edtti-maroon` → `--edtti-maroon-dark`) is the standard
-  page background and primary-button fill.
-- Gold (`--edtti-gold`) is reserved for accents/CTAs — never large fills.
-- Semantic state colors (success green, error red, info blue) are kept as-is for
-  usability and are **not** overridden by the brand palette.
-- Reusable classes live in `public/css/auth-styles.css`: `.auth-page`,
-  `.auth-card`, `.auth-brand`, `.auth-emblem`, `.auth-input`, `.auth-btn-*`,
-  `.auth-error/.auth-success`, `.auth-spinner`.
-
-## 📊 Key Features
-
-### Admission Letter System
-- **Automatic generation** after student registration
-- **Professional template** with institute branding
-- **Portal access instructions** included
-- **PDF export** and print functionality
-- **Dark mode compatibility**
-
-### Forgot Password System
-- **Dual method**: OTP via email OR reset link
-- **Secure token generation** with expiration
-- **Rate limiting** protection
-- **Works for all user types**: Students, Trainers, HODs
-
-### Portal Access
-- **Students**: Admission number as username. A randomly-generated initial password is emailed to the student at registration and must be changed on first login.
-- **Trainers**: Staff ID as username
-- **HODs**: Email as username
-- **Password change required** on first login
-
-## 🛠️ Troubleshooting
-
-### Common Issues
-
-1. **Postgres Connection Error:**
-   - Check `DATABASE_URL` in `.env` — must start with `postgres://` or `postgresql://`
-   - For Neon, the URL must end with `?sslmode=require`
-   - Hit `/api/health` — it returns the SELECT 1 latency and a `down` status if Postgres is unreachable
-
-2. **Email Not Sending (Brevo):**
-   - Confirm `BREVO_API_KEY`, `BREVO_SENDER_EMAIL`, `BREVO_SENDER_NAME` are set
-   - Sender email must be a verified sender/domain in your Brevo account
-   - Check server logs — the email service degrades cleanly and never crashes the app
-
-3. **Port Already in Use:**
-   - Change PORT in `.env` file
-   - Or kill the process using port 5502
-
-4. **Missing Dependencies:**
-   - Run `npm install --legacy-peer-deps` again (the `--legacy-peer-deps` flag is required because of a `@aws-sdk` peer-dep quirk)
-   - If still broken, delete `node_modules` and `package-lock.json`, then reinstall
-
-### Debug Mode
-The server logs detailed information. Check console output for:
-- Database connection status
-- Email service initialization
-- API request logs
-- Error messages
-
-## 📱 User Roles & Access
-
-### Student Portal
-- Login with admission number
-- View course information
-- Register for units
-- Check fee status
-- Apply for graduation/attachment
-
-### Trainer Dashboard
-- Manage assigned students
-- View course assignments
-- Update student records
-- Access tools of trade
-
-### HOD Dashboard
-- Department overview
-- Trainer management
-- Course approval
-- Student analytics
-
-### Registrar Portal
-- Student admission
-- Course management
-- System settings
-- Generate reports
-
-## 🔐 Security Features
-
-- **Password hashing** with bcrypt
-- **Rate limiting** on sensitive endpoints
-- **Session management**
-- **Input validation** and sanitization
-- **SQL injection protection**
-- **CORS configuration**
-
-## 📧 Email Templates
-
-Professional email templates included for:
-- **OTP codes** for password reset
-- **Reset links** for password recovery
-- **Welcome emails** for new admissions
-- **System notifications**
-
-## 🌟 Recent Updates
-
-- ✅ Admission letter auto-generation
-- ✅ PDF export functionality
-- ✅ Complete dark mode support
-- ✅ Forgot password system
-- ✅ Email integration
-- ✅ Mobile responsive design
-- ✅ Professional UI/UX
-
-## 📞 Support
-
-For technical support or questions:
-- Check the console logs for errors
-- Verify all environment variables are set (the server validates them via Zod at boot)
-- Confirm Postgres is reachable (try `npm run db:studio` or `curl http://localhost:5502/api/health`)
-- Review this README for setup instructions
-
-## 🚀 Production Deployment
-
-For production deployment:
-1. Use **Neon** (or any managed Postgres) for the database — copy the connection string into `DATABASE_URL` (must include `?sslmode=require`)
-2. Configure environment variables for production
-3. Set up proper SSL certificates
-4. Configure email service with production credentials
-5. Set `NODE_ENV=production`
+The application is a server-rendered + single-page-app hybrid: each role gets a lightweight SPA portal (a static HTML shell plus a History-API router that lazily loads tab fragments), and all data flows over a JSON API under `/api`. Authentication is cookie-based JWT with role-based access control, and admin/staff logins are protected with an emailed one-time passcode (OTP).
 
 ---
 
-**Happy Coding! 🎉**
+## Tech stack
+
+| Layer | Technology |
+|---|---|
+| Runtime | Node.js ≥ 20 |
+| Web framework | Express 5 |
+| Database | PostgreSQL (hosted on [Neon](https://neon.tech)) |
+| ORM / migrations | Drizzle ORM + drizzle-kit |
+| Frontend | Vanilla HTML + JavaScript, Tailwind CSS (CDN), Remix Icon |
+| Auth | JWT in HTTP-only cookies, CSRF tokens, bcryptjs password hashing |
+| Email | Brevo (Sendinblue) transactional HTTP API |
+| File storage | AWS S3 (via `@aws-sdk`), multer for in-memory upload handling |
+| Security | helmet, express-rate-limit, Content-Security-Policy (Report-Only), input sanitization |
+| Validation | Zod (environment + request validation) |
+| Process manager | pm2 (production) |
+
+---
+
+## Architecture overview
+
+### Portals and the `/<role>/<tab>` convention
+
+There are **nine SPA portals** plus a legacy CIBEC dashboard:
+
+`admin`, `registrar`, `finance`, `trainer`, `hod` (Head of Department), `dean`, `deputy` (Deputy Principal), `ilo` (Industrial Liaison Office), `student` — and `cibec` (a non-SPA dashboard, not yet refactored).
+
+Every SPA portal is served at a clean, bookmarkable URL of the form **`/<role>/<tab>`** (e.g. `/admin/students`, `/finance/revenue`, `/student/transcript`). Visiting the bare `/<role>` 302-redirects to that portal's default tab, and legacy `/<role>/dashboard[/<tab>]` paths 301-redirect to the new scheme.
+
+### Portal structure
+
+Each portal lives in `src/components/<role>/` and is composed of four parts:
+
+```
+src/components/<role>/
+├── portal-shell.html     # The static chrome: header, nav, modals, <main id="tab-root">,
+│                         #   and <script> includes. Served for every /<role>/<tab> URL.
+├── portal-router.js      # Tiny History-API router. Reads the tab from the URL, lazily
+│                         #   fetches that tab's partial into #tab-root (cached), toggles
+│                         #   visibility, and calls the tab module's idempotent init().
+├── portal-core.js        # Shared per-portal helpers (authFetch, toast, formatters) and the
+│                         #   DOMContentLoaded bootstrap that wires identity + starts the router.
+├── partials/<tab>.html   # One HTML fragment per tab (no <html>/<head>), injected on demand.
+└── tabs/<tab>.js         # One module per tab exposing window.<Role>Tabs['<tab>'] = { init() }.
+```
+
+A new developer only needs to know: **the shell loads once; the router swaps tab fragments into `#tab-root` and runs each tab's `init()`; shared globals live in `portal-core.js`.**
+
+### `registerPortal` helper
+
+All nine portals share identical page-routing logic, so it is defined once in **`src/routes/portalPages.js`** and invoked per-portal with a small config object:
+
+```js
+registerPortal(app, portalDeps, {
+  role: 'admin',
+  tabs: ['dashboard', 'students', 'trainers', 'financial', 'programs', 'reports', 'settings'],
+  defaultTab: 'dashboard',
+  login: { file: 'AdminLogin.html' },
+  extraPages: [{ path: '/admin/first-login', file: 'FirstLogin.html' }],
+});
+```
+
+`registerPortal` registers — **in a deliberate order** (login → partials → legacy redirects → bare redirect → `/<role>/:tab` catch-all) — every page route a portal needs. The catch-all serves the shell only for whitelisted tabs and otherwise falls through.
+
+### API and service layers
+
+- **`src/routes/*.js`** — 24 Express routers mounted under `/api` (e.g. `students`, `trainers`, `payments`, `programs`, `units`, `assignments`, `tools`, `notifications`, `studentUploads`, `passwordReset`, plus the auth routers `adminAuth` / `studentsAuth`). `portalPages.js` is the page-routing helper described above.
+- **`src/services/`** — the service layer: `userService` (user lookup/creation across roles) and `otpService` (login OTP generation/verification).
+- **`src/db/`** — `index.js` opens the Drizzle/Postgres connection; `models.js` is a Mongoose-style facade (see *Known limitations*) that exposes V1 model APIs backed by Drizzle so existing call sites keep working.
+- **`src/middleware/`** — `auth.js` (JWT cookie verification, CSRF, RBAC `authorize(...)`), `rateLimiters.js`.
+- **`src/config/`** — `env.js` (Zod-validated environment), `config.js` (typed config object), `csp.js` (Content-Security-Policy), `endpointSecurity.js`.
+- **`src/utils/`** — `emailService` (Brevo), `s3Service`, `uploads` (multer), `validators`, `formatters`, `academicPeriod`, `studentHelpers`.
+
+---
+
+## Project structure
+
+```
+ums/
+├── server.js                 # Express entry point: env validation, security middleware,
+│                             #   /api/health, API route mounting, registerPortal calls, statics.
+├── drizzle.config.js         # drizzle-kit configuration (schema path, migrations dir, DB URL).
+├── package.json
+├── drizzle/
+│   ├── schema.js             # Drizzle table definitions (the source of truth for the DB schema).
+│   ├── migrations/           # Generated SQL migrations — DB history; never edit by hand.
+│   └── seed.js               # Idempotent seed script (departments, programs, units, users, …).
+├── src/
+│   ├── config/               # env.js (Zod), config.js, csp.js, endpointSecurity.js
+│   ├── db/                   # index.js (Drizzle connection), models.js (Mongoose-compat facade)
+│   ├── middleware/           # auth.js (JWT/CSRF/RBAC), rateLimiters.js
+│   ├── routes/               # 24 API routers + portalPages.js (registerPortal)
+│   ├── services/             # userService, otpService
+│   ├── utils/                # emailService, s3Service, uploads, validators, formatters, …
+│   ├── components/           # Per-role portals (shell + router + core + partials/ + tabs/)
+│   │   ├── admin/ registrar/ finance/ trainer/ hod/ dean/ deputy/ ilo/ student/
+│   │   ├── cibec/            # Legacy non-SPA dashboard
+│   │   ├── auth/ landing/ dev/ units/   # Shared auth pages, landing page, dev demo
+│   │   └── …
+│   └── login.html            # Shared student/trainer login page
+└── public/
+    ├── js/                   # auth.js (shared client auth helper), config.js, dashboard-theme.js
+    ├── css/                  # dashboard-styles.css + one <role>-portal.css per portal
+    └── index.html, favicon.ico, robots.txt
+```
+
+---
+
+## Setup
+
+### 1. Clone and install
+
+```bash
+git clone <repo-url>
+cd ums
+npm install
+```
+
+### 2. Configure environment
+
+Create a `.env` file in the project root. The environment is validated by Zod at boot (`src/config/env.js`) — the server **refuses to start** if a required variable is missing or invalid.
+
+**Required:**
+
+| Variable | Notes |
+|---|---|
+| `DATABASE_URL` | Postgres connection string (must start with `postgres://` or `postgresql://`). |
+| `JWT_SECRET` | Secret for signing auth tokens. **Minimum 32 characters.** |
+
+**Optional (with defaults):**
+
+| Variable | Default | Notes |
+|---|---|---|
+| `PORT` | `5502` | HTTP port. |
+| `NODE_ENV` | `development` | `development` \| `production` \| `test`. |
+| `JWT_EXPIRES_IN` | `2h` | Access-token lifetime. |
+| `SESSION_SECRET` | — | Optional; min 32 chars if set. |
+| `ALLOWED_ORIGINS` | `''` | Comma-separated CORS allowlist (required in production). |
+| `COOKIE_SECURE` | `false` | Set `true` behind HTTPS. |
+| `BREVO_API_KEY` | — | Email is skipped (degraded mode) if unset. |
+| `BREVO_SENDER_EMAIL` / `BREVO_SENDER_NAME` | — | Sender identity for Brevo. |
+| `INITIAL_ADMIN_PASSWORD` | — | Used only by the seed script. |
+| `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | — | Required for S3 uploads. |
+| `AWS_S3_BUCKET_NAME` | — | S3 bucket (`AWS_S3_BUCKET` is also accepted as a fallback). |
+| `AWS_REGION` | `us-east-1` | S3 region. |
+
+### 3. Run migrations
+
+```bash
+npm run db:migrate     # apply migrations in drizzle/migrations to the database
+```
+
+Other Drizzle commands:
+
+```bash
+npm run db:generate    # generate a new migration from changes to drizzle/schema.js
+npm run db:push        # push schema directly (dev convenience)
+npm run db:studio      # open Drizzle Studio
+```
+
+### 4. Seed test data
+
+```bash
+npm run db:seed        # idempotent — safe to re-run; seeds departments, programs, units,
+                       #   common units, staff/trainer/student users, and sample data.
+```
+
+### 5. Start
+
+```bash
+npm start              # production-style start (node server.js)
+npm run dev            # same entry point, for local development
+```
+
+The server prints a startup banner with per-portal URLs, e.g. `http://localhost:5502/admin/login`. Liveness probe: `GET /api/health` → `{ "status": "ok", "db": "postgres", … }`.
+
+---
+
+## Authentication & seeded accounts
+
+- **Staff (admin, registrar, finance, dean, deputy, ilo, cibec)** log in via the admin login page. Login is **two-step**: password, then a **one-time passcode emailed via Brevo** (OTP). With `BREVO_API_KEY` unset (dev), email is skipped and the OTP is not delivered — configure Brevo to exercise the full flow.
+- **Trainers** log in via the trainer login page; **students** via the shared `/login` page (admission number + password).
+
+The seed script (`drizzle/seed.js`) hashes the documented default passwords fresh. Representative accounts:
+
+| Role | Login (email / admission no.) | Password |
+|---|---|---|
+| Admin | `okmomanyi56@gmail.com` | `Admin@2026` |
+| Registrar | `calvinnate6@gmail.com` | `Admin@2026` |
+| Finance | `okmomanyi56+finance@gmail.com` | `Admin@2026` |
+| Dean | `okmomanyi56+dean@gmail.com` | `Admin@2026` |
+| Deputy | `okmomanyi56+deputy@gmail.com` | `Admin@2026` |
+| ILO | `okmomanyi56+ilo@gmail.com` | `Admin@2026` |
+| CIBEC | `okmomanyi56+cibec@gmail.com` | `Admin@2026` |
+| Trainer | `whitenat16@gmail.com` | `Trainer@2026` |
+| Demo presenter (admin / registrar) | `nashonbett18@gmail.com` / `nashonbett18+registrar@gmail.com` | `Mt5@2026` |
+| Student | admission no. `AC6/0001/S25` | their phone number, e.g. `0712345689` |
+
+> Each student's initial password is their **phone number**. See `drizzle/seed.js` for the full account list. These are seed/test credentials — rotate them for any real deployment.
+
+---
+
+## Deployment
+
+Production runs under **pm2**. A typical deploy:
+
+```bash
+git pull
+npm install
+npm run db:migrate        # only if there are new migrations
+pm2 restart ums           # or: pm2 reload ums
+```
+
+Set `NODE_ENV=production`, a strong `JWT_SECRET`, `ALLOWED_ORIGINS`, `COOKIE_SECURE=true`, and the Brevo/AWS credentials in the production environment. In production the server fails fast if `DATABASE_URL` or the CORS allowlist is missing.
+
+---
+
+## Known limitations / deferred work
+
+These are tracked, intentional trade-offs — documented honestly so they aren't a surprise:
+
+- **Mongoose-compatibility shim.** `src/db/models.js` exposes a V1 Mongoose-style API (`.findOne`, `.find`, `.create`, …) backed by Drizzle/Postgres so the large existing call surface (~170 endpoints) kept working through the Postgres migration. It is a facade, not real Mongoose: **`.populate()` and `.aggregate()` are not fully supported**, and code paths needing them have been rewritten to explicit joins. New code should prefer Drizzle queries directly.
+- **Finance tables are temporary.** The `payments` and `payslips` tables are **flat, temporary structures** standing in until a proper financial-schema redesign. Treat their shape as provisional.
+- **Uploads / unit-registration schema needs reconciliation.** The student-uploads and unit-registration tables carry some legacy field names and overlapping concerns that still need to be reconciled into a clean schema.
+- **`db:reset` script is absent.** `package.json` defines `db:reset` → `node drizzle/reset.js`, but `drizzle/reset.js` is not present in the repo; the command will fail until the script is restored or the entry is removed. Use `db:push` / `db:migrate` against a fresh database instead.
+- **A few tuning env vars are only partially wired.** Rate-limit windows are currently hardcoded in `src/middleware/rateLimiters.js` rather than driven by `RATE_LIMIT_*`; `MAX_FILE_SIZE` is honored for uploads but `UPLOAD_DIR` has no consumer (uploads use in-memory storage + S3).

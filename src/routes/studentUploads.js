@@ -128,7 +128,7 @@ router.post('/student-uploads', verifyToken, authorize('admin', 'registrar', 'st
             existingUpload.status = 'replaced';
             existingUpload.updatedAt = Date.now();
             await existingUpload.save();
-            console.log('✅ Marked old upload as replaced:', existingUpload._id);
+            console.log('Marked old upload as replaced:', existingUpload._id);
         }
 
         // SEV-H-011: server-generated UUID storage name (no user input in the
@@ -181,7 +181,7 @@ router.post('/student-uploads', verifyToken, authorize('admin', 'registrar', 'st
         });
 
         await newUpload.save();
-        console.log('✅ Saved new upload:', newUpload._id, 'version:', newUpload.version);
+        console.log('Saved new upload:', newUpload._id, 'version:', newUpload.version);
 
         // Create audit log
         await AuditLog.logAction({
@@ -226,7 +226,7 @@ router.post('/student-uploads', verifyToken, authorize('admin', 'registrar', 'st
         });
 
     } catch (error) {
-        console.error('❌ Error uploading student file:', error);
+        console.error('Error uploading student file:', error);
         res.status(500).json({
             message: 'Error uploading file',
             error: error.message
@@ -325,7 +325,7 @@ router.get('/student-uploads/:uploadId/download', verifyToken, authorize('admin'
             uploadType: upload.uploadType
         });
     } catch (error) {
-        console.error('❌ Error getting download URL:', error);
+        console.error('Error getting download URL:', error);
         res.status(500).json({
             message: 'Error getting download URL',
             error: error.message
@@ -377,7 +377,7 @@ router.delete('/student-uploads/:uploadId', verifyToken, authorize('admin', 'reg
             message: 'File deleted successfully'
         });
     } catch (error) {
-        console.error('❌ Error deleting upload:', error);
+        console.error('Error deleting upload:', error);
         res.status(500).json({
             message: 'Error deleting file',
             error: error.message

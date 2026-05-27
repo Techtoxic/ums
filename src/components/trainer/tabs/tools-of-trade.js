@@ -5,7 +5,7 @@ window.TrainerTabs = window.TrainerTabs || {};
 // Load Tools of Trade data
 async function loadToolsOfTrade() {
     try {
-        console.log('🔄 Loading tools of trade...');
+        console.log('Loading tools of trade...');
         
         showToolsLoadingState();
 
@@ -21,12 +21,12 @@ async function loadToolsOfTrade() {
         
         toolsData = await response.json();
         
-        console.log(`✅ Successfully loaded ${toolsData.length} tools`);
+        console.log(`Successfully loaded ${toolsData.length} tools`);
         
         displayTools();
         
     } catch (error) {
-        console.error('❌ Error loading tools:', error);
+        console.error('Error loading tools:', error);
         showToolsEmptyState();
         showToast(`Failed to load tools: ${error.message}`, 'error');
     }
@@ -78,7 +78,7 @@ async function loadToolRequests() {
                 </div>`;
         }).join('');
     } catch (error) {
-        console.error('❌ Error loading tool requests:', error);
+        console.error('Error loading tool requests:', error);
         listEl.innerHTML = '';
         if (emptyEl) emptyEl.classList.remove('hidden');
     }
@@ -214,7 +214,7 @@ async function uploadTool() {
         await loadToolsOfTrade();
         
     } catch (error) {
-        console.error('❌ Error uploading tool:', error);
+        console.error('Error uploading tool:', error);
         showToast(`Upload failed: ${error.message}`, 'error');
     } finally {
         const uploadBtn = document.getElementById('uploadBtn');
@@ -322,7 +322,7 @@ async function downloadTool(toolId) {
             throw new Error('Invalid download URL received');
         }
         
-        console.log(`📥 Downloading file from ${data.storageType}:`, data.fileName);
+        console.log(`Downloading file from ${data.storageType}:`, data.fileName);
         
         // Create download link
         const a = document.createElement('a');
@@ -336,7 +336,7 @@ async function downloadTool(toolId) {
         showToast(`File downloaded successfully (${data.storageType})`, 'success');
         
     } catch (error) {
-        console.error('❌ Error downloading tool:', error);
+        console.error('Error downloading tool:', error);
         showToast(`Download failed: ${error.message}`, 'error');
     }
 }
@@ -363,7 +363,7 @@ async function deleteTool(toolId) {
         await loadToolsOfTrade();
         
     } catch (error) {
-        console.error('❌ Error deleting tool:', error);
+        console.error('Error deleting tool:', error);
         showToast(`Delete failed: ${error.message}`, 'error');
     }
 }
@@ -597,7 +597,7 @@ async function uploadBulkTools() {
         await loadToolsOfTrade();
         
     } catch (error) {
-        console.error('❌ Error in bulk upload:', error);
+        console.error('Error in bulk upload:', error);
         showToast(`Bulk upload failed: ${error.message}`, 'error');
     } finally {
         const uploadBtn = document.getElementById('bulkUploadBtn');

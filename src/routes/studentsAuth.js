@@ -206,11 +206,11 @@ router.put('/students/:id', verifyToken, authorize('admin', 'registrar'), async 
             const currentStudent = await Student.findById(req.params.id);
 
             if (currentStudent) {
-                console.log(`🔄 Checking promotion: Current Year=${currentStudent.year}, New Year=${year}, Course=${currentStudent.course}`);
+                console.log(`Checking promotion: Current Year=${currentStudent.year}, New Year=${year}, Course=${currentStudent.course}`);
 
                 if (currentStudent.year !== year) {
                     // Student is being promoted to a new year
-                    console.log(`📚 Student ${currentStudent.admissionNumber} is being promoted from Year ${currentStudent.year} to Year ${year}`);
+                    console.log(`Student ${currentStudent.admissionNumber} is being promoted from Year ${currentStudent.year} to Year ${year}`);
 
                     // Map course code to program name
                     const courseToProgram = {
@@ -243,14 +243,14 @@ router.put('/students/:id', verifyToken, authorize('admin', 'registrar'), async 
                     };
 
                     const programName = courseToProgram[currentStudent.course];
-                    console.log(`🔍 Looking for program: ${programName} for course: ${currentStudent.course}`);
+                    console.log(`Looking for program: ${programName} for course: ${currentStudent.course}`);
 
                     // Get the program cost for their course
                     const program = programName ? await Program.findOne({ programName }) : null;
 
                     if (program) {
                         const programCostNum = toMoneyNumber(program.programCost); // SEV-H-016
-                        console.log(`✅ Program found: ${program.name}, Cost: KES ${programCostNum}`);
+                        console.log(`Program found: ${program.name}, Cost: KES ${programCostNum}`);
 
                         if (programCostNum > 0) {
                             // SEV-H-016 TODO: `balance` is NOT a field on the Student
@@ -263,16 +263,16 @@ router.put('/students/:id', verifyToken, authorize('admin', 'registrar'), async 
                             const newBalance = existingBalance + programCostNum;
                             updateData.balance = newBalance;
 
-                            console.log(`💰 Adding program cost KES ${programCostNum.toLocaleString()} to existing balance KES ${existingBalance.toLocaleString()}`);
-                            console.log(`💳 New balance will be: KES ${newBalance.toLocaleString()}`);
+                            console.log(`Adding program cost KES ${programCostNum.toLocaleString()} to existing balance KES ${existingBalance.toLocaleString()}`);
+                            console.log(`New balance will be: KES ${newBalance.toLocaleString()}`);
                         } else {
-                            console.warn(`⚠️ Program cost is not set or is zero for ${program.name}`);
+                            console.warn(`Program cost is not set or is zero for ${program.name}`);
                         }
                     } else {
-                        console.warn(`⚠️ Program not found for course: ${currentStudent.course} (mapped to: ${programName})`);
+                        console.warn(`Program not found for course: ${currentStudent.course} (mapped to: ${programName})`);
                     }
                 } else {
-                    console.log(`ℹ️ Year not changed (both are ${year}), no balance update needed`);
+                    console.log(`Year not changed (both are ${year}), no balance update needed`);
                 }
             }
         }
@@ -306,24 +306,24 @@ router.put('/students/:studentId/email', verifyToken, authorize('admin', 'regist
         const { studentId } = req.params;
         const { email } = req.body;
 
-        console.log('📧 Student email update request:', { studentId, newEmail: email });
+        console.log('Student email update request:', { studentId, newEmail: email });
 
         if (!email) {
-            console.log('❌ Email is missing in request body');
+            console.log('Email is missing in request body');
             return res.status(400).json({ message: 'Email is required' });
         }
 
         // Validate email format
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
-            console.log('❌ Invalid email format:', email);
+            console.log('Invalid email format:', email);
             return res.status(400).json({ message: 'Invalid email format' });
         }
 
         // Check if email already exists
         const existingStudent = await Student.findOne({ email: email.toLowerCase(), admissionNumber: { $ne: studentId } });
         if (existingStudent) {
-            console.log('❌ Email already in use by another student:', existingStudent.admissionNumber);
+            console.log('Email already in use by another student:', existingStudent.admissionNumber);
             return res.status(400).json({ message: 'Email already exists' });
         }
 
@@ -335,11 +335,11 @@ router.put('/students/:studentId/email', verifyToken, authorize('admin', 'regist
         ).select('-password');
 
         if (!student) {
-            console.log('❌ Student not found:', studentId);
+            console.log('Student not found:', studentId);
             return res.status(404).json({ message: 'Student not found' });
         }
 
-        console.log('✅ Student email updated successfully:', {
+        console.log('Student email updated successfully:', {
             admissionNumber: student.admissionNumber,
             newEmail: student.email
         });
@@ -354,7 +354,7 @@ router.put('/students/:studentId/email', verifyToken, authorize('admin', 'regist
             }
         });
     } catch (error) {
-        console.error('❌ Error updating student email:', error);
+        console.error('Error updating student email:', error);
         res.status(500).json({ message: 'Internal server error' });
     }
 });

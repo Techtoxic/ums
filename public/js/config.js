@@ -60,7 +60,7 @@
     
     // Log configuration in development
     if (config.FEATURES.DEBUG_MODE) {
-        console.log('🔧 Frontend Config:', {
+        console.log('Frontend Config:', {
             API_BASE_URL: config.API_BASE_URL,
             ENV: config.ENV,
             hostname: hostname

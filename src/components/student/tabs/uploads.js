@@ -615,7 +615,7 @@ window.viewUpload = viewUpload;
 window.uploadFile = uploadFile;
 window.replaceUpload = replaceUpload;
 
-console.log('✅ Upload section loaded and functions exposed globally');
+console.log('Upload section loaded and functions exposed globally');
 
 window.StudentTabs = window.StudentTabs || {};
 window.StudentTabs.uploads = {

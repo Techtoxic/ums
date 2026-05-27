@@ -15,13 +15,13 @@ let emailService;
 try {
     emailService = new EmailService();
 } catch (err) {
-    console.error('⚠️ Email service failed to initialize:', err.message);
+    console.error('Email service failed to initialize:', err.message);
     // Create stub for build phase
     emailService = {
-        sendOTPEmail: async () => console.log('📧 Email stub: sendOTPEmail'),
-        sendResetLinkEmail: async () => console.log('📧 Email stub: sendResetLinkEmail'),
-        sendPassword: async () => console.log('📧 Email stub: sendPassword'),
-        sendStudentCredentials: async () => console.log('📧 Email stub: sendStudentCredentials')
+        sendOTPEmail: async () => console.log('Email stub: sendOTPEmail'),
+        sendResetLinkEmail: async () => console.log('Email stub: sendResetLinkEmail'),
+        sendPassword: async () => console.log('Email stub: sendPassword'),
+        sendStudentCredentials: async () => console.log('Email stub: sendStudentCredentials')
     };
 }
 
@@ -272,11 +272,11 @@ router.patch('/students/:id', verifyToken, authorize('admin', 'registrar'), asyn
             const currentStudent = await Student.findById(id);
 
             if (currentStudent) {
-                console.log(`🔄 Checking promotion: Current Year=${currentStudent.year}, New Year=${updates.year}, Course=${currentStudent.course}`);
+                console.log(`Checking promotion: Current Year=${currentStudent.year}, New Year=${updates.year}, Course=${currentStudent.course}`);
 
                 if (currentStudent.year !== updates.year) {
                     // Student is being promoted to a new year
-                    console.log(`📚 Student ${currentStudent.admissionNumber} is being promoted from Year ${currentStudent.year} to Year ${updates.year}`);
+                    console.log(`Student ${currentStudent.admissionNumber} is being promoted from Year ${currentStudent.year} to Year ${updates.year}`);
 
                     // Map course code to program name
                     const courseToProgram = {
@@ -309,14 +309,14 @@ router.patch('/students/:id', verifyToken, authorize('admin', 'registrar'), asyn
                     };
 
                     const programName = courseToProgram[currentStudent.course];
-                    console.log(`🔍 Looking for program: ${programName} for course: ${currentStudent.course}`);
+                    console.log(`Looking for program: ${programName} for course: ${currentStudent.course}`);
 
                     // Get the program cost for their course
                     const program = programName ? await Program.findOne({ programName }) : null;
 
                     if (program) {
                         const programCostNum = toMoneyNumber(program.programCost); // SEV-H-016
-                        console.log(`✅ Program found: ${program.name}, Cost: KES ${programCostNum}`);
+                        console.log(`Program found: ${program.name}, Cost: KES ${programCostNum}`);
 
                         if (programCostNum > 0) {
                             // SEV-H-016 TODO: `balance` is NOT a field on the Student
@@ -329,16 +329,16 @@ router.patch('/students/:id', verifyToken, authorize('admin', 'registrar'), asyn
                             const newBalance = existingBalance + programCostNum;
                             updates.balance = newBalance;
 
-                            console.log(`💰 Adding program cost KES ${programCostNum.toLocaleString()} to existing balance KES ${existingBalance.toLocaleString()}`);
-                            console.log(`💳 New balance will be: KES ${newBalance.toLocaleString()}`);
+                            console.log(`Adding program cost KES ${programCostNum.toLocaleString()} to existing balance KES ${existingBalance.toLocaleString()}`);
+                            console.log(`New balance will be: KES ${newBalance.toLocaleString()}`);
                         } else {
-                            console.warn(`⚠️ Program cost is not set or is zero for ${program.name}`);
+                            console.warn(`Program cost is not set or is zero for ${program.name}`);
                         }
                     } else {
-                        console.warn(`⚠️ Program not found for course: ${currentStudent.course} (mapped to: ${programName})`);
+                        console.warn(`Program not found for course: ${currentStudent.course} (mapped to: ${programName})`);
                     }
                 } else {
-                    console.log(`ℹ️ Year not changed (both are ${updates.year}), no balance update needed`);
+                    console.log(`Year not changed (both are ${updates.year}), no balance update needed`);
                 }
             }
         }

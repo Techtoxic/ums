@@ -6,18 +6,18 @@ window.StudentTabs = window.StudentTabs || {};
         // Check graduation eligibility and load form
         async function checkGraduationEligibility() {
             try {
-                console.log('🎓 checkGraduationEligibility called');
-                console.log('📊 studentData:', studentData);
+                console.log('checkGraduationEligibility called');
+                console.log('studentData:', studentData);
                 
                 const studentId = studentData?.admissionNumber;
-                console.log('🆔 Student ID:', studentId);
+                console.log('Student ID:', studentId);
                 
                 if (!studentId) {
                     console.error('No student ID found for graduation, studentData:', studentData);
                     
                     // Try to wait for studentData to load
                     if (!studentData || !studentData.admissionNumber) {
-                        console.log('⏳ Waiting for student data to load...');
+                        console.log('Waiting for student data to load...');
                         setTimeout(checkGraduationEligibility, 500);
                         return;
                     }
@@ -70,8 +70,8 @@ window.StudentTabs = window.StudentTabs || {};
 
         // Populate graduation form with student data
         function populateGraduationForm(data) {
-            console.log('🎓 Populating graduation form with data:', data);
-            console.log('👤 Student data:', studentData);
+            console.log('Populating graduation form with data:', data);
+            console.log('Student data:', studentData);
             
             // Basic student info
             document.querySelector('.graduation-student-name').textContent = studentData.name || 'N/A';
@@ -81,7 +81,7 @@ window.StudentTabs = window.StudentTabs || {};
             document.querySelector('.graduation-student-year').textContent = `Year ${data.yearOfStudy}`;
             
             // Additional fields - intake formatting (same logic as profile section)
-            console.log('🎓 Intake data for graduation:', { 
+            console.log('Intake data for graduation:', { 
                 intake: studentData.intake, 
                 intakeYear: studentData.intakeYear 
             });
@@ -107,9 +107,9 @@ window.StudentTabs = window.StudentTabs || {};
                     const fullYear = '20' + yearSuffix;
                     const intakeName = intakePrefix === 'J' ? 'January' : 'September';
                     intakeText = `${intakeName} ${fullYear}`;
-                    console.log('✅ Extracted intake from admission number for graduation:', intakeText);
+                    console.log('Extracted intake from admission number for graduation:', intakeText);
                 } else {
-                    console.warn('⚠️ No intake data found in studentData for graduation');
+                    console.warn('No intake data found in studentData for graduation');
                 }
             }
             
