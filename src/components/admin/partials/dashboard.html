@@ -1,0 +1,111 @@
+                <!-- Dashboard content from existing code... -->
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-3">
+                    <!-- Stats Cards -->
+                    <div class="card hover:shadow-md transition-shadow">
+                        <div class="card__body">
+                        <div class="flex items-start justify-between">
+                            <div class="w-10 h-10 rounded-lg bg-[#7A0C0C]/10 flex items-center justify-center text-[#7A0C0C]">
+                                <i class="ri-graduation-cap-line text-lg"></i>
+                            </div>
+                            <span class="flex items-center gap-1 text-xs font-medium text-[#7A0C0C]">
+                                <i class="ri-arrow-up-line"></i>Live
+                            </span>
+                        </div>
+                        <p class="mt-3 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Students</p>
+                        <h3 id="stat-students" class="text-headline-lg text-gray-800 dark:text-white truncate">-</h3>
+                        <div class="mt-3 h-1 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                            <div class="h-full bg-[#7A0C0C] rounded-full" style="width:72%"></div>
+                        </div>
+                        </div>
+                    </div>
+
+                    <div class="card hover:shadow-md transition-shadow">
+                        <div class="card__body">
+                        <div class="flex items-start justify-between">
+                            <div class="w-10 h-10 rounded-lg bg-[#7A0C0C]/10 flex items-center justify-center text-[#7A0C0C]">
+                                <i class="ri-user-star-line text-lg"></i>
+                            </div>
+                            <span class="flex items-center gap-1 text-xs font-medium text-[#7A0C0C]">
+                                <i class="ri-arrow-up-line"></i>Live
+                            </span>
+                        </div>
+                        <p class="mt-3 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Trainers</p>
+                        <h3 id="stat-trainers" class="text-headline-lg text-gray-800 dark:text-white truncate">-</h3>
+                        <div class="mt-3 h-1 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                            <div class="h-full bg-[#7A0C0C] rounded-full" style="width:64%"></div>
+                        </div>
+                        </div>
+                    </div>
+
+                    <div class="card hover:shadow-md transition-shadow">
+                        <div class="card__body">
+                        <div class="flex items-start justify-between">
+                            <div class="w-10 h-10 rounded-lg bg-[#7A0C0C]/10 flex items-center justify-center text-[#7A0C0C]">
+                                <i class="ri-money-dollar-circle-line text-lg"></i>
+                            </div>
+                            <span class="flex items-center gap-1 text-xs font-medium text-[#7A0C0C]">
+                                <i class="ri-arrow-up-line"></i>Live
+                            </span>
+                        </div>
+                        <p class="mt-3 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Revenue</p>
+                        <h3 id="stat-revenue" class="text-headline-lg text-gray-800 dark:text-white truncate">-</h3>
+                        <div class="mt-3 h-1 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                            <div class="h-full bg-[#7A0C0C] rounded-full" style="width:80%"></div>
+                        </div>
+                        </div>
+                    </div>
+
+                    <div class="card hover:shadow-md transition-shadow">
+                        <div class="card__body">
+                        <div class="flex items-start justify-between">
+                            <div class="w-10 h-10 rounded-lg bg-[#D4A017]/15 flex items-center justify-center text-[#D4A017]">
+                                <i class="ri-alert-line text-lg"></i>
+                            </div>
+                            <span class="flex items-center gap-1 text-xs font-medium text-[#D4A017]">
+                                <i class="ri-error-warning-line"></i>Attention
+                            </span>
+                        </div>
+                        <p class="mt-3 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Outstanding</p>
+                        <h3 id="stat-outstanding" class="text-headline-lg text-gray-800 dark:text-white truncate">-</h3>
+                        <div class="mt-3 h-1 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                            <div class="h-full bg-[#D4A017] rounded-full" style="width:45%"></div>
+                        </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-2 mb-3">
+                    <div class="bg-white dark:bg-gray-800 rounded-lg p-2 md:p-3 shadow-sm">
+                        <h3 class="text-xs md:text-sm font-bold text-gray-800 dark:text-white mb-2">Enrollment Trends</h3>
+                        <canvas id="enrollmentChart"></canvas>
+                    </div>
+                    
+                    <div class="bg-white dark:bg-gray-800 rounded-lg p-2 md:p-3 shadow-sm">
+                        <h3 class="text-xs md:text-sm font-bold text-gray-800 dark:text-white mb-2">Revenue Overview</h3>
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                    
+                    <div class="bg-white dark:bg-gray-800 rounded-lg p-2 md:p-3 shadow-sm">
+                        <h3 class="text-xs md:text-sm font-bold text-gray-800 dark:text-white mb-2">Department Distribution</h3>
+                        <canvas id="departmentChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Quick Links -->
+                <div class="grid grid-cols-2 lg:grid-cols-3 gap-2">
+                    <button onclick="showSection('students')" class="bg-primary dark:bg-primary text-white p-3 rounded-lg hover:bg-secondary dark:hover:bg-secondary transition shadow-sm">
+                        <i class="ri-user-add-line text-xl mb-1"></i>
+                        <h4 class="text-xs font-semibold">Manage Students</h4>
+                    </button>
+                    
+                    <button onclick="showSection('financial')" class="bg-[#7A0C0C] hover:bg-[#5C0808] text-white p-3 rounded-lg transition shadow-sm">
+                        <i class="ri-file-list-line text-xl mb-1"></i>
+                        <h4 class="text-xs font-semibold">Financial Reports</h4>
+                    </button>
+
+                    <button onclick="openAddTrainerModal()" class="bg-[#7A0C0C] hover:bg-[#5C0808] text-white p-3 rounded-lg transition shadow-sm col-span-2 lg:col-span-1">
+                        <i class="ri-user-star-line text-xl mb-1"></i>
+                        <h4 class="text-xs font-semibold">Add Trainer</h4>
+                    </button>
+                </div>

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Admin Dashboard - EDTTI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.0.0/fonts/remixicon.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Auth Utility (Load First!) -->
+    <script src="/public/js/auth.js"></script>
+    <link rel="stylesheet" href="/public/css/dashboard-styles.css">
+
+    <!-- Frontend Config -->
+    <script src="/public/js/config.js"></script>
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#7A0C0C',
+                        secondary: '#8B2A2A',
+                    }
+                }
+            }
+        }
+        
+        // Test dark mode immediately after Tailwind loads
+        console.log('✅ Tailwind darkMode configured as:', tailwind.config.darkMode);
+        
+        // Verify dark mode support
+        window.addEventListener('DOMContentLoaded', () => {
+            const testEl = document.createElement('div');
+            testEl.className = 'bg-white dark:bg-gray-800';
+            document.body.appendChild(testEl);
+            const computed = window.getComputedStyle(testEl);
+            console.log('🧪 Dark mode test element created');
+            document.body.removeChild(testEl);
+        });
+    </script>
+    <link rel="stylesheet" href="/public/css/admin-portal.css">
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+    <!-- Auth gate: covers the dashboard until requireAuth() resolves, suppressing
+         the bfcache back-button flash. Skeleton matches admin layout (7 sidebar
+         nav items: dashboard/students/trainers/financial/programs/reports/settings;
+         4 stat tiles: Students/Trainers/Revenue/Outstanding). -->
+    <div id="authGate" class="auth-gate" aria-live="polite" aria-busy="true">
+        <aside class="skel-sidebar">
+            <div class="skel skel-sidebar__logo"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__user"></div>
+        </aside>
+        <main class="skel-main">
+            <div class="skel-topbar">
+                <div class="skel skel-topbar__title"></div>
+                <div class="skel skel-topbar__action"></div>
+            </div>
+            <div class="skel skel-welcome"></div>
+            <div class="skel-tiles" style="--tile-count: 4;">
+                <div class="skel skel-tile"></div>
+                <div class="skel skel-tile"></div>
+                <div class="skel skel-tile"></div>
+                <div class="skel skel-tile"></div>
+            </div>
+            <div class="skel skel-content"></div>
+        </main>
+    </div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="fixed top-0 left-0 z-30 w-16 lg:w-20 h-screen transition-transform -translate-x-full lg:translate-x-0 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
+        <div class="h-full px-1 py-2 overflow-y-auto flex flex-col">
+            <!-- Logo -->
+            <div class="flex items-center justify-center mb-2 p-1 flex-shrink-0">
+                <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                    <i class="ri-shield-star-line text-xl text-white"></i>
+                </div>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="space-y-1 flex-1 overflow-y-auto">
+                <a href="/admin/dashboard" data-section="dashboard" title="Dashboard" class="nav-link flex items-center justify-center p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-primary dark:hover:bg-primary hover:text-white transition active">
+                    <i class="ri-dashboard-line text-xl"></i>
+                </a>
+                
+                <a href="/admin/students" data-section="students" title="Students" class="nav-link flex items-center justify-center p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-primary dark:hover:bg-primary hover:text-white transition">
+                    <i class="ri-graduation-cap-line text-xl"></i>
+                </a>
+                
+                <a href="/admin/trainers" data-section="trainers" title="Trainers" class="nav-link flex items-center justify-center p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-primary dark:hover:bg-primary hover:text-white transition">
+                    <i class="ri-user-star-line text-xl"></i>
+                </a>
+                
+                <a href="/admin/financial" data-section="financial" title="Financial" class="nav-link flex items-center justify-center p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-primary dark:hover:bg-primary hover:text-white transition">
+                    <i class="ri-money-dollar-circle-line text-xl"></i>
+                </a>
+                
+                <a href="/admin/programs" data-section="programs" title="Programs" class="nav-link flex items-center justify-center p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-primary dark:hover:bg-primary hover:text-white transition">
+                    <i class="ri-book-line text-xl"></i>
+                </a>
+                
+                <a href="/admin/reports" data-section="reports" title="Reports" class="nav-link flex items-center justify-center p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-primary dark:hover:bg-primary hover:text-white transition">
+                    <i class="ri-bar-chart-box-line text-xl"></i>
+                </a>
+                
+                <!-- Settings -->
+                <div class="pt-2 flex-shrink-0 border-t border-gray-200 dark:border-gray-700 mt-2">
+                    <a href="/admin/settings" data-section="settings" title="Settings" class="nav-link flex items-center justify-center p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-primary dark:hover:bg-primary hover:text-white transition">
+                        <i class="ri-settings-line text-xl"></i>
+                    </a>
+                </div>
+            </nav>
+        </div>
+    </aside>
+
+    <!-- Overlay for mobile -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-20 hidden lg:hidden" onclick="toggleSidebar()"></div>
+
+    <!-- Main Content -->
+    <div class="lg:ml-20">
+        <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
+            <div class="flex items-center justify-between px-2 md:px-4 py-2">
+                <div class="flex items-center gap-2">
+                    <button onclick="toggleSidebar()" class="lg:hidden text-gray-600 dark:text-gray-300 hover:text-primary p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                        <i class="ri-menu-line text-lg"></i>
+                    </button>
+                    <div>
+                        <h1 class="text-sm md:text-base font-bold text-gray-800 dark:text-white">Admin Dashboard</h1>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 hidden md:block">Welcome, <span id="admin-name">Admin</span></p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-2 md:space-x-3">
+                    <!-- Search -->
+                    <div class="hidden md:block">
+                        <input type="text" id="global-search" placeholder="Search... (Ctrl+K)" class="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent w-48 lg:w-64">
+                    </div>
+                    
+                    <!-- Mobile Search Button -->
+                    <button id="mobile-search-toggle" class="md:hidden text-gray-600 dark:text-gray-300 hover:text-primary p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                        <i class="ri-search-line text-lg"></i>
+                    </button>
+                    
+                    <!-- Dark Mode Toggle -->
+                    <button onclick="toggleDarkMode()" class="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
+                        <i id="dark-mode-icon" class="ri-moon-line text-lg"></i>
+                    </button>
+                    
+                    <!-- Notifications -->
+                    <button class="relative text-gray-600 dark:text-gray-300 hover:text-primary p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg hidden sm:block">
+                        <i class="ri-notification-line text-lg"></i>
+                        <span class="absolute top-1 right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">3</span>
+                    </button>
+                    
+                    <!-- Profile Menu -->
+                    <div class="relative">
+                        <button onclick="toggleProfileMenu()" class="w-8 h-8 md:w-9 md:h-9 bg-primary rounded-full flex items-center justify-center text-white font-semibold hover:bg-secondary transition">
+                            <i class="ri-admin-line text-base md:text-lg"></i>
+                        </button>
+                        <div id="profile-menu" class="hidden absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl py-2 z-50 border border-gray-200 dark:border-gray-700">
+                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                <i class="ri-user-line mr-2"></i>Profile
+                            </a>
+                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                <i class="ri-settings-line mr-2"></i>Settings
+                            </a>
+                            <hr class="my-2 border-gray-200 dark:border-gray-700">
+                            <button onclick="logout()" class="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">
+                                <i class="ri-logout-box-line mr-2"></i>Logout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Mobile Search Modal -->
+        <div id="mobile-search-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden md:hidden">
+            <div class="bg-white dark:bg-gray-800 p-4">
+                <div class="flex items-center gap-2">
+                    <input type="text" id="mobile-search-input" placeholder="Search..." class="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                    <button onclick="closeMobileSearch()" class="text-gray-600 dark:text-gray-300 hover:text-primary p-2">
+                        <i class="ri-close-line text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Area: the router injects each tab's partial here -->
+        <main id="tab-root" class="p-3 md:p-4 lg:p-6"></main>
+    </div>
+
+    <!-- Global elements -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+    <!-- Scripts -->
+    <script src="/src/components/admin/portal-core.js"></script>
+    <script src="/src/components/admin/portal-router.js"></script>
+    <script src="/src/components/admin/tabs/dashboard.js"></script>
+    <script src="/src/components/admin/tabs/students.js"></script>
+    <script src="/src/components/admin/tabs/trainers.js"></script>
+    <script src="/src/components/admin/tabs/financial.js"></script>
+    <script src="/src/components/admin/tabs/programs.js"></script>
+    <script src="/src/components/admin/tabs/reports.js"></script>
+    <script src="/src/components/admin/tabs/settings.js"></script>
+</body>
+</html>

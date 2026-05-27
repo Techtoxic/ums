@@ -1,0 +1,133 @@
+/* admin-portal.css — portal-specific styles extracted verbatim from the
+   adminDashboard.html inline <style> block during the SPA refactor.
+   Loaded alongside dashboard-styles.css (which owns the design system). */
+        /* Make Inter the active typeface (font-family only — Tailwind sizing unchanged) */
+        body {
+            font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+        }
+        .content-section {
+            display: none;
+        }
+        .content-section.active {
+            display: block;
+        }
+        .nav-link.active {
+            background-color: #7A0C0C;
+            color: white;
+        }
+        
+        /* DARK MODE CSS - Direct styles since Tailwind CDN doesn't fully support dark mode properly */
+        .dark body {
+            background-color: #111827 !important; /* gray-900 */
+        }
+        
+        .dark aside {
+            background-color: #1F2937 !important; /* gray-800 */
+            border-color: #374151 !important; /* gray-700 */
+        }
+        
+        .dark header {
+            background-color: #1F2937 !important; /* gray-800 */
+            border-color: #374151 !important; /* gray-700 */
+        }
+        
+        .dark h1, .dark h2, .dark h3, .dark h4 {
+            color: #FFFFFF !important;
+        }
+        
+        .dark .nav-link {
+            color: #D1D5DB !important; /* gray-300 */
+        }
+        
+        .dark .nav-link:hover {
+            background-color: #7A0C0C !important;
+            color: #FFFFFF !important;
+        }
+        
+        .dark .nav-link.active {
+            background-color: #7A0C0C !important;
+            color: #FFFFFF !important;
+        }
+        
+        .dark .bg-white {
+            background-color: #1F2937 !important; /* gray-800 */
+        }
+        
+        .dark .text-gray-800 {
+            color: #FFFFFF !important;
+        }
+        
+        .dark .text-gray-700 {
+            color: #D1D5DB !important; /* gray-300 */
+        }
+        
+        .dark .text-gray-500 {
+            color: #9CA3AF !important; /* gray-400 */
+        }
+        
+        .dark .text-gray-600 {
+            color: #D1D5DB !important; /* gray-300 */
+        }
+        
+        .dark .border-gray-200 {
+            border-color: #374151 !important; /* gray-700 */
+        }
+        
+        .dark .border-gray-300 {
+            border-color: #4B5563 !important; /* gray-600 */
+        }
+        
+        .dark input, .dark select {
+            background-color: #374151 !important; /* gray-700 */
+            border-color: #4B5563 !important; /* gray-600 */
+            color: #FFFFFF !important;
+        }
+        
+        .dark .bg-gray-100 {
+            background-color: #374151 !important; /* gray-700 */
+        }
+        
+        .dark #profile-menu {
+            background-color: #1F2937 !important; /* gray-800 */
+            border-color: #374151 !important; /* gray-700 */
+        }
+        
+        .dark #profile-menu a, .dark #profile-menu button {
+            color: #D1D5DB !important; /* gray-300 */
+        }
+        
+        .dark #profile-menu a:hover, .dark #profile-menu button:hover {
+            background-color: #374151 !important; /* gray-700 */
+        }
+        
+        .dark .bg-blue-100 {
+            background-color: #1E3A8A !important; /* blue-900 */
+        }
+        
+        .dark .text-blue-600 {
+            color: #60A5FA !important; /* blue-400 */
+        }
+        
+        .dark .bg-green-100 {
+            background-color: #064E3B !important; /* green-900 */
+        }
+        
+        .dark .text-green-600 {
+            color: #4ADE80 !important; /* green-400 */
+        }
+        
+        .dark .bg-yellow-100 {
+            background-color: #78350F !important; /* yellow-900 */
+        }
+        
+        .dark .text-yellow-600 {
+            color: #FCD34D !important; /* yellow-400 */
+        }
+        
+        .dark .bg-red-100 {
+            background-color: #7F1D1D !important; /* red-900 */
+        }
+        
+        .dark .text-red-600 {
+            color: #F87171 !important; /* red-400 */
+        }

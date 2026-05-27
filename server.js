@@ -701,9 +701,38 @@ app.get('/admin/first-login', noCacheAuthPages, (req, res) => {
     serveHTML(res, path.join(__dirname, 'src', 'components', 'admin', 'FirstLogin.html'));
 });
 
-app.get('/admin/dashboard', noCacheAuthPages, (req, res) => {
-    console.log('📊 Admin dashboard requested');
-    serveHTML(res, path.join(__dirname, 'src', 'components', 'admin', 'adminDashboard.html'));
+// Admin portal SPA. Tabs are served at /admin/<tab>; the client router
+// (portal-router.js) reads the tab from the last path segment. Registration
+// ORDER: /admin/login + /admin/first-login (above), the partials route, the
+// legacy /admin/dashboard/<tab> redirect, and /admin (bare) all precede the
+// /admin/:tab catch-all so it cannot shadow them. /admin/dashboard is now simply
+// the :tab="dashboard" case (handled by the catch-all).
+const ADMIN_TABS = new Set([
+    'dashboard', 'students', 'trainers', 'financial', 'programs', 'reports', 'settings'
+]);
+const serveAdminPortalShell = (req, res) => {
+    serveHTML(res, path.join(__dirname, 'src', 'components', 'admin', 'portal-shell.html'));
+};
+
+// Tab partials (HTML fragments the router injects into #tab-root). Whitelisted.
+app.get('/admin/partials/:name.html', noCacheAuthPages, (req, res) => {
+    const name = req.params.name;
+    if (!ADMIN_TABS.has(name)) {
+        return res.status(404).send('Not found');
+    }
+    res.sendFile(path.join(__dirname, 'src', 'components', 'admin', 'partials', `${name}.html`));
+});
+
+// Backward-compat: legacy /admin/dashboard/<tab> 301-redirects to /admin/<tab>.
+app.get('/admin/dashboard/:tab', (req, res) => res.redirect(301, `/admin/${req.params.tab}`));
+
+// Bare /admin → default tab.
+app.get('/admin', (req, res) => res.redirect(302, '/admin/dashboard'));
+
+// Catch-all: serve the shell only for a whitelisted tab; otherwise next().
+app.get('/admin/:tab', noCacheAuthPages, (req, res, next) => {
+    if (!ADMIN_TABS.has(req.params.tab)) return next();
+    serveAdminPortalShell(req, res);
 });
 
 // Serve main login page (Student/Trainer combined)
