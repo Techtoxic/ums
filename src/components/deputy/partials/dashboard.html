@@ -1,0 +1,73 @@
+            <!-- Quick Stats — design-system stat cards. IDs preserved so the
+                 existing loadDashboardStats() data-population keeps working;
+                 "Loading..." default text retained (the data layer is a
+                 separate backend concern, out of scope here). -->
+            <div class="stat-cards-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-6)">
+                <div class="stat-card">
+                    <div class="stat-card__top"><div class="stat-card__icon"><i class="ri-team-line"></i></div></div>
+                    <div class="stat-card__label">Active Students</div>
+                    <div class="stat-card__value" id="totalStudents">Loading...</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card__top"><div class="stat-card__icon"><i class="ri-user-star-line"></i></div></div>
+                    <div class="stat-card__label">Active Trainers</div>
+                    <div class="stat-card__value" id="totalTrainers">Loading...</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card__top"><div class="stat-card__icon"><i class="ri-book-open-line"></i></div></div>
+                    <div class="stat-card__label">Total Courses</div>
+                    <div class="stat-card__value" id="totalCourses">Loading...</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card__top"><div class="stat-card__icon"><i class="ri-file-list-3-line"></i></div></div>
+                    <div class="stat-card__label">Total Units</div>
+                    <div class="stat-card__value" id="totalUnits">Loading...</div>
+                </div>
+                <div class="stat-card stat-card--warning">
+                    <div class="stat-card__top"><div class="stat-card__icon"><i class="ri-time-line"></i></div></div>
+                    <div class="stat-card__label">Pending Tools</div>
+                    <div class="stat-card__value" id="pendingTools">Loading...</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card__top"><div class="stat-card__icon"><i class="ri-checkbox-circle-line"></i></div></div>
+                    <div class="stat-card__label">Total Tools</div>
+                    <div class="stat-card__value" id="totalTools">Loading...</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card__top"><div class="stat-card__icon"><i class="ri-building-line"></i></div></div>
+                    <div class="stat-card__label">Departments</div>
+                    <div class="stat-card__value" id="totalDepartments">Loading...</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card__top"><div class="stat-card__icon"><i class="ri-notification-3-line"></i></div></div>
+                    <div class="stat-card__label">Notifications</div>
+                    <div class="stat-card__value" id="totalNotifications">Loading...</div>
+                </div>
+            </div>
+
+            <!-- Department Overview -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Students by Department -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="text-lg font-semibold">Students by Department</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="h-64">
+                            <canvas id="studentsByDeptChart" class="w-full h-full"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tools Status Overview -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="text-lg font-semibold">Tools Status Overview</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="h-64">
+                            <canvas id="toolsStatusChart" class="w-full h-full"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>

@@ -1,0 +1,137 @@
+        <div class="space-y-6">
+            <!-- Tools of Trade Management -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-semibold">Tools of Trade</h2>
+                    <button class="bg-primary hover:bg-secondary text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors" onclick="openToolRequestModal()">
+                        <i class="ri-add-line"></i>Request Tools of Trade
+                    </button>
+                </div>
+
+                <!-- Tools of Trade Request Modal -->
+                <div id="toolRequestModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg w-full max-w-lg mx-4">
+                        <div class="p-6">
+                            <div class="flex justify-between items-center mb-6">
+                                <h3 class="text-xl font-bold text-gray-800 dark:text-white">Request Tools of Trade</h3>
+                                <button onclick="closeToolRequestModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                                    <i class="ri-close-line text-2xl"></i>
+                                </button>
+                            </div>
+                            <form id="toolRequestForm" onsubmit="handleToolRequest(event)" class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tool Type</label>
+                                    <select name="toolType" required class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                                        <option value="">Select Tool Type</option>
+                                        <option value="course_outline">Course Outline</option>
+                                        <option value="learning_plan">Learning Plan</option>
+                                        <option value="record_of_work">Record of Work</option>
+                                        <option value="session_plan">Session Plan</option>
+                                        <option value="exam">Exam</option>
+                                        <option value="tvet_license">TVET License</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Send To</label>
+                                    <select name="sendTo" id="sendToSelect" required class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white" onchange="handleSendToChange()">
+                                        <option value="all_trainers">All Trainers</option>
+                                        <option value="by_department">By Department</option>
+                                        <option value="specific_trainer">Specific Trainer</option>
+                                    </select>
+                                </div>
+                                <div id="departmentFilter" class="hidden">
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Department</label>
+                                    <select name="department" id="departmentSelect" class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white" onchange="loadTrainersByDepartment()">
+                                        <option value="">Select Department</option>
+                                        <option value="applied_science">Applied Science</option>
+                                        <option value="agriculture">Agriculture</option>
+                                        <option value="building_civil">Building & Civil</option>
+                                        <option value="electromechanical">Electromechanical</option>
+                                        <option value="hospitality">Hospitality</option>
+                                        <option value="business_liberal">Business & Liberal</option>
+                                        <option value="computing_informatics">Computing & Informatics</option>
+                                    </select>
+                                </div>
+                                <div id="trainerFilter" class="hidden">
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Trainer</label>
+                                    <select name="trainer" id="trainerSelect" class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                                        <option value="">Select Trainer</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Due Date</label>
+                                    <input type="date" name="dueDate" required class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                                </div>
+                                <div class="col-span-2">
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Special Instructions</label>
+                                    <textarea name="instructions" rows="3" class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white" placeholder="Enter any specific requirements or notes..."></textarea>
+                                </div>
+                                <div class="col-span-2 flex justify-end gap-3 mt-4">
+                                    <button type="button" onclick="closeToolRequestModal()" class="px-4 py-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">Cancel</button>
+                                    <button type="submit" class="bg-primary hover:bg-secondary text-white px-6 py-2 rounded-lg transition-colors">Submit Request</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tools List -->
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                    <!-- Course Outline -->
+                    <div class="p-4 border border-slate-200 dark:border-gray-700 rounded-lg hover:border-primary/50 transition-colors">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="font-medium">Course Outline</h4>
+                            <span class="px-3 py-1 rounded-full text-xs bg-warning/10 text-warning">Pending</span>
+                        </div>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mb-3">Dr. Smith - Software Engineering</p>
+                        <div class="flex items-center gap-2">
+                            <button class="text-sm text-primary hover:text-secondary transition-colors">Review</button>
+                            <span class="text-slate-300 dark:text-slate-600">|</span>
+                            <button class="text-sm text-slate-500 hover:text-slate-600 transition-colors">Dismiss</button>
+                        </div>
+                    </div>
+
+                    <!-- Learning Plan -->
+                    <div class="p-4 border border-slate-200 dark:border-gray-700 rounded-lg hover:border-primary/50 transition-colors">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="font-medium">Learning Plan</h4>
+                            <span class="px-3 py-1 rounded-full text-xs bg-success/10 text-success">Approved</span>
+                        </div>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mb-3">Dr. Johnson - Data Science</p>
+                        <div class="flex items-center gap-2">
+                            <button class="text-sm text-primary hover:text-secondary transition-colors">View Details</button>
+                            <span class="text-slate-300 dark:text-slate-600">|</span>
+                            <button class="text-sm text-slate-500 hover:text-slate-600 transition-colors">Archive</button>
+                        </div>
+                    </div>
+
+                    <!-- Record of Work -->
+                    <div class="p-4 border border-slate-200 dark:border-gray-700 rounded-lg hover:border-primary/50 transition-colors">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="font-medium">Record of Work</h4>
+                            <span class="px-3 py-1 rounded-full text-xs bg-primary/10 text-primary">In Progress</span>
+                        </div>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mb-3">Prof. Williams - Cybersecurity</p>
+                        <div class="flex items-center gap-2">
+                            <button class="text-sm text-primary hover:text-secondary transition-colors">View Details</button>
+                            <span class="text-slate-300 dark:text-slate-600">|</span>
+                            <button class="text-sm text-slate-500 hover:text-slate-600 transition-colors">Update</button>
+                        </div>
+                    </div>
+
+                    <!-- Session Plan -->
+                    <div class="p-4 border border-slate-200 dark:border-gray-700 rounded-lg hover:border-primary/50 transition-colors">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="font-medium">Session Plan</h4>
+                            <span class="px-3 py-1 rounded-full text-xs bg-warning/10 text-warning">Pending Review</span>
+                        </div>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mb-3">Dr. Brown - Network Engineering</p>
+                        <div class="flex items-center gap-2">
+                            <button class="text-sm text-primary hover:text-secondary transition-colors">Review</button>
+                            <span class="text-slate-300 dark:text-slate-600">|</span>
+                            <button class="text-sm text-slate-500 hover:text-slate-600 transition-colors">Edit</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+

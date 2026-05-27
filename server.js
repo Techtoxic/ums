@@ -1509,8 +1509,38 @@ app.get('/dean/dashboard', noCacheAuthPages, (req, res) => {
 // Deputy routes
 app.get('/deputy/login', (req, res) => res.redirect('/admin/login'));
 
-app.get('/deputy/dashboard', noCacheAuthPages, (req, res) => {
-    res.sendFile(path.join(__dirname, 'src', 'components', 'deputy', 'DeputyDashboard.html'));
+// Deputy portal SPA. Tabs are served at /deputy/<tab>; the client router
+// (portal-router.js) reads the tab from the last path segment. Registration
+// ORDER: /deputy/login (above), the partials route, the legacy
+// /deputy/dashboard/<tab> redirect, and /deputy (bare) all precede the
+// /deputy/:tab catch-all so it cannot shadow them. /deputy/dashboard is now the
+// :tab="dashboard" case (handled by the catch-all).
+const DEPUTY_TABS = new Set([
+    'dashboard', 'students', 'trainers', 'courses', 'units', 'tools', 'notifications'
+]);
+const serveDeputyPortalShell = (req, res) => {
+    res.sendFile(path.join(__dirname, 'src', 'components', 'deputy', 'portal-shell.html'));
+};
+
+// Tab partials (HTML fragments the router injects into #tab-root). Whitelisted.
+app.get('/deputy/partials/:name.html', noCacheAuthPages, (req, res) => {
+    const name = req.params.name;
+    if (!DEPUTY_TABS.has(name)) {
+        return res.status(404).send('Not found');
+    }
+    res.sendFile(path.join(__dirname, 'src', 'components', 'deputy', 'partials', `${name}.html`));
+});
+
+// Backward-compat: legacy /deputy/dashboard/<tab> 301-redirects to /deputy/<tab>.
+app.get('/deputy/dashboard/:tab', (req, res) => res.redirect(301, `/deputy/${req.params.tab}`));
+
+// Bare /deputy → default tab.
+app.get('/deputy', (req, res) => res.redirect(302, '/deputy/dashboard'));
+
+// Catch-all: serve the shell only for a whitelisted tab; otherwise next().
+app.get('/deputy/:tab', noCacheAuthPages, (req, res, next) => {
+    if (!DEPUTY_TABS.has(req.params.tab)) return next();
+    serveDeputyPortalShell(req, res);
 });
 
 // ILO routes (Industrial Liaison Office)

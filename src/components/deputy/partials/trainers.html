@@ -1,0 +1,31 @@
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+                    <h2 class="text-xl font-semibold">Trainers & Courses</h2>
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <div class="relative">
+                            <input type="text" placeholder="Search trainers..." class="search-input pl-10 pr-4 py-2 w-full">
+                            <i class="ri-search-line absolute left-3 top-3 text-slate-400"></i>
+                        </div>
+                        <button class="btn-primary whitespace-nowrap">
+                            <i class="ri-filter-line mr-2"></i>Filter
+                        </button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-200 dark:divide-gray-700">
+                        <thead>
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Trainer</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Department</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Assigned Units</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Students</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="trainersTableBody" class="divide-y divide-slate-200 dark:divide-gray-700">
+                            <!-- Trainers will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>

@@ -1,0 +1,36 @@
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+                    <h2 class="text-xl font-semibold">Student Overview</h2>
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <div class="relative">
+                            <input type="text" placeholder="Search students..." class="search-input pl-10 pr-4 py-2 w-full">
+                            <i class="ri-search-line absolute left-3 top-3 text-slate-400"></i>
+                        </div>
+                        <button class="btn-primary whitespace-nowrap">
+                            <i class="ri-filter-line mr-2"></i>Filter
+                        </button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-200 dark:divide-gray-700">
+                        <thead>
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Student</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Course</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Admission Type</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Year</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentsTableBody" class="divide-y divide-slate-200 dark:divide-gray-700">
+                            <!-- Students will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination -->
+                <div id="studentsPagination" class="mt-6">
+                    <!-- Pagination controls will be loaded here -->
+                </div>
+            </div>

@@ -1,0 +1,122 @@
+/* deputy-portal.css — portal-specific styles extracted verbatim from the
+   DeputyDashboard.html inline <style> block during the SPA refactor.
+   Loaded alongside dashboard-styles.css (which owns the design system). */
+        @media (max-width: 1024px) {
+            .sidebar.active {
+                display: block !important;
+            }
+        }
+        
+        /* Custom scrollbar styling */
+        .scrollbar-thin {
+            scrollbar-width: thin;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background-color: #d1d5db;
+            border-radius: 3px;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+            background-color: #9ca3af;
+        }
+        
+        .dark .scrollbar-thin::-webkit-scrollbar-thumb {
+            background-color: #4b5563;
+        }
+        
+        .dark .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+            background-color: #6b7280;
+        }
+        
+        body.menu-open::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 30;
+        }
+
+        /* (Removed: legacy fixed-sidebar offset rule — the .dashboard-shell
+           grid in /public/css/dashboard-styles.css now lays out the sidebar.) */
+
+        .stats-card {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .dark .stats-card {
+            background-color: #1f2937;
+        }
+        
+        .btn-primary {
+            background-color: #7A0C0C;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            background-color: #8B2A2A;
+        }
+        
+        .search-input {
+            background-color: #f9fafb;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            padding: 0.5rem 1rem;
+        }
+        
+        .dark .search-input {
+            background-color: #374151;
+            border-color: #4b5563;
+        }
+
+        /* (Removed: .nav-item rules — the sidebar now uses the design-system
+           .nav-link / .nav-link.active primitives from dashboard-styles.css.) */
+
+        .content-section {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .card {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            border: 1px solid #e5e7eb;
+        }
+        
+        .dark .card {
+            background-color: #1f2937;
+            border-color: #374151;
+        }
+
+        .card-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .dark .card-header {
+            border-color: #374151;
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
