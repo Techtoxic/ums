@@ -1,0 +1,55 @@
+                    <div class="card">
+                        <div class="card__body">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-headline-sm text-gray-800 dark:text-gray-200">Common Units Management</h2>
+                            <button 
+                                onclick="showAssignCommonUnitsModal()"
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+                            >
+                                <i class="ri-add-line"></i>
+                                Assign Common Unit
+                            </button>
+                        </div>
+
+                        <!-- Common Units List -->
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
+                                <h3 class="text-base font-semibold text-gray-800 dark:text-gray-200 mb-4">Available Common Units</h3>
+                                <div id="commonUnitsList" class="space-y-3">
+                                    <!-- Common units will be populated here -->
+                                </div>
+                            </div>
+                            
+                            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
+                                <h3 class="text-base font-semibold text-gray-800 dark:text-gray-200 mb-4">Assignment Summary</h3>
+                                <div id="commonUnitsStats" class="space-y-3">
+                                    <!-- Stats will be populated here -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Common Unit Assignments Table -->
+                        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                                <h3 class="text-headline-sm text-gray-800 dark:text-gray-200">Common Unit Assignments</h3>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table id="commonUnitsAssignmentsTable" class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                    <thead class="bg-gray-50 dark:bg-gray-700">
+                                        <tr>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Common Unit</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Trainer</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Department</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Assigned Date</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="commonUnitsAssignmentsTableBody" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                        <!-- Common unit assignment rows will be populated here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        </div>
+                    </div>

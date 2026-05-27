@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EDTTI HOD Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.0.0/fonts/remixicon.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#7A0C0C',
+                        secondary: '#8B2A2A',
+                        success: '#10b981',
+                        warning: '#f59e0b',
+                        danger: '#ef4444',
+                        gray: {
+                            50: '#f9fafb',
+                            100: '#f3f4f6',
+                            200: '#e5e7eb',
+                            300: '#d1d5db',
+                            400: '#9ca3af',
+                            500: '#6b7280',
+                            600: '#4b5563',
+                            700: '#374151',
+                            800: '#1f2937',
+                            900: '#111827'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-in-out',
+                        'slide-up': 'slideUp 0.3s ease-out',
+                        'bounce-gentle': 'bounceGentle 2s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' }
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(100%)' },
+                            '100%': { transform: 'translateY(0)' }
+                        },
+                        bounceGentle: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-5px)' }
+                        }
+                    }
+                }
+            },
+            darkMode: 'class'
+        }
+    </script>
+    <link rel="stylesheet" href="/public/css/dashboard-styles.css">
+    <link rel="stylesheet" href="/public/css/hod-portal.css">
+    <script src="/public/js/auth.js"></script>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 font-sans transition-colors duration-300">
+    <!-- Auth gate: covers the dashboard until requireAuth() resolves, suppressing
+         the bfcache back-button flash. Skeleton matches HOD layout (7 sidebar nav
+         items, 5 stat tiles). public/js/auth.js fades + removes it on success. -->
+    <div id="authGate" class="auth-gate" aria-live="polite" aria-busy="true">
+        <aside class="skel-sidebar">
+            <div class="skel skel-sidebar__logo"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__item"></div>
+            <div class="skel skel-sidebar__user"></div>
+        </aside>
+        <main class="skel-main">
+            <div class="skel-topbar">
+                <div class="skel skel-topbar__title"></div>
+                <div class="skel skel-topbar__action"></div>
+            </div>
+            <div class="skel skel-welcome"></div>
+            <div class="skel-tiles" style="--tile-count: 5;">
+                <div class="skel skel-tile"></div>
+                <div class="skel skel-tile"></div>
+                <div class="skel skel-tile"></div>
+                <div class="skel skel-tile"></div>
+                <div class="skel skel-tile"></div>
+            </div>
+            <div class="skel skel-content"></div>
+        </main>
+    </div>
+
+    <!-- Mobile Menu Overlay -->
+    <div id="mobileOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden md:hidden"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar fixed left-0 top-0 h-full w-64 bg-white dark:bg-gray-800 shadow-xl z-50 transition-all duration-300 ease-in-out border-r border-gray-200 dark:border-gray-700">
+        <!-- Logo Section -->
+        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 gradient-bg rounded-xl flex items-center justify-center">
+                        <i class="ri-user-star-line text-white text-xl"></i>
+                    </div>
+                    <div class="sidebar-title">
+                        <h1 class="text-lg font-bold text-gray-900 dark:text-white">EDTTI</h1>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">HOD Portal</p>
+                    </div>
+                </div>
+                <button id="sidebarToggle" class="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                    <i class="ri-menu-fold-line text-gray-600 dark:text-gray-300"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="p-4 space-y-2">
+            <a href="/hod/overview" id="nav-overview" class="nav-item flex items-center space-x-3 p-3 rounded-xl bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-light transition-all duration-200">
+                <i class="ri-dashboard-3-line text-lg"></i>
+                <span class="sidebar-text font-medium">Dashboard</span>
+            </a>
+            
+            <a href="/hod/courses" id="nav-courses" class="nav-item flex items-center space-x-3 p-3 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-all duration-200">
+                <i class="ri-book-open-line text-lg"></i>
+                <span class="sidebar-text font-medium">Courses & Units</span>
+            </a>
+            
+            <a href="/hod/trainers" id="nav-trainers" class="nav-item flex items-center space-x-3 p-3 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-all duration-200">
+                <i class="ri-user-line text-lg"></i>
+                <span class="sidebar-text font-medium">Trainers</span>
+            </a>
+            
+            <a href="/hod/common-units" id="nav-common-units" class="nav-item flex items-center space-x-3 p-3 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-all duration-200">
+                <i class="ri-share-line text-lg"></i>
+                <span class="sidebar-text font-medium">Common Units</span>
+            </a>
+            
+            <a href="/hod/assignments" id="nav-assignments" class="nav-item flex items-center space-x-3 p-3 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-all duration-200">
+                <i class="ri-task-line text-lg"></i>
+                <span class="sidebar-text font-medium">Unit Assignments</span>
+            </a>
+            
+            <a href="/hod/analytics" id="nav-analytics" class="nav-item flex items-center space-x-3 p-3 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-all duration-200">
+                <i class="ri-bar-chart-line text-lg"></i>
+                <span class="sidebar-text font-medium">Analytics</span>
+            </a>
+            
+            <a href="/hod/profile" id="nav-profile" class="nav-item flex items-center space-x-3 p-3 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-all duration-200">
+                <i class="ri-user-settings-line text-lg"></i>
+                <span class="sidebar-text font-medium">My Profile</span>
+            </a>
+        </nav>
+
+        <!-- User Profile Section -->
+        <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 dark:border-gray-700">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
+                    <i class="ri-user-star-line text-white"></i>
+                </div>
+                <div class="sidebar-title flex-1 min-w-0">
+                    <p class="text-sm font-medium text-gray-900 dark:text-white truncate" id="sidebarHodName">Loading...</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 truncate" id="sidebarDepartment">Loading...</p>
+                </div>
+            </div>
+        </div>
+
+    </aside>
+
+    <!-- Main Content -->
+    <div id="main-content" class="md:ml-64 transition-all duration-300 ease-in-out">
+        <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30">
+            <div class="flex items-center justify-between px-4 py-3">
+                <div class="flex items-center gap-4">
+                    <button id="mobileMenuToggle" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg md:hidden">
+                        <i class="ri-menu-line text-xl text-gray-600 dark:text-gray-300"></i>
+                    </button>
+                    <button id="desktopSidebarToggle" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg hidden md:block">
+                        <i class="ri-menu-fold-line text-xl text-gray-600 dark:text-gray-300"></i>
+                    </button>
+                    <h2 id="pageTitle" class="text-headline text-gray-800 dark:text-white">Dashboard</h2>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="hidden sm:flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                        <i class="ri-time-line"></i>
+                        <span id="currentTime">Loading...</span>
+                    </div>
+                    <button id="themeToggle" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                        <i class="ri-moon-line text-gray-600 dark:text-gray-300 dark:hidden"></i>
+                        <i class="ri-sun-line text-gray-300 hidden dark:block"></i>
+                    </button>
+                    <button onclick="logout()" class="px-3 py-1.5 bg-danger text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium">
+                        <i class="ri-logout-circle-r-line text-sm mr-1 sm:mr-2"></i>
+                        <span class="hidden sm:inline">Logout</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Content area: the router injects each tab's partial here -->
+        <main id="tab-root" class="p-4 md:p-6 space-y-6"></main>
+    </div>
+
+    <!-- Global modals (portal-wide) -->
+    <!-- Assign Units Modal -->
+    <div id="assignUnitsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto shadow-xl">
+            <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-headline-sm text-gray-800 dark:text-gray-200">Assign Units to Trainer</h3>
+                    <button onclick="closeAssignUnitsModal()" class="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <!-- Trainer Selection -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Trainer</label>
+                    <select 
+                        id="modalTrainerSelect" 
+                        class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                    >
+                        <option value="">Choose a trainer...</option>
+                    </select>
+                </div>
+
+                <!-- Unit Selection -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Units</label>
+                    <div class="border border-gray-300 dark:border-gray-600 rounded-lg max-h-60 overflow-y-auto bg-white dark:bg-gray-700">
+                        <div id="modalUnitsList" class="p-4 space-y-2">
+                            <!-- Units checkboxes will be populated here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex justify-end space-x-4">
+                    <button 
+                        onclick="closeAssignUnitsModal()" 
+                        class="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
+                        Cancel
+                    </button>
+                    <button 
+                        onclick="assignSelectedUnits()" 
+                        id="assignUnitsBtn"
+                        class="px-6 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                        disabled
+                    >
+                        <i class="fas fa-check mr-2"></i>Assign Units
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assign Common Units Modal -->
+    <div id="assignCommonUnitsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white dark:bg-gray-800 rounded-lg max-w-5xl w-full mx-4 max-h-[90vh] overflow-y-auto shadow-xl">
+            <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-headline-sm text-gray-800 dark:text-gray-200">Assign Common Units</h3>
+                    <button onclick="closeAssignCommonUnitsModal()" class="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
+                        <i class="ri-close-line text-2xl"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-6">
+                <!-- Common Unit Selection -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Common Unit</label>
+                    <select id="commonUnitSelect" class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                        <option value="">Choose a common unit...</option>
+                    </select>
+                </div>
+
+                <!-- Department Filter -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Filter Trainers by Department</label>
+                    <select id="trainerDepartmentFilter" class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                        <option value="">All Departments</option>
+                        <option value="applied_science">Applied Science</option>
+                        <option value="agriculture">Agriculture</option>
+                        <option value="building_civil">Building & Civil Engineering</option>
+                        <option value="business_liberal">Business & Liberal Studies</option>
+                        <option value="electromechanical">Electromechanical Engineering</option>
+                        <option value="hospitality">Hospitality</option>
+                        <option value="computing_informatics">Computing & Informatics</option>
+                    </select>
+                </div>
+
+                <!-- Trainer Selection -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Trainer</label>
+                    <div id="trainersList" class="max-h-60 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-lg">
+                        <div class="p-4 text-center text-gray-500 dark:text-gray-400">
+                            Loading trainers...
+                        </div>
+                    </div>
+                </div>
+
+
+                <!-- Notes -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Notes (Optional)</label>
+                    <textarea 
+                        id="commonUnitNotes" 
+                        rows="3"
+                        placeholder="Additional notes about this assignment..."
+                        class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                    ></textarea>
+                </div>
+            </div>
+            <div class="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end space-x-4">
+                <button 
+                    onclick="closeAssignCommonUnitsModal()" 
+                    class="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                    Cancel
+                </button>
+                <button 
+                    onclick="assignCommonUnit()" 
+                    id="assignCommonUnitBtn"
+                    class="px-6 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                    disabled
+                >
+                    <i class="ri-check-line mr-2"></i>Assign Common Unit
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-5 right-5 transform translate-x-full transition-transform duration-300 z-50">
+        <div class="bg-white rounded-lg shadow-lg border-l-4 p-4 min-w-[300px]">
+            <div class="flex items-center">
+                <div id="toastIcon" class="mr-3"></div>
+                <div>
+                    <p id="toastMessage" class="font-medium"></p>
+                </div>
+                <button onclick="hideToast()" class="ml-4 text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/src/components/hod/portal-core.js"></script>
+    <script src="/src/components/hod/portal-router.js"></script>
+    <script src="/src/components/hod/tabs/overview.js"></script>
+    <script src="/src/components/hod/tabs/courses.js"></script>
+    <script src="/src/components/hod/tabs/trainers.js"></script>
+    <script src="/src/components/hod/tabs/common-units.js"></script>
+    <script src="/src/components/hod/tabs/assignments.js"></script>
+    <script src="/src/components/hod/tabs/analytics.js"></script>
+    <script src="/src/components/hod/tabs/profile.js"></script>
+</body>
+</html>

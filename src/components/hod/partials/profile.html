@@ -1,0 +1,96 @@
+                    <div class="card">
+                        <div class="card__body">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-headline-sm text-gray-800 dark:text-gray-200">My Profile</h2>
+                            <button onclick="showProfileUpdateModal(true, true)" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors">
+                                <i class="ri-edit-line mr-2"></i>Edit Profile
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            <!-- Personal Information -->
+                            <div class="space-y-6">
+                                <div class="flex items-center gap-4 mb-6">
+                                    <div class="w-20 h-20 bg-gradient-to-r from-primary to-secondary rounded-full flex items-center justify-center">
+                                        <i class="ri-user-line text-white text-3xl"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-headline text-gray-800 dark:text-white" id="profile-name">Loading...</h3>
+                                        <p class="text-gray-600 dark:text-gray-400" id="profile-department">Loading...</p>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 gap-4">
+                                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                                        <label class="text-sm font-medium text-gray-600 dark:text-gray-400">Full Name</label>
+                                        <p class="text-gray-800 dark:text-white font-medium" id="profile-full-name">Loading...</p>
+                                    </div>
+                                    
+                                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                                        <label class="text-sm font-medium text-gray-600 dark:text-gray-400">Email Address</label>
+                                        <p class="text-gray-800 dark:text-white font-medium" id="profile-email">Loading...</p>
+                                    </div>
+                                    
+                                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                                        <label class="text-sm font-medium text-gray-600 dark:text-gray-400">Phone Number</label>
+                                        <p class="text-gray-800 dark:text-white font-medium" id="profile-phone">Not set</p>
+                                    </div>
+                                    
+                                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                                        <label class="text-sm font-medium text-gray-600 dark:text-gray-400">Department</label>
+                                        <p class="text-gray-800 dark:text-white font-medium" id="profile-department-full">Loading...</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Account Information -->
+                            <div class="space-y-6">
+                                <h4 class="text-headline-sm text-gray-800 dark:text-white">Account Information</h4>
+                                
+                                <div class="grid grid-cols-1 gap-4">
+                                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                                        <label class="text-sm font-medium text-gray-600 dark:text-gray-400">Account Status</label>
+                                        <div class="flex items-center mt-1">
+                                            <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" id="profile-status">
+                                                <i class="ri-check-circle-line mr-1"></i>Active
+                                            </span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                                        <label class="text-sm font-medium text-gray-600 dark:text-gray-400">Account Created</label>
+                                        <p class="text-gray-800 dark:text-white font-medium" id="profile-created">Loading...</p>
+                                    </div>
+                                    
+                                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                                        <label class="text-sm font-medium text-gray-600 dark:text-gray-400">Last Updated</label>
+                                        <p class="text-gray-800 dark:text-white font-medium" id="profile-updated">Loading...</p>
+                                    </div>
+                                    
+                                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                                        <label class="text-sm font-medium text-gray-600 dark:text-gray-400">Last Login</label>
+                                        <p class="text-gray-800 dark:text-white font-medium" id="profile-last-login">Loading...</p>
+                                    </div>
+                                    
+                                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                                        <label class="text-sm font-medium text-gray-600 dark:text-gray-400">User ID</label>
+                                        <p class="text-gray-800 dark:text-white font-medium font-mono text-sm" id="profile-id">Loading...</p>
+                                    </div>
+                                </div>
+
+                                <!-- Quick Actions -->
+                                <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+                                    <h5 class="text-sm font-medium text-blue-800 dark:text-blue-200 mb-3">Quick Actions</h5>
+                                    <div class="space-y-2">
+                                        <button onclick="showProfileUpdateModal(true, false)" class="w-full text-left px-3 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-800/50 rounded transition-colors">
+                                            <i class="ri-mail-line mr-2"></i>Update Email Address
+                                        </button>
+                                        <button onclick="showProfileUpdateModal(false, true)" class="w-full text-left px-3 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-800/50 rounded transition-colors">
+                                            <i class="ri-phone-line mr-2"></i>Update Phone Number
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        </div>
+                    </div>

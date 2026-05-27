@@ -1,0 +1,48 @@
+                    <div class="card">
+                        <div class="card__body">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-headline-sm text-gray-800 dark:text-gray-200">Department Courses & Units</h2>
+                            <div class="flex space-x-4">
+                                <select 
+                                    id="courseFilter" 
+                                    class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                                >
+                                    <option value="">All Courses</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Courses List -->
+                        <div id="coursesList" class="space-y-4">
+                            <!-- Course cards will be populated here -->
+                        </div>
+
+                        <!-- Pagination Controls -->
+                        <div class="flex items-center justify-between mt-6 pt-4 border-t border-gray-200 dark:border-gray-700" id="coursesPagination">
+                            <div class="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                                <span id="coursesPageInfo">Showing 0-0 of 0 courses</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <button 
+                                    id="coursesPrevBtn"
+                                    onclick="changePage('courses', -1)"
+                                    class="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    disabled
+                                >
+                                    <i class="fas fa-chevron-left mr-1"></i>Previous
+                                </button>
+                                <span class="px-3 py-2 text-sm text-gray-600 dark:text-gray-400" id="coursesPageNumbers">
+                                    Page 1 of 1
+                                </span>
+                                <button 
+                                    id="coursesNextBtn"
+                                    onclick="changePage('courses', 1)"
+                                    class="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    disabled
+                                >
+                                    Next<i class="fas fa-chevron-right ml-1"></i>
+                                </button>
+                            </div>
+                        </div>
+                        </div>
+                    </div>

@@ -745,8 +745,40 @@ app.get('/hod/login', noCacheAuthPages, (req, res) => {
     serveHTML(res, path.join(__dirname, 'src', 'components', 'hod', 'HODLogin.html'));
 });
 
-app.get('/hod/dashboard', noCacheAuthPages, (req, res) => {
-    serveHTML(res, path.join(__dirname, 'src', 'components', 'hod', 'HODDashboard.html'));
+// HOD portal SPA. Tabs are served at /hod/<tab>; the client router (portal-router.js)
+// reads the tab from the last path segment. The DEFAULT tab is "overview" (there is
+// no "dashboard" tab). Registration ORDER: /hod/login (above), the partials route,
+// the two legacy redirects, and /hod (bare) all precede the /hod/:tab catch-all so it
+// cannot shadow them.
+const HOD_TABS = new Set([
+    'overview', 'courses', 'trainers', 'common-units', 'assignments', 'analytics', 'profile'
+]);
+const serveHODPortalShell = (req, res) => {
+    serveHTML(res, path.join(__dirname, 'src', 'components', 'hod', 'portal-shell.html'));
+};
+
+// Tab partials (HTML fragments the router injects into #tab-root). Whitelisted.
+app.get('/hod/partials/:name.html', noCacheAuthPages, (req, res) => {
+    const name = req.params.name;
+    if (!HOD_TABS.has(name)) {
+        return res.status(404).send('Not found');
+    }
+    res.sendFile(path.join(__dirname, 'src', 'components', 'hod', 'partials', `${name}.html`));
+});
+
+// Backward-compat: the old monolith route was /hod/dashboard. There is no
+// "dashboard" tab now, so it 301-redirects to the default tab /hod/overview.
+app.get('/hod/dashboard', (req, res) => res.redirect(301, '/hod/overview'));
+// Legacy-shape redirect: /hod/dashboard/<tab> → /hod/<tab>.
+app.get('/hod/dashboard/:tab', (req, res) => res.redirect(301, `/hod/${req.params.tab}`));
+
+// Bare /hod → default tab.
+app.get('/hod', (req, res) => res.redirect(302, '/hod/overview'));
+
+// Catch-all: serve the shell only for a whitelisted tab; otherwise next().
+app.get('/hod/:tab', noCacheAuthPages, (req, res, next) => {
+    if (!HOD_TABS.has(req.params.tab)) return next();
+    serveHODPortalShell(req, res);
 });
 
 // Serve trainer pages
