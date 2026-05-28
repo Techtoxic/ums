@@ -31,10 +31,14 @@ let viewMode = 'list';
 // ---- cross-tab data loaders (verbatim) ----
 async function loadStudents() {
     try {
-        const response = await authFetch(`${API_BASE}/students`);
+        // The students endpoint switched to the paginated `{ students, total, ... }`
+        // envelope. Request `?all=1` here because the admin portal aggregates
+        // financial/students/dashboard stats across the full cohort.
+        const response = await authFetch(`${API_BASE}/students?all=1`);
         if (!response.ok) throw new Error('Failed to load students');
-        
-        allStudents = await response.json();
+
+        const body = await response.json();
+        allStudents = Array.isArray(body) ? body : (Array.isArray(body.students) ? body.students : []);
         console.log(`Loaded ${allStudents.length} students`);
         return allStudents;
     } catch (error) {

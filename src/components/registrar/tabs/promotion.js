@@ -1,9 +1,9 @@
 // tabs/promotion.js — student promotion: eligibility list + promote actions.
 //
-// Promotion logic (matches backend rules in src/utils/studentHelpers.js):
-//   - Any student with module >= 1 can be promoted to the next module
-//   - Module caps: Level 3 = 1, Level 4 = 2, Level 5 = 4, Level 6 = 6
-//   - Students at their level's cap cannot be promoted (checkbox + button disabled)
+// Fetches the entire student list (all=1) so a registrar can quickly scan
+// who is promotable; for very large tenants the load tab can be paginated
+// later, but the use case today is "load the entire cohort, then promote in
+// bulk". Module, level and department filters apply on top of the loaded set.
 window.RegistrarTabs = window.RegistrarTabs || {};
 
 let promotionStudents = [];
@@ -12,23 +12,31 @@ function showPromotionSection() { switchTab('promotion'); }
 
 async function loadPromotionStudents() {
     try {
-        const levelFilter = document.getElementById('levelFilter').value;
-        const deptFilter = document.getElementById('deptFilter').value;
+        const levelFilter = document.getElementById('levelFilter') ? document.getElementById('levelFilter').value : 'all';
+        const deptFilter = document.getElementById('deptFilter') ? document.getElementById('deptFilter').value : 'all';
+        const moduleFilter = document.getElementById('promotionModuleFilter') ? document.getElementById('promotionModuleFilter').value : 'all';
 
-        const response = await window.AUTH.fetch(`${API_BASE_URL}/students`);
+        // Server-side filtering for department + module reduces what we have
+        // to scan client-side; level is computed from the course code, so we
+        // still filter level client-side.
+        const params = new URLSearchParams({ all: '1' });
+        if (deptFilter && deptFilter !== 'all') params.set('department', deptFilter);
+        if (moduleFilter && moduleFilter !== 'all') params.set('module', moduleFilter);
+
+        const response = await window.AUTH.fetch(`${API_BASE_URL}/students?${params.toString()}`);
         if (!response.ok) throw new Error('Failed to fetch students');
-        const students = await response.json();
+        const body = await response.json();
+        const students = Array.isArray(body.students) ? body.students : [];
 
         const filteredStudents = students.filter(student => {
             const level = extractLevelFromCourse(student.course);
             const levelMatch = levelFilter === 'all' || String(level) === String(levelFilter);
-            const deptMatch = deptFilter === 'all' || student.department === deptFilter;
-            return levelMatch && deptMatch;
+            return levelMatch;
         });
 
         promotionStudents = filteredStudents;
         displayPromotionStudents(filteredStudents);
-        showToast(`Loaded ${filteredStudents.length} students`, 'success');
+        showToast(`Loaded ${filteredStudents.length} student${filteredStudents.length === 1 ? '' : 's'}`, 'success');
     } catch (error) {
         console.error('Error loading promotion students:', error);
         showToast('Failed to load students for promotion', 'error');
@@ -60,7 +68,8 @@ function displayPromotionStudents(students) {
         const cap = MAX_MODULE_BY_LEVEL[level];
         const currentModule = Number(student.module || 0);
         const isEligible = isStudentEligibleForPromotion(student);
-        const courseDisplay = String(student.course || '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        const courseDisplay = student.courseName || (typeof formatCourseName === 'function' ? formatCourseName(student.course) : (student.course || ''));
+        const departmentDisplay = student.departmentName || (window.departmentMapping && window.departmentMapping[student.department]) || student.department || '';
         const statusBadge = isEligible
             ? `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">Eligible → Module ${currentModule + 1}</span>`
             : `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">Max Module Reached</span>`;
@@ -88,7 +97,7 @@ function displayPromotionStudents(students) {
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm text-gray-900 dark:text-white">${escapeHtml(courseDisplay)}</div>
-                    <div class="text-sm text-gray-500 dark:text-gray-400">${escapeHtml(student.department || '')}</div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">${escapeHtml(departmentDisplay)}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">Module ${currentModule || '-'}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">Level ${level || 'Unknown'}</td>

@@ -7,11 +7,14 @@ window.DeputyTabs = window.DeputyTabs || {};
         // Load dashboard stats
         async function loadDashboardStats() {
             try {
-                // Load students count
-                const studentsResponse = await window.AUTH.fetch(`${API_BASE_URL}/students`);
+                // Load students count. /students now returns the paginated
+                // envelope { students, total, ... }; we only need the total
+                // here, so request the cheapest possible page.
+                const studentsResponse = await window.AUTH.fetch(`${API_BASE_URL}/students?page=1&limit=1`);
                 if (studentsResponse.ok) {
-                    const students = await studentsResponse.json();
-                    document.getElementById('totalStudents').textContent = students.length;
+                    const body = await studentsResponse.json();
+                    const total = body && body.total != null ? body.total : (Array.isArray(body) ? body.length : (body.students || []).length);
+                    document.getElementById('totalStudents').textContent = total;
                 }
 
                 // Load trainers count
@@ -72,10 +75,12 @@ window.DeputyTabs = window.DeputyTabs || {};
         // Load charts
         async function loadCharts() {
             try {
-                // Students by Department Chart
-                const studentsResponse = await window.AUTH.fetch(`${API_BASE_URL}/students`);
+                // Students by Department Chart — needs the full set so we
+                // ask for ?all=1 explicitly.
+                const studentsResponse = await window.AUTH.fetch(`${API_BASE_URL}/students?all=1`);
                 if (studentsResponse.ok) {
-                    const students = await studentsResponse.json();
+                    const body = await studentsResponse.json();
+                    const students = Array.isArray(body) ? body : (Array.isArray(body.students) ? body.students : []);
                     const studentsByDept = {};
                     students.forEach(student => {
                         const dept = student.department || 'unknown';

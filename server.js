@@ -1241,7 +1241,7 @@ registerPortal(app, portalDeps, {
 // Registrar portal pages.
 registerPortal(app, portalDeps, {
     role: 'registrar',
-    tabs: ['dashboard', 'admission', 'management', 'promotion', 'enrollment', 'graduation'],
+    tabs: ['dashboard', 'admission', 'management', 'promotion'],
     defaultTab: 'dashboard',
     login: { redirectTo: '/admin/login' },
 });

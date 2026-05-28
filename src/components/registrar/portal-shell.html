@@ -43,15 +43,12 @@
 </head>
 <body class="bg-slate-50 dark:bg-gray-900 text-slate-800 dark:text-white overflow-x-hidden">
     <!-- Auth gate: covers the dashboard until requireAuth() resolves, suppressing
-         the bfcache back-button flash. Skeleton matches registrar layout (6 nav
-         items: Dashboard, Admission, Management, Promotion, Enrollment,
-         Graduation; 4 tiles: Total Students, New Admissions, Active Courses,
-         Departments). -->
+         the bfcache back-button flash. Skeleton matches registrar layout (4 nav
+         items: Dashboard, Admission, Management, Promotion;
+         4 tiles: Total Students, New Admissions, Active Courses, Departments). -->
     <div id="authGate" class="auth-gate" aria-live="polite" aria-busy="true">
         <aside class="skel-sidebar">
             <div class="skel skel-sidebar__logo"></div>
-            <div class="skel skel-sidebar__item"></div>
-            <div class="skel skel-sidebar__item"></div>
             <div class="skel skel-sidebar__item"></div>
             <div class="skel skel-sidebar__item"></div>
             <div class="skel skel-sidebar__item"></div>
@@ -96,12 +93,6 @@
                 </a>
                 <a class="nav-link" data-section="promotion" href="/registrar/promotion">
                     <i class="ri-arrow-up-line"></i><span>Student Promotion</span>
-                </a>
-                <a class="nav-link" data-section="enrollment" href="/registrar/enrollment">
-                    <i class="ri-file-list-3-line"></i><span>Enrollment</span>
-                </a>
-                <a class="nav-link" data-section="graduation" href="/registrar/graduation">
-                    <i class="ri-graduation-cap-line"></i><span>Graduation</span>
                 </a>
             </nav>
             <div class="dashboard-sidebar__profile">
@@ -283,7 +274,16 @@
             </div>
 
             <!-- Letter Content -->
-            <div id="letterContent" class="p-8 bg-white dark:bg-gray-800 text-black dark:text-white" style="font-family: 'Times New Roman', serif; line-height: 1.6;">
+            <div id="letterContent" class="p-8 bg-white dark:bg-gray-800 text-black dark:text-white" style="font-family: 'Times New Roman', serif; line-height: 1.6; position: relative; overflow: hidden;">
+                <!-- Tamper-evident watermark — large diagonal "OFFICIAL · EDTTI"
+                     behind the letter content. Renders in both the on-screen
+                     view and the downloaded PDF (html2pdf rasterises it). -->
+                <div aria-hidden="true" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; user-select:none; z-index:0;">
+                    <div style="font-size:96px; font-weight:bold; color:rgba(122,12,12,0.06); transform:rotate(-30deg); letter-spacing:6px;">
+                        OFFICIAL · EDTTI
+                    </div>
+                </div>
+                <div style="position:relative; z-index:1;">
                 <!-- Letterhead -->
                 <div class="text-center border-b-4 border-blue-600 pb-6 mb-8">
                     <div class="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center text-white text-2xl mx-auto mb-4">
@@ -322,8 +322,9 @@
 
                     <div class="bg-yellow-50 dark:bg-yellow-900 border-l-4 border-yellow-400 dark:border-yellow-500 p-4 mb-6">
                         <p class="mb-2 text-gray-800 dark:text-gray-200"><strong>Course:</strong> <span id="courseName">[Course Name]</span></p>
+                        <p class="mb-2 text-gray-800 dark:text-gray-200"><strong>Department:</strong> <span id="letterDepartmentName">[Department]</span></p>
                         <p class="mb-2 text-gray-800 dark:text-gray-200"><strong>Admission Number:</strong> <span id="letterAdmissionNumber">[Admission Number]</span></p>
-                        <p class="text-gray-800 dark:text-gray-200"><strong>Academic Year:</strong> <span id="intakeYear">[Intake Year]</span></p>
+                        <p class="text-gray-800 dark:text-gray-200"><strong>Academic Year:</strong> <span id="intakeYear">[Academic Year]</span></p>
                     </div>
 
                     <p class="mb-4">This admission is subject to:</p>
@@ -378,6 +379,7 @@
                     <p><em>This is an official admission letter from Emurua Dikirr Technical Training Institute</em></p>
                     <p>Generated on <span id="generationDate"></span> | Student Portal: ums.emurua-tech.ac.ke</p>
                 </div>
+                </div><!-- /.letterContent inner wrapper -->
             </div>
         </div>
     </div>
@@ -566,16 +568,28 @@
                                 </select>
                             </div>
                             <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Filter by Module</label>
+                                <select id="modalModuleFilter" class="px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-600 dark:text-white">
+                                    <option value="all">All Modules</option>
+                                    <option value="1">Module 1</option>
+                                    <option value="2">Module 2</option>
+                                    <option value="3">Module 3</option>
+                                    <option value="4">Module 4</option>
+                                    <option value="5">Module 5</option>
+                                    <option value="6">Module 6</option>
+                                </select>
+                            </div>
+                            <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Filter by Department</label>
                                 <select id="modalDeptFilter" class="px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-600 dark:text-white">
                                     <option value="all">All Departments</option>
-                                    <option value="applied_science">Applied Science</option>
-                                    <option value="agriculture">Agriculture</option>
-                                    <option value="building_civil">Building & Civil</option>
-                                    <option value="electromechanical">Electromechanical</option>
-                                    <option value="hospitality">Hospitality</option>
-                                    <option value="business_liberal">Business & Liberal</option>
-                                    <option value="computing_informatics">Computing & Informatics</option>
+                                    <option value="applied_science">Applied Science Department</option>
+                                    <option value="agriculture">Agriculture Department</option>
+                                    <option value="building_civil">Building and Civil Department</option>
+                                    <option value="electromechanical">Electromechanical Department</option>
+                                    <option value="hospitality">Hospitality Department</option>
+                                    <option value="business_liberal">Business and Liberal Studies</option>
+                                    <option value="computing_informatics">Computing and Informatics</option>
                                 </select>
                             </div>
                             <div class="flex items-end">
@@ -652,7 +666,5 @@
     <script src="/src/components/registrar/tabs/admission.js"></script>
     <script src="/src/components/registrar/tabs/management.js"></script>
     <script src="/src/components/registrar/tabs/promotion.js"></script>
-    <script src="/src/components/registrar/tabs/enrollment.js"></script>
-    <script src="/src/components/registrar/tabs/graduation.js"></script>
 </body>
 </html>

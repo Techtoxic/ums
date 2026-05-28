@@ -26,7 +26,7 @@ class FinanceAnalytics {
     async loadData() {
         try {
             const [studentsResponse, paymentsResponse, programsResponse] = await Promise.all([
-                authFetch(`${this.API_BASE_URL}/students`),
+                authFetch(`${this.API_BASE_URL}/students?all=1`),
                 authFetch(`${this.API_BASE_URL}/payments`),
                 authFetch(`${this.API_BASE_URL}/programs`)
             ]);
@@ -35,7 +35,10 @@ class FinanceAnalytics {
                 throw new Error('Failed to load data');
             }
 
-            this.students = await studentsResponse.json();
+            // /students now returns the paginated envelope; we ask for ?all=1
+            // here because analytics needs the full set.
+            const studentsBody = await studentsResponse.json();
+            this.students = Array.isArray(studentsBody) ? studentsBody : (Array.isArray(studentsBody.students) ? studentsBody.students : []);
             this.payments = await paymentsResponse.json();
             this.programs = await programsResponse.json();
 

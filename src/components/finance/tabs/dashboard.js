@@ -62,20 +62,22 @@ async function initializeDashboard() {
 // Load all students with financial information
 async function loadStudents() {
     try {
-        // Fetch students data
-        const studentsResponse = await authFetch(`${API_BASE_URL}/students`);
+        // Fetch students data (paginated endpoint — request ?all=1 because
+        // the finance dashboard aggregates balances across the full cohort).
+        const studentsResponse = await authFetch(`${API_BASE_URL}/students?all=1`);
         if (!studentsResponse.ok) throw new Error('Failed to fetch students');
-        const students = await studentsResponse.json();
-        
+        const studentsBody = await studentsResponse.json();
+        const students = Array.isArray(studentsBody) ? studentsBody : (Array.isArray(studentsBody.students) ? studentsBody.students : []);
+
         // Fetch programs data for costs
         const programsResponse = await authFetch(`${API_BASE_URL}/programs`);
         if (!programsResponse.ok) throw new Error('Failed to fetch programs');
         const programs = await programsResponse.json();
-        
+
         // Fetch payments data
         const paymentsResponse = await authFetch(`${API_BASE_URL}/payments`);
         const payments = paymentsResponse.ok ? await paymentsResponse.json() : [];
-        
+
         // Process and display students with financial information
         displayStudents(students, programs, payments);
     } catch (error) {

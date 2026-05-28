@@ -60,21 +60,25 @@
             try {
                 const levelFilter = document.getElementById('modalLevelFilter').value;
                 const deptFilter = document.getElementById('modalDeptFilter').value;
+                const moduleFilter = (document.getElementById('modalModuleFilter') || {}).value || 'all';
 
-                const response = await window.AUTH.fetch(`${API_BASE_URL}/students`);
+                const params = new URLSearchParams({ all: '1' });
+                if (deptFilter && deptFilter !== 'all') params.set('department', deptFilter);
+                if (moduleFilter && moduleFilter !== 'all') params.set('module', moduleFilter);
+
+                const response = await window.AUTH.fetch(`${API_BASE_URL}/students?${params.toString()}`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch students');
                 }
 
-                const students = await response.json();
+                const body = await response.json();
+                const students = Array.isArray(body.students) ? body.students : (Array.isArray(body) ? body : []);
 
-                // Filter by level + department, but show ALL students (eligible or not) so
-                // the registrar can see who is capped vs promotable.
+                // Level is derived from the course code (server-side filter not
+                // applicable), so we filter client-side.
                 const filteredStudents = students.filter(student => {
                     const level = extractLevelFromCourse(student.course);
-                    const levelMatch = levelFilter === 'all' || String(level) === String(levelFilter);
-                    const deptMatch = deptFilter === 'all' || student.department === deptFilter;
-                    return levelMatch && deptMatch;
+                    return levelFilter === 'all' || String(level) === String(levelFilter);
                 });
 
                 displayModalPromotionStudents(filteredStudents);
@@ -111,6 +115,7 @@
                 const maxModule = MAX_MODULE_BY_LEVEL[level] || 0;
                 const isEligible = currentModule >= 1 && currentModule < maxModule;
                 const nextModule = currentModule + 1;
+                const courseDisplay = student.courseName || (typeof formatCourseName === 'function' ? formatCourseName(student.course) : String(student.course || '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()));
 
                 return `
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
@@ -131,7 +136,7 @@
                             </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                            ${escapeHtml(String(student.course || '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()))}
+                            ${escapeHtml(courseDisplay)}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                             Module ${currentModule || '-'}
@@ -384,6 +389,7 @@
 
             if (!intakeSelect.value) {
                 intakeYearInput.value = '';
+                refreshAdmissionNumberPreview();
                 return;
             }
 
@@ -397,14 +403,34 @@
             else if (intakeSelect.value === 'september' && currentMonth > 9) intakeYear = currentYear + 1;
 
             intakeYearInput.value = intakeYear;
+
+            // Re-fetch the preview now that we have a (potentially) full
+            // course + intake + intakeYear triple.
+            refreshAdmissionNumberPreview();
         }
 
-        // Read-only preview of the next admission number from the global counter.
+        // Read-only preview of the next admission number from the global
+        // counter. When course + intake + intakeYear are present, the server
+        // composes the full COURSE/SEQ/INTAKE shape (e.g. "BM5/2503/J26");
+        // otherwise it returns the raw next global number as a fallback.
         async function refreshAdmissionNumberPreview() {
             const field = document.getElementById('admissionNumber');
             if (!field) return;
             try {
-                const response = await window.AUTH.fetch(`${API_BASE_URL}/students/next-admission-number`);
+                const courseSelect = document.getElementById('course');
+                const intakeSelect = document.getElementById('intake-select');
+                const intakeYearInput = document.getElementById('intake-year');
+                const course = courseSelect ? courseSelect.value : '';
+                const intake = intakeSelect ? intakeSelect.value : '';
+                const intakeYear = intakeYearInput ? intakeYearInput.value : '';
+
+                const params = new URLSearchParams();
+                if (course) params.set('course', course);
+                if (intake) params.set('intake', intake);
+                if (intakeYear) params.set('intakeYear', intakeYear);
+
+                const url = `${API_BASE_URL}/students/next-admission-number${params.toString() ? '?' + params.toString() : ''}`;
+                const response = await window.AUTH.fetch(url);
                 if (!response.ok) throw new Error(`Server error: ${response.status}`);
                 const data = await response.json();
                 field.value = data.nextAdmissionNumber || '';
@@ -682,7 +708,7 @@
 
         function formatCourseName(courseName) {
             if (!courseName) return courseName;
-            
+
             // Replace underscores with spaces and convert to title case
             return courseName
                 .replace(/_/g, ' ')
@@ -693,38 +719,60 @@
         // Function to format department names
         function formatDepartmentName(department) {
             if (!department) return department;
-            
+
             // Replace underscores with spaces and convert to title case
             return department
                 .replace(/_/g, ' ')
                 .replace(/\b\w/g, l => l.toUpperCase());
         }
 
-        // Admission Letter Functions
+        // Deterministic reference number built from the admission number so a
+        // second print of the same letter produces the SAME header reference —
+        // important for audit trails.
+        function buildLetterRefNumber(admissionNumber) {
+            const raw = String(admissionNumber || '').replace(/[^A-Z0-9]/gi, '');
+            if (raw.length >= 4) return raw.slice(-4).toUpperCase().padStart(4, '0');
+            return raw.toUpperCase().padStart(4, '0');
+        }
+
+        // Admission Letter Functions. studentData is the `admissionLetter`
+        // object returned by POST /students/register, which already carries
+        // the formatted course/department labels (server-derived).
         function showAdmissionLetter(studentData) {
-            
+            const courseLabel = studentData.courseName || formatCourseName(studentData.course) || '[Course Name]';
+            const departmentLabel = studentData.departmentName || formatDepartmentName(studentData.department) || '';
+
             // Populate student data with formatting
             document.getElementById('studentName').textContent = studentData.name || '[Student Name]';
-            document.getElementById('courseName').textContent = formatCourseName(studentData.course) || '[Course Name]';
+            document.getElementById('courseName').textContent = courseLabel;
             document.getElementById('letterAdmissionNumber').textContent = studentData.admissionNumber || '[Admission Number]';
-            document.getElementById('intakeYear').textContent = studentData.intakeYear || '[Intake Year]';
+            const academicYear = studentData.intakeYear ? `${studentData.intakeYear}/${Number(studentData.intakeYear) + 1}` : '[Academic Year]';
+            document.getElementById('intakeYear').textContent = academicYear;
             document.getElementById('portalUsername').textContent = studentData.admissionNumber || '[Admission Number]';
-            document.getElementById('portalPassword').textContent = studentData.phoneNumber || '[Phone Number]';
-            
+            // The portal-password slot is informational. The actual initial
+            // password is delivered out-of-band by the server (see
+            // /students/register response and SEV-H-014). We never embed a
+            // password in the letter HTML.
+            const portalPasswordEl = document.getElementById('portalPassword');
+            if (portalPasswordEl) portalPasswordEl.textContent = 'Delivered separately (see registrar)';
+
+            const departmentEl = document.getElementById('letterDepartmentName');
+            if (departmentEl) departmentEl.textContent = departmentLabel;
+
             // Set dates
             const currentDate = new Date();
-            const letterDate = currentDate.toLocaleDateString('en-GB', { 
-                day: '2-digit', 
-                month: 'long', 
-                year: 'numeric' 
+            const letterDate = currentDate.toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: 'long',
+                year: 'numeric',
             });
             document.getElementById('letterDate').textContent = letterDate;
             document.getElementById('generationDate').textContent = currentDate.toLocaleDateString('en-GB');
-            
-            // Set reference number
+
+            // Set reference number — deterministic from the admission number.
             document.getElementById('refYear').textContent = currentDate.getFullYear();
-            document.getElementById('refNumber').textContent = String(Math.floor(Math.random() * 9999) + 1).padStart(4, '0');
-            
+            document.getElementById('refNumber').textContent = buildLetterRefNumber(studentData.admissionNumber);
+
             // Show modal
             const modal = document.getElementById('admissionLetterModal');
             modal.classList.remove('hidden');
