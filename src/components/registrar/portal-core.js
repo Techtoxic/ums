@@ -792,23 +792,43 @@
             window.print();
         }
 
-        // Download as PDF
+        // Download as PDF — zero margin so the maroon header/footer bands
+        // bleed edge-to-edge. The letter's own internal padding handles whitespace.
         function downloadPDF() {
             const element = document.getElementById('letterContent');
+            const admNum = (document.getElementById('letterAdmissionNumber').textContent || 'admission').replace(/\//g, '-');
+            const filename = `Admission_Letter_${admNum}.pdf`;
+
             const opt = {
-                margin: [10, 10, 10, 10],
-                filename: `Admission_Letter_${document.getElementById('letterAdmissionNumber').textContent}.pdf`,
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true },
-                jsPDF: { 
-                    unit: 'mm', 
-                    format: 'a4', 
+                margin: 0,
+                filename,
+                image: { type: 'jpeg', quality: 1.0 },
+                html2canvas: {
+                    scale: 3,            // higher DPI → sharper text
+                    useCORS: true,
+                    letterRendering: true,
+                    allowTaint: false,
+                    backgroundColor: '#ffffff'
+                },
+                jsPDF: {
+                    unit: 'mm',
+                    format: 'a4',
                     orientation: 'portrait',
-                    putOnlyUsedFonts: true
-                }
+                    compress: true
+                },
+                pagebreak: { mode: 'avoid-all' }
             };
-            
-            html2pdf().set(opt).from(element).save();
+
+            // Brief visual feedback while generating
+            const btn = document.querySelector('button[onclick="downloadPDF()"]');
+            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="ri-loader-4-line"></i> Generating…'; }
+
+            html2pdf().set(opt).from(element).save().then(() => {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="ri-file-pdf-line"></i> PDF';
+                }
+            });
         }
 
         // Make functions globally available
