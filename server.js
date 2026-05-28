@@ -310,7 +310,7 @@ app.get('/api/me', verifyToken, async (req, res) => {
                     phone: schema.students.phone_number,
                     course: schema.students.course,
                     department: schema.students.department,
-                    year: schema.students.year,
+                    module: schema.students.module,
                 })
                 .from(schema.students)
                 .where(eq(schema.students.id, userId))
@@ -1241,7 +1241,7 @@ registerPortal(app, portalDeps, {
 // Registrar portal pages.
 registerPortal(app, portalDeps, {
     role: 'registrar',
-    tabs: ['dashboard', 'admission', 'management', 'promotion', 'courses', 'enrollment', 'graduation', 'faculty', 'department', 'reports'],
+    tabs: ['dashboard', 'admission', 'management', 'promotion', 'enrollment', 'graduation'],
     defaultTab: 'dashboard',
     login: { redirectTo: '/admin/login' },
 });

@@ -116,7 +116,7 @@ async function loadUploads(filters = {}) {
         const queryParams = new URLSearchParams();
         if (filters.department) queryParams.append('department', filters.department);
         if (filters.uploadType) queryParams.append('uploadType', filters.uploadType);
-        if (filters.year) queryParams.append('year', filters.year);
+        if (filters.module) queryParams.append('module', filters.module);
         if (filters.courseLevel) queryParams.append('courseLevel', filters.courseLevel);
         if (filters.studentId) queryParams.append('studentId', filters.studentId);
         if (filters.admissionNumber) queryParams.append('admissionNumber', filters.admissionNumber);
@@ -218,7 +218,7 @@ function createUploadCard(upload) {
                             </span>
                             <span class="text-gray-500">${escapeHtml(departmentName)}</span>
                             <span class="text-gray-500">•</span>
-                            <span class="text-gray-500">Year ${escapeHtml(upload.year)}</span>
+                            <span class="text-gray-500">Module ${escapeHtml(upload.module)}</span>
                             ${upload.unitName ? `
                                 <span class="text-gray-500">•</span>
                                 <span class="text-gray-500">${escapeHtml(upload.unitName)}</span>
@@ -330,7 +330,7 @@ async function viewStudentDetails(studentId) {
         document.getElementById('modal-student-id').textContent = data.student.studentId;
         document.getElementById('modal-student-course').textContent = courseNames[data.student.course] || data.student.course;
         document.getElementById('modal-student-department').textContent = departmentNames[data.student.department] || data.student.department;
-        document.getElementById('modal-student-year').textContent = `Year ${data.student.year}`;
+        document.getElementById('modal-student-year').textContent = `Module ${data.student.module}`;
         
         // Display uploads
         const modalContent = document.getElementById('modal-content');
@@ -444,7 +444,7 @@ function applyFilters() {
         department: document.getElementById('filter-department').value,
         courseLevel: document.getElementById('filter-course-level').value,
         uploadType: document.getElementById('filter-upload-type').value,
-        year: document.getElementById('filter-year').value,
+        module: document.getElementById('filter-year').value,
         studentId: document.getElementById('search-student').value.trim()
     };
     
@@ -494,7 +494,7 @@ function updateActiveFilters() {
         department: 'Department',
         courseLevel: 'Course Level',
         uploadType: 'Upload Type',
-        year: 'Year',
+        module: 'Module',
         studentId: 'Student'
     };
     
@@ -517,7 +517,7 @@ function removeFilter(key) {
         department: 'filter-department',
         courseLevel: 'filter-course-level',
         uploadType: 'filter-upload-type',
-        year: 'filter-year',
+        module: 'filter-year',
         studentId: 'search-student'
     };
     
@@ -543,7 +543,7 @@ function exportToExcel() {
         upload.admissionNumber,
         courseNames[upload.course] || upload.course,
         departmentNames[upload.department] || upload.department,
-        upload.year,
+        upload.module,
         upload.uploadType,
         upload.unitName || '-',
         upload.originalFileName,

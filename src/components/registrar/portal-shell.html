@@ -43,17 +43,13 @@
 </head>
 <body class="bg-slate-50 dark:bg-gray-900 text-slate-800 dark:text-white overflow-x-hidden">
     <!-- Auth gate: covers the dashboard until requireAuth() resolves, suppressing
-         the bfcache back-button flash. Skeleton matches registrar layout (10 nav
-         items: Dashboard, Admission, Management, Promotion, Course Mgmt, Enrollment,
-         Graduation, Faculty, Department, Reports; 4 tiles: Total Students,
-         New Admissions, Active Courses, Departments). -->
+         the bfcache back-button flash. Skeleton matches registrar layout (6 nav
+         items: Dashboard, Admission, Management, Promotion, Enrollment,
+         Graduation; 4 tiles: Total Students, New Admissions, Active Courses,
+         Departments). -->
     <div id="authGate" class="auth-gate" aria-live="polite" aria-busy="true">
         <aside class="skel-sidebar">
             <div class="skel skel-sidebar__logo"></div>
-            <div class="skel skel-sidebar__item"></div>
-            <div class="skel skel-sidebar__item"></div>
-            <div class="skel skel-sidebar__item"></div>
-            <div class="skel skel-sidebar__item"></div>
             <div class="skel skel-sidebar__item"></div>
             <div class="skel skel-sidebar__item"></div>
             <div class="skel skel-sidebar__item"></div>
@@ -101,23 +97,11 @@
                 <a class="nav-link" data-section="promotion" href="/registrar/promotion">
                     <i class="ri-arrow-up-line"></i><span>Student Promotion</span>
                 </a>
-                <a class="nav-link" data-section="courses" href="/registrar/courses">
-                    <i class="ri-book-open-line"></i><span>Course Management</span>
-                </a>
                 <a class="nav-link" data-section="enrollment" href="/registrar/enrollment">
                     <i class="ri-file-list-3-line"></i><span>Enrollment</span>
                 </a>
                 <a class="nav-link" data-section="graduation" href="/registrar/graduation">
                     <i class="ri-graduation-cap-line"></i><span>Graduation</span>
-                </a>
-                <a class="nav-link" data-section="faculty" href="/registrar/faculty">
-                    <i class="ri-user-star-line"></i><span>Faculty Management</span>
-                </a>
-                <a class="nav-link" data-section="department" href="/registrar/department">
-                    <i class="ri-building-line"></i><span>Department Management</span>
-                </a>
-                <a class="nav-link" data-section="reports" href="/registrar/reports">
-                    <i class="ri-file-chart-line"></i><span>Reports & Analytics</span>
                 </a>
             </nav>
             <div class="dashboard-sidebar__profile">
@@ -179,12 +163,12 @@
                         <select id="export-type" onchange="toggleExportFilters()" class="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
                             <option value="all">All Students</option>
                             <option value="department">By Department Only</option>
-                            <option value="year">By Year Only</option>
+                            <option value="module">By Module Only</option>
                             <option value="intake">By Intake Only</option>
-                            <option value="department_year">Department + Year</option>
+                            <option value="department_module">Department + Module</option>
                             <option value="department_intake">Department + Intake</option>
-                            <option value="year_intake">Year + Intake</option>
-                            <option value="department_year_intake">Department + Year + Intake</option>
+                            <option value="module_intake">Module + Intake</option>
+                            <option value="department_module_intake">Department + Module + Intake</option>
                             <option value="admission-type">By Admission Type</option>
                             <option value="custom">Custom Filters</option>
                         </select>
@@ -206,12 +190,16 @@
                             </select>
                         </div>
                         
-                        <div id="year-filter" class="hidden">
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Year of Study</label>
-                            <select id="export-year" class="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
-                                <option value="">All Years</option>
-                                <option value="1">Year 1</option>
-                                <option value="2">Year 2</option>
+                        <div id="module-filter" class="hidden">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Module</label>
+                            <select id="export-module" class="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                                <option value="">All Modules</option>
+                                <option value="1">Module 1</option>
+                                <option value="2">Module 2</option>
+                                <option value="3">Module 3</option>
+                                <option value="4">Module 4</option>
+                                <option value="5">Module 5</option>
+                                <option value="6">Module 6</option>
                             </select>
                         </div>
                         
@@ -220,6 +208,7 @@
                             <select id="export-intake" class="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
                                 <option value="">All Intakes</option>
                                 <option value="january">January</option>
+                                <option value="may">May</option>
                                 <option value="september">September</option>
                             </select>
                         </div>
@@ -395,7 +384,7 @@
 
 
     <div id="admissionModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-[9999]">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg w-full max-w-lg mx-4">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
             <div class="p-6">
                 <div class="flex justify-between items-center mb-6">
                     <h3 class="text-headline text-gray-800 dark:text-white">New Student Admission</h3>
@@ -403,62 +392,53 @@
                         <i class="ri-close-line text-2xl"></i>
                     </button>
                 </div>
-                <form id="admissionForm" onsubmit="handleAdmission(event)" class="grid grid-cols-2 gap-4">
+                <form id="admissionForm" onsubmit="handleAdmission(event)" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name</label>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name <span class="text-red-600">*</span></label>
                         <input type="text" name="name" required class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ID/Birth Certificate Number</label>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ID/Birth Certificate Number <span class="text-red-600">*</span></label>
                         <input type="text" name="idNumber" required class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">KCSE Grade</label>
-                        <select name="kcseGrade" required class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
-                            <option value="">Select Grade</option>
-                            <option value="A">A</option>
-                            <option value="A-">A-</option>
-                            <option value="B+">B+</option>
-                            <option value="B">B</option>
-                            <option value="B-">B-</option>
-                            <option value="C+">C+</option>
-                            <option value="C">C</option>
-                            <option value="C-">C-</option>
-                            <option value="D+">D+</option>
-                            <option value="D">D</option>
-                            <option value="D-">D-</option>
-                            <option value="E">E</option>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone Number <span class="text-red-600">*</span></label>
+                        <input type="tel" name="phonenumber" required pattern="[0-9]{10}" placeholder="0712345678" class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email (optional)</label>
+                        <input type="email" name="email" placeholder="student@example.com" class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Admission Type <span class="text-red-600">*</span></label>
+                        <select name="admissionType" required class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                            <option value="">Select Admission Type</option>
+                            <option value="walk-in">Walk-in</option>
+                            <option value="KUCCPS">KUCCPS</option>
                         </select>
                     </div>
                     <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone Number</label>
-        <input type="tel" name="phonenumber" required pattern="[0-9]{10}" placeholder="Enter 10-digit phone number" class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
-    </div>
-    <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Admission Type</label>
-        <select name="admissionType" required class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
-            <option value="">Select Admission Type</option>
-            <option value="walk-in">Walk-in</option>
-            <option value="KUCCPS">KUCCPS</option>
-        </select>
-    </div>
-                                        <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Year of Study</label>
-                        <select name="year" class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white" required>
-                            <option value="1" selected>Year 1</option>
-                            <option value="2">Year 2</option>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Module <span class="text-red-600">*</span></label>
+                        <select name="module" id="module-select" required class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                            <option value="1" selected>Module 1</option>
+                            <option value="2">Module 2</option>
+                            <option value="3">Module 3</option>
+                            <option value="4">Module 4</option>
+                            <option value="5">Module 5</option>
+                            <option value="6">Module 6</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Intake</label>
-                        <select name="intake" id="intake-select" class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white" required onchange="updateIntakeYear(); regenerateAdmissionOnIntakeChange()">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Intake <span class="text-red-600">*</span></label>
+                        <select name="intake" id="intake-select" class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white" required onchange="updateIntakeYear()">
                             <option value="">Select Intake</option>
                             <option value="january">January</option>
+                            <option value="may">May</option>
                             <option value="september">September</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Intake Year</label>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Intake Year <span class="text-red-600">*</span></label>
                         <input type="number" name="intakeYear" id="intake-year" class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white" readonly required>
                     </div>
                     <div>
@@ -475,7 +455,7 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Course</label>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Course <span class="text-red-600">*</span></label>
                         <select name="course" id="course" required onchange="handleCourseSelection()" class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
                             <option value="">Select Course</option>
                             <optgroup label="Applied Science Department">
@@ -530,10 +510,26 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Admission Number</label>
-                        <input type="text" id="admissionNumber" readonly class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary dark:text-white" placeholder="Select a course first">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">KCSE Grade <span class="text-red-600">*</span></label>
+                        <select name="kcseGrade" id="kcseGradeSelect" required class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white" disabled>
+                            <option value="">Select a course first</option>
+                        </select>
+                        <p id="gradeHelpText" class="text-xs text-gray-500 dark:text-gray-400 mt-1"></p>
                     </div>
-                    <div class="flex justify-end gap-4 mt-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Next of Kin Name</label>
+                        <input type="text" name="nextOfKinName" placeholder="Parent/Guardian name" class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Next of Kin Phone</label>
+                        <input type="tel" name="nextOfKinPhone" pattern="[0-9]{10}" placeholder="0712345678" class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Admission Number (auto-assigned)</label>
+                        <input type="text" id="admissionNumber" readonly class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary dark:text-white" placeholder="Will be allocated on submit">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Globally unique. Assigned by the server when the student is created.</p>
+                    </div>
+                    <div class="md:col-span-2 flex justify-end gap-4 mt-6">
                         <button type="button" onclick="closeAdmissionModal()" class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">Cancel</button>
                         <button type="submit" class="px-4 py-2 bg-primary hover:bg-secondary text-white rounded-lg transition-colors">Register Student</button>
                     </div>
@@ -563,6 +559,8 @@
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Filter by Level</label>
                                 <select id="modalLevelFilter" class="px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-600 dark:text-white">
                                     <option value="all">All Levels</option>
+                                    <option value="3">Level 3</option>
+                                    <option value="4">Level 4</option>
                                     <option value="5">Level 5</option>
                                     <option value="6">Level 6</option>
                                 </select>
@@ -598,9 +596,11 @@
                 <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 mb-6">
                     <h4 class="font-semibold text-blue-800 dark:text-blue-300 mb-2">Promotion Rules</h4>
                     <ul class="text-sm text-blue-700 dark:text-blue-300 space-y-1">
-                        <li>• Level 5 students can be promoted up to Year 2 (2 years total)</li>
-                        <li>• Level 6 students can be promoted up to Year 3 (3 years total)</li>
-                        <li>• Students who have reached maximum years cannot be promoted further</li>
+                        <li>• Level 3 students stay at Module 1 (1 module total)</li>
+                        <li>• Level 4 students can be promoted up to Module 2 (2 modules total)</li>
+                        <li>• Level 5 students can be promoted up to Module 4 (4 modules total)</li>
+                        <li>• Level 6 students can be promoted up to Module 6 (6 modules total)</li>
+                        <li>• Students who have reached the maximum module cannot be promoted further</li>
                     </ul>
                 </div>
 
@@ -614,9 +614,9 @@
                                 </th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Student</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Course</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Current Year</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Current Module</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Level</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Max Year</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Max Module</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
                             </tr>
                         </thead>
@@ -652,11 +652,7 @@
     <script src="/src/components/registrar/tabs/admission.js"></script>
     <script src="/src/components/registrar/tabs/management.js"></script>
     <script src="/src/components/registrar/tabs/promotion.js"></script>
-    <script src="/src/components/registrar/tabs/courses.js"></script>
     <script src="/src/components/registrar/tabs/enrollment.js"></script>
     <script src="/src/components/registrar/tabs/graduation.js"></script>
-    <script src="/src/components/registrar/tabs/faculty.js"></script>
-    <script src="/src/components/registrar/tabs/department.js"></script>
-    <script src="/src/components/registrar/tabs/reports.js"></script>
 </body>
 </html>

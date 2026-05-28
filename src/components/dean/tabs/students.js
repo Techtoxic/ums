@@ -28,13 +28,13 @@ async function loadStudents() {
     try {
         const search = document.getElementById('search-student').value.trim();
         const department = document.getElementById('filter-department').value;
-        const year = document.getElementById('filter-year').value;
+        const moduleFilter = document.getElementById('filter-module').value;
         const intake = document.getElementById('filter-intake').value;
         
         let url = `${API_BASE}/dean/students?`;
         if (search) url += `search=${encodeURIComponent(search)}&`;
         if (department) url += `department=${encodeURIComponent(department)}&`;
-        if (year) url += `year=${year}&`;
+        if (moduleFilter) url += `module=${moduleFilter}&`;
         if (intake) url += `intake=${intake}&`;
         
         const response = await authFetch(url);
@@ -84,7 +84,7 @@ function displayStudents(students) {
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
                 <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                    Year ${escapeHtml(student.year)}
+                    Module ${escapeHtml(student.module)}
                 </span>
             </td>
             <td class="px-6 py-4">

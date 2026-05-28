@@ -112,8 +112,8 @@ function renderStudentTable(students, programs, payments) {
         const programCost = program ? program.programCost : 67189; // Default to standard cost
         
         // Calculate total fees based on year of study (programCost is per year)
-        const yearOfStudy = student.year || 1;
-        const totalFees = programCost * yearOfStudy;
+        const moduleOfStudy = student.module || 1;
+        const totalFees = programCost * moduleOfStudy;
         
         // Calculate total paid
         const studentPayments = payments.filter(payment => payment.studentId === student.admissionNumber);
@@ -138,7 +138,7 @@ function renderStudentTable(students, programs, payments) {
         const row = document.createElement('tr');
         row.className = 'hover:bg-gray-50';
         row.setAttribute('data-department', student.department || '');
-        row.setAttribute('data-year', student.year || '');
+        row.setAttribute('data-module', student.module || '');
         const intakeText = student.intake ? 
             (student.intake.charAt(0).toUpperCase() + student.intake.slice(1) + ' ' + (student.intakeYear || '')) : 'N/A';
             
@@ -147,7 +147,7 @@ function renderStudentTable(students, programs, payments) {
             <td class="px-3 py-2 text-sm">${escapeHtml(student.name || 'N/A')}</td>
             <td class="px-3 py-2 text-sm">${escapeHtml(formatCourseName(student.course))}</td>
             <td class="px-3 py-2 text-sm">${escapeHtml(departmentName)}</td>
-            <td class="px-3 py-2 text-sm">Year ${student.year || 'N/A'}</td>
+            <td class="px-3 py-2 text-sm">Module ${student.module || 'N/A'}</td>
             <td class="px-3 py-2 text-sm">${escapeHtml(intakeText)}</td>
             <td class="px-3 py-2 text-sm font-semibold">${formatCurrency(totalFees)}</td>
             <td class="px-3 py-2 text-sm">${formatCurrency(totalPaid)}</td>
@@ -409,7 +409,7 @@ function applyFilters() {
         const matchesDept = !selectedDept || student.department === selectedDept;
         
         // Year filter
-        const matchesYear = !selectedYear || String(student.year) === selectedYear;
+        const matchesYear = !selectedYear || String(student.module) === selectedYear;
         
         return matchesSearch && matchesDept && matchesYear;
     });

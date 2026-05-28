@@ -353,7 +353,7 @@ router.get('/trainers/:trainerId/students', verifyToken, authorize('admin', 'hod
                 admissionNumber: schema.students.admission_number,
                 course: schema.students.course,
                 intake: schema.students.intake,
-                year: schema.students.year,
+                module: schema.students.module,
                 email: schema.students.email,
                 phone: schema.students.phone_number,
             })

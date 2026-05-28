@@ -52,8 +52,8 @@ class StudentExporter {
                     case 'department':
                         if (student.department !== filterValue) matches = false;
                         break;
-                    case 'year':
-                        if (student.year !== parseInt(filterValue)) matches = false;
+                    case 'module':
+                        if (Number(student.module) !== parseInt(filterValue)) matches = false;
                         break;
                     case 'intake':
                         if (student.intake !== filterValue) matches = false;
@@ -82,12 +82,14 @@ class StudentExporter {
             'ID Number': student.idNumber || 'N/A',
             'Course': student.course || 'N/A',
             'Department': this.departmentMapping[student.department] || student.department || 'N/A',
-            'Year of Study': student.year || 'N/A',
-            'Intake': student.intake ? 
+            'Module': student.module != null ? `Module ${student.module}` : 'N/A',
+            'Intake': student.intake ?
                 (student.intake.charAt(0).toUpperCase() + student.intake.slice(1) + ' ' + (student.intakeYear || '')) : 'N/A',
             'Phone Number': student.phoneNumber || 'N/A',
+            'Next of Kin Name': student.nextOfKinName || 'N/A',
+            'Next of Kin Phone': student.nextOfKinPhone || 'N/A',
             'KCSE Grade': student.kcseGrade || 'N/A',
-            'Admission Type': student.admissionType ? 
+            'Admission Type': student.admissionType ?
                 (student.admissionType === 'walk-in' ? 'Walk-in' : 'KUCCPS') : 'N/A',
             'Registration Date': student.createdAt ? new Date(student.createdAt).toLocaleDateString() : 'N/A'
         }));
@@ -191,14 +193,14 @@ class StudentExporter {
             margin: { top: yPosition, left: 20, right: 20 },
             tableWidth: 'auto',
             columnStyles: {
-                0: { cellWidth: 25 }, // Admission Number
-                1: { cellWidth: 35 }, // Name
-                2: { cellWidth: 30 }, // Course
+                0: { cellWidth: 22 }, // Admission Number
+                1: { cellWidth: 32 }, // Name
+                2: { cellWidth: 28 }, // Course
                 3: { cellWidth: 25 }, // Department
-                4: { cellWidth: 15 }, // Year
-                5: { cellWidth: 25 }, // Intake
+                4: { cellWidth: 18 }, // Module
+                5: { cellWidth: 22 }, // Intake
                 6: { cellWidth: 20 }, // Phone
-                7: { cellWidth: 15 }, // KCSE
+                7: { cellWidth: 18 }, // KCSE
                 8: { cellWidth: 25 }  // Registration Date
             }
         });
@@ -240,8 +242,8 @@ class StudentExporter {
             if (filters.department) {
                 filterParts.push(`dept_${filters.department}`);
             }
-            if (filters.year) {
-                filterParts.push(`year_${filters.year}`);
+            if (filters.module) {
+                filterParts.push(`module_${filters.module}`);
             }
             if (filters.intake) {
                 filterParts.push(`intake_${filters.intake}`);
@@ -286,46 +288,47 @@ function closeExportModal() {
 function toggleExportFilters() {
     const exportType = document.getElementById('export-type').value;
     const departmentFilter = document.getElementById('department-filter');
-    const yearFilter = document.getElementById('year-filter');
+    const moduleFilter = document.getElementById('module-filter');
     const intakeFilter = document.getElementById('intake-filter');
     const intakeYearFilter = document.getElementById('intake-year-filter');
     const admissionTypeFilter = document.getElementById('admission-type-filter');
 
+    if (!departmentFilter) return; // export modal not yet rendered
+
     // Hide all filters first
     departmentFilter.classList.add('hidden');
-    yearFilter.classList.add('hidden');
+    moduleFilter.classList.add('hidden');
     intakeFilter.classList.add('hidden');
     intakeYearFilter.classList.add('hidden');
     admissionTypeFilter.classList.add('hidden');
 
-    // Show relevant filters based on export type
     switch (exportType) {
         case 'department':
             departmentFilter.classList.remove('hidden');
             break;
-        case 'year':
-            yearFilter.classList.remove('hidden');
+        case 'module':
+            moduleFilter.classList.remove('hidden');
             break;
         case 'intake':
             intakeFilter.classList.remove('hidden');
             break;
-        case 'department_year':
+        case 'department_module':
             departmentFilter.classList.remove('hidden');
-            yearFilter.classList.remove('hidden');
+            moduleFilter.classList.remove('hidden');
             break;
         case 'department_intake':
             departmentFilter.classList.remove('hidden');
             intakeFilter.classList.remove('hidden');
             intakeYearFilter.classList.remove('hidden');
             break;
-        case 'year_intake':
-            yearFilter.classList.remove('hidden');
+        case 'module_intake':
+            moduleFilter.classList.remove('hidden');
             intakeFilter.classList.remove('hidden');
             intakeYearFilter.classList.remove('hidden');
             break;
-        case 'department_year_intake':
+        case 'department_module_intake':
             departmentFilter.classList.remove('hidden');
-            yearFilter.classList.remove('hidden');
+            moduleFilter.classList.remove('hidden');
             intakeFilter.classList.remove('hidden');
             intakeYearFilter.classList.remove('hidden');
             break;
@@ -333,9 +336,8 @@ function toggleExportFilters() {
             admissionTypeFilter.classList.remove('hidden');
             break;
         case 'custom':
-            // Show all filters for custom selection
             departmentFilter.classList.remove('hidden');
-            yearFilter.classList.remove('hidden');
+            moduleFilter.classList.remove('hidden');
             intakeFilter.classList.remove('hidden');
             intakeYearFilter.classList.remove('hidden');
             admissionTypeFilter.classList.remove('hidden');
@@ -353,13 +355,13 @@ async function handleExport(event) {
     const filters = {};
     
     const departmentValue = document.getElementById('export-department').value;
-    const yearValue = document.getElementById('export-year').value;
+    const moduleValue = document.getElementById('export-module') ? document.getElementById('export-module').value : '';
     const intakeValue = document.getElementById('export-intake').value;
     const intakeYearValue = document.getElementById('export-intake-year').value;
     const admissionTypeValue = document.getElementById('export-admission-type').value;
-    
+
     if (departmentValue) filters.department = departmentValue;
-    if (yearValue) filters.year = yearValue;
+    if (moduleValue) filters.module = moduleValue;
     if (intakeValue) filters.intake = intakeValue;
     if (intakeYearValue) filters.intakeYear = intakeYearValue;
     if (admissionTypeValue) filters.admissionType = admissionTypeValue;

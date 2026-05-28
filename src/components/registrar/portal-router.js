@@ -13,7 +13,7 @@
 
 window.RegistrarRouter = (function () {
     const BASE = '/registrar';
-    const VALID_TABS = ['dashboard', 'admission', 'management', 'promotion', 'courses', 'enrollment', 'graduation', 'faculty', 'department', 'reports'];
+    const VALID_TABS = ['dashboard', 'admission', 'management', 'promotion', 'enrollment', 'graduation'];
 
     // tab -> injected pane element (cache; partials are fetched once).
     const panes = {};

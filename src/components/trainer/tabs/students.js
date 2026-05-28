@@ -60,12 +60,18 @@ function displayStudents() {
     let filteredStudents = [...studentsData];
     
     // Apply filter
-    if (filter === 'year1') {
-        filteredStudents = studentsData.filter(s => s.year === 1);
-    } else if (filter === 'year2') {
-        filteredStudents = studentsData.filter(s => s.year === 2);
-    } else if (filter === 'year3') {
-        filteredStudents = studentsData.filter(s => s.year === 3);
+    if (filter === 'module1') {
+        filteredStudents = studentsData.filter(s => s.module === 1);
+    } else if (filter === 'module2') {
+        filteredStudents = studentsData.filter(s => s.module === 2);
+    } else if (filter === 'module3') {
+        filteredStudents = studentsData.filter(s => s.module === 3);
+    } else if (filter === 'module4') {
+        filteredStudents = studentsData.filter(s => s.module === 4);
+    } else if (filter === 'module5') {
+        filteredStudents = studentsData.filter(s => s.module === 5);
+    } else if (filter === 'module6') {
+        filteredStudents = studentsData.filter(s => s.module === 6);
     }
     
     const studentsGrid = document.getElementById('studentsGrid');
@@ -88,7 +94,7 @@ function displayStudents() {
 // Create student card HTML
 function createStudentCard(student) {
     const admissionNumber = student.admissionNumber || student.studentId || 'N/A';
-    const year = student.year || 'N/A';
+    const moduleStr = student.module ? `Module ${student.module}` : 'N/A';
     const email = student.email || 'N/A';
     const intake = student.intake || 'N/A';
     
@@ -110,8 +116,8 @@ function createStudentCard(student) {
                     <span class="font-medium text-gray-900 dark:text-white">${escapeHtml(admissionNumber)}</span>
                         </div>
                 <div class="flex justify-between text-sm">
-                    <span class="text-gray-600 dark:text-gray-400">Year:</span>
-                    <span class="font-medium text-gray-900 dark:text-white">Year ${escapeHtml(year)}</span>
+                    <span class="text-gray-600 dark:text-gray-400">Module:</span>
+                    <span class="font-medium text-gray-900 dark:text-white">${escapeHtml(moduleStr)}</span>
                     </div>
                 <div class="flex justify-between text-sm">
                     <span class="text-gray-600 dark:text-gray-400">Intake:</span>

@@ -52,8 +52,8 @@ async function fetchStudentUnits(studentCourse) {
                     
                     // Calculate balance using same method as dashboard
                     const totalPaid = payments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
-                    const yearOfStudy = studentData.year || 1;
-                    const totalFees = programCost * yearOfStudy;
+                    const moduleOfStudy = studentData.module || 1;
+                    const totalFees = programCost * moduleOfStudy;
                     const outstandingBalance = totalFees - totalPaid;
                     
                     // Get fee threshold (default 50000)

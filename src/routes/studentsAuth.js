@@ -3,6 +3,7 @@ const router = express.Router();
 const { verifyToken, authorize, verifyOwnership, signToken, setAuthCookie, setCsrfCookie, generateCsrfToken } = require('../middleware/auth');
 const { authLimiter } = require('../middleware/rateLimiters');
 const { toMoneyNumber } = require('../utils/formatters');
+const { extractLevelFromCourse, getMaxModuleForLevel } = require('../utils/studentHelpers');
 const { Student, Program } = require('../db/models');
 
 // Get Student Data by Admission Number
@@ -92,7 +93,7 @@ router.post('/students/login', authLimiter, async (req, res) => {
                 admissionNumber: student.admissionNumber,
                 course: student.course,
                 department: student.department,
-                year: student.year
+                module: student.module
             }
         });
     } catch (error) {
@@ -175,7 +176,7 @@ router.get('/students/:id', verifyToken, authorize('admin', 'registrar', 'studen
 // Update Student by id
 router.put('/students/:id', verifyToken, authorize('admin', 'registrar'), async (req, res) => {
     try {
-        const { name, idNumber, phoneNumber, year } = req.body;
+        const { name, idNumber, phoneNumber, module: moduleField, nextOfKinName, nextOfKinPhone } = req.body;
 
         // Validate phone number format if provided
         if (phoneNumber) {
@@ -197,83 +198,41 @@ router.put('/students/:id', verifyToken, authorize('admin', 'registrar'), async 
                                   normalizedPhone;
             updateData.phoneNumber = formattedPhone;
         }
-
-        // Handle year promotion with balance update
-        if (year !== undefined) {
-            updateData.year = year;
-
-            // Get the current student to check if year is actually changing (promotion)
-            const currentStudent = await Student.findById(req.params.id);
-
-            if (currentStudent) {
-                console.log(`Checking promotion: Current Year=${currentStudent.year}, New Year=${year}, Course=${currentStudent.course}`);
-
-                if (currentStudent.year !== year) {
-                    // Student is being promoted to a new year
-                    console.log(`Student ${currentStudent.admissionNumber} is being promoted from Year ${currentStudent.year} to Year ${year}`);
-
-                    // Map course code to program name
-                    const courseToProgram = {
-                        'applied_biology_6': 'Applied Biology Level 6',
-                        'analytical_chemistry_6': 'Analytical Chemistry Level 6',
-                        'science_lab_technology_5': 'Science Lab Technology Level 5',
-                        'science_laboratory_technology_5': 'Science Lab Technology Level 5',
-                        'general_agriculture_4': 'General Agriculture Level 4',
-                        'sustainable_agriculture_5': 'Sustainable Agriculture Level 5',
-                        'building_construction_4': 'Building Construction Level 4',
-                        'building_construction_5': 'Building Construction Level 5',
-                        'plumbing_4': 'Plumbing Level 4',
-                        'plumbing_5': 'Plumbing Level 5',
-                        'electrical_engineering_4': 'Electrical Engineering Level 4',
-                        'electrical_engineering_5': 'Electrical Engineering Level 5',
-                        'electrical_engineering_6': 'Electrical Engineering Level 6',
-                        'automotive_engineering_5': 'Automotive Engineering Level 5',
-                        'automotive_engineering_6': 'Automotive Engineering Level 6',
-                        'hospitality_management_5': 'Hospitality Management Level 5',
-                        'hospitality_management_6': 'Hospitality Management Level 6',
-                        'food_beverage_production_management_5': 'Food & Beverage Production Management Level 5',
-                        'food_beverage_production_management_6': 'Food & Beverage Production Management Level 6',
-                        'business_management_6': 'Business Management Level 6',
-                        'supply_chain_management_6': 'Supply Chain Management Level 6',
-                        'human_resource_management_6': 'Human Resource Management Level 6',
-                        'journalism_mass_communication_6': 'Journalism & Mass Communication Level 6',
-                        'information_communication_technology_6': 'Information Communication Technology Level 6',
-                        'information_technology_5': 'Information Technology Level 5',
-                        'computer_science_6': 'Computer Science Level 6'
-                    };
-
-                    const programName = courseToProgram[currentStudent.course];
-                    console.log(`Looking for program: ${programName} for course: ${currentStudent.course}`);
-
-                    // Get the program cost for their course
-                    const program = programName ? await Program.findOne({ programName }) : null;
-
-                    if (program) {
-                        const programCostNum = toMoneyNumber(program.programCost); // SEV-H-016
-                        console.log(`Program found: ${program.name}, Cost: KES ${programCostNum}`);
-
-                        if (programCostNum > 0) {
-                            // SEV-H-016 TODO: `balance` is NOT a field on the Student
-                            // schema, so this write is dropped by Drizzle strict mode
-                            // and is not persisted today. A correct fix (a Decimal128
-                            // Student.balance updated via an atomic $inc inside a
-                            // replica-set transaction) needs a data-model decision and
-                            // is deferred to Stage 3 — see STAGE2A_REPORT.md.
-                            const existingBalance = toMoneyNumber(currentStudent.balance || 0);
-                            const newBalance = existingBalance + programCostNum;
-                            updateData.balance = newBalance;
-
-                            console.log(`Adding program cost KES ${programCostNum.toLocaleString()} to existing balance KES ${existingBalance.toLocaleString()}`);
-                            console.log(`New balance will be: KES ${newBalance.toLocaleString()}`);
-                        } else {
-                            console.warn(`Program cost is not set or is zero for ${program.name}`);
-                        }
-                    } else {
-                        console.warn(`Program not found for course: ${currentStudent.course} (mapped to: ${programName})`);
-                    }
-                } else {
-                    console.log(`Year not changed (both are ${year}), no balance update needed`);
+        if (nextOfKinName !== undefined) updateData.nextOfKinName = nextOfKinName ? String(nextOfKinName).trim() : null;
+        if (nextOfKinPhone !== undefined) {
+            if (!nextOfKinPhone) {
+                updateData.nextOfKinPhone = null;
+            } else {
+                const kinDigits = String(nextOfKinPhone).replace(/\D/g, '');
+                if (!/^(?:254|\+254|0)?([17](?:(?:[0-9][0-9])|(?:0[0-8])|(4[0-1]))[0-9]{6})$/.test(kinDigits)) {
+                    return res.status(400).json({ message: 'Invalid next-of-kin phone number format.' });
                 }
+                updateData.nextOfKinPhone = kinDigits.length === 12 ? '0' + kinDigits.slice(-9) :
+                                            kinDigits.length === 13 ? '0' + kinDigits.slice(-9) :
+                                            kinDigits;
+            }
+        }
+
+        // Handle module promotion with module-cap validation per level.
+        if (moduleField !== undefined) {
+            const currentStudent = await Student.findById(req.params.id);
+            if (!currentStudent) {
+                return res.status(404).json({ message: 'Student not found' });
+            }
+            const newModule = parseInt(moduleField, 10);
+            if (!Number.isFinite(newModule) || newModule < 1) {
+                return res.status(400).json({ message: 'Module must be a positive integer.' });
+            }
+            const level = extractLevelFromCourse(currentStudent.course);
+            const cap = getMaxModuleForLevel(level);
+            if (cap && newModule > cap) {
+                return res.status(400).json({
+                    message: `Cannot promote: Level ${level} students cap at module ${cap}.`,
+                });
+            }
+            updateData.module = newModule;
+            if (currentStudent.module !== newModule) {
+                console.log(`Promotion: ${currentStudent.admissionNumber} module ${currentStudent.module} -> ${newModule}`);
             }
         }
 
@@ -293,8 +252,8 @@ router.put('/students/:id', verifyToken, authorize('admin', 'registrar'), async 
         });
     } catch (error) {
         console.error('Error updating student:', error);
-        if (error.code === 11000) {
-            return res.status(400).json({ message: 'ID number or phone number already exists' });
+        if (error.code === 11000 || error.code === '23505') {
+            return res.status(400).json({ message: 'ID number, phone number, or email already exists' });
         }
         res.status(500).json({ message: 'Error updating student' });
     }

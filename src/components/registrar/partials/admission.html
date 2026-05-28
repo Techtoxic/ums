@@ -1,7 +1,67 @@
-                <div class="card">
-                    <div class="card__body" style="text-align:center; padding: var(--space-12) var(--space-6);">
-                        <i class="ri-tools-line" style="font-size:3rem; color:var(--text-muted); margin-bottom:var(--space-4);"></i>
-                        <h2 class="text-headline" style="margin-bottom:var(--space-2);" id="comingSoonTitle">Student Admission — Coming Soon</h2>
-                        <p class="text-body" style="color:var(--text-secondary);">This section is not yet available. It will be added in a future update.</p>
-                    </div>
-                </div>
+<div class="card mb-8">
+    <div class="card__body">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+            <div>
+                <h2 class="text-headline text-gray-800 dark:text-white">Student Admission</h2>
+                <p class="text-body" style="color:var(--text-secondary)">Register a new student. Admission numbers are globally unique and assigned by the server.</p>
+            </div>
+            <div class="flex flex-wrap gap-3">
+                <button onclick="openAdmissionModal()" class="px-4 py-2 bg-primary hover:bg-secondary text-white rounded-lg transition-colors flex items-center gap-2">
+                    <i class="ri-user-add-line"></i> New Student Admission
+                </button>
+                <button onclick="showExportModal()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white rounded-lg transition-colors flex items-center gap-2">
+                    <i class="ri-download-2-line"></i> Export Admissions
+                </button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div class="rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
+                <div class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-300">Next Admission #</div>
+                <div id="admissionTabNextNumber" class="text-headline mt-1">—</div>
+            </div>
+            <div class="rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
+                <div class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-300">Total Students</div>
+                <div id="admissionTabTotalStudents" class="text-headline mt-1">—</div>
+            </div>
+            <div class="rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
+                <div class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-300">Admitted Today</div>
+                <div id="admissionTabToday" class="text-headline mt-1">—</div>
+            </div>
+            <div class="rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
+                <div class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-300">Latest Admission #</div>
+                <div id="admissionTabLatestNumber" class="text-headline mt-1">—</div>
+            </div>
+        </div>
+
+        <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 mb-6">
+            <h3 class="font-semibold text-blue-800 dark:text-blue-300 mb-2">Admission Rules</h3>
+            <ul class="text-sm text-blue-700 dark:text-blue-300 space-y-1">
+                <li>• Admission numbers are globally unique, starting at <strong>2500</strong>.</li>
+                <li>• Required fields: name, ID/birth-certificate number, phone, course, KCSE grade, intake, admission type.</li>
+                <li>• Grade rules — Level 4 accepts <code>E</code> or <code>D-</code>; Level 5 accepts <code>D</code> or <code>D+</code>; Level 6 accepts <code>C-</code> through <code>B+</code>; Level 3 accepts <code>KCPE</code>.</li>
+                <li>• Each course's grade dropdown filters automatically to the grades allowed for its level.</li>
+            </ul>
+        </div>
+
+        <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 rounded-lg">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Admission #</th>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Name</th>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Course</th>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Module</th>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Intake</th>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Registered</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recentAdmissionsBody" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        <tr><td colspan="6" class="px-3 py-4 text-center text-gray-500">Loading recent admissions…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

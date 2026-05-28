@@ -16,7 +16,7 @@ async function displayFinancial() {
         const totalOutstanding = allStudents.reduce((sum, student) => {
             const program = allPrograms.find(p => p.name === getCourseProgram(student.course));
             const programCost = program ? program.programCost : 67189;
-            const totalFees = programCost * (student.year || 1);
+            const totalFees = programCost * (student.module || 1);
             const studentPayments = allPayments.filter(p => p.studentId === student.admissionNumber);
             const totalPaid = studentPayments.reduce((pSum, p) => pSum + Number(p.amount || 0), 0);
             const balance = totalFees - totalPaid;
@@ -43,7 +43,7 @@ async function displayFinancial() {
                     <p class="text-xs text-red-700 mt-1">${allStudents.filter(s => {
                         const program = allPrograms.find(p => p.name === getCourseProgram(s.course));
                         const programCost = program ? program.programCost : 67189;
-                        const totalFees = programCost * (s.year || 1);
+                        const totalFees = programCost * (s.module || 1);
                         const studentPayments = allPayments.filter(p => p.studentId === s.admissionNumber);
                         const totalPaid = studentPayments.reduce((pSum, p) => pSum + Number(p.amount || 0), 0);
                         return (totalFees - totalPaid) > 0;

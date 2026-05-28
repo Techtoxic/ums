@@ -326,13 +326,13 @@ function updateStudentInfo(data) {
         el.textContent = departmentName;
     });
     
-    // Update year of study
+    // Update module of study
     document.querySelectorAll('.student-year').forEach(el => {
-        el.textContent = studentInfo.year || '1';
+        el.textContent = studentInfo.module || '1';
     });
-    
+
     document.querySelectorAll('.student-year-text').forEach(el => {
-        el.textContent = `Year ${studentInfo.year || '1'}`;
+        el.textContent = `Module ${studentInfo.module || '1'}`;
     });
     
     // Update combined intake display
@@ -382,9 +382,9 @@ function updateStudentInfo(data) {
 
 // Update program cost in the UI
 function updateProgramCost(cost) {
-    // Calculate total fees based on year of study
-    const yearOfStudy = studentData.year || 1;
-    const totalFees = cost ? (cost * yearOfStudy) : 0;
+    // Calculate total fees based on module of study
+    const moduleOfStudy = studentData.module || 1;
+    const totalFees = cost ? (cost * moduleOfStudy) : 0;
     const formattedCost = totalFees ? formatCurrency(totalFees) : 'Not Available';
     
     document.querySelectorAll('.program-cost').forEach(el => {
@@ -401,9 +401,9 @@ async function updateFinancialInfo(programCost, payments) {
     // Calculate total paid
     const totalPaid = payments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
     
-    // Calculate total fees based on year of study (programCost is per year)
-    const yearOfStudy = studentData.year || 1;
-    const totalFees = (programCost || 0) * yearOfStudy;
+    // Calculate total fees based on module of study (programCost is per module)
+    const moduleOfStudy = studentData.module || 1;
+    const totalFees = (programCost || 0) * moduleOfStudy;
     
     // Calculate balance (total fees - total paid)
     const balance = totalFees - totalPaid;

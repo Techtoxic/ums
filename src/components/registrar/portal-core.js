@@ -23,6 +23,10 @@
             modal.style.display = 'flex';
             document.body.classList.add('menu-open');
             document.body.style.overflow = 'hidden';
+            // Reset grade dropdown until a course is picked, then fetch the
+            // next admission number for the preview field.
+            populateGradeDropdown(null);
+            refreshAdmissionNumberPreview();
         }
 
         function closeAdmissionModal() {
@@ -54,40 +58,26 @@
         // Load students for modal promotion
         async function loadModalPromotionStudents() {
             try {
-                console.log('Loading modal promotion students...');
                 const levelFilter = document.getElementById('modalLevelFilter').value;
                 const deptFilter = document.getElementById('modalDeptFilter').value;
-                
-                console.log('Modal Filters:', { levelFilter, deptFilter });
-                
+
                 const response = await window.AUTH.fetch(`${API_BASE_URL}/students`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch students');
                 }
-                
+
                 const students = await response.json();
-                console.log('Fetched students for modal:', students.length);
-                
-                // Filter students based on criteria
-                let filteredStudents = students.filter(student => {
-                    // Check if student is eligible for promotion
-                    const isEligible = isStudentEligibleForPromotion(student);
-                    
-                    // Apply level filter
-                    const courseCode = student.course;
-                    const levelMatch = courseCode.match(/_(\d+)$/);
-                    const level = levelMatch ? levelMatch[1] : 'Unknown';
-                    const levelMatchFilter = levelFilter === 'all' || level === levelFilter;
-                    
-                    // Apply department filter
+
+                // Filter by level + department, but show ALL students (eligible or not) so
+                // the registrar can see who is capped vs promotable.
+                const filteredStudents = students.filter(student => {
+                    const level = extractLevelFromCourse(student.course);
+                    const levelMatch = levelFilter === 'all' || String(level) === String(levelFilter);
                     const deptMatch = deptFilter === 'all' || student.department === deptFilter;
-                    
-                    return isEligible && levelMatchFilter && deptMatch;
+                    return levelMatch && deptMatch;
                 });
-                
-                console.log('Filtered students for modal:', filteredStudents.length);
+
                 displayModalPromotionStudents(filteredStudents);
-                
             } catch (error) {
                 console.error('Error loading promotion students:', error);
                 showToast('Error loading students: ' + error.message, 'error');
@@ -116,13 +106,12 @@
             }
             
             tbody.innerHTML = students.map(student => {
-                const courseCode = student.course;
-                const levelMatch = courseCode.match(/_(\d+)$/);
-                const level = levelMatch ? levelMatch[1] : 'Unknown';
-                const maxYear = level === '5' ? 2 : 3;
-                const nextYear = student.year + 1;
-                const isEligible = nextYear <= maxYear;
-                
+                const level = extractLevelFromCourse(student.course);
+                const currentModule = Number(student.module || 0);
+                const maxModule = MAX_MODULE_BY_LEVEL[level] || 0;
+                const isEligible = currentModule >= 1 && currentModule < maxModule;
+                const nextModule = currentModule + 1;
+
                 return `
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
                         <td class="px-6 py-4 whitespace-nowrap">
@@ -132,7 +121,7 @@
                             <div class="flex items-center">
                                 <div class="flex-shrink-0 h-10 w-10">
                                     <div class="h-10 w-10 rounded-full bg-primary flex items-center justify-center">
-                                        <span class="text-sm font-medium text-white">${escapeHtml(student.name.charAt(0))}</span>
+                                        <span class="text-sm font-medium text-white">${escapeHtml((student.name || '?').charAt(0))}</span>
                                     </div>
                                 </div>
                                 <div class="ml-4">
@@ -142,21 +131,21 @@
                             </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                            ${escapeHtml(courseCode.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()))}
+                            ${escapeHtml(String(student.course || '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()))}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                            Year ${student.year}
+                            Module ${currentModule || '-'}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                            Level ${level}
+                            Level ${level || 'Unknown'}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                            ${maxYear}
+                            ${maxModule || '-'}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            ${isEligible ? 
-                                '<span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Eligible</span>' : 
-                                '<span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">Max Year Reached</span>'
+                            ${isEligible ?
+                                `<span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" title="Will be promoted to Module ${nextModule}">Eligible → Module ${nextModule}</span>` :
+                                '<span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">Max Module Reached</span>'
                             }
                         </td>
                     </tr>
@@ -190,20 +179,23 @@
                 progressText.textContent = `Promoting student ${i + 1} of ${studentIds.length}...`;
 
                 try {
-                    // First get the current student data
                     const getResponse = await window.AUTH.fetch(`${API_BASE_URL}/students/${studentId}`);
                     if (!getResponse.ok) {
                         throw new Error('Failed to fetch student data');
                     }
                     const student = await getResponse.json();
-                    
-                    // Update with the new year
+                    const currentModule = Number(student.module || 0);
+                    const level = extractLevelFromCourse(student.course);
+                    const cap = MAX_MODULE_BY_LEVEL[level];
+                    if (!cap || currentModule >= cap) {
+                        errorCount++;
+                        continue;
+                    }
+
                     const response = await window.AUTH.fetch(`${API_BASE_URL}/students/${studentId}`, {
                         method: 'PATCH',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ year: student.year + 1 })
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ module: currentModule + 1 })
                     });
 
                     if (response.ok) {
@@ -216,7 +208,6 @@
                     errorCount++;
                 }
 
-                // Small delay to show progress
                 await new Promise(resolve => setTimeout(resolve, 100));
             }
 
@@ -253,6 +244,33 @@
                 toast.classList.add('translate-y-2', 'opacity-0');
                 setTimeout(() => toast.remove(), 300);
             }, 3000);
+        }
+
+        // ---------------------------------------------------------------
+        // Shared registrar helpers — grade rules, module caps, level parsing.
+        // Must match the backend defaults in src/utils/studentHelpers.js.
+        // ---------------------------------------------------------------
+        const MAX_MODULE_BY_LEVEL = { 3: 1, 4: 2, 5: 4, 6: 6 };
+        // Grade dropdown order: E, KCPE, then progressively higher KCSE grades.
+        const GRADE_DROPDOWN_ORDER = ['E', 'KCPE', 'D-', 'D', 'D+', 'C-', 'C', 'C+', 'B-', 'B', 'B+'];
+        const ALLOWED_GRADES_BY_LEVEL = {
+            3: ['KCPE'],
+            4: ['E', 'D-'],
+            5: ['D', 'D+'],
+            6: ['C-', 'C', 'C+', 'B-', 'B', 'B+'],
+        };
+
+        function extractLevelFromCourse(course) {
+            if (!course) return null;
+            const m = String(course).match(/_(\d+)$/);
+            if (!m) return null;
+            const n = parseInt(m[1], 10);
+            return Number.isFinite(n) ? n : null;
+        }
+
+        function getAllowedGradesForLevel(level) {
+            const list = ALLOWED_GRADES_BY_LEVEL[Number(level)];
+            return list ? list.slice() : [];
         }
 
         // Course configurations with new numbering system
@@ -307,207 +325,168 @@
             information_science_6: { code: 'IS6', department: 'computing_informatics', name: 'Information Science Level 6' }
         };
 
-        let currentAdmissionNumber = '';
-
-        // Handle course selection and department auto-fill
+        // Handle course selection: auto-fill department, repopulate the grade
+        // dropdown for the selected level, and preview the next admission #.
         function handleCourseSelection() {
             const courseSelect = document.getElementById('course');
             const departmentSelect = document.getElementById('department');
             const selectedCourse = courseSelect.value;
-            
+
             if (selectedCourse && courseConfig[selectedCourse]) {
                 const courseInfo = courseConfig[selectedCourse];
                 departmentSelect.value = courseInfo.department;
-                generateAdmissionNumber(courseInfo);
+                populateGradeDropdown(extractLevelFromCourse(selectedCourse));
+                refreshAdmissionNumberPreview();
             } else {
                 departmentSelect.value = '';
-                currentAdmissionNumber = '';
+                populateGradeDropdown(null);
+                const admissionNumberField = document.getElementById('admissionNumber');
+                if (admissionNumberField) admissionNumberField.value = '';
             }
         }
 
-        // Update intake year based on selected intake
+        // Populate the KCSE Grade <select> with only the grades allowed for the
+        // currently-selected course level. Disabled when no course is selected.
+        function populateGradeDropdown(level) {
+            const select = document.getElementById('kcseGradeSelect');
+            const help = document.getElementById('gradeHelpText');
+            if (!select) return;
+            if (!level) {
+                select.innerHTML = '<option value="">Select a course first</option>';
+                select.disabled = true;
+                if (help) help.textContent = '';
+                return;
+            }
+            const allowed = getAllowedGradesForLevel(level);
+            const previous = select.value;
+            // Preserve dropdown order (E, KCPE, ...) but only show allowed grades.
+            const optionGrades = GRADE_DROPDOWN_ORDER.filter(g => allowed.includes(g));
+            const parts = ['<option value="">Select Grade</option>'];
+            for (const g of optionGrades) {
+                parts.push(`<option value="${escapeAttr(g)}">${escapeHtml(g)}</option>`);
+            }
+            select.innerHTML = parts.join('');
+            select.disabled = false;
+            if (previous && optionGrades.includes(previous)) {
+                select.value = previous;
+            } else {
+                select.value = '';
+            }
+            if (help) {
+                help.textContent = `Level ${level} accepts: ${optionGrades.join(', ')}.`;
+            }
+        }
+
+        // Update intake year based on selected intake (January, May or September).
         function updateIntakeYear() {
             const intakeSelect = document.getElementById('intake-select');
             const intakeYearInput = document.getElementById('intake-year');
-            
+
             if (!intakeSelect.value) {
                 intakeYearInput.value = '';
                 return;
             }
-            
+
             const currentDate = new Date();
             const currentYear = currentDate.getFullYear();
-            const currentMonth = currentDate.getMonth() + 1; // JavaScript months are 0-indexed
-            
+            const currentMonth = currentDate.getMonth() + 1;
+
             let intakeYear = currentYear;
-            
-            if (intakeSelect.value === 'january') {
-                // January intake: if we're past January, next January is next year
-                if (currentMonth > 1) {
-                    intakeYear = currentYear + 1;
-                }
-            } else if (intakeSelect.value === 'september') {
-                // September intake: if we're past September, next September is next year
-                if (currentMonth > 9) {
-                    intakeYear = currentYear + 1;
-                }
-            }
-            
+            if (intakeSelect.value === 'january' && currentMonth > 1) intakeYear = currentYear + 1;
+            else if (intakeSelect.value === 'may' && currentMonth > 5) intakeYear = currentYear + 1;
+            else if (intakeSelect.value === 'september' && currentMonth > 9) intakeYear = currentYear + 1;
+
             intakeYearInput.value = intakeYear;
         }
 
-        // Regenerate admission number when intake changes
-        function regenerateAdmissionOnIntakeChange() {
-            const courseSelect = document.getElementById('course');
-            if (courseSelect.value) {
-                const courseInfo = courseConfig[courseSelect.value];
-                if (courseInfo) {
-                    generateAdmissionNumber(courseInfo);
-                }
-            }
-        }
-
-        // Generate dynamic intake code
-        function generateIntakeCode(intake, intakeYear) {
-            const yearSuffix = intakeYear.toString().slice(-2);
-            const intakePrefix = intake === 'january' ? 'J' : 'S';
-            return `${intakePrefix}${yearSuffix}`;
-        }
-
-        // Generate admission number based on course code with dynamic intake
-        async function generateAdmissionNumber(courseInfo) {
+        // Read-only preview of the next admission number from the global counter.
+        async function refreshAdmissionNumberPreview() {
+            const field = document.getElementById('admissionNumber');
+            if (!field) return;
             try {
-                if (!courseInfo || !courseInfo.code) {
-                    throw new Error('Invalid course information');
-                }
-
-                // Get intake information from form
-                const intakeSelect = document.getElementById('intake-select');
-                const intakeYearInput = document.getElementById('intake-year');
-                
-                if (!intakeSelect.value || !intakeYearInput.value) {
-                    throw new Error('Please select intake and intake year first');
-                }
-
-                const intake = intakeSelect.value;
-                const intakeYear = parseInt(intakeYearInput.value);
-                const intakeCode = generateIntakeCode(intake, intakeYear);
-
-                // Fetch the latest admission number for this course and intake
-                const response = await window.AUTH.fetch(`${API_BASE_URL}/students/latest-admission/${courseInfo.code}/${intake}/${intakeYear}`);
-                if (!response.ok) {
-                    throw new Error(`Server error: ${response.status}`);
-                }
-
+                const response = await window.AUTH.fetch(`${API_BASE_URL}/students/next-admission-number`);
+                if (!response.ok) throw new Error(`Server error: ${response.status}`);
                 const data = await response.json();
-                if (!data) {
-                    throw new Error('Invalid response from server');
-                }
-                
-                let sequentialNumber;
-                
-                if (data.latestNumber && typeof data.latestNumber === 'string') {
-                    // Extract the sequential number from the latest admission number
-                    // Format: AC6/0001/S25 -> extract 0001
-                    const matches = data.latestNumber.match(/\/(\d{4})\//);
-                    if (matches && matches[1]) {
-                        // Increment the sequential number with validation
-                        const currentSeq = parseInt(matches[1], 10);
-                        if (isNaN(currentSeq)) {
-                            throw new Error('Invalid sequence number format');
-                        }
-                        sequentialNumber = String(currentSeq + 1).padStart(4, '0');
-                    } else {
-                        sequentialNumber = '0001';
-                    }
-                } else {
-                    // No existing admission numbers for this course and intake
-                    sequentialNumber = '0001';
-                }
-                
-                // New format: COURSECODE/SEQUENCE/INTAKECODE (e.g., AC6/0001/J26)
-                currentAdmissionNumber = `${courseInfo.code}/${sequentialNumber}/${intakeCode}`;
-                
-                // Validate the generated admission number format
-                const admissionNumberFormat = /^[A-Z]{2,4}\d?\/\d{4}\/[JS]\d{2}$/;
-                if (!admissionNumberFormat.test(currentAdmissionNumber)) {
-                    throw new Error('Generated admission number has invalid format');
-                }
-                
-                // Update the admission number display field
-                const admissionNumberField = document.getElementById('admissionNumber');
-                if (!admissionNumberField) {
-                    throw new Error('Admission number field not found');
-                }
-                admissionNumberField.value = currentAdmissionNumber;
-            } catch (error) {
-                console.error('Error in admission number generation:', error);
-                showToast(`Error: ${error.message}`, 'error');
-                currentAdmissionNumber = ''; // Reset on error
+                field.value = data.nextAdmissionNumber || '';
+            } catch (err) {
+                console.error('Error fetching next admission number:', err);
+                field.value = '';
             }
         }
 
         // Handle Student Admission
         async function handleAdmission(event) {
             event.preventDefault();
-            if (!currentAdmissionNumber) {
-                showToast('Please select a course first', 'error');
+
+            const formData = new FormData(event.target);
+            const courseValue = formData.get('course');
+            const courseInfo = courseConfig[courseValue];
+            const moduleValue = formData.get('module');
+            const intakeValue = formData.get('intake');
+            const intakeYearValue = formData.get('intakeYear');
+            const grade = formData.get('kcseGrade');
+            const level = extractLevelFromCourse(courseValue);
+
+            // Frontend validation — backend re-checks everything.
+            if (!grade) {
+                showToast('Please select a KCSE grade.', 'error');
+                return;
+            }
+            const allowed = getAllowedGradesForLevel(level);
+            if (!allowed.includes(grade)) {
+                showToast(`Grade ${grade} is not allowed for a Level ${level} course. Allowed: ${allowed.join(', ')}`, 'error');
+                return;
+            }
+            const moduleInt = moduleValue ? parseInt(moduleValue, 10) : 1;
+            const cap = MAX_MODULE_BY_LEVEL[level];
+            if (cap && moduleInt > cap) {
+                showToast(`Module ${moduleInt} exceeds Level ${level} max (${cap}).`, 'error');
                 return;
             }
 
-            const formData = new FormData(event.target);
-            const courseInfo = courseConfig[formData.get('course')];
-            const yearValue = formData.get('year');
-            const intakeValue = formData.get('intake');
-            const intakeYearValue = formData.get('intakeYear');
-            
             const studentData = {
                 name: formData.get('name'),
                 idNumber: formData.get('idNumber'),
-                kcseGrade: formData.get('kcseGrade'),
-                admissionNumber: currentAdmissionNumber,
-                course: formData.get('course'),
+                kcseGrade: grade,
+                course: courseValue,
                 department: courseInfo ? courseInfo.department : '',
-                year: yearValue ? parseInt(yearValue) : 1,
-                intake: intakeValue || 'september',
-                intakeYear: intakeYearValue ? parseInt(intakeYearValue) : new Date().getFullYear(),
+                module: moduleInt,
+                intake: intakeValue,
+                intakeYear: intakeYearValue ? parseInt(intakeYearValue, 10) : new Date().getFullYear(),
                 phoneNumber: formData.get('phonenumber'),
                 admissionType: formData.get('admissionType'),
+                nextOfKinName: formData.get('nextOfKinName') || null,
+                nextOfKinPhone: formData.get('nextOfKinPhone') || null,
+                email: formData.get('email') || null,
                 role: 'student'
             };
-
-            console.log('Student data to submit:', studentData);
 
             try {
                 const response = await window.AUTH.fetch(`${API_BASE_URL}/students/register`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(studentData)
                 });
 
                 const data = await response.json();
-                console.log('Registration response:', data); // Debug log
 
                 if (response.ok) {
-                    showToast(data.message || 'Student registered successfully!');
+                    const assignedAdm = data.student && data.student.admissionNumber;
+                    showToast(`${data.message || 'Student registered successfully!'} Admission #: ${assignedAdm}`, 'success');
                     event.target.reset();
+                    // Reset dependent fields after the form reset
+                    populateGradeDropdown(null);
+                    const admissionNumberField = document.getElementById('admissionNumber');
+                    if (admissionNumberField) admissionNumberField.value = '';
                     closeAdmissionModal();
-                    
-                    // Show admission letter if data is available
-                    console.log('Checking admission letter data:', data.showAdmissionLetter, data.admissionLetter); // Debug log
+
                     if (data.showAdmissionLetter && data.admissionLetter) {
-                        console.log('Showing admission letter modal...'); // Debug log
-                        // Show admission letter modal directly
                         showAdmissionLetter(data.admissionLetter);
-                    } else {
-                        console.log('No admission letter data found'); // Debug log
                     }
-                    
-                    // Refresh the student list and stats
-                    fetchAndDisplayStudents();
-                    loadDashboardStats();
+
+                    if (typeof fetchAndDisplayStudents === 'function') fetchAndDisplayStudents();
+                    if (typeof loadDashboardStats === 'function') loadDashboardStats();
+                    refreshAdmissionNumberPreview();
                 } else {
                     throw new Error(data.message || 'Failed to register student');
                 }

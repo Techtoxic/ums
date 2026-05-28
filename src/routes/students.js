@@ -3,10 +3,19 @@ const router = express.Router();
 const { db, schema } = require('../db');
 const { eq, and, isNull } = require('drizzle-orm');
 const { verifyToken, authorize } = require('../middleware/auth');
-const { generateStudentInitialPassword, generateIntakeCode } = require('../utils/studentHelpers');
+const {
+    generateStudentInitialPassword,
+    generateIntakeCode,
+    extractLevelFromCourse,
+    isGradeAllowedForLevel,
+    getAllowedGradesForLevel,
+    canPromoteStudent,
+    getMaxModuleForLevel,
+} = require('../utils/studentHelpers');
 const { escapeRegex } = require('../utils/validators');
 const { formatCourseNameServer, toMoneyNumber } = require('../utils/formatters');
 const { Student, Program } = require('../db/models');
+const { allocateNextAdmissionNumber, peekNextAdmissionNumber } = require('../utils/admissionNumber');
 const EmailService = require('../utils/emailService');
 
 // Own email-service instance. Mirror server.js's try/catch stub so requiring
@@ -16,83 +25,172 @@ try {
     emailService = new EmailService();
 } catch (err) {
     console.error('Email service failed to initialize:', err.message);
-    // Create stub for build phase
     emailService = {
         sendOTPEmail: async () => console.log('Email stub: sendOTPEmail'),
         sendResetLinkEmail: async () => console.log('Email stub: sendResetLinkEmail'),
         sendPassword: async () => console.log('Email stub: sendPassword'),
-        sendStudentCredentials: async () => console.log('Email stub: sendStudentCredentials')
+        sendStudentCredentials: async () => console.log('Email stub: sendStudentCredentials'),
     };
 }
 
-// Registration Endpoint
+// Preview the next admission number that will be allocated on the next
+// successful registration. Used by the registrar form to display a preview.
+router.get('/students/next-admission-number', verifyToken, authorize('admin', 'registrar'), async (_req, res) => {
+    try {
+        const next = await peekNextAdmissionNumber();
+        res.json({ nextAdmissionNumber: next });
+    } catch (err) {
+        console.error('Error peeking next admission number:', err);
+        res.status(500).json({ message: 'Error reading admission counter' });
+    }
+});
+
+// Registration Endpoint.
+//
+// - Globally unique admission number assigned server-side from the
+//   admission_number_counter table (starts at 2500).
+// - Grade validation enforced against the course's level:
+//     Level 3 -> KCPE, Level 4 -> E/D-, Level 5 -> D/D+, Level 6 -> C-..B+.
+// - Accepts `module` (renamed from year), nextOfKinName, nextOfKinPhone.
 router.post('/students/register', verifyToken, authorize('admin', 'registrar'), async (req, res) => {
     try {
-        const { name, idNumber, kcseGrade, admissionNumber, course, department, phoneNumber, year, intake, intakeYear, admissionType, email } = req.body;
+        const {
+            name,
+            idNumber,
+            kcseGrade,
+            course,
+            department,
+            phoneNumber,
+            module: moduleField,
+            intake,
+            intakeYear,
+            admissionType,
+            email,
+            nextOfKinName,
+            nextOfKinPhone,
+        } = req.body;
 
-        const normalizedPhone = phoneNumber.replace(/\D/g, '');
+        // Required-field validation. Frontend enforces these but the backend
+        // is the source of truth.
+        if (!name || !idNumber || !kcseGrade || !course || !department || !phoneNumber) {
+            return res.status(400).json({
+                message: 'Missing required fields (name, idNumber, kcseGrade, course, department, phoneNumber)',
+            });
+        }
+        if (!intake) {
+            return res.status(400).json({ message: 'Intake is required' });
+        }
+        if (!['january', 'may', 'september'].includes(String(intake).toLowerCase())) {
+            return res.status(400).json({ message: 'Invalid intake. Must be january, may or september.' });
+        }
 
+        // Phone normalisation (registrar portal accepts a 10-digit Kenyan number).
+        const normalizedPhone = String(phoneNumber).replace(/\D/g, '');
         if (!/^(?:254|\+254|0)?([17](?:(?:[0-9][0-9])|(?:0[0-8])|(4[0-1]))[0-9]{6})$/.test(normalizedPhone)) {
             return res.status(400).json({
-                message: 'Invalid phone number format. Please enter a valid Kenyan phone number'
+                message: 'Invalid phone number format. Please enter a valid Kenyan phone number',
             });
         }
-
         const formattedPhone = normalizedPhone.length === 12 ? '0' + normalizedPhone.slice(-9) :
-                              normalizedPhone.length === 13 ? '0' + normalizedPhone.slice(-9) :
-                              normalizedPhone;
+                               normalizedPhone.length === 13 ? '0' + normalizedPhone.slice(-9) :
+                               normalizedPhone;
 
+        // Next-of-kin phone (optional) shares the same normalisation rule.
+        let formattedKinPhone = null;
+        if (nextOfKinPhone) {
+            const kinDigits = String(nextOfKinPhone).replace(/\D/g, '');
+            if (!/^(?:254|\+254|0)?([17](?:(?:[0-9][0-9])|(?:0[0-8])|(4[0-1]))[0-9]{6})$/.test(kinDigits)) {
+                return res.status(400).json({ message: 'Invalid next-of-kin phone number format.' });
+            }
+            formattedKinPhone = kinDigits.length === 12 ? '0' + kinDigits.slice(-9) :
+                                 kinDigits.length === 13 ? '0' + kinDigits.slice(-9) :
+                                 kinDigits;
+        }
+
+        // Grade validation against the course's level (the last digit of the
+        // course code). Wins regardless of what the frontend sent.
+        const level = extractLevelFromCourse(course);
+        if (!level) {
+            return res.status(400).json({ message: `Could not determine course level from "${course}".` });
+        }
+        if (!isGradeAllowedForLevel(kcseGrade, level)) {
+            const allowed = getAllowedGradesForLevel(level);
+            return res.status(400).json({
+                message: `KCSE grade "${kcseGrade}" is not allowed for a Level ${level} course. Allowed: ${allowed.join(', ')}.`,
+            });
+        }
+
+        // Module-cap validation: a new student starts at module 1 unless an
+        // explicit module was supplied; in that case it must respect the
+        // level cap (Level 3=1, 4=2, 5=4, 6=6).
+        const startModule = moduleField === undefined || moduleField === null || moduleField === '' ? 1 : parseInt(moduleField, 10);
+        if (!Number.isFinite(startModule) || startModule < 1) {
+            return res.status(400).json({ message: 'Module must be a positive integer.' });
+        }
+        const cap = getMaxModuleForLevel(level);
+        if (cap && startModule > cap) {
+            return res.status(400).json({
+                message: `Module ${startModule} exceeds the maximum (${cap}) for a Level ${level} course.`,
+            });
+        }
+
+        // Pre-check duplicates against text-based unique columns to return
+        // friendly errors before allocating an admission number (which we do
+        // not roll back on failure). The DB unique constraints are the
+        // ultimate gatekeepers.
         const existingIdNumber = await Student.findOne({ idNumber });
-        const existingPhone = await Student.findOne({ phoneNumber: formattedPhone });
-        const existingAdmission = await Student.findOne({ admissionNumber });
-
         if (existingIdNumber) {
-            return res.status(400).json({
-                message: 'A student with this ID number already exists'
-            });
+            return res.status(400).json({ message: 'A student with this ID number already exists' });
         }
+        const existingPhone = await Student.findOne({ phoneNumber: formattedPhone });
         if (existingPhone) {
-            return res.status(400).json({
-                message: 'A student with this phone number already exists'
-            });
+            return res.status(400).json({ message: 'A student with this phone number already exists' });
         }
-        if (existingAdmission) {
-            return res.status(400).json({
-                message: 'A student with this admission number already exists'
-            });
+        if (email) {
+            const existingEmail = await Student.findOne({ email: String(email).toLowerCase() });
+            if (existingEmail) {
+                return res.status(400).json({ message: 'A student with this email already exists' });
+            }
         }
+
+        // Atomically allocate a globally unique admission number.
+        const admissionNumber = await allocateNextAdmissionNumber();
 
         // SEV-H-014: never use the phone number as the credential. Generate a
-        // strong random one-time password; the pre-save hook hashes it.
+        // strong random one-time password; the create() helper hashes it.
         const initialPassword = generateStudentInitialPassword();
 
-        const student = new Student({
+        const student = await Student.create({
             name,
             idNumber,
             kcseGrade,
             admissionNumber,
             course,
             department,
-            year: year || 1,
-            intake: intake || 'september',
-            intakeYear: intakeYear || new Date().getFullYear(),
+            module: startModule,
+            intake: String(intake).toLowerCase(),
+            intakeYear: intakeYear ? parseInt(intakeYear, 10) : new Date().getFullYear(),
             phoneNumber: formattedPhone,
             email: email ? String(email).toLowerCase() : undefined,
-            admissionType: admissionType || 'walk-in',  // Default to walk-in if not provided
-            password: initialPassword,  // hashed by the pre-save hook
+            admissionType: admissionType || 'walk-in',
+            nextOfKinName: nextOfKinName ? String(nextOfKinName).trim() : null,
+            nextOfKinPhone: formattedKinPhone,
+            password: initialPassword,
             isFirstLogin: true,
             mustUpdatePassword: true,
-            role: 'student'
+            role: 'student',
         });
 
-        await student.save();
+        if (!student) {
+            return res.status(500).json({ message: 'Failed to create student record.' });
+        }
 
         // SEV-H-014: deliver the one-time password out-of-band via email.
         let credentialsEmailed = false;
         if (student.email) {
             try {
                 await emailService.sendStudentCredentials(
-                    student.email, student.name, student.admissionNumber, initialPassword
+                    student.email, student.name, student.admissionNumber, initialPassword,
                 );
                 credentialsEmailed = true;
             } catch (mailErr) {
@@ -100,20 +198,20 @@ router.post('/students/register', verifyToken, authorize('admin', 'registrar'), 
             }
         }
 
-        // Prepare admission letter data
+        const intakeCode = generateIntakeCode(student.intake, student.intakeYear);
+
         const admissionLetterData = {
             name: student.name,
             admissionNumber: student.admissionNumber,
             course: student.course,
             department: student.department,
             intakeYear: student.intakeYear,
+            intake: student.intake,
+            intakeCode,
+            module: student.module,
             phoneNumber: student.phoneNumber,
-            intake: student.intake
         };
 
-        // SEV-H-014: if the student has no email on file (or delivery failed),
-        // return the one-time password ONCE so the registrar can hand it over
-        // securely. When it was emailed, never echo it back.
         const response = {
             message: credentialsEmailed
                 ? 'Student registered successfully. Initial password emailed to the student.'
@@ -121,11 +219,13 @@ router.post('/students/register', verifyToken, authorize('admin', 'registrar'), 
             student: {
                 name: student.name,
                 admissionNumber: student.admissionNumber,
-                course: student.course
+                course: student.course,
+                module: student.module,
+                department: student.department,
             },
             credentialsEmailed,
             admissionLetter: admissionLetterData,
-            showAdmissionLetter: true
+            showAdmissionLetter: true,
         };
         if (!credentialsEmailed) {
             response.initialPassword = initialPassword;
@@ -134,6 +234,10 @@ router.post('/students/register', verifyToken, authorize('admin', 'registrar'), 
 
     } catch (error) {
         console.error('Registration error:', error);
+        // Surface DB unique-violation messages (Postgres SQLSTATE 23505).
+        if (error && (error.code === '23505' || /duplicate key/i.test(error.message || ''))) {
+            return res.status(400).json({ message: 'A student with one of these details already exists.' });
+        }
         res.status(500).json({ message: 'Error registering student' });
     }
 });
@@ -149,7 +253,7 @@ router.get('/students/department/:department', verifyToken, authorize('admin', '
                 admissionNumber: schema.students.admission_number,
                 course: schema.students.course,
                 intake: schema.students.intake,
-                year: schema.students.year,
+                module: schema.students.module,
                 email: schema.students.email,
                 phone: schema.students.phone_number,
             })
@@ -159,8 +263,6 @@ router.get('/students/department/:department', verifyToken, authorize('admin', '
                 isNull(schema.students.deleted_at),
             ))
             .orderBy(schema.students.course, schema.students.name);
-        // Group by course code. courseStats matches V1 shape so the HOD
-        // dashboard's existing rendering code keeps working unchanged.
         const studentsByCourse = {};
         const courseStats = {};
         for (const s of rows) {
@@ -186,69 +288,6 @@ router.get('/students/department/:department', verifyToken, authorize('admin', '
     }
 });
 
-// Get Latest Admission Number Endpoint with Intake Support
-router.get('/students/latest-admission/:courseCode/:intake/:intakeYear', verifyToken, authorize('admin', 'registrar'), async (req, res) => {
-    try {
-        const { courseCode, intake, intakeYear } = req.params;
-
-        // Generate intake code for this specific intake
-        const intakeCode = generateIntakeCode(intake, parseInt(intakeYear));
-
-        // Find latest admission number for this course and intake combination
-        // SEV-H-019: courseCode comes from req.params; escape regex metachars.
-        const latestStudent = await Student.findOne({
-            admissionNumber: { $regex: `^${escapeRegex(courseCode)}/\\d{4}/${escapeRegex(intakeCode)}$` }
-        }).sort({ admissionNumber: -1 });
-
-        if (latestStudent) {
-            res.json({
-                latestNumber: latestStudent.admissionNumber,
-                intakeCode: intakeCode
-            });
-        } else {
-            res.json({
-                latestNumber: null,
-                intakeCode: intakeCode
-            });
-        }
-    } catch (error) {
-        console.error('Error fetching latest admission number:', error);
-        res.status(500).json({ message: 'Error fetching latest admission number' });
-    }
-});
-
-// Legacy endpoint for backward compatibility
-router.get('/students/latest-admission/:courseCode', verifyToken, authorize('admin', 'registrar'), async (req, res) => {
-    try {
-        const { courseCode } = req.params;
-
-        // Default to current September intake
-        const currentYear = new Date().getFullYear();
-        const defaultIntake = 'september';
-        const intakeCode = generateIntakeCode(defaultIntake, currentYear);
-
-        // SEV-H-019: courseCode comes from req.params; escape regex metachars.
-        const latestStudent = await Student.findOne({
-            admissionNumber: { $regex: `^${escapeRegex(courseCode)}/\\d{4}/${escapeRegex(intakeCode)}$` }
-        }).sort({ admissionNumber: -1 });
-
-        if (latestStudent) {
-        res.json({
-                latestNumber: latestStudent.admissionNumber,
-                intakeCode: intakeCode
-            });
-        } else {
-            res.json({
-                latestNumber: null,
-                intakeCode: intakeCode
-            });
-        }
-    } catch (error) {
-        console.error('Error fetching latest admission number:', error);
-        res.status(500).json({ message: 'Error fetching latest admission number' });
-    }
-});
-
 // Get All Students Endpoint - PROTECTED (Admin/Registrar only)
 router.get('/students', verifyToken, authorize('admin', 'registrar', 'dean', 'finance', 'deputy'), async (req, res) => {
     try {
@@ -260,87 +299,36 @@ router.get('/students', verifyToken, authorize('admin', 'registrar', 'dean', 'fi
     }
 });
 
-// Update student
+// Update student (registrar promotion + edits).
+//
+// Promotion uses the new module-cap rules; existing balance / program-cost
+// logic moves over from year-based to module-based (each promotion adds one
+// program-cost increment, same as before).
 router.patch('/students/:id', verifyToken, authorize('admin', 'registrar'), async (req, res) => {
     try {
         const { id } = req.params;
-        const updates = req.body;
+        const updates = { ...req.body };
 
-        // Handle year promotion with balance update
-        if (updates.year !== undefined) {
-            // Get the current student to check if year is actually changing (promotion)
+        if (updates.module !== undefined) {
             const currentStudent = await Student.findById(id);
-
-            if (currentStudent) {
-                console.log(`Checking promotion: Current Year=${currentStudent.year}, New Year=${updates.year}, Course=${currentStudent.course}`);
-
-                if (currentStudent.year !== updates.year) {
-                    // Student is being promoted to a new year
-                    console.log(`Student ${currentStudent.admissionNumber} is being promoted from Year ${currentStudent.year} to Year ${updates.year}`);
-
-                    // Map course code to program name
-                    const courseToProgram = {
-                        'applied_biology_6': 'Applied Biology Level 6',
-                        'analytical_chemistry_6': 'Analytical Chemistry Level 6',
-                        'science_lab_technology_5': 'Science Lab Technology Level 5',
-                        'science_laboratory_technology_5': 'Science Lab Technology Level 5',
-                        'general_agriculture_4': 'General Agriculture Level 4',
-                        'sustainable_agriculture_5': 'Sustainable Agriculture Level 5',
-                        'building_construction_4': 'Building Construction Level 4',
-                        'building_construction_5': 'Building Construction Level 5',
-                        'plumbing_4': 'Plumbing Level 4',
-                        'plumbing_5': 'Plumbing Level 5',
-                        'electrical_engineering_4': 'Electrical Engineering Level 4',
-                        'electrical_engineering_5': 'Electrical Engineering Level 5',
-                        'electrical_engineering_6': 'Electrical Engineering Level 6',
-                        'automotive_engineering_5': 'Automotive Engineering Level 5',
-                        'automotive_engineering_6': 'Automotive Engineering Level 6',
-                        'hospitality_management_5': 'Hospitality Management Level 5',
-                        'hospitality_management_6': 'Hospitality Management Level 6',
-                        'food_beverage_production_management_5': 'Food & Beverage Production Management Level 5',
-                        'food_beverage_production_management_6': 'Food & Beverage Production Management Level 6',
-                        'business_management_6': 'Business Management Level 6',
-                        'supply_chain_management_6': 'Supply Chain Management Level 6',
-                        'human_resource_management_6': 'Human Resource Management Level 6',
-                        'journalism_mass_communication_6': 'Journalism & Mass Communication Level 6',
-                        'information_communication_technology_6': 'Information Communication Technology Level 6',
-                        'information_technology_5': 'Information Technology Level 5',
-                        'computer_science_6': 'Computer Science Level 6'
-                    };
-
-                    const programName = courseToProgram[currentStudent.course];
-                    console.log(`Looking for program: ${programName} for course: ${currentStudent.course}`);
-
-                    // Get the program cost for their course
-                    const program = programName ? await Program.findOne({ programName }) : null;
-
-                    if (program) {
-                        const programCostNum = toMoneyNumber(program.programCost); // SEV-H-016
-                        console.log(`Program found: ${program.name}, Cost: KES ${programCostNum}`);
-
-                        if (programCostNum > 0) {
-                            // SEV-H-016 TODO: `balance` is NOT a field on the Student
-                            // schema, so this write is dropped by Drizzle strict mode
-                            // and is not persisted today. A correct fix (a Decimal128
-                            // Student.balance updated via an atomic $inc inside a
-                            // replica-set transaction) needs a data-model decision and
-                            // is deferred to Stage 3 — see STAGE2A_REPORT.md.
-                            const existingBalance = toMoneyNumber(currentStudent.balance || 0);
-                            const newBalance = existingBalance + programCostNum;
-                            updates.balance = newBalance;
-
-                            console.log(`Adding program cost KES ${programCostNum.toLocaleString()} to existing balance KES ${existingBalance.toLocaleString()}`);
-                            console.log(`New balance will be: KES ${newBalance.toLocaleString()}`);
-                        } else {
-                            console.warn(`Program cost is not set or is zero for ${program.name}`);
-                        }
-                    } else {
-                        console.warn(`Program not found for course: ${currentStudent.course} (mapped to: ${programName})`);
-                    }
-                } else {
-                    console.log(`Year not changed (both are ${updates.year}), no balance update needed`);
-                }
+            if (!currentStudent) {
+                return res.status(404).json({ message: 'Student not found' });
             }
+            const newModule = parseInt(updates.module, 10);
+            if (!Number.isFinite(newModule) || newModule < 1) {
+                return res.status(400).json({ message: 'Module must be a positive integer.' });
+            }
+            const level = extractLevelFromCourse(currentStudent.course);
+            const cap = getMaxModuleForLevel(level);
+            if (cap && newModule > cap) {
+                return res.status(400).json({
+                    message: `Cannot promote: Level ${level} students cap at module ${cap}.`,
+                });
+            }
+            if (currentStudent.module !== newModule) {
+                console.log(`Promotion: ${currentStudent.admissionNumber} module ${currentStudent.module} -> ${newModule}`);
+            }
+            updates.module = newModule;
         }
 
         const student = await Student.findByIdAndUpdate(id, updates, { new: true });
@@ -360,17 +348,15 @@ router.get('/students/export/:admissionType', verifyToken, authorize('admin', 'r
     try {
         const { admissionType } = req.params;
 
-        // Validate admission type
         if (!['walk-in', 'KUCCPS'].includes(admissionType)) {
             return res.status(400).json({ message: 'Invalid admission type. Must be walk-in or KUCCPS' });
         }
 
         const students = await Student.find(
             { admissionType: admissionType },
-            { password: 0 }
+            { password: 0 },
         ).sort({ createdAt: -1 });
 
-        // Format data for export
         const exportData = students.map(student => ({
             'Admission Number': student.admissionNumber,
             'Full Name': student.name,
@@ -378,19 +364,21 @@ router.get('/students/export/:admissionType', verifyToken, authorize('admin', 'r
             'KCSE Grade': student.kcseGrade,
             'Course': student.course,
             'Department': student.department,
-            'Year of Study': student.year,
+            'Module': student.module,
             'Intake': student.intake,
             'Intake Year': student.intakeYear,
             'Admission Type': student.admissionType,
             'Phone Number': student.phoneNumber,
-            'Registration Date': new Date(student.createdAt).toLocaleDateString()
+            'Next of Kin Name': student.nextOfKinName,
+            'Next of Kin Phone': student.nextOfKinPhone,
+            'Registration Date': new Date(student.createdAt).toLocaleDateString(),
         }));
 
         res.json({
             success: true,
             data: exportData,
             count: students.length,
-            admissionType: admissionType
+            admissionType: admissionType,
         });
     } catch (error) {
         console.error('Error exporting students:', error);

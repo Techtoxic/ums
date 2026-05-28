@@ -21,9 +21,9 @@ async function brevoFetch(url, { apiKey, method = 'GET', body }) {
             headers: {
                 'api-key': apiKey,
                 'content-type': 'application/json',
-                'accept': 'application/json'
+                'accept': 'application/json',
             },
-            body: body ? JSON.stringify(body) : undefined
+            body: body ? JSON.stringify(body) : undefined,
         });
         let json = null;
         try { json = await res.json(); } catch (_) { json = null; }
@@ -43,7 +43,6 @@ async function sendEmail(service, { subject, htmlContent, textContent, recipient
         return { success: true, skipped: true };
     }
 
-    // Single recipient (recipientEmail) or many (recipients: array of addresses).
     const to = Array.isArray(recipients) && recipients.length
         ? recipients.map((email) => ({ email }))
         : [{ email: recipientEmail, name: recipientName || recipientEmail }];
@@ -52,7 +51,7 @@ async function sendEmail(service, { subject, htmlContent, textContent, recipient
         sender: { name: service.senderName, email: service.senderEmail },
         to,
         subject,
-        htmlContent
+        htmlContent,
     };
     if (textContent) payload.textContent = textContent;
 
@@ -60,7 +59,7 @@ async function sendEmail(service, { subject, htmlContent, textContent, recipient
         const { ok, status, json } = await brevoFetch(BREVO_SEND_URL, {
             apiKey: service.apiKey,
             method: 'POST',
-            body: payload
+            body: payload,
         });
 
         if (ok && json && json.messageId) {
@@ -80,11 +79,127 @@ async function sendEmail(service, { subject, htmlContent, textContent, recipient
     }
 }
 
+// ---------------------------------------------------------------------------
+// Template helpers
+//
+// Every email shares the same shell:
+//   - Light grey body background, white card, 600px max width
+//   - EDTTI maroon header bar with the institution name
+//   - Greeting line addressing the recipient by name
+//   - Body block (caller-supplied)
+//   - Footer with institution name + do-not-reply notice
+//
+// Inline CSS only — most email clients strip <style> blocks. No external
+// images or fonts (they are blocked by default in Outlook / Gmail clipping).
+// ---------------------------------------------------------------------------
+
+function escapeHtml(s) {
+    if (s == null) return '';
+    return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+const HEADER_BG = '#7A0C0C';
+const ACCENT = '#D4A017';
+
+function emailLayout({ preheader = '', heading, recipientName, bodyHtml, footerNote = '' }) {
+    const year = new Date().getFullYear();
+    const safeName = escapeHtml(recipientName || 'Student');
+    const safeHeading = escapeHtml(heading || 'EDTTI Notification');
+
+    return `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>${safeHeading}</title>
+</head>
+<body style="margin:0; padding:0; background:#f4f4f6; font-family:'Segoe UI', Tahoma, Helvetica, Arial, sans-serif; color:#1f2937; -webkit-font-smoothing:antialiased;">
+<div style="display:none; max-height:0; overflow:hidden; opacity:0; mso-hide:all; font-size:1px; line-height:1px;">${escapeHtml(preheader)}</div>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#f4f4f6;">
+  <tr>
+    <td align="center" style="padding:32px 16px;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width:600px; background:#ffffff; border-radius:8px; overflow:hidden; box-shadow:0 1px 3px rgba(15,23,42,0.08);">
+        <tr>
+          <td style="background:${HEADER_BG}; padding:24px 32px;" align="left">
+            <div style="font-size:11px; letter-spacing:0.18em; color:#fde8c8; text-transform:uppercase; font-weight:600;">EDTTI</div>
+            <div style="font-size:20px; color:#ffffff; font-weight:700; margin-top:4px;">Emurua Dikirr Technical Training Institute</div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:32px 32px 8px 32px; font-size:16px; color:#111827;">
+            <p style="margin:0 0 8px 0; font-size:16px; color:#111827; font-weight:600;">Hello ${safeName},</p>
+            <h1 style="margin:8px 0 16px 0; font-size:22px; line-height:1.3; color:#111827; font-weight:700;">${safeHeading}</h1>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:0 32px 24px 32px; font-size:15px; line-height:1.6; color:#1f2937;">
+            ${bodyHtml}
+          </td>
+        </tr>
+        <tr>
+          <td style="border-top:1px solid #e5e7eb; padding:20px 32px; background:#f9fafb; font-size:12px; color:#6b7280; text-align:center;">
+            ${footerNote ? `<div style="margin-bottom:8px; color:#374151;">${footerNote}</div>` : ''}
+            <div style="margin-bottom:4px;"><strong style="color:#374151;">Emurua Dikirr Technical Training Institute (EDTTI)</strong></div>
+            <div>This is an automated message from the EDTTI University Management System. <strong>Please do not reply</strong> &mdash; this inbox is not monitored.</div>
+            <div style="margin-top:6px;">&copy; ${year} EDTTI. All rights reserved.</div>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>`;
+}
+
+function calloutBox(label, value, color = ACCENT) {
+    return `<div style="margin:16px 0; padding:16px; border:1px dashed ${color}; border-radius:6px; background:#fffaf0; text-align:center;">
+        <div style="font-size:12px; text-transform:uppercase; letter-spacing:0.12em; color:#6b7280; margin-bottom:6px;">${escapeHtml(label)}</div>
+        <div style="font-family:'Courier New', monospace; font-size:26px; font-weight:700; letter-spacing:6px; color:${color};">${escapeHtml(value)}</div>
+    </div>`;
+}
+
+function infoList(items) {
+    return `<ul style="margin:12px 0 16px 20px; padding:0; color:#374151;">${items.map(i => `<li style="margin:4px 0;">${i}</li>`).join('')}</ul>`;
+}
+
+function primaryButton(label, href) {
+    return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:18px auto;">
+        <tr>
+            <td align="center" style="border-radius:6px; background:${HEADER_BG};">
+                <a href="${escapeHtml(href)}" target="_blank" rel="noopener" style="display:inline-block; padding:14px 28px; font-size:15px; font-weight:600; color:#ffffff; text-decoration:none; border-radius:6px;">${escapeHtml(label)}</a>
+            </td>
+        </tr>
+    </table>`;
+}
+
+function roleLabel(role) {
+    const map = {
+        admin: 'Administrator',
+        registrar: 'Registrar',
+        finance: 'Finance Officer',
+        dean: 'Dean of Students',
+        deputy: 'Deputy Principal',
+        ilo: 'Industry Liaison Officer',
+        cibec: 'CIBEC Officer',
+        hod: 'Head of Department',
+        trainer: 'Trainer',
+        student: 'Student',
+    };
+    if (!role) return 'User';
+    return map[String(role).toLowerCase()] || (role.charAt(0).toUpperCase() + role.slice(1));
+}
+
 class EmailService {
     constructor() {
         this.apiKey = process.env.BREVO_API_KEY || null;
-        this.senderEmail = process.env.BREVO_SENDER_EMAIL || null;
-        this.senderName = process.env.BREVO_SENDER_NAME || null;
+        this.senderEmail = process.env.BREVO_SENDER_EMAIL || 'no-reply@edtti.ac.ke';
+        this.senderName = process.env.BREVO_SENDER_NAME || 'EDTTI University Management System';
         this.initializeTransporter();
     }
 
@@ -97,9 +212,6 @@ class EmailService {
             console.warn('BREVO_SENDER_EMAIL / BREVO_SENDER_NAME not set — Brevo sends will fail until configured');
         }
 
-        // Replaces the old transporter.verify(): a single /v3/account GET
-        // confirms the API key works. Non-blocking and never throws — the
-        // app must not crash when email is misconfigured.
         brevoFetch(BREVO_ACCOUNT_URL, { apiKey: this.apiKey, method: 'GET' })
             .then(({ ok, status }) => {
                 if (ok) {
@@ -114,509 +226,168 @@ class EmailService {
             });
     }
 
-    // Send OTP email
+    // ------------------------------------------------------------------
+    // Password-reset OTP (sent to anyone using "forgot password" → OTP).
+    // ------------------------------------------------------------------
     async sendOTPEmail(email, otp, userName, userType) {
+        const body = `
+            <p style="margin:0 0 12px 0;">We received a request to reset your <strong>${escapeHtml(roleLabel(userType))}</strong> password. Use the One-Time Password (OTP) below to continue.</p>
+            ${calloutBox('Your OTP Code', otp)}
+            <p style="margin:0 0 8px 0; font-weight:600; color:#374151;">Important</p>
+            ${infoList([
+                'This OTP is valid for <strong>10 minutes</strong> only.',
+                'You have <strong>5 attempts</strong> to enter the correct code.',
+                'Never share this code with anyone &mdash; EDTTI staff will not ask for it.',
+            ])}
+            <p style="margin:16px 0 0 0; color:#374151;">If you did not request this reset, you can safely ignore this email and your password will remain unchanged.</p>
+        `;
         return sendEmail(this, {
-            subject: 'Password Reset - One Time Password',
-            htmlContent: this.generateOTPEmailTemplate(otp, userName, userType),
+            subject: 'EDTTI Password Reset — One-Time Password',
+            htmlContent: emailLayout({
+                preheader: 'Use this OTP to reset your EDTTI password',
+                heading: 'Password Reset Request',
+                recipientName: userName,
+                bodyHtml: body,
+            }),
             recipientEmail: email,
-            recipientName: userName
+            recipientName: userName,
         });
     }
 
-    // Send reset link email
+    // ------------------------------------------------------------------
+    // Password-reset link (sent to anyone using "forgot password" → link).
+    // ------------------------------------------------------------------
     async sendResetLinkEmail(email, resetToken, userName, userType, baseUrl) {
         const resetLink = `${baseUrl || config.baseUrl}/reset-password?token=${resetToken}&type=${userType}`;
-
+        const body = `
+            <p style="margin:0 0 12px 0;">We received a request to reset your <strong>${escapeHtml(roleLabel(userType))}</strong> password. Use the secure button below to create a new password.</p>
+            ${primaryButton('Reset My Password', resetLink)}
+            <p style="margin:0 0 8px 0; font-weight:600; color:#374151;">Important</p>
+            ${infoList([
+                'This link is valid for <strong>1 hour</strong>.',
+                'The link can be used <strong>once</strong>; after that you will need to request a new one.',
+                'Never share this link with anyone.',
+            ])}
+            <p style="margin:16px 0 8px 0; color:#374151;">If the button does not work, copy and paste the URL below into your browser:</p>
+            <div style="word-break:break-all; padding:12px; border:1px solid #e5e7eb; border-radius:6px; background:#f9fafb; font-family:'Courier New', monospace; font-size:12px; color:#374151;">${escapeHtml(resetLink)}</div>
+            <p style="margin:16px 0 0 0; color:#374151;">If you did not request this reset, you can safely ignore this email and your password will remain unchanged.</p>
+        `;
         return sendEmail(this, {
-            subject: 'Password Reset - Reset Link',
-            htmlContent: this.generateResetLinkEmailTemplate(resetLink, userName, userType),
+            subject: 'EDTTI Password Reset — Reset Link',
+            htmlContent: emailLayout({
+                preheader: 'Click the link to reset your EDTTI password',
+                heading: 'Password Reset Link',
+                recipientName: userName,
+                bodyHtml: body,
+            }),
             recipientEmail: email,
-            recipientName: userName
+            recipientName: userName,
         });
     }
 
-    // Send login OTP email
+    // ------------------------------------------------------------------
+    // Login verification OTP (sent during MFA login).
+    // ------------------------------------------------------------------
     async sendLoginOTP(email, otp, userName, userType) {
+        const sentAt = new Date().toLocaleString('en-KE', { timeZone: 'Africa/Nairobi' });
+        const body = `
+            <p style="margin:0 0 12px 0;">You are signing in to your <strong>${escapeHtml(roleLabel(userType))}</strong> account. Enter the one-time code below to complete your login.</p>
+            ${calloutBox('Verification Code', otp)}
+            <p style="margin:0 0 8px 0; font-weight:600; color:#374151;">Login Details</p>
+            ${infoList([
+                `Account Type: <strong>${escapeHtml(roleLabel(userType))}</strong>`,
+                `Time: <strong>${escapeHtml(sentAt)}</strong>`,
+                'Valid for <strong>10 minutes</strong>; up to <strong>5 attempts</strong> allowed.',
+            ])}
+            <p style="margin:16px 0 0 0; color:#b91c1c; font-weight:600;">Didn&rsquo;t try to sign in?</p>
+            <p style="margin:6px 0 0 0; color:#374151;">If this wasn&rsquo;t you, ignore this email and contact IT Support. Your password remains secure.</p>
+        `;
         return sendEmail(this, {
-            subject: 'Login Verification - One Time Password',
-            htmlContent: this.generateLoginOTPTemplate(otp, userName, userType),
+            subject: 'EDTTI Login Verification Code',
+            htmlContent: emailLayout({
+                preheader: 'Your EDTTI login verification code',
+                heading: 'Login Verification',
+                recipientName: userName,
+                bodyHtml: body,
+            }),
             recipientEmail: email,
-            recipientName: userName
+            recipientName: userName,
         });
     }
 
-    // SEV-H-014: send a student their one-time initial password.
+    // ------------------------------------------------------------------
+    // SEV-H-014: send a newly admitted student their one-time initial
+    // password along with the admission number.
+    // ------------------------------------------------------------------
     async sendStudentCredentials(email, userName, admissionNumber, tempPassword) {
-        const htmlContent = `
-                <div style="font-family: 'Segoe UI', Tahoma, sans-serif; max-width:600px; margin:0 auto; color:#333;">
-                    <h2>Welcome to EDTTI, ${userName}</h2>
-                    <p>Your student portal account has been created.</p>
-                    <p><strong>Admission Number:</strong> ${admissionNumber}</p>
-                    <p><strong>Temporary Password:</strong>
-                       <code style="font-size:16px; background:#f4f4f4; padding:4px 8px;">${tempPassword}</code></p>
-                    <p style="color:#c0392b;"><strong>You must change this password the first time you log in.</strong>
-                       This temporary password will not work for anything except setting your own password.</p>
-                    <p>If you did not expect this email, contact the registrar's office.</p>
-                </div>`;
-
+        const body = `
+            <p style="margin:0 0 12px 0;">Welcome to EDTTI! Your student portal account has been created. Use the credentials below to sign in and complete onboarding.</p>
+            <div style="margin:16px 0; padding:16px 20px; border:1px solid #e5e7eb; border-radius:6px; background:#f9fafb;">
+                <div style="margin-bottom:10px;">
+                    <span style="display:inline-block; min-width:160px; color:#6b7280; font-size:13px;">Admission Number</span>
+                    <span style="font-family:'Courier New', monospace; font-weight:600; color:#111827;">${escapeHtml(admissionNumber)}</span>
+                </div>
+                <div>
+                    <span style="display:inline-block; min-width:160px; color:#6b7280; font-size:13px;">Temporary Password</span>
+                    <span style="font-family:'Courier New', monospace; font-weight:600; color:#111827; background:#fff7ed; padding:4px 8px; border-radius:4px; border:1px solid #fed7aa;">${escapeHtml(tempPassword)}</span>
+                </div>
+            </div>
+            <p style="margin:16px 0 8px 0; font-weight:600; color:#b91c1c;">You must change this password on first login.</p>
+            ${infoList([
+                'Sign in at the EDTTI student portal using your admission number and the temporary password above.',
+                'You will be prompted to set a new password immediately. This temporary password only works for the password-change step.',
+                'Keep your credentials private. Do not share them with anyone.',
+            ])}
+            <p style="margin:16px 0 0 0; color:#374151;">If you did not expect this email, please contact the Registrar&rsquo;s office.</p>
+        `;
         return sendEmail(this, {
-            subject: 'Your Student Portal Account - Initial Password',
-            htmlContent,
+            subject: 'EDTTI Student Portal — Your Initial Password',
+            htmlContent: emailLayout({
+                preheader: 'Your EDTTI student portal credentials',
+                heading: 'Welcome to EDTTI',
+                recipientName: userName,
+                bodyHtml: body,
+            }),
             recipientEmail: email,
-            recipientName: userName
+            recipientName: userName,
         });
     }
 
-    // Tool request notification to trainers. Migrated verbatim from the
-    // old nodemailer transporter in server.js; sends to many recipients.
+    // ------------------------------------------------------------------
+    // Tool request notification to trainers / departments.
+    // ------------------------------------------------------------------
     async sendToolRequestNotification(recipients, toolType, course, dueDate, instructions) {
-        const htmlContent = `
-                    <h2>New Tool Request</h2>
-                    <p>Dear Trainer,</p>
-                    <p>I trust this email finds you well. A new tool request has been submitted with the following details:</p>
-                    <p><strong>Tool Type:</strong> ${toolType}</p>
-                    <p><strong>Course:</strong> ${course}</p>
-                    <p><strong>Due Date:</strong> ${new Date(dueDate).toLocaleDateString()}</p>
-                    ${instructions ? `<p><strong>Special Instructions:</strong> ${instructions}</p>` : ''}
-                    <p>Please log in to the Staff Portal to view and process this request at your earliest convenience.</p>
-                    <p>Best regards,</p>
-                    <p><strong>Dr. James Kiprop</strong><br>
-                    Deputy Principal (Academics)<br>
-                    EMURUA DIKIRR TTI<br>
-                    <em>Excellence in Technical Education</em></p>
-                `;
-
+        const dueLine = dueDate ? new Date(dueDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }) : 'Not specified';
+        const body = `
+            <p style="margin:0 0 12px 0;">A new tools-of-trade request has been submitted on your behalf. Please log in to the Trainer Portal to review and respond.</p>
+            <div style="margin:16px 0; padding:16px 20px; border:1px solid #e5e7eb; border-radius:6px; background:#f9fafb;">
+                <div style="margin-bottom:8px;">
+                    <span style="display:inline-block; min-width:120px; color:#6b7280; font-size:13px;">Tool Type</span>
+                    <span style="font-weight:600; color:#111827;">${escapeHtml(toolType || 'N/A')}</span>
+                </div>
+                <div style="margin-bottom:8px;">
+                    <span style="display:inline-block; min-width:120px; color:#6b7280; font-size:13px;">Course</span>
+                    <span style="font-weight:600; color:#111827;">${escapeHtml(course || 'N/A')}</span>
+                </div>
+                <div>
+                    <span style="display:inline-block; min-width:120px; color:#6b7280; font-size:13px;">Due Date</span>
+                    <span style="font-weight:600; color:#111827;">${escapeHtml(dueLine)}</span>
+                </div>
+            </div>
+            ${instructions ? `<p style="margin:16px 0 6px 0; font-weight:600; color:#374151;">Special Instructions</p><div style="padding:12px; border-left:3px solid ${ACCENT}; background:#fffaf0; color:#374151;">${escapeHtml(instructions)}</div>` : ''}
+            <p style="margin:18px 0 0 0; color:#374151;">Please process this request at your earliest convenience.</p>
+        `;
         return sendEmail(this, {
-            subject: `New Tool Request: ${toolType}`,
-            htmlContent,
-            recipients
+            subject: `EDTTI Tool Request: ${toolType}`,
+            htmlContent: emailLayout({
+                preheader: 'New tools-of-trade request pending your action',
+                heading: 'New Tool Request',
+                recipientName: 'Trainer',
+                bodyHtml: body,
+                footerNote: 'Tools-of-Trade notifications are sent by the Deputy Principal (Academics) office.',
+            }),
+            recipients,
         });
-    }
-
-    // Generate OTP email template
-    generateOTPEmailTemplate(otp, userName, userType) {
-        const userTypeDisplay = userType.charAt(0).toUpperCase() + userType.slice(1);
-
-        return `
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Password Reset OTP</title>
-            <style>
-                body {
-                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                    line-height: 1.6;
-                    color: #333;
-                    background-color: #f4f4f4;
-                    margin: 0;
-                    padding: 20px;
-                }
-                .container {
-                    max-width: 600px;
-                    margin: 0 auto;
-                    background: white;
-                    border-radius: 10px;
-                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                    overflow: hidden;
-                }
-                .header {
-                    background: linear-gradient(135deg, #7A0C0C, #8B2A2A);
-                    color: white;
-                    padding: 30px;
-                    text-align: center;
-                }
-                .header h1 {
-                    margin: 0;
-                    font-size: 24px;
-                }
-                .content {
-                    padding: 40px 30px;
-                }
-                .otp-box {
-                    background: #f8f9fa;
-                    border: 2px dashed #7A0C0C;
-                    border-radius: 10px;
-                    padding: 20px;
-                    text-align: center;
-                    margin: 20px 0;
-                }
-                .otp-code {
-                    font-size: 32px;
-                    font-weight: bold;
-                    color: #7A0C0C;
-                    letter-spacing: 8px;
-                    font-family: 'Courier New', monospace;
-                }
-                .warning {
-                    background: #fff3cd;
-                    border: 1px solid #ffeaa7;
-                    border-radius: 5px;
-                    padding: 15px;
-                    margin: 20px 0;
-                }
-                .footer {
-                    background: #f8f9fa;
-                    padding: 20px 30px;
-                    text-align: center;
-                    font-size: 14px;
-                    color: #666;
-                }
-                .security-notice {
-                    background: #e7f3ff;
-                    border-left: 4px solid #2196F3;
-                    padding: 15px;
-                    margin: 20px 0;
-                }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <h1>🔐 Password Reset Request</h1>
-                    <p>EDTTI University Management System</p>
-                </div>
-
-                <div class="content">
-                    <h2>Hello ${userName},</h2>
-                    <p>We received a request to reset your password for your ${userTypeDisplay} account. Please use the One Time Password (OTP) below to proceed with your password reset.</p>
-
-                    <div class="otp-box">
-                        <p style="margin: 0; font-size: 16px; color: #666;">Your OTP Code:</p>
-                        <div class="otp-code">${otp}</div>
-                    </div>
-
-                    <div class="warning">
-                        <strong>⚠️ Important Security Information:</strong>
-                        <ul style="margin: 10px 0; padding-left: 20px;">
-                            <li>This OTP is valid for <strong>10 minutes only</strong></li>
-                            <li>You have <strong>5 attempts</strong> to enter the correct OTP</li>
-                            <li>Do not share this code with anyone</li>
-                            <li>Our support team will never ask for your OTP</li>
-                        </ul>
-                    </div>
-
-                    <div class="security-notice">
-                        <strong>🛡️ Security Notice:</strong>
-                        <p style="margin: 5px 0;">If you did not request this password reset, please ignore this email and ensure your account is secure. Your current password will remain unchanged.</p>
-                    </div>
-
-                    <p>To reset your password, return to the login page and enter this OTP when prompted.</p>
-
-                    <p>Best regards,<br>
-                    <strong>EDTTI IT Support Team</strong></p>
-                </div>
-
-                <div class="footer">
-                    <p>This is an automated message. Please do not reply to this email.</p>
-                    <p>&copy; ${new Date().getFullYear()} EDTTI University Management System. All rights reserved.</p>
-                </div>
-            </div>
-        </body>
-        </html>
-        `;
-    }
-
-    // Generate reset link email template
-    generateResetLinkEmailTemplate(resetLink, userName, userType) {
-        const userTypeDisplay = userType.charAt(0).toUpperCase() + userType.slice(1);
-
-        return `
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Password Reset Link</title>
-            <style>
-                body {
-                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                    line-height: 1.6;
-                    color: #333;
-                    background-color: #f4f4f4;
-                    margin: 0;
-                    padding: 20px;
-                }
-                .container {
-                    max-width: 600px;
-                    margin: 0 auto;
-                    background: white;
-                    border-radius: 10px;
-                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                    overflow: hidden;
-                }
-                .header {
-                    background: linear-gradient(135deg, #7A0C0C, #8B2A2A);
-                    color: white;
-                    padding: 30px;
-                    text-align: center;
-                }
-                .header h1 {
-                    margin: 0;
-                    font-size: 24px;
-                }
-                .content {
-                    padding: 40px 30px;
-                }
-                .reset-button {
-                    display: inline-block;
-                    background: linear-gradient(135deg, #7A0C0C, #8B2A2A);
-                    color: white;
-                    padding: 15px 30px;
-                    text-decoration: none;
-                    border-radius: 8px;
-                    font-weight: bold;
-                    text-align: center;
-                    margin: 20px 0;
-                    font-size: 16px;
-                    transition: background 0.3s ease;
-                }
-                .reset-button:hover {
-                    background: linear-gradient(135deg, #8B2A2A, #9B3A3A);
-                }
-                .warning {
-                    background: #fff3cd;
-                    border: 1px solid #ffeaa7;
-                    border-radius: 5px;
-                    padding: 15px;
-                    margin: 20px 0;
-                }
-                .footer {
-                    background: #f8f9fa;
-                    padding: 20px 30px;
-                    text-align: center;
-                    font-size: 14px;
-                    color: #666;
-                }
-                .security-notice {
-                    background: #e7f3ff;
-                    border-left: 4px solid #2196F3;
-                    padding: 15px;
-                    margin: 20px 0;
-                }
-                .link-fallback {
-                    background: #f8f9fa;
-                    border: 1px solid #ddd;
-                    border-radius: 5px;
-                    padding: 15px;
-                    margin: 20px 0;
-                    word-break: break-all;
-                    font-family: 'Courier New', monospace;
-                    font-size: 12px;
-                }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <h1>🔐 Password Reset Link</h1>
-                    <p>EDTTI University Management System</p>
-                </div>
-
-                <div class="content">
-                    <h2>Hello ${userName},</h2>
-                    <p>We received a request to reset your password for your ${userTypeDisplay} account. Click the button below to create a new password.</p>
-
-                    <div style="text-align: center;">
-                        <a href="${resetLink}" class="reset-button">🔑 Reset My Password</a>
-                    </div>
-
-                    <div class="warning">
-                        <strong>⚠️ Important Security Information:</strong>
-                        <ul style="margin: 10px 0; padding-left: 20px;">
-                            <li>This link is valid for <strong>1 hour only</strong></li>
-                            <li>The link can only be used <strong>once</strong></li>
-                            <li>Do not share this link with anyone</li>
-                            <li>Our support team will never ask for your reset link</li>
-                        </ul>
-                    </div>
-
-                    <div class="security-notice">
-                        <strong>🛡️ Security Notice:</strong>
-                        <p style="margin: 5px 0;">If you did not request this password reset, please ignore this email and ensure your account is secure. Your current password will remain unchanged.</p>
-                    </div>
-
-                    <p><strong>Can't click the button?</strong> Copy and paste this link into your browser:</p>
-                    <div class="link-fallback">
-                        ${resetLink}
-                    </div>
-
-                    <p>Best regards,<br>
-                    <strong>EDTTI IT Support Team</strong></p>
-                </div>
-
-                <div class="footer">
-                    <p>This is an automated message. Please do not reply to this email.</p>
-                    <p>&copy; ${new Date().getFullYear()} EDTTI University Management System. All rights reserved.</p>
-                </div>
-            </div>
-        </body>
-        </html>
-        `;
-    }
-
-    // Generate login OTP email template
-    generateLoginOTPTemplate(otp, userName, userType) {
-        const roleNames = {
-            'admin': 'Administrator',
-            'deputy': 'Deputy Principal',
-            'finance': 'Finance Officer',
-            'dean': 'Dean of Students',
-            'ilo': 'Industry Liaison Officer',
-            'registrar': 'Registrar',
-            'hod': 'Head of Department',
-            'trainer': 'Trainer',
-            'student': 'Student'
-        };
-
-        const userTypeDisplay = roleNames[userType] || userType.charAt(0).toUpperCase() + userType.slice(1);
-
-        return `
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Login Verification OTP</title>
-            <style>
-                body {
-                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                    line-height: 1.6;
-                    color: #333;
-                    background-color: #f4f4f4;
-                    margin: 0;
-                    padding: 20px;
-                }
-                .container {
-                    max-width: 600px;
-                    margin: 0 auto;
-                    background: white;
-                    border-radius: 10px;
-                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                    overflow: hidden;
-                }
-                .header {
-                    background: linear-gradient(135deg, #2196F3, #1976D2);
-                    color: white;
-                    padding: 30px;
-                    text-align: center;
-                }
-                .header h1 {
-                    margin: 0;
-                    font-size: 24px;
-                }
-                .content {
-                    padding: 40px 30px;
-                }
-                .otp-box {
-                    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-                    border: 3px solid #2196F3;
-                    border-radius: 15px;
-                    padding: 30px;
-                    text-align: center;
-                    margin: 25px 0;
-                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-                }
-                .otp-code {
-                    font-size: 40px;
-                    font-weight: bold;
-                    color: #1976D2;
-                    letter-spacing: 10px;
-                    font-family: 'Courier New', monospace;
-                    margin: 15px 0;
-                }
-                .info-box {
-                    background: #e3f2fd;
-                    border-left: 4px solid #2196F3;
-                    padding: 15px;
-                    margin: 20px 0;
-                    border-radius: 5px;
-                }
-                .warning {
-                    background: #fff3cd;
-                    border: 1px solid #ffeaa7;
-                    border-radius: 5px;
-                    padding: 15px;
-                    margin: 20px 0;
-                }
-                .footer {
-                    background: #f8f9fa;
-                    padding: 20px 30px;
-                    text-align: center;
-                    font-size: 14px;
-                    color: #666;
-                }
-                .security-badge {
-                    display: inline-block;
-                    background: #4CAF50;
-                    color: white;
-                    padding: 5px 15px;
-                    border-radius: 20px;
-                    font-size: 12px;
-                    font-weight: bold;
-                    margin: 10px 0;
-                }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <h1>🔐 Login Verification</h1>
-                    <p>EDTTI University Management System</p>
-                    <div class="security-badge">🛡️ SECURE LOGIN</div>
-                </div>
-
-                <div class="content">
-                    <h2>Hello ${userName},</h2>
-                    <p>You are attempting to sign in to your <strong>${userTypeDisplay}</strong> account. Please use the One Time Password (OTP) below to complete your login.</p>
-
-                    <div class="otp-box">
-                        <p style="margin: 0; font-size: 14px; color: #666; text-transform: uppercase; letter-spacing: 2px;">Your Verification Code</p>
-                        <div class="otp-code">${otp}</div>
-                        <p style="margin: 0; font-size: 12px; color: #999;">Enter this code to proceed</p>
-                    </div>
-
-                    <div class="info-box">
-                        <strong>📋 Login Details:</strong>
-                        <ul style="margin: 10px 0; padding-left: 20px;">
-                            <li><strong>Account Type:</strong> ${userTypeDisplay}</li>
-                            <li><strong>Email:</strong> ${userName.includes('@') ? userName.split('@')[0] + '@***' : userName}</li>
-                            <li><strong>Time:</strong> ${new Date().toLocaleString()}</li>
-                        </ul>
-                    </div>
-
-                    <div class="warning">
-                        <strong>⚠️ Important Security Information:</strong>
-                        <ul style="margin: 10px 0; padding-left: 20px;">
-                            <li>This OTP is valid for <strong>10 minutes only</strong></li>
-                            <li>You have <strong>5 attempts</strong> to enter the correct OTP</li>
-                            <li>Never share this code with anyone</li>
-                            <li>EDTTI staff will never ask for your OTP</li>
-                        </ul>
-                    </div>
-
-                    <div style="background: #ffebee; border-left: 4px solid #f44336; padding: 15px; margin: 20px 0; border-radius: 5px;">
-                        <strong>🚨 Didn't Request This?</strong>
-                        <p style="margin: 5px 0;">If you did not attempt to log in, please ignore this email and contact IT Support immediately. Your password remains secure.</p>
-                    </div>
-
-                    <p>For security reasons, this verification code will expire after 10 minutes.</p>
-
-                    <p>Best regards,<br>
-                    <strong>EDTTI IT Security Team</strong></p>
-                </div>
-
-                <div class="footer">
-                    <p>This is an automated security message. Please do not reply to this email.</p>
-                    <p>If you need assistance, contact IT Support: support@edtti.ac.ke</p>
-                    <p>&copy; ${new Date().getFullYear()} EDTTI University Management System. All rights reserved.</p>
-                </div>
-            </div>
-        </body>
-        </html>
-        `;
     }
 
     // Test email connection
@@ -637,5 +408,7 @@ class EmailService {
     }
 }
 
-// Export the class and singleton instance
 module.exports = EmailService;
+// Helpers exported for tests / future tooling.
+module.exports.emailLayout = emailLayout;
+module.exports.escapeHtml = escapeHtml;

@@ -160,7 +160,7 @@ router.post('/student-uploads', verifyToken, authorize('admin', 'registrar', 'st
             admissionNumber: student.admissionNumber,
             course: student.course,
             department: student.department,
-            year: student.year,
+            module: student.module,
             uploadType,
             unitId: unitId || null,
             unitCode: unitCode || null,

@@ -7,12 +7,12 @@ const { Student, StudentNote, Notification } = require('../db/models');
 // Get all students for Dean Portal
 router.get('/dean/students', verifyToken, authorize('admin', 'dean', 'registrar'), async (req, res) => {
     try {
-        const { course, department, year, intake, search } = req.query;
+        const { course, department, module: moduleField, intake, search } = req.query;
 
         let query = {};
         if (course) query.course = course;
         if (department) query.department = department;
-        if (year) query.year = parseInt(year);
+        if (moduleField) query.module = parseInt(moduleField);
         if (intake) query.intake = intake;
 
         if (search) {

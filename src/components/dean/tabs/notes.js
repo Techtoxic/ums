@@ -91,7 +91,7 @@ async function viewStudentNotes(studentId) {
         if (student) {
             document.getElementById('view-notes-student-name').textContent = student.name;
             document.getElementById('view-notes-student-info').textContent = 
-                `${student.admissionNumber} | ${formatCourseName(student.course)} | Year ${student.year}`;
+                `${student.admissionNumber} | ${formatCourseName(student.course)} | Module ${student.module}`;
         }
         
         displayStudentNotes();

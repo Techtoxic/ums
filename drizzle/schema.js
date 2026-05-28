@@ -55,7 +55,7 @@ const studentStatusEnum = pgEnum('student_status', [
     'dismissed',
 ]);
 
-const intakeEnum = pgEnum('intake', ['september', 'january']);
+const intakeEnum = pgEnum('intake', ['september', 'january', 'may']);
 
 const enrollmentStatusEnum = pgEnum('enrollment_status', [
     'active',
@@ -136,12 +136,14 @@ const students = pgTable(
         kcse_grade: text('kcse_grade'),
         course: text('course').notNull(),
         department: text('department').notNull(),
-        year: integer('year').notNull().default(1),
+        module: integer('module').notNull().default(1),
         intake: intakeEnum('intake'),
         intake_year: integer('intake_year').notNull(),
         phone_number: text('phone_number').notNull(),
         email: text('email'),
         admission_type: text('admission_type'),
+        next_of_kin_name: text('next_of_kin_name'),
+        next_of_kin_phone: text('next_of_kin_phone'),
         password: text('password').notNull(),
         role: text('role').notNull().default('student'),
         is_active: boolean('is_active').notNull().default(true),
@@ -154,8 +156,10 @@ const students = pgTable(
     (t) => ({
         admissionNumberUnique: uniqueIndex('students_admission_number_unique').on(t.admission_number),
         idNumberUnique: uniqueIndex('students_id_number_unique').on(t.id_number),
+        phoneNumberUnique: uniqueIndex('students_phone_number_unique').on(t.phone_number),
+        emailUnique: uniqueIndex('students_email_unique').on(t.email),
         departmentIdx: index('students_department_idx').on(t.department),
-        yearIntakeIdx: index('students_year_intake_year_idx').on(t.year, t.intake_year),
+        moduleIntakeIdx: index('students_module_intake_year_idx').on(t.module, t.intake_year),
     }),
 );
 
@@ -468,6 +472,18 @@ const passwordResets = pgTable('password_resets', {
 });
 
 // ============================================================================
+// ADMISSION NUMBER COUNTER  — globally unique admission number allocator.
+// One row (id = 1) holds the next admission number to assign.
+// `UPDATE ... SET next_number = next_number + 1 RETURNING next_number - 1`
+// is atomic in Postgres, so concurrent registrations never collide.
+// ============================================================================
+const admissionNumberCounter = pgTable('admission_number_counter', {
+    id: integer('id').primaryKey(),
+    next_number: integer('next_number').notNull(),
+    updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ============================================================================
 // LOGIN OTPs  (one-time codes for login MFA)
 // ============================================================================
 const loginOtps = pgTable('login_otps', {
@@ -570,6 +586,7 @@ module.exports = {
     systemSettings,
     passwordResets,
     loginOtps,
+    admissionNumberCounter,
     payments,
     payslips,
 };

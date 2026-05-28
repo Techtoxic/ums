@@ -10,7 +10,7 @@ router.get('/cibec/uploads', verifyToken, authorize('admin', 'cibec', 'registrar
             course: req.query.course,
             department: req.query.department,
             unitCode: req.query.unitCode,
-            year: req.query.year,
+            module: req.query.module,
             courseLevel: req.query.courseLevel,
             uploadType: req.query.uploadType,
             academicYear: req.query.academicYear,
@@ -130,7 +130,7 @@ router.get('/cibec/student/:studentId/uploads', verifyToken, authorize('admin', 
                 name: student.name,
                 course: student.course,
                 department: student.department,
-                year: student.year
+                module: student.module
             },
             uploads
         });

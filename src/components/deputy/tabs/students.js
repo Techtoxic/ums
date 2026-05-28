@@ -83,7 +83,7 @@ window.DeputyTabs = window.DeputyTabs || {};
                         ${escapeHtml(student.admissionType || 'walk-in')}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        Year ${student.year}
+                        Module ${student.module}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
@@ -213,7 +213,7 @@ window.DeputyTabs = window.DeputyTabs || {};
                         </span>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
-                        <div class="text-sm">Year ${student.year}</div>
+                        <div class="text-sm">Module ${student.module}</div>
                         <div class="text-sm text-slate-500 dark:text-slate-400">${escapeHtml(student.intake)} ${student.intakeYear}</div>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">

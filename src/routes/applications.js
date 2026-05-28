@@ -16,9 +16,9 @@ router.get('/students/:studentId/graduation-eligibility', verifyToken, authorize
 
         // Extract level from course name (e.g., "science_laboratory_technology_5" -> level 5)
         const level = parseInt(student.course.match(/(\d+)$/)?.[1]) || 4;
-        const yearOfStudy = student.year || 1;
+        const moduleOfStudy = student.module || 1;
 
-        const eligible = isEligibleToApply(level, yearOfStudy);
+        const eligible = isEligibleToApply(level, moduleOfStudy);
 
         // A student has an existing application if any non-rejected row exists for them.
         // Query by the resolved student uuid (the shim maps studentId -> student_id).
@@ -28,10 +28,10 @@ router.get('/students/:studentId/graduation-eligibility', verifyToken, authorize
         res.json({
             canApply: eligible && !existingApplication,
             level,
-            yearOfStudy,
+            moduleOfStudy,
             hasExistingApplication: !!existingApplication,
             existingApplication: existingApplication,
-            reason: !eligible ? `Level ${level} students can only apply in Year ${level - 3}` : null
+            reason: !eligible ? `Level ${level} students can only apply in module ${level - 3}` : null
         });
 
     } catch (error) {
@@ -52,12 +52,12 @@ router.post('/students/:studentId/graduation-application', verifyToken, authoriz
 
         // Extract level from course name
         const level = parseInt(student.course.match(/(\d+)$/)?.[1]) || 4;
-        const yearOfStudy = student.year || 1;
+        const moduleOfStudy = student.module || 1;
 
         // Validate eligibility
-        if (!isEligibleToApply(level, yearOfStudy)) {
+        if (!isEligibleToApply(level, moduleOfStudy)) {
             return res.status(400).json({
-                message: `Level ${level} students can only apply for graduation in Year ${level - 3}`
+                message: `Level ${level} students can only apply for graduation in module ${level - 3}`
             });
         }
 
@@ -108,9 +108,9 @@ router.get('/students/:studentId/attachment-eligibility', verifyToken, authorize
 
         // Extract level from course name
         const level = parseInt(student.course.match(/(\d+)$/)?.[1]) || 4;
-        const yearOfStudy = student.year || 1;
+        const moduleOfStudy = student.module || 1;
 
-        const eligible = isEligibleToApply(level, yearOfStudy);
+        const eligible = isEligibleToApply(level, moduleOfStudy);
 
         // A student has an existing application if any non-rejected row exists for them.
         // Query by the resolved student uuid (the shim maps studentId -> student_id).
@@ -120,10 +120,10 @@ router.get('/students/:studentId/attachment-eligibility', verifyToken, authorize
         res.json({
             canApply: eligible && !existingApplication,
             level,
-            yearOfStudy,
+            moduleOfStudy,
             hasExistingApplication: !!existingApplication,
             existingApplication: existingApplication,
-            reason: !eligible ? `Level ${level} students can only apply in Year ${level - 3}` : null
+            reason: !eligible ? `Level ${level} students can only apply in module ${level - 3}` : null
         });
 
     } catch (error) {
@@ -149,12 +149,12 @@ router.post('/students/:studentId/attachment-application', verifyToken, authoriz
 
         // Extract level from course name
         const level = parseInt(student.course.match(/(\d+)$/)?.[1]) || 4;
-        const yearOfStudy = student.year || 1;
+        const moduleOfStudy = student.module || 1;
 
         // Validate eligibility
-        if (!isEligibleToApply(level, yearOfStudy)) {
+        if (!isEligibleToApply(level, moduleOfStudy)) {
             return res.status(400).json({
-                message: `Level ${level} students can only apply for attachment in Year ${level - 3}`
+                message: `Level ${level} students can only apply for attachment in module ${level - 3}`
             });
         }
 
