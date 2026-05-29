@@ -7,6 +7,16 @@
 
 const API_BASE_URL = window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : `${window.location.protocol}//${window.location.host}/api`;
 
+// Cache the school logo as a dataURL so the PDF letterhead can embed it.
+// Kicked off at module load so it is ready by the time the user exports.
+let _registrarLogoDataUrl = null;
+(function preloadLogo() {
+    fetch('/public/img/logo.png')
+        .then(r => (r.ok ? r.blob() : null))
+        .then(blob => { if (!blob) return; const fr = new FileReader(); fr.onloadend = () => { _registrarLogoDataUrl = fr.result; }; fr.readAsDataURL(blob); })
+        .catch(() => {});
+})();
+
 // Stage 2B-1B: authenticated fetch via the shared helper.
 const authFetch = async (url, options = {}) => window.AUTH.fetch(url, options);
 
@@ -183,7 +193,10 @@ class StudentExporter {
             creator: 'EDTTI UMS Registrar Portal',
         });
 
-        // Letterhead.
+        // Letterhead — school logo (top-left) + institution name.
+        if (_registrarLogoDataUrl) {
+            try { doc.addImage(_registrarLogoDataUrl, 'PNG', 14, 6, 22, 19); } catch (e) { /* ignore */ }
+        }
         doc.setFontSize(16);
         doc.setFont(undefined, 'bold');
         doc.text('EMURUA DIKIRR TECHNICAL TRAINING INSTITUTE', pageWidth / 2, 14, { align: 'center' });

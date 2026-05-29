@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="icon" type="image/png" href="/public/img/favicon.png">
+    <link rel="shortcut icon" href="/public/favicon.ico">
+    <link rel="apple-touch-icon" href="/public/img/favicon.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EDTTI Student Portal</title>
@@ -207,12 +210,6 @@
                     </a>
                 </li>
                 <li>
-                    <a href="/student/transcript" class="nav-link flex items-center gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-                        <i class="ri-file-text-line text-lg"></i>
-                        <span class="sidebar-text">Transcript</span>
-                    </a>
-                </li>
-                <li>
                     <a href="/student/graduation" class="nav-link flex items-center gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
                         <i class="ri-graduation-cap-line text-lg"></i>
                         <span class="sidebar-text">Apply for Graduation</span>
@@ -369,6 +366,7 @@
         }
     </script>
     <script src="/public/js/auth.js"></script>
+    <script src="/public/js/edtti-docs.js"></script>
     <script src="/src/components/student/portal-core.js"></script>
     <script src="/src/components/student/portal-router.js"></script>
     <script src="/src/components/student/tabs/dashboard.js"></script>
@@ -377,7 +375,6 @@
     <script src="/src/components/student/tabs/payments.js"></script>
     <script src="/src/components/student/tabs/notes.js"></script>
     <script src="/src/components/student/tabs/units.js"></script>
-    <script src="/src/components/student/tabs/transcript.js"></script>
     <script src="/src/components/student/tabs/graduation.js"></script>
     <script src="/src/components/student/tabs/attachment.js"></script>
     <!-- uploads.js LAST: its showToast/showLoading/hideLoading intentionally

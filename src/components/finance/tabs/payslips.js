@@ -133,7 +133,7 @@ function displayPayslips() {
                 month: payslip.month,
                 year: payslip.year,
                 amount: payslip.amount,
-                generatedBy: payslip.generatedBy,
+                generatedByName: payslip.generatedByName,
                 createdAt: payslip.createdAt,
                 trainers: []
             };
@@ -154,7 +154,7 @@ function displayPayslips() {
         const viewedCount = group.trainers.filter(p => p.isViewed).length;
         const totalCount = group.trainers.length;
         
-        const generatedByName = group.generatedBy?.userName || group.generatedBy || 'Unknown';
+        const generatedByName = group.generatedByName || 'System';
         
         return `
             <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">

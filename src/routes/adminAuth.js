@@ -44,7 +44,7 @@ function roleDisplayName(role) {
         dean:      'Dean of Students',
         deputy:    'Deputy Principal',
         ilo:       'Industry Liaison Officer',
-        cibec:     'CIBEC Officer',
+        cibec:     'CBET Officer',
         hod:       'Head of Department',
         trainer:   'Trainer',
     };
@@ -116,6 +116,17 @@ router.post('/login', async (req, res) => {
         const staff = await userService.findActiveByEmail(email);
 
         if (!staff) {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid email or password'
+            });
+        }
+
+        // SECURITY: the staff login is for back-office roles only. Trainers and
+        // students have their own login flows; reject them here with the same
+        // generic message so the response does not leak that the account exists.
+        const STAFF_LOGIN_ROLES = new Set(['admin', 'registrar', 'finance', 'dean', 'deputy', 'ilo', 'cibec', 'hod']);
+        if (!STAFF_LOGIN_ROLES.has(staff.role)) {
             return res.status(401).json({
                 success: false,
                 message: 'Invalid email or password'

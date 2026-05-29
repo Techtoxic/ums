@@ -94,6 +94,54 @@ async function loadPrograms() {
     }
 }
 
+// Accurate per-student financials, computed server-side (robust to the short
+// code vs long course-key mismatch). Keyed by admission number for the tables.
+let studentFinanceByAdm = {};
+let financeAnalytics = null;
+
+async function loadStudentFinancials() {
+    try {
+        const response = await authFetch(`${API_BASE}/finance/reports/students`);
+        if (!response.ok) throw new Error('Failed to load student financials');
+        const body = await response.json();
+        studentFinanceByAdm = {};
+        (body.students || []).forEach(s => { studentFinanceByAdm[s.admissionNumber] = s; });
+        console.log(`Loaded financials for ${Object.keys(studentFinanceByAdm).length} students`);
+        return studentFinanceByAdm;
+    } catch (error) {
+        console.error('Error loading student financials:', error);
+        studentFinanceByAdm = {};
+        return {};
+    }
+}
+
+async function loadFinanceAnalytics() {
+    try {
+        const response = await authFetch(`${API_BASE}/finance/analytics`);
+        if (!response.ok) throw new Error('Failed to load finance analytics');
+        financeAnalytics = await response.json();
+        return financeAnalytics;
+    } catch (error) {
+        console.error('Error loading finance analytics:', error);
+        financeAnalytics = null;
+        return null;
+    }
+}
+
+// Accurate balance for a student row (server-computed; falls back to 0).
+function adminStudentBalance(student) {
+    const f = student && student.admissionNumber ? studentFinanceByAdm[student.admissionNumber] : null;
+    return f ? Number(f.balance) || 0 : 0;
+}
+function adminStudentPaid(student) {
+    const f = student && student.admissionNumber ? studentFinanceByAdm[student.admissionNumber] : null;
+    return f ? Number(f.paid) || 0 : 0;
+}
+function adminStudentExpected(student) {
+    const f = student && student.admissionNumber ? studentFinanceByAdm[student.admissionNumber] : null;
+    return f ? Number(f.expected) || 0 : 0;
+}
+
 // ---- dark mode (verbatim) ----
 function toggleDarkMode() {
     console.log('toggleDarkMode() called!');
@@ -330,7 +378,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     // router (it shows the tab for the current URL and calls that tab's init()).
     try {
         showToast('Loading dashboard data...', 'info');
-        await Promise.all([loadStudents(), loadTrainers(), loadPayments(), loadPrograms()]);
+        await Promise.all([loadStudents(), loadTrainers(), loadPayments(), loadPrograms(), loadStudentFinancials(), loadFinanceAnalytics()]);
         showToast('Dashboard loaded successfully!', 'success');
     } catch (error) {
         console.error('Error initializing dashboard:', error);

@@ -1,9 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="icon" type="image/png" href="/public/img/favicon.png">
+    <link rel="shortcut icon" href="/public/favicon.ico">
+    <link rel="apple-touch-icon" href="/public/img/favicon.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CIBEC Portal - Student Uploads</title>
+    <title>CBET Portal - Student Uploads</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -64,7 +67,7 @@
                 <div class="flex items-center space-x-3">
                     <i class="ri-folder-user-line text-3xl text-primary"></i>
                     <div>
-                        <h1 class="text-xl font-bold text-gray-900 dark:text-gray-100">CIBEC Portal</h1>
+                        <h1 class="text-xl font-bold text-gray-900 dark:text-gray-100">CBET Portal</h1>
                         <p class="text-xs text-gray-500 dark:text-gray-400">Student Uploads Management</p>
                     </div>
                 </div>
@@ -78,7 +81,7 @@
                     </button>
                     <div class="flex items-center space-x-2">
                         <i class="ri-user-line text-gray-600 dark:text-gray-400"></i>
-                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300" id="userName">CIBEC Admin</span>
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300" id="userName">CBET Admin</span>
                     </div>
                     <button data-theme-toggle class="theme-toggle" aria-label="Toggle dark mode">
                         <i class="ri-sun-line theme-icon-light"></i>
@@ -324,7 +327,7 @@
     <script src="./cibecDashboard.js"></script>
     <script>
         // Cookie-based auth init + new topbar logout. CIBEC had no logout
-        // button at all before this pass; the static "CIBEC Admin" text is
+        // button at all before this pass; the static "CBET Admin" text is
         // now replaced by an #userName slot that AUTH.me populates.
         document.addEventListener('DOMContentLoaded', async () => {
             if (window.AUTH && typeof window.AUTH.requireAuth === 'function') {

@@ -14,7 +14,7 @@
 
 window.FinanceRouter = (function () {
     const BASE = '/finance';
-    const VALID_TABS = ['dashboard', 'analytics', 'reports', 'revenue', 'expenditure', 'collections', 'payslips', 'settings'];
+    const VALID_TABS = ['dashboard', 'analytics', 'reports', 'revenue', 'payslips', 'settings'];
 
     // tab -> injected pane element (cache; partials are fetched once).
     const panes = {};

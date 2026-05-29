@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="icon" type="image/png" href="/public/img/favicon.png">
+    <link rel="shortcut icon" href="/public/favicon.ico">
+    <link rel="apple-touch-icon" href="/public/img/favicon.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EDTTI HOD Portal</title>
@@ -339,11 +342,11 @@
 
     <!-- Toast Notification -->
     <div id="toast" class="fixed top-5 right-5 transform translate-x-full transition-transform duration-300 z-50">
-        <div class="bg-white rounded-lg shadow-lg border-l-4 p-4 min-w-[300px]">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg border-l-4 p-4 min-w-[300px]">
             <div class="flex items-center">
                 <div id="toastIcon" class="mr-3"></div>
                 <div>
-                    <p id="toastMessage" class="font-medium"></p>
+                    <p id="toastMessage" class="font-medium text-gray-800 dark:text-gray-100"></p>
                 </div>
                 <button onclick="hideToast()" class="ml-4 text-gray-400 hover:text-gray-600">
                     <i class="fas fa-times"></i>

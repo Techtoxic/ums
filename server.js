@@ -330,6 +330,9 @@ app.get('/api/me', verifyToken, async (req, res) => {
                 phone: schema.users.phone,
                 staffId: schema.users.staff_id,
                 isFirstLogin: schema.users.is_first_login,
+                createdAt: schema.users.created_at,
+                updatedAt: schema.users.updated_at,
+                lastLogin: schema.users.last_login,
             })
             .from(schema.users)
             .where(eq(schema.users.id, userId))
@@ -1187,6 +1190,8 @@ app.use('/api', require('./src/routes/programs'));
 
 // Payment Routes — extracted to src/routes/payments.js
 app.use('/api', require('./src/routes/payments'));
+// Finance: non-tuition revenue + accurate finance analytics aggregates.
+app.use('/api', require('./src/routes/finance'));
 
 
 
@@ -1223,7 +1228,7 @@ app.use('/api', require('./src/routes/ilo'));
 // real tab, served by the catch-all).
 registerPortal(app, portalDeps, {
     role: 'student',
-    tabs: ['dashboard', 'profile', 'financial', 'payments', 'uploads', 'notes', 'units', 'transcript', 'graduation', 'attachment'],
+    tabs: ['dashboard', 'profile', 'financial', 'payments', 'uploads', 'notes', 'units', 'graduation', 'attachment'],
     defaultTab: 'dashboard',
     login: { fileSegments: ['src', 'login.html'] },
     legacyAlias: 'portal',
@@ -1233,7 +1238,7 @@ registerPortal(app, portalDeps, {
 // Finance portal pages.
 registerPortal(app, portalDeps, {
     role: 'finance',
-    tabs: ['dashboard', 'analytics', 'reports', 'revenue', 'expenditure', 'collections', 'payslips', 'settings'],
+    tabs: ['dashboard', 'analytics', 'reports', 'revenue', 'payslips', 'settings'],
     defaultTab: 'dashboard',
     login: { redirectTo: '/admin/login' },
 });

@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { db, schema } = require('../db');
-const { eq, and, isNull } = require('drizzle-orm');
+const { eq, and, isNull, desc, inArray } = require('drizzle-orm');
+const { alias } = require('drizzle-orm/pg-core');
 const { verifyToken, authorize, verifyOwnership } = require('../middleware/auth');
 const { CommonUnit, CommonUnitAssignment, Trainer } = require('../db/models');
 
@@ -158,236 +159,215 @@ router.delete('/common-units/:unitCode', verifyToken, authorize('admin', 'regist
 });
 
 // Common Unit Assignment API Routes
+// Rewritten for the V2 Postgres schema (Drizzle). The legacy Mongoose-style
+// model methods (.populate/.find/.canModify) are not available on the shim, so
+// these endpoints query the common_unit_assignments table directly and shape the
+// nested { commonUnitId, trainerId, assignedBy } objects the HOD UI expects.
 
-// Get all common unit assignments
+const trainerUsers = alias(schema.users, 'cua_trainer');
+const assignerUsers = alias(schema.users, 'cua_assigner');
+
+function shapeAssignment(r) {
+    return {
+        _id: r.id,
+        status: r.status,
+        notes: r.notes,
+        trainerDepartment: r.trainerDepartment,
+        assignedByDepartment: r.assignedByDepartment,
+        createdAt: r.createdAt,
+        commonUnitId: { _id: r.unitId, unitName: r.unitName, unitCode: r.unitCode },
+        trainerId: { _id: r.trainerId, name: r.trainerName, email: r.trainerEmail, department: r.trainerDept },
+        assignedBy: { _id: r.assignedBy, name: r.assignerName, department: r.assignerDept },
+    };
+}
+
+const ASSIGNMENT_COLUMNS = {
+    id: schema.commonUnitAssignments.id,
+    status: schema.commonUnitAssignments.status,
+    notes: schema.commonUnitAssignments.notes,
+    trainerDepartment: schema.commonUnitAssignments.trainer_department,
+    assignedByDepartment: schema.commonUnitAssignments.assigned_by_department,
+    createdAt: schema.commonUnitAssignments.created_at,
+    unitId: schema.commonUnitAssignments.unit_id,
+    assignedBy: schema.commonUnitAssignments.assigned_by,
+    trainerId: schema.commonUnitAssignments.trainer_id,
+    unitName: schema.units.name,
+    unitCode: schema.units.code,
+    trainerName: trainerUsers.name,
+    trainerEmail: trainerUsers.email,
+    trainerDept: trainerUsers.department,
+    assignerName: assignerUsers.name,
+    assignerDept: assignerUsers.department,
+};
+
+function baseAssignmentQuery() {
+    return db
+        .select(ASSIGNMENT_COLUMNS)
+        .from(schema.commonUnitAssignments)
+        .leftJoin(schema.units, eq(schema.units.id, schema.commonUnitAssignments.unit_id))
+        .leftJoin(trainerUsers, eq(trainerUsers.id, schema.commonUnitAssignments.trainer_id))
+        .leftJoin(assignerUsers, eq(assignerUsers.id, schema.commonUnitAssignments.assigned_by));
+}
+
+// Get all common unit assignments (optionally filtered).
 router.get('/common-unit-assignments', verifyToken, authorize('admin', 'registrar', 'hod'), async (req, res) => {
     try {
         const { status = 'active', department, trainerId, commonUnitId } = req.query;
+        const conds = [isNull(schema.commonUnitAssignments.deleted_at)];
+        if (status) conds.push(eq(schema.commonUnitAssignments.status, status));
+        if (department) conds.push(eq(schema.commonUnitAssignments.assigned_by_department, department));
+        if (trainerId) conds.push(eq(schema.commonUnitAssignments.trainer_id, trainerId));
+        if (commonUnitId) conds.push(eq(schema.commonUnitAssignments.unit_id, commonUnitId));
 
-        let query = { status };
-        if (department) query.assignedByDepartment = department;
-        if (trainerId) query.trainerId = trainerId;
-        if (commonUnitId) query.commonUnitId = commonUnitId;
+        const rows = await baseAssignmentQuery()
+            .where(and(...conds))
+            .orderBy(desc(schema.commonUnitAssignments.created_at));
 
-        const assignments = await CommonUnitAssignment.find(query)
-            .populate('commonUnitId')
-            .populate('trainerId', 'name email department')
-            .populate('assignedBy', 'name department')
-            .sort({ assignedAt: -1 });
-
-        res.json({
-            success: true,
-            assignments: assignments,
-            total: assignments.length
-        });
+        const assignments = rows.map(shapeAssignment);
+        res.json({ success: true, assignments, total: assignments.length });
     } catch (error) {
         console.error('Error fetching common unit assignments:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Server error while fetching common unit assignments'
-        });
+        res.status(500).json({ success: false, message: 'Server error while fetching common unit assignments' });
     }
 });
 
-// Get common unit assignments by trainer
+// Get common unit assignments by trainer.
 router.get('/common-unit-assignments/trainer/:trainerId', verifyToken, authorize('admin', 'registrar', 'hod', 'trainer'), verifyOwnership('trainerId'), async (req, res) => {
     try {
         const { trainerId } = req.params;
         const { status = 'active' } = req.query;
+        const conds = [isNull(schema.commonUnitAssignments.deleted_at), eq(schema.commonUnitAssignments.trainer_id, trainerId)];
+        if (status) conds.push(eq(schema.commonUnitAssignments.status, status));
 
-        const assignments = await CommonUnitAssignment.getAssignmentsByTrainer(trainerId, status);
+        const rows = await baseAssignmentQuery()
+            .where(and(...conds))
+            .orderBy(desc(schema.commonUnitAssignments.created_at));
 
-        res.json({
-            success: true,
-            assignments: assignments,
-            total: assignments.length
-        });
+        const assignments = rows.map(shapeAssignment);
+        res.json({ success: true, assignments, total: assignments.length });
     } catch (error) {
         console.error('Error fetching trainer common unit assignments:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Server error while fetching trainer assignments'
-        });
+        res.status(500).json({ success: false, message: 'Server error while fetching trainer assignments' });
     }
 });
 
-// Get common unit assignments by department
+// Get common unit assignments by department (the assigning HOD's department).
 router.get('/common-unit-assignments/department/:department', verifyToken, authorize('admin', 'registrar', 'hod'), async (req, res) => {
     try {
         const { department } = req.params;
         const { status = 'active' } = req.query;
+        const conds = [isNull(schema.commonUnitAssignments.deleted_at), eq(schema.commonUnitAssignments.assigned_by_department, department)];
+        if (status) conds.push(eq(schema.commonUnitAssignments.status, status));
 
-        const assignments = await CommonUnitAssignment.getAssignmentsByDepartment(department, status);
+        const rows = await baseAssignmentQuery()
+            .where(and(...conds))
+            .orderBy(desc(schema.commonUnitAssignments.created_at));
 
-        res.json({
-            success: true,
-            assignments: assignments,
-            total: assignments.length
-        });
+        const assignments = rows.map(shapeAssignment);
+        res.json({ success: true, assignments, total: assignments.length });
     } catch (error) {
         console.error('Error fetching department common unit assignments:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Server error while fetching department assignments'
-        });
+        res.status(500).json({ success: false, message: 'Server error while fetching department assignments' });
     }
 });
 
-// Create new common unit assignment
+// Create a new common unit assignment (assign a common unit to a trainer).
 router.post('/common-unit-assignments', verifyToken, authorize('admin', 'hod'), async (req, res) => {
     try {
         const { commonUnitId, trainerId, assignedBy, assignedByDepartment, trainerDepartment, notes } = req.body;
 
-        console.log('Common unit assignment request body:', req.body);
-        console.log('Field validation:');
-        console.log('  commonUnitId:', commonUnitId ? '✅' : '❌');
-        console.log('  trainerId:', trainerId ? '✅' : '❌');
-        console.log('  assignedBy:', assignedBy ? '✅' : '❌');
-        console.log('  assignedByDepartment:', assignedByDepartment ? '✅' : '❌');
-        console.log('  trainerDepartment:', trainerDepartment ? '✅' : '❌');
-
-        // Validate required fields
         if (!commonUnitId || !trainerId || !assignedBy || !assignedByDepartment || !trainerDepartment) {
-            console.log('Validation failed - missing required fields');
-            return res.status(400).json({
-                success: false,
-                message: 'Missing required fields'
-            });
+            return res.status(400).json({ success: false, message: 'Missing required fields' });
         }
 
-        // Check if assignment already exists
-        const existingAssignment = await CommonUnitAssignment.findOne({
-            commonUnitId,
-            trainerId,
-            status: 'active'
-        });
-
-        if (existingAssignment) {
-            return res.status(400).json({
-                success: false,
-                message: 'This common unit is already assigned to this trainer'
-            });
+        // Verify the common unit exists.
+        const [unit] = await db.select({ id: schema.units.id }).from(schema.units)
+            .where(and(eq(schema.units.id, commonUnitId), isNull(schema.units.deleted_at))).limit(1);
+        if (!unit) {
+            return res.status(404).json({ success: false, message: 'Common unit not found' });
         }
 
-        // Verify common unit exists
-        const commonUnit = await CommonUnit.findById(commonUnitId);
-        if (!commonUnit) {
-            return res.status(404).json({
-                success: false,
-                message: 'Common unit not found'
-            });
-        }
-
-        // Verify trainer exists
-        const trainer = await Trainer.findById(trainerId);
+        // Verify the trainer exists.
+        const [trainer] = await db.select({ id: schema.users.id }).from(schema.users)
+            .where(eq(schema.users.id, trainerId)).limit(1);
         if (!trainer) {
-            return res.status(404).json({
-                success: false,
-                message: 'Trainer not found'
-            });
+            return res.status(404).json({ success: false, message: 'Trainer not found' });
         }
 
-        // Create assignment
-        const assignment = new CommonUnitAssignment({
-            commonUnitId,
-            trainerId,
-            assignedBy,
-            assignedByDepartment,
-            trainerDepartment,
-            notes
-        });
+        // Prevent duplicate active assignment of the same unit to the same trainer.
+        const [existing] = await db.select({ id: schema.commonUnitAssignments.id })
+            .from(schema.commonUnitAssignments)
+            .where(and(
+                eq(schema.commonUnitAssignments.unit_id, commonUnitId),
+                eq(schema.commonUnitAssignments.trainer_id, trainerId),
+                eq(schema.commonUnitAssignments.status, 'active'),
+                isNull(schema.commonUnitAssignments.deleted_at),
+            )).limit(1);
+        if (existing) {
+            return res.status(400).json({ success: false, message: 'This common unit is already assigned to this trainer' });
+        }
 
-        await assignment.save();
+        const [created] = await db.insert(schema.commonUnitAssignments).values({
+            unit_id: commonUnitId,
+            trainer_id: trainerId,
+            assigned_by: assignedBy,
+            assigned_by_department: assignedByDepartment,
+            trainer_department: trainerDepartment,
+            notes: notes || null,
+            status: 'active',
+        }).returning({ id: schema.commonUnitAssignments.id });
 
-        // Populate the assignment for response
-        await assignment.populate('commonUnitId');
-        await assignment.populate('trainerId', 'name email department');
-        await assignment.populate('assignedBy', 'name department');
-
-        res.status(201).json({
-            success: true,
-            assignment: assignment,
-            message: 'Common unit assignment created successfully'
-        });
+        const [row] = await baseAssignmentQuery().where(eq(schema.commonUnitAssignments.id, created.id)).limit(1);
+        res.status(201).json({ success: true, assignment: shapeAssignment(row), message: 'Common unit assignment created successfully' });
     } catch (error) {
         console.error('Error creating common unit assignment:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Server error while creating assignment'
-        });
+        res.status(500).json({ success: false, message: 'Server error while creating assignment' });
     }
 });
 
-// Update common unit assignment
+// Update a common unit assignment (notes / status / trainer).
 router.put('/common-unit-assignments/:assignmentId', verifyToken, authorize('admin', 'hod'), async (req, res) => {
     try {
         const { assignmentId } = req.params;
-        const updateData = req.body;
+        const { notes, status, trainerId, trainerDepartment } = req.body;
 
-        const assignment = await CommonUnitAssignment.findById(assignmentId);
-        if (!assignment) {
-            return res.status(404).json({
-                success: false,
-                message: 'Assignment not found'
-            });
+        const [existing] = await db.select({ id: schema.commonUnitAssignments.id })
+            .from(schema.commonUnitAssignments)
+            .where(and(eq(schema.commonUnitAssignments.id, assignmentId), isNull(schema.commonUnitAssignments.deleted_at))).limit(1);
+        if (!existing) {
+            return res.status(404).json({ success: false, message: 'Assignment not found' });
         }
 
-        if (!assignment.canModify()) {
-            return res.status(400).json({
-                success: false,
-                message: 'This assignment cannot be modified'
-            });
-        }
+        const updates = { updated_at: new Date() };
+        if (notes !== undefined) updates.notes = notes;
+        if (status !== undefined) updates.status = status;
+        if (trainerId !== undefined) updates.trainer_id = trainerId;
+        if (trainerDepartment !== undefined) updates.trainer_department = trainerDepartment;
 
-        Object.assign(assignment, updateData);
-        await assignment.save();
-
-        await assignment.populate('commonUnitId');
-        await assignment.populate('trainerId', 'name email department');
-        await assignment.populate('assignedBy', 'name department');
-
-        res.json({
-            success: true,
-            assignment: assignment,
-            message: 'Assignment updated successfully'
-        });
+        await db.update(schema.commonUnitAssignments).set(updates).where(eq(schema.commonUnitAssignments.id, assignmentId));
+        const [row] = await baseAssignmentQuery().where(eq(schema.commonUnitAssignments.id, assignmentId)).limit(1);
+        res.json({ success: true, assignment: shapeAssignment(row), message: 'Assignment updated successfully' });
     } catch (error) {
         console.error('Error updating common unit assignment:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Server error while updating assignment'
-        });
+        res.status(500).json({ success: false, message: 'Server error while updating assignment' });
     }
 });
 
-// Delete/deactivate common unit assignment
+// Deactivate (soft-delete) a common unit assignment.
 router.delete('/common-unit-assignments/:assignmentId', verifyToken, authorize('admin', 'hod'), async (req, res) => {
     try {
         const { assignmentId } = req.params;
-
-        const assignment = await CommonUnitAssignment.findByIdAndUpdate(
-            assignmentId,
-            { status: 'inactive' },
-            { new: true }
-        );
-
-        if (!assignment) {
-            return res.status(404).json({
-                success: false,
-                message: 'Assignment not found'
-            });
+        const rows = await db.update(schema.commonUnitAssignments)
+            .set({ status: 'inactive', deleted_at: new Date(), updated_at: new Date() })
+            .where(and(eq(schema.commonUnitAssignments.id, assignmentId), isNull(schema.commonUnitAssignments.deleted_at)))
+            .returning({ id: schema.commonUnitAssignments.id });
+        if (!rows.length) {
+            return res.status(404).json({ success: false, message: 'Assignment not found' });
         }
-
-        res.json({
-            success: true,
-            message: 'Assignment deactivated successfully'
-        });
+        res.json({ success: true, message: 'Assignment deactivated successfully' });
     } catch (error) {
         console.error('Error deactivating common unit assignment:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Server error while deactivating assignment'
-        });
+        res.status(500).json({ success: false, message: 'Server error while deactivating assignment' });
     }
 });
 

@@ -187,7 +187,7 @@ function showPayslipModal(payslip) {
 }
 
 // Download payslip as PDF
-function downloadPayslipPDF(payslipId) {
+async function downloadPayslipPDF(payslipId) {
     const payslip = trainerPayslips.find(p => p._id === payslipId);
     if (!payslip) {
         showNotification('Payslip not found', 'error');
@@ -196,6 +196,10 @@ function downloadPayslipPDF(payslipId) {
     
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
+
+    // Load the school logo (transparent PNG) for the letterhead.
+    let logoDataUrl = null;
+    try { if (window.EDTTIDocs) logoDataUrl = await window.EDTTIDocs.loadLogo(); } catch (e) { /* ignore */ }
     
     const monthNames = ['', 'January', 'February', 'March', 'April', 'May', 'June', 
                       'July', 'August', 'September', 'October', 'November', 'December'];
@@ -210,6 +214,13 @@ function downloadPayslipPDF(payslipId) {
     // Header - School Logo Area (Red background)
     doc.setFillColor(...primaryColor);
     doc.rect(0, 0, 210, 35, 'F');
+
+    // School logo on a small white plate (top-left) for contrast on maroon.
+    if (logoDataUrl) {
+        doc.setFillColor(255, 255, 255);
+        doc.roundedRect(12, 6, 24, 23, 2, 2, 'F');
+        try { doc.addImage(logoDataUrl, 'PNG', 13.5, 7, 21, 21); } catch (e) { /* ignore */ }
+    }
     
     // School Name
     doc.setTextColor(255, 255, 255);

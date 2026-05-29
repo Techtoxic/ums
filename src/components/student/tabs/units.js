@@ -2,6 +2,13 @@
 
 window.StudentTabs = window.StudentTabs || {};
 
+// Dynamic academic year (Sept–Aug) fallback when API data is unavailable.
+function unitsAcademicYearFallback() {
+    const now = new Date();
+    const y = now.getFullYear();
+    return now.getMonth() >= 8 ? `${y}/${y + 1}` : `${y - 1}/${y}`;
+}
+
 // (verbatim from studentPortal.js)
 // Fetch student units with registration status
 async function fetchStudentUnits(studentCourse) {
@@ -353,7 +360,7 @@ async function registerSingleUnit(unitId, unitCode, unitName, unitType) {
                 studentId,
                 unitIds,
                 commonUnitIds,
-                academicYear: unitsState.apiData?.academicYear || '2024/2025',
+                academicYear: unitsState.apiData?.academicYear || unitsAcademicYearFallback(),
                 semester: unitsState.apiData?.semester || '1'
             })
         });
@@ -392,7 +399,7 @@ function showBulkRegistrationModal() {
             <div class="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[80vh] overflow-hidden">
                 <div class="p-6 border-b border-gray-200 dark:border-gray-700">
                     <h2 class="text-lg font-semibold text-gray-800 dark:text-white">Register Units</h2>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Select units to register for the current semester</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Select units to register for the current intake</p>
                 </div>
                 
                 <div class="p-6 max-h-96 overflow-y-auto">
@@ -492,7 +499,7 @@ async function processBulkRegistration() {
                 studentId,
                 unitIds,
                 commonUnitIds,
-                academicYear: unitsState.apiData?.academicYear || '2024/2025',
+                academicYear: unitsState.apiData?.academicYear || unitsAcademicYearFallback(),
                 semester: unitsState.apiData?.semester || '1'
             })
         });

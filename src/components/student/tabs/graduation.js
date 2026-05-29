@@ -78,7 +78,7 @@ window.StudentTabs = window.StudentTabs || {};
             document.querySelector('.graduation-student-admission').textContent = studentData.admissionNumber || 'N/A';
             document.querySelector('.graduation-student-course').textContent = formatCourseName(studentData.course);
             document.querySelector('.graduation-student-level').textContent = `Level ${data.level}`;
-            document.querySelector('.graduation-student-year').textContent = `Year ${data.yearOfStudy}`;
+            document.querySelector('.graduation-student-year').textContent = `Module ${data.moduleOfStudy}`;
             
             // Additional fields - intake formatting (same logic as profile section)
             console.log('Intake data for graduation:', { 
@@ -120,7 +120,7 @@ window.StudentTabs = window.StudentTabs || {};
             statusInfo.innerHTML = `
                 <div class="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
                     <p class="text-sm text-green-700 dark:text-green-300">✓ Eligible to apply for graduation</p>
-                    <p class="text-xs text-green-600 dark:text-green-400 mt-1">Level ${escapeHtml(data.level)} students can apply in Year ${escapeHtml(data.yearOfStudy)}</p>
+                    <p class="text-xs text-green-600 dark:text-green-400 mt-1">Level ${escapeHtml(data.level)} students can apply in Module ${escapeHtml(data.moduleOfStudy)}</p>
                 </div>
             `;
         }

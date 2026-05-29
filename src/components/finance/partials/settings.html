@@ -54,6 +54,38 @@
                     </div>
                 </div>
                 
+                <!-- Current Intake Setting -->
+                <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 mb-6">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
+                            <i class="ri-bookmark-line text-purple-600 dark:text-purple-400"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-slate-800 dark:text-white">Current Intake</h3>
+                            <p class="text-sm text-slate-600 dark:text-slate-300">The active student intake for the institution</p>
+                        </div>
+                    </div>
+                    <div class="flex items-end gap-4">
+                        <div class="flex-1">
+                            <label for="currentIntakeSelect" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                Intake
+                            </label>
+                            <select id="currentIntakeSelect"
+                                    class="block w-full px-3 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white">
+                                <option value="january">January</option>
+                                <option value="may">May</option>
+                                <option value="september">September</option>
+                            </select>
+                        </div>
+                        <button onclick="updateCurrentIntake()"
+                                class="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center gap-2">
+                            <i class="ri-save-line"></i>
+                            Update Intake
+                        </button>
+                    </div>
+                    <div id="intakeStatus" class="mt-4 hidden"></div>
+                </div>
+
                 <!-- Current Settings Display -->
                 <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
                     <h3 class="text-lg font-semibold text-slate-800 dark:text-white mb-4">Current System Settings</h3>
@@ -71,13 +103,14 @@
                                 <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Academic Year</span>
                             </div>
                             <p id="currentAcademicYear" class="text-lg font-semibold text-slate-900 dark:text-white">Loading...</p>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Auto-calculated (Sep&ndash;Aug)</p>
                         </div>
                         <div class="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4">
                             <div class="flex items-center gap-2 mb-2">
                                 <i class="ri-bookmark-line text-purple-600"></i>
-                                <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Current Semester</span>
+                                <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Current Intake</span>
                             </div>
-                            <p id="currentSemester" class="text-lg font-semibold text-slate-900 dark:text-white">Loading...</p>
+                            <p id="currentIntake" class="text-lg font-semibold text-slate-900 dark:text-white">Loading...</p>
                         </div>
                         <div class="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4">
                             <div class="flex items-center gap-2 mb-2">

@@ -1,63 +1,95 @@
-                <div class="mb-6">
-                    <h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-2">Financial Analytics</h2>
-                    <p class="text-slate-600 dark:text-slate-300">Comprehensive financial insights and metrics</p>
-                </div>
-                
-                <!-- Analytics Cards -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                    <div class="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
-                        <div class="flex items-center gap-3">
-                            <div class="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
-                                <i class="ri-money-dollar-circle-line text-green-600 dark:text-green-400"></i>
-                            </div>
-                            <div>
-                                <p class="text-sm text-slate-500 dark:text-slate-400">Total Revenue</p>
-                                <p id="total-revenue" class="text-lg font-semibold text-slate-800 dark:text-white">Loading...</p>
-                            </div>
-                        </div>
+                <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-1">Finance Analytics</h2>
+                        <p class="text-slate-600 dark:text-slate-300">Live figures pulled directly from payment, revenue and student records.</p>
                     </div>
-                    
-                    <div class="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
-                        <div class="flex items-center gap-3">
-                            <div class="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                                <i class="ri-wallet-line text-blue-600 dark:text-blue-400"></i>
-                            </div>
-                            <div>
-                                <p class="text-sm text-slate-500 dark:text-slate-400">Outstanding</p>
-                                <p id="outstanding-balance" class="text-lg font-semibold text-slate-800 dark:text-white">Loading...</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
-                        <div class="flex items-center gap-3">
-                            <div class="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
-                                <i class="ri-percent-line text-purple-600 dark:text-purple-400"></i>
-                            </div>
-                            <div>
-                                <p class="text-sm text-slate-500 dark:text-slate-400">Collection Rate</p>
-                                <p id="collection-rate" class="text-lg font-semibold text-slate-800 dark:text-white">Loading...</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
-                        <div class="flex items-center gap-3">
-                            <div class="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg">
-                                <i class="ri-user-line text-orange-600 dark:text-orange-400"></i>
-                            </div>
-                            <div>
-                                <p class="text-sm text-slate-500 dark:text-slate-400">Active Students</p>
-                                <p id="active-students" class="text-lg font-semibold text-slate-800 dark:text-white">Loading...</p>
-                            </div>
-                        </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="exportAnalyticsPDF()" class="px-4 py-2 rounded-lg bg-primary hover:bg-secondary text-white text-sm font-medium flex items-center gap-2 transition-colors">
+                            <i class="ri-file-pdf-2-line"></i> Export PDF
+                        </button>
+                        <button onclick="exportAnalyticsExcel()" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium flex items-center gap-2 transition-colors">
+                            <i class="ri-file-excel-2-line"></i> Export Excel
+                        </button>
                     </div>
                 </div>
-                
-                <!-- Department Analysis -->
-                <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 mb-6">
-                    <h3 class="text-lg font-semibold text-slate-800 dark:text-white mb-4">Department Revenue Analysis</h3>
-                    <div id="department-analysis" class="space-y-4">
-                        <p class="text-slate-500 dark:text-slate-400">Loading department analysis...</p>
+
+                <!-- KPI cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-sm border border-slate-200 dark:border-slate-700">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-slate-500 dark:text-slate-400">Total Revenue</span>
+                            <span class="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><i class="ri-bank-line"></i></span>
+                        </div>
+                        <p id="an-total-revenue" class="text-2xl font-bold text-slate-900 dark:text-white">—</p>
+                        <p id="an-revenue-split" class="text-xs text-slate-500 dark:text-slate-400 mt-1">Tuition + other income</p>
+                    </div>
+                    <div class="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-sm border border-slate-200 dark:border-slate-700">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-slate-500 dark:text-slate-400">Expected Tuition</span>
+                            <span class="w-9 h-9 rounded-lg bg-amber-500/10 text-amber-600 flex items-center justify-center"><i class="ri-coins-line"></i></span>
+                        </div>
+                        <p id="an-expected" class="text-2xl font-bold text-slate-900 dark:text-white">—</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Based on program cost × module</p>
+                    </div>
+                    <div class="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-sm border border-slate-200 dark:border-slate-700">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-slate-500 dark:text-slate-400">Collection Rate</span>
+                            <span class="w-9 h-9 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center"><i class="ri-line-chart-line"></i></span>
+                        </div>
+                        <p id="an-collection-rate" class="text-2xl font-bold text-slate-900 dark:text-white">—</p>
+                        <div class="w-full h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full mt-2 overflow-hidden">
+                            <div id="an-collection-bar" class="h-full bg-emerald-500 rounded-full" style="width:0%"></div>
+                        </div>
+                    </div>
+                    <div class="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-sm border border-slate-200 dark:border-slate-700">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-slate-500 dark:text-slate-400">Outstanding Balance</span>
+                            <span class="w-9 h-9 rounded-lg bg-rose-500/10 text-rose-600 flex items-center justify-center"><i class="ri-error-warning-line"></i></span>
+                        </div>
+                        <p id="an-outstanding" class="text-2xl font-bold text-slate-900 dark:text-white">—</p>
+                        <p id="an-students-summary" class="text-xs text-slate-500 dark:text-slate-400 mt-1">—</p>
+                    </div>
+                </div>
+
+                <!-- Charts row 1 -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+                    <div class="lg:col-span-2 bg-white dark:bg-slate-800 rounded-xl p-5 shadow-sm border border-slate-200 dark:border-slate-700">
+                        <h3 class="text-lg font-semibold text-slate-800 dark:text-white mb-4">Revenue Trend (last 12 months)</h3>
+                        <div class="relative h-72"><canvas id="an-trend-chart"></canvas></div>
+                    </div>
+                    <div class="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-sm border border-slate-200 dark:border-slate-700">
+                        <h3 class="text-lg font-semibold text-slate-800 dark:text-white mb-4">Payment Methods</h3>
+                        <div class="relative h-72"><canvas id="an-mode-chart"></canvas></div>
+                    </div>
+                </div>
+
+                <!-- Charts row 2 -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+                    <div class="lg:col-span-2 bg-white dark:bg-slate-800 rounded-xl p-5 shadow-sm border border-slate-200 dark:border-slate-700">
+                        <h3 class="text-lg font-semibold text-slate-800 dark:text-white mb-4">Department Revenue (collected vs expected)</h3>
+                        <div class="relative h-80"><canvas id="an-dept-chart"></canvas></div>
+                    </div>
+                    <div class="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-sm border border-slate-200 dark:border-slate-700">
+                        <h3 class="text-lg font-semibold text-slate-800 dark:text-white mb-4">Revenue Streams</h3>
+                        <div class="relative h-80"><canvas id="an-stream-chart"></canvas></div>
+                    </div>
+                </div>
+
+                <!-- Department table -->
+                <div class="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-sm border border-slate-200 dark:border-slate-700">
+                    <h3 class="text-lg font-semibold text-slate-800 dark:text-white mb-4">Department Breakdown</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full text-sm">
+                            <thead>
+                                <tr class="text-left text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700">
+                                    <th class="px-3 py-2 font-medium">Department</th>
+                                    <th class="px-3 py-2 font-medium text-right">Students</th>
+                                    <th class="px-3 py-2 font-medium text-right">Expected</th>
+                                    <th class="px-3 py-2 font-medium text-right">Collected</th>
+                                    <th class="px-3 py-2 font-medium text-right">Outstanding</th>
+                                </tr>
+                            </thead>
+                            <tbody id="an-dept-table" class="divide-y divide-slate-100 dark:divide-slate-700/60"></tbody>
+                        </table>
                     </div>
                 </div>

@@ -1,48 +1,90 @@
                 <div class="mb-6">
-                    <h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-2">Financial Reports</h2>
-                    <p class="text-slate-600 dark:text-slate-300">Generate comprehensive reports for administration</p>
+                    <h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-1">Financial Reports</h2>
+                    <p class="text-slate-600 dark:text-slate-300">Branded, production-grade reports — exported as PDF or Excel.</p>
                 </div>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- Revenue Report -->
                     <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
-                        <div class="flex items-center gap-3 mb-4">
-                            <div class="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
-                                <i class="ri-line-chart-line text-green-600 dark:text-green-400"></i>
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="p-2.5 rounded-lg" style="background: rgba(122,12,12,0.08)">
+                                <i class="ri-line-chart-line text-xl" style="color:#7A0C0C"></i>
                             </div>
-                            <h3 class="text-lg font-semibold text-slate-800 dark:text-white">Revenue Report</h3>
+                            <div>
+                                <h3 class="text-lg font-semibold text-slate-800 dark:text-white">Revenue Report</h3>
+                                <p class="text-sm text-slate-500 dark:text-slate-400">Full revenue analysis, streams &amp; trend</p>
+                            </div>
                         </div>
-                        <p class="text-slate-600 dark:text-slate-300 mb-4">Complete revenue analysis with trends</p>
-                        <button onclick="exportRevenueReport()" class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-                            Generate Report
-                        </button>
+                        <div class="flex gap-3 mt-4">
+                            <button onclick="exportRevenueReport('pdf')" class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 text-white rounded-lg transition-colors" style="background:#7A0C0C">
+                                <i class="ri-file-pdf-2-line"></i> PDF
+                            </button>
+                            <button onclick="exportRevenueReport('excel')" class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-colors text-white" style="background:#15803d">
+                                <i class="ri-file-excel-2-line"></i> Excel
+                            </button>
+                        </div>
                     </div>
-                    
+
                     <!-- Outstanding Balances -->
                     <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
-                        <div class="flex items-center gap-3 mb-4">
-                            <div class="p-2 bg-red-100 dark:bg-red-900 rounded-lg">
-                                <i class="ri-alert-line text-red-600 dark:text-red-400"></i>
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="p-2.5 rounded-lg bg-rose-100 dark:bg-rose-900/40">
+                                <i class="ri-alert-line text-xl text-rose-600 dark:text-rose-400"></i>
                             </div>
-                            <h3 class="text-lg font-semibold text-slate-800 dark:text-white">Outstanding Balances</h3>
+                            <div>
+                                <h3 class="text-lg font-semibold text-slate-800 dark:text-white">Outstanding Balances</h3>
+                                <p class="text-sm text-slate-500 dark:text-slate-400">Students with pending payments</p>
+                            </div>
                         </div>
-                        <p class="text-slate-600 dark:text-slate-300 mb-4">Students with pending payments</p>
-                        <button onclick="exportOutstandingReport()" class="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
-                            Generate Report
-                        </button>
+                        <div class="flex gap-3 mt-4">
+                            <button onclick="exportOutstandingReport('pdf')" class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 text-white rounded-lg transition-colors" style="background:#7A0C0C">
+                                <i class="ri-file-pdf-2-line"></i> PDF
+                            </button>
+                            <button onclick="exportOutstandingReport('excel')" class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-colors text-white" style="background:#15803d">
+                                <i class="ri-file-excel-2-line"></i> Excel
+                            </button>
+                        </div>
                     </div>
-                    
+
                     <!-- Department Summary -->
                     <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
-                        <div class="flex items-center gap-3 mb-4">
-                            <div class="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                                <i class="ri-building-line text-blue-600 dark:text-blue-400"></i>
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="p-2.5 rounded-lg" style="background: rgba(212,160,23,0.14)">
+                                <i class="ri-building-line text-xl" style="color:#D4A017"></i>
                             </div>
-                            <h3 class="text-lg font-semibold text-slate-800 dark:text-white">Department Summary</h3>
+                            <div>
+                                <h3 class="text-lg font-semibold text-slate-800 dark:text-white">Department Summary</h3>
+                                <p class="text-sm text-slate-500 dark:text-slate-400">Expected vs collected by department</p>
+                            </div>
                         </div>
-                        <p class="text-slate-600 dark:text-slate-300 mb-4">Revenue breakdown by department</p>
-                        <button onclick="exportDepartmentReport()" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                            Generate Report
-                        </button>
+                        <div class="flex gap-3 mt-4">
+                            <button onclick="exportDepartmentReport('pdf')" class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 text-white rounded-lg transition-colors" style="background:#7A0C0C">
+                                <i class="ri-file-pdf-2-line"></i> PDF
+                            </button>
+                            <button onclick="exportDepartmentReport('excel')" class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-colors text-white" style="background:#15803d">
+                                <i class="ri-file-excel-2-line"></i> Excel
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Student Financial Report -->
+                    <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="p-2.5 rounded-lg bg-blue-100 dark:bg-blue-900/40">
+                                <i class="ri-graduation-cap-line text-xl text-blue-600 dark:text-blue-400"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-slate-800 dark:text-white">Student Financials</h3>
+                                <p class="text-sm text-slate-500 dark:text-slate-400">Per-student expected, paid &amp; balance</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-3 mt-4">
+                            <button onclick="exportStudentFinancialReport('pdf')" class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 text-white rounded-lg transition-colors" style="background:#7A0C0C">
+                                <i class="ri-file-pdf-2-line"></i> PDF
+                            </button>
+                            <button onclick="exportStudentFinancialReport('excel')" class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-colors text-white" style="background:#15803d">
+                                <i class="ri-file-excel-2-line"></i> Excel
+                            </button>
+                        </div>
                     </div>
                 </div>

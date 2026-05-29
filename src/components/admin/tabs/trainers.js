@@ -2,6 +2,65 @@
 window.AdminTabs = window.AdminTabs || {};
 
 // (verbatim from adminDashboard.js)
+let _adminTrainersWired = false;
+
+function wireAdminTrainerFilters() {
+    if (_adminTrainersWired) return;
+    const search = document.getElementById('trainer-search');
+    const dept = document.getElementById('trainer-dept-filter');
+    if (search) search.addEventListener('input', renderAdminTrainers);
+    if (dept) dept.addEventListener('change', renderAdminTrainers);
+    _adminTrainersWired = true;
+}
+
+function renderAdminTrainers() {
+    const container = document.getElementById('trainers-list');
+    if (!container) return;
+
+    const search = (document.getElementById('trainer-search')?.value || '').trim().toLowerCase();
+    const deptFilter = document.getElementById('trainer-dept-filter')?.value || '';
+
+    const list = (allTrainers || []).filter(t => {
+        if (deptFilter && t.department !== deptFilter) return false;
+        if (search) {
+            const hay = `${t.name || ''} ${t.email || ''}`.toLowerCase();
+            if (!hay.includes(search)) return false;
+        }
+        return true;
+    });
+
+    if (list.length === 0) {
+        container.innerHTML = '<p class="col-span-full text-center text-gray-400 text-xs py-6">No trainers match the current filters</p>';
+        return;
+    }
+
+    container.innerHTML = list.map(trainer => {
+        const isActive = trainer.isActive !== false; // endpoint may omit the flag
+        return `
+            <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-lg transition bg-white dark:bg-gray-800">
+                <div class="flex items-center space-x-3 mb-3">
+                    <div class="w-12 h-12 bg-green-100 dark:bg-green-900/40 rounded-full flex items-center justify-center">
+                        <i class="ri-user-line text-2xl text-green-600 dark:text-green-400"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <h4 class="font-semibold text-gray-800 dark:text-white truncate">${escapeHtml(trainer.name)}</h4>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 truncate">${escapeHtml(trainer.email || '')}</p>
+                    </div>
+                </div>
+                <div class="space-y-2 text-sm">
+                    <p class="text-gray-600 dark:text-gray-300">
+                        <i class="ri-building-line mr-2"></i>${escapeHtml(formatDepartmentName(trainer.department))}
+                    </p>
+                    ${trainer.specialization ? `<p class="text-gray-600 dark:text-gray-300"><i class="ri-star-line mr-2"></i>${escapeHtml(trainer.specialization)}</p>` : ''}
+                    <span class="inline-block px-2 py-1 ${isActive ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'} text-xs rounded-full">
+                        ${isActive ? 'Active' : 'Inactive'}
+                    </span>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
 async function displayTrainers() {
     const container = document.getElementById('trainers-list');
     if (!container) {
@@ -10,35 +69,11 @@ async function displayTrainers() {
     }
 
     try {
-        if (allTrainers.length === 0) {
+        if ((allTrainers || []).length === 0) {
             await loadTrainers();
         }
-
-        // Filter only active trainers
-        const activeTrainers = allTrainers.filter(t => t.isActive !== false);
-
-        container.innerHTML = activeTrainers.map(trainer => `
-            <div class="border rounded-lg p-4 hover:shadow-lg transition">
-                <div class="flex items-center space-x-3 mb-3">
-                    <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                        <i class="ri-user-line text-2xl text-green-600"></i>
-                    </div>
-                    <div>
-                        <h4 class="font-semibold text-gray-800">${escapeHtml(trainer.name)}</h4>
-                        <p class="text-xs text-gray-500">${escapeHtml(trainer.email)}</p>
-                    </div>
-                </div>
-                <div class="space-y-2 text-sm">
-                    <p class="text-gray-600">
-                        <i class="ri-building-line mr-2"></i>${escapeHtml(formatDepartmentName(trainer.department))}
-                    </p>
-                    ${trainer.specialization ? `<p class="text-gray-600"><i class="ri-star-line mr-2"></i>${escapeHtml(trainer.specialization)}</p>` : ''}
-                    <span class="inline-block px-2 py-1 ${trainer.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'} text-xs rounded-full">
-                        ${trainer.isActive ? 'Active' : 'Inactive'}
-                    </span>
-                </div>
-            </div>
-        `).join('');
+        wireAdminTrainerFilters();
+        renderAdminTrainers();
     } catch (error) {
         console.error('Error displaying trainers:', error);
         container.innerHTML = '<p class="text-red-600 text-center py-8">Error loading trainers: ' + escapeHtml(error.message) + '</p>';

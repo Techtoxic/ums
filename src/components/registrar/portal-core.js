@@ -856,6 +856,13 @@ function updateIdentityUI() {
     if (userName) userName.textContent = user.name;
     if (welcomeName) welcomeName.textContent = user.name;
     if (userAvatar) userAvatar.textContent = user.name.charAt(0).toUpperCase();
+    // Academic year is dynamic (Sept–Aug); never hard-code it in the header.
+    const acadYearEl = document.getElementById('academicYear');
+    if (acadYearEl) {
+        const now = new Date();
+        const y = now.getFullYear();
+        acadYearEl.textContent = now.getMonth() >= 8 ? `${y}/${y + 1}` : `${y - 1}/${y}`;
+    }
 }
 window.updateIdentityUI = updateIdentityUI;
 

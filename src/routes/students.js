@@ -287,7 +287,12 @@ router.post('/students/register', verifyToken, authorize('admin', 'registrar'), 
         // Atomically allocate the composed admission number.
         const admissionNumber = await allocateAdmissionNumberFor(course, intake, resolvedIntakeYear);
 
-        const initialPassword = generateStudentInitialPassword();
+        // Default login credential = the student's phone number. This matches the
+        // seeded test students (whose password IS their phone number) so every
+        // newly admitted student can log in with their admission number + phone
+        // number whether or not an email is on file. The login endpoint also
+        // normalises the typed phone, so any common Kenyan format works.
+        const initialPassword = formattedPhone;
 
         const student = await Student.create({
             name,
@@ -305,8 +310,6 @@ router.post('/students/register', verifyToken, authorize('admin', 'registrar'), 
             nextOfKinName: nextOfKinName ? String(nextOfKinName).trim() : null,
             nextOfKinPhone: formattedKinPhone,
             password: initialPassword,
-            isFirstLogin: true,
-            mustUpdatePassword: true,
             role: 'student',
         });
 
@@ -348,8 +351,8 @@ router.post('/students/register', verifyToken, authorize('admin', 'registrar'), 
 
         const response = {
             message: credentialsEmailed
-                ? 'Student registered successfully. Initial password emailed to the student.'
-                : 'Student registered successfully. No email on file — give the student the initial password below; they must change it on first login.',
+                ? 'Student registered successfully. Login credentials (admission number + phone number) emailed to the student.'
+                : 'Student registered successfully. The student logs in with their admission number and phone number as the password.',
             student: {
                 _id: student._id,
                 id: student._id,

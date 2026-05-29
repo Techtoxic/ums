@@ -145,8 +145,8 @@ function closeReceiptModal() {
     }
 }
 
-// Export receipt as PDF (using same method as registrar dashboard)
-function exportReceipt() {
+// Export receipt as PDF (branded EDTTI letterhead with school logo)
+async function exportReceipt() {
     const modal = document.getElementById('receipt-modal');
     const paymentData = JSON.parse(modal.getAttribute('data-payment') || '{}');
     
@@ -154,23 +154,29 @@ function exportReceipt() {
         // Use same jsPDF access method as registrar dashboard
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
-        
-        // Header
-        doc.setFontSize(16);
-        doc.setFont(undefined, 'bold');
-        doc.text('EDTTI - Payment Receipt', 105, 20, { align: 'center' });
-        
-        // Institute name
-        doc.setFontSize(12);
-        doc.setFont(undefined, 'normal');
-        doc.text('Emura Technical Training Institute', 105, 30, { align: 'center' });
-        
-        // Line separator
-        doc.line(20, 40, 190, 40);
+
+        // Branded letterhead (logo + maroon/gold) — consistent with finance docs.
+        let yPos = 55;
+        if (window.EDTTIDocs) {
+            try {
+                await window.EDTTIDocs.loadLogo();
+                yPos = window.EDTTIDocs.letterhead(doc, { title: 'Payment Receipt' }) + 6;
+            } catch (e) {
+                yPos = 55;
+            }
+        } else {
+            doc.setFontSize(16);
+            doc.setFont(undefined, 'bold');
+            doc.text('EDTTI - Payment Receipt', 105, 20, { align: 'center' });
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'normal');
+            doc.text('Emurua Dikirr Technical Training Institute', 105, 30, { align: 'center' });
+            doc.line(20, 40, 190, 40);
+        }
         
         // Receipt details
         doc.setFontSize(11);
-        let yPos = 55;
+        doc.setTextColor(31, 41, 55);
         
         const details = [
             ['Student Name:', studentData.name || 'N/A'],

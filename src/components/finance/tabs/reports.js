@@ -1,180 +1,178 @@
-// tabs/reports.js — finance report PDF exports (revenue / outstanding / department).
+// tabs/reports.js — finance reports. All data comes from the server
+// (GET /api/finance/analytics and /api/finance/reports/students) and every
+// document is exported through the branded EDTTI doc engine as PDF or Excel
+// ONLY (no CSV / JSON, per spec).
 window.FinanceTabs = window.FinanceTabs || {};
 
-// (verbatim inline block)
-        // Export functions for reports
-        async function exportRevenueReport() {
-            if (!financeAnalytics) {
-                await initializeAnalytics();
-            }
-            
-            try {
-                // Show format selection
-                const format = await showFormatSelectionModal('Revenue Report');
-                if (!format) return; // User cancelled
-                
-                financeAnalytics.exportAnalyticsReport(format);
-                showToast(`Revenue report exported as ${format.toUpperCase()} successfully!`, 'success');
-            } catch (error) {
-                console.error('Export error:', error);
-                showToast('Failed to export revenue report', 'error');
-            }
-        }
-        
-        async function exportOutstandingReport() {
-            if (!financeAnalytics) {
-                await initializeAnalytics();
-            }
-            
-            try {
-                const outstandingStudents = financeAnalytics.getStudentsWithBalances(0);
-                const totalOutstanding = outstandingStudents.reduce((sum, student) => sum + student.balance, 0);
-                
-                // Create PDF report
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF('p', 'mm', 'a4');
-                
-                // Add title
-                doc.setFontSize(18);
-                doc.setFont(undefined, 'bold');
-                doc.text('Outstanding Balances Report', 20, 20);
-                
-                // Add generation date and summary
-                doc.setFontSize(10);
-                doc.setFont(undefined, 'normal');
-                doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 30);
-                doc.text(`Total Students with Outstanding Balance: ${outstandingStudents.length}`, 20, 35);
-                doc.text(`Total Outstanding Amount: KES ${totalOutstanding.toLocaleString()}`, 20, 40);
-                
-                // Prepare table data
-                const tableData = outstandingStudents.map(student => [
-                    student.admissionNumber || 'N/A',
-                    student.name || 'N/A',
-                    financeAnalytics.formatCourseName(student.course),
-                    `KES ${(student.totalPaid || 0).toLocaleString()}`,
-                    `KES ${student.balance.toLocaleString()}`,
-                    student.intake ? `${student.intake} ${student.intakeYear}` : 'N/A'
-                ]);
-                
-                // Add table
-                doc.autoTable({
-                    head: [['Admission No', 'Student Name', 'Program', 'Paid', 'Outstanding', 'Intake']],
-                    body: tableData,
-                    startY: 50,
-                    styles: { fontSize: 8 },
-                    headStyles: { fillColor: [37, 99, 235] },
-                    alternateRowStyles: { fillColor: [245, 245, 245] }
-                });
-                
-                // Save the PDF
-                const filename = `outstanding_balances_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.pdf`;
-                doc.save(filename);
-                
-                showToast('Outstanding balances report exported as PDF successfully!', 'success');
-            } catch (error) {
-                console.error('Export error:', error);
-                showToast('Failed to export outstanding report', 'error');
-            }
-        }
-        
-        async function exportDepartmentReport() {
-            if (!financeAnalytics) {
-                await initializeAnalytics();
-            }
-            
-            try {
-                const departmentStats = financeAnalytics.getDepartmentRevenue();
-                
-                // Create PDF report
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF('p', 'mm', 'a4');
-                
-                // Add title
-                doc.setFontSize(18);
-                doc.setFont(undefined, 'bold');
-                doc.text('Department Revenue Analysis', 20, 20);
-                
-                // Add generation date
-                doc.setFontSize(10);
-                doc.setFont(undefined, 'normal');
-                doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 30);
-                
-                // Calculate totals
-                const totalStudents = Object.values(departmentStats).reduce((sum, stats) => sum + stats.studentCount, 0);
-                const totalExpected = Object.values(departmentStats).reduce((sum, stats) => sum + stats.expectedRevenue, 0);
-                const totalActual = Object.values(departmentStats).reduce((sum, stats) => sum + stats.actualRevenue, 0);
-                const totalOutstanding = Object.values(departmentStats).reduce((sum, stats) => sum + stats.outstandingBalance, 0);
-                
-                // Add summary
-                doc.text(`Total Students: ${totalStudents}`, 20, 40);
-                doc.text(`Total Expected Revenue: KES ${totalExpected.toLocaleString()}`, 20, 45);
-                doc.text(`Total Actual Revenue: KES ${totalActual.toLocaleString()}`, 20, 50);
-                doc.text(`Total Outstanding: KES ${totalOutstanding.toLocaleString()}`, 20, 55);
-                doc.text(`Overall Collection Rate: ${totalExpected > 0 ? ((totalActual / totalExpected) * 100).toFixed(2) : 0}%`, 20, 60);
-                
-                // Prepare table data
-                const tableData = Object.entries(departmentStats).map(([dept, stats]) => [
-                    dept.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-                    stats.studentCount.toString(),
-                    `KES ${stats.expectedRevenue.toLocaleString()}`,
-                    `KES ${stats.actualRevenue.toLocaleString()}`,
-                    `KES ${stats.outstandingBalance.toLocaleString()}`,
-                    stats.expectedRevenue > 0 ? `${((stats.actualRevenue / stats.expectedRevenue) * 100).toFixed(2)}%` : '0%'
-                ]);
-                
-                // Add table
-                doc.autoTable({
-                    head: [['Department', 'Students', 'Expected', 'Collected', 'Outstanding', 'Rate %']],
-                    body: tableData,
-                    startY: 70,
-                    styles: { fontSize: 8 },
-                    headStyles: { fillColor: [37, 99, 235] },
-                    alternateRowStyles: { fillColor: [245, 245, 245] }
-                });
-                
-                // Save the PDF
-                const filename = `department_analysis_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.pdf`;
-                doc.save(filename);
-                
-                showToast('Department analysis report exported as PDF successfully!', 'success');
-            } catch (error) {
-                console.error('Export error:', error);
-                showToast('Failed to export department report', 'error');
-            }
-        }
+(function () {
+    const API = window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : `${window.location.protocol}//${window.location.host}/api`;
 
-        // Format selection modal
-        function showFormatSelectionModal(reportType) {
-            return new Promise((resolve) => {
-                const modal = document.createElement('div');
-                modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
-                modal.innerHTML = `
-                    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-sm">
-                        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
-                            <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Export ${escapeHtml(reportType)}</h3>
-                        </div>
-                        <div class="p-6">
-                            <p class="text-gray-600 dark:text-gray-300 mb-4">Choose export format:</p>
-                            <div class="space-y-3">
-                                <button onclick="selectFormat('json')" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">JSON</button>
-                                <button onclick="selectFormat('csv')" class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">CSV</button>
-                                <button onclick="selectFormat('pdf')" class="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">PDF</button>
-                                <button onclick="selectFormat(null)" class="w-full px-4 py-2 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Cancel</button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                
-                document.body.appendChild(modal);
-                
-                window.selectFormat = function(format) {
-                    document.body.removeChild(modal);
-                    delete window.selectFormat;
-                    resolve(format);
-                };
-            });
-        }
+    function toast(msg, type) { if (typeof showToast === 'function') showToast(msg, type); }
+    function docs() { return window.EDTTIDocs || window.FinanceDocs; }
+    const fmt = (n) => `KES ${Math.round(Number(n) || 0).toLocaleString()}`;
+    const today = () => new Date().toISOString().slice(0, 10);
 
-window.FinanceTabs.reports = {
-    init() {}
-};
+    async function getAnalytics() {
+        const res = await window.AUTH.fetch(`${API}/finance/analytics`);
+        if (!res.ok) throw new Error('analytics');
+        return res.json();
+    }
+
+    async function getStudents() {
+        const res = await window.AUTH.fetch(`${API}/finance/reports/students`);
+        if (!res.ok) throw new Error('students');
+        return res.json();
+    }
+
+    function intakeLabel(s) {
+        if (!s.intake) return 'N/A';
+        const i = s.intake.charAt(0).toUpperCase() + s.intake.slice(1);
+        return s.intakeYear ? `${i} ${s.intakeYear}` : i;
+    }
+
+    // ---- Revenue report: full analytics PDF / Excel ----
+    window.exportRevenueReport = async function (format) {
+        try {
+            const data = await getAnalytics();
+            const d = docs();
+            if (format === 'excel') {
+                const t = data.totals || {};
+                const rows = [
+                    ['EDTTI — Revenue Report'],
+                    ['Generated', new Date().toLocaleString()],
+                    [],
+                    ['Metric', 'Value'],
+                    ['Total Revenue', t.totalRevenue],
+                    ['Tuition Revenue', t.tuitionRevenue],
+                    ['Other (Non-Tuition) Revenue', t.otherRevenue],
+                    ['Expected Tuition', t.expectedRevenue],
+                    ['Outstanding Balance', t.outstandingBalance],
+                    ['Collection Rate (%)', t.collectionRate],
+                    [],
+                    ['Revenue Stream', 'Amount'],
+                    ...(data.revenueStreams || []).map(s => [s.label, s.amount]),
+                    [],
+                    ['Month', 'Collected'],
+                    ...(data.monthlyTrend || []).map(m => [m.label || m.month, m.amount]),
+                ];
+                d.downloadExcel(rows, `revenue_report_${today()}`);
+            } else {
+                await d.analyticsPDF(data);
+            }
+            toast('Revenue report generated', 'success');
+        } catch (e) {
+            console.error('Revenue report error:', e);
+            toast('Failed to generate revenue report', 'error');
+        }
+    };
+
+    // ---- Outstanding balances report ----
+    window.exportOutstandingReport = async function (format) {
+        try {
+            const { students } = await getStudents();
+            const outstanding = (students || []).filter(s => s.balance > 0);
+            const totalOut = outstanding.reduce((sum, s) => sum + s.balance, 0);
+            const d = docs();
+            if (format === 'excel') {
+                const rows = [
+                    ['EDTTI — Outstanding Balances Report'],
+                    ['Generated', new Date().toLocaleString()],
+                    ['Students with balance', outstanding.length],
+                    ['Total outstanding', totalOut],
+                    [],
+                    ['Admission No', 'Student', 'Program', 'Module', 'Intake', 'Expected', 'Paid', 'Balance'],
+                    ...outstanding.map(s => [s.admissionNumber, s.name, s.course, s.module, intakeLabel(s), s.expected, s.paid, s.balance]),
+                ];
+                d.downloadExcel(rows, `outstanding_balances_${today()}`);
+            } else {
+                await d.tablePDF({
+                    title: 'Outstanding Balances Report',
+                    subtitle: 'Students with pending tuition payments',
+                    summary: [
+                        ['Students With Balance', String(outstanding.length)],
+                        ['Total Outstanding', fmt(totalOut)],
+                    ],
+                    columns: ['Admission No', 'Student', 'Program', 'Mod', 'Intake', 'Expected', 'Paid', 'Balance'],
+                    rows: outstanding.map(s => [s.admissionNumber, s.name, s.course, String(s.module), intakeLabel(s), fmt(s.expected), fmt(s.paid), fmt(s.balance)]),
+                    filename: `outstanding_balances_${today()}.pdf`,
+                    footer: 'EDTTI UMS — Outstanding Balances · Confidential',
+                    landscape: true,
+                });
+            }
+            toast('Outstanding balances report generated', 'success');
+        } catch (e) {
+            console.error('Outstanding report error:', e);
+            toast('Failed to generate outstanding report', 'error');
+        }
+    };
+
+    // ---- Department summary report ----
+    window.exportDepartmentReport = async function (format) {
+        try {
+            const data = await getAnalytics();
+            const depts = data.departmentBreakdown || [];
+            const d = docs();
+            if (format === 'excel') {
+                const rows = [
+                    ['EDTTI — Department Revenue Summary'],
+                    ['Generated', new Date().toLocaleString()],
+                    [],
+                    ['Department', 'Students', 'Expected', 'Collected', 'Outstanding', 'Rate %'],
+                    ...depts.map(x => [x.departmentName, x.students, x.expected, x.actual, x.outstanding, x.expected > 0 ? Number(((x.actual / x.expected) * 100).toFixed(1)) : 0]),
+                ];
+                d.downloadExcel(rows, `department_summary_${today()}`);
+            } else {
+                await d.tablePDF({
+                    title: 'Department Revenue Summary',
+                    subtitle: 'Expected vs collected tuition by department',
+                    columns: ['Department', 'Students', 'Expected', 'Collected', 'Outstanding', 'Rate %'],
+                    rows: depts.map(x => [x.departmentName, String(x.students), fmt(x.expected), fmt(x.actual), fmt(x.outstanding), `${x.expected > 0 ? ((x.actual / x.expected) * 100).toFixed(1) : 0}%`]),
+                    filename: `department_summary_${today()}.pdf`,
+                    footer: 'EDTTI UMS — Department Summary · Confidential',
+                    landscape: true,
+                });
+            }
+            toast('Department summary generated', 'success');
+        } catch (e) {
+            console.error('Department report error:', e);
+            toast('Failed to generate department report', 'error');
+        }
+    };
+
+    // ---- Full student financial report (all students) ----
+    window.exportStudentFinancialReport = async function (format) {
+        try {
+            const { students } = await getStudents();
+            const list = students || [];
+            const d = docs();
+            if (format === 'excel') {
+                const rows = [
+                    ['EDTTI — Student Financial Report'],
+                    ['Generated', new Date().toLocaleString()],
+                    ['Total students', list.length],
+                    [],
+                    ['Admission No', 'Student', 'Program', 'Department', 'Module', 'Intake', 'Expected', 'Paid', 'Balance', 'Status'],
+                    ...list.map(s => [s.admissionNumber, s.name, s.course, s.department, s.module, intakeLabel(s), s.expected, s.paid, s.balance, s.status]),
+                ];
+                d.downloadExcel(rows, `student_financials_${today()}`);
+            } else {
+                await d.tablePDF({
+                    title: 'Student Financial Report',
+                    subtitle: 'Per-student tuition expected, paid and balance',
+                    summary: [['Total Students', String(list.length)]],
+                    columns: ['Admission No', 'Student', 'Program', 'Mod', 'Expected', 'Paid', 'Balance', 'Status'],
+                    rows: list.map(s => [s.admissionNumber, s.name, s.course, String(s.module), fmt(s.expected), fmt(s.paid), fmt(s.balance), s.status]),
+                    filename: `student_financials_${today()}.pdf`,
+                    footer: 'EDTTI UMS — Student Financials · Confidential',
+                    landscape: true,
+                });
+            }
+            toast('Student financial report generated', 'success');
+        } catch (e) {
+            console.error('Student report error:', e);
+            toast('Failed to generate student report', 'error');
+        }
+    };
+
+    window.FinanceTabs.reports = { init() {} };
+})();

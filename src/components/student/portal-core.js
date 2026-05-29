@@ -206,6 +206,13 @@ async function fetchStudentData() {
 // Fetch program cost from API using proper program name mapping
 async function fetchProgramCost(courseKey) {
     try {
+        // Prefer the cost the server already resolved onto the student record
+        // (see GET /students/admission/:adm). This is authoritative and avoids
+        // the historical course-code vs program-code mismatch.
+        if (window.studentData && studentData.programCost !== undefined && studentData.programCost !== null && studentData.programCost !== '') {
+            return Number(studentData.programCost);
+        }
+
         if (!courseKey) {
             console.warn('Course key is missing, cannot fetch program cost');
             return null;
@@ -227,21 +234,32 @@ async function fetchProgramCost(courseKey) {
             throw new Error('Invalid programs data format received');
         }
 
-        console.log('Available program codes:', programs.map(p => p.code));
+        const key = String(courseKey).toLowerCase();
 
-        // Student's `course` field is the program CODE (e.g. "AC6").
-        // Match directly against the API's `code` field — case-insensitive for safety.
-        const foundProgram = programs.find(program =>
-            program.code && program.code.toLowerCase() === courseKey.toLowerCase()
-        );
+        // 1) Exact program code match (works for short-code courses like "AC6").
+        let foundProgram = programs.find(p => p.code && p.code.toLowerCase() === key);
+
+        // 2) Fall back to matching by program NAME. Registrar-admitted students
+        //    store a long course key (e.g. "applied_biology_6"); map it to a
+        //    display name and match the program's name. This is resilient to the
+        //    code/name mismatch in the data.
+        if (!foundProgram) {
+            const mappedName = (window.courseToProgram && window.courseToProgram[courseKey]) || null;
+            const normalizedName = String(courseKey)
+                .replace(/_/g, ' ')
+                .replace(/\b\w/g, l => l.toUpperCase())
+                .replace(/\s(\d+)$/, ' Level $1');
+            const candidates = [mappedName, normalizedName].filter(Boolean).map(s => s.toLowerCase());
+            foundProgram = programs.find(p => p.name && candidates.includes(p.name.toLowerCase()));
+        }
 
         if (!foundProgram) {
-            console.warn(`Program with code '${courseKey}' not found in database`);
+            console.warn(`Program for course '${courseKey}' not found in database`);
             return null;
         }
 
         console.log(`Found program: ${foundProgram.name} — cost: ${foundProgram.programCost}`);
-        return foundProgram.programCost || null;
+        return foundProgram.programCost != null ? Number(foundProgram.programCost) : null;
     } catch (error) {
         console.error('Error fetching program cost:', error.message);
         return null;
@@ -410,7 +428,7 @@ async function updateFinancialInfo(programCost, payments) {
     
     console.log('Dashboard balance calculation:', {
         programCost,
-        yearOfStudy,
+        moduleOfStudy,
         totalFees,
         totalPaid,
         balance,

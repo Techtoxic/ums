@@ -206,9 +206,6 @@ function loadProfileData() {
             document.getElementById('profile-last-login').textContent = 'Never';
         }
         
-        // Display user ID
-        document.getElementById('profile-id').textContent = currentHOD._id || 'N/A';
-        
         // Update account status
         const statusElement = document.getElementById('profile-status');
         if (currentHOD.isActive !== false) {

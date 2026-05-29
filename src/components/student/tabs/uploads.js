@@ -20,8 +20,16 @@ function getStudentData() {
     return data;
 }
 
+// Dynamic academic year (Sept–Aug). Used as a safe fallback when the API is
+// unavailable so the UI never shows a stale hard-coded year.
+function computeAcademicYearLabel() {
+    const now = new Date();
+    const y = now.getFullYear();
+    return now.getMonth() >= 8 ? `${y}/${y + 1}` : `${y - 1}/${y}`;
+}
+
 // Get current academic settings
-let currentAcademicYear = '2024/2025';
+let currentAcademicYear = computeAcademicYearLabel();
 let currentSemester = '1';
 
 // Upload states
@@ -64,14 +72,14 @@ async function fetchAcademicSettings() {
         if (response.ok) {
             const settings = await response.json();
             return {
-                academicYear: settings.find(s => s.key === 'current_academic_year')?.value || '2024/2025',
+                academicYear: settings.find(s => s.key === 'current_academic_year')?.value || computeAcademicYearLabel(),
                 semester: settings.find(s => s.key === 'current_semester')?.value || '1'
             };
         }
     } catch (error) {
         console.error('Error fetching academic settings:', error);
     }
-    return { academicYear: '2024/2025', semester: '1' };
+    return { academicYear: computeAcademicYearLabel(), semester: '1' };
 }
 
 // Load student's existing uploads

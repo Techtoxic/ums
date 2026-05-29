@@ -4,7 +4,28 @@ const { verifyToken, authorize, verifyOwnership, signToken, setAuthCookie, setCs
 const { authLimiter } = require('../middleware/rateLimiters');
 const { toMoneyNumber } = require('../utils/formatters');
 const { extractLevelFromCourse, getMaxModuleForLevel } = require('../utils/studentHelpers');
+const { getCourseCode, getCourseDisplayName, getDepartmentDisplayName } = require('../utils/courseCodes');
 const { Student, Program } = require('../db/models');
+
+// Resolve the program (and its cost) for a student's course key. The programs
+// table and the course-code config historically disagree on short codes
+// (e.g. course "applied_biology_6" → config code "AP6" but the seeded program
+// is "AB6"), so match on the canonical display NAME first and fall back to the
+// code. This makes program cost reliable for both seeded (short-code) and
+// registrar-admitted (long-key) students. Returns { programCost, programName }.
+async function resolveProgramForCourse(course) {
+    if (!course) return { programCost: null, programName: null };
+    const name = getCourseDisplayName(course);
+    let program = name ? await Program.findOne({ programName: name }) : null;
+    if (!program) {
+        const code = getCourseCode(course);
+        if (code) program = await Program.findOne({ code });
+    }
+    return {
+        programCost: program ? toMoneyNumber(program.programCost) : null,
+        programName: program ? program.name : null,
+    };
+}
 
 // Get Student Data by Admission Number
 router.get('/students/admission/:admissionNumber', verifyToken, authorize('admin', 'registrar', 'finance', 'student'), verifyOwnership('admissionNumber'), async (req, res) => {
@@ -19,7 +40,19 @@ router.get('/students/admission/:admissionNumber', verifyToken, authorize('admin
         }
 
         console.log('Found student:', student.name);
-        res.json(student);
+
+        // Enrich with server-resolved program cost + human-readable labels so the
+        // student portal (dashboard + financial tab) can show Total Program Cost
+        // and program details on first paint without a fragile client-side
+        // course→program guess.
+        const { programCost, programName } = await resolveProgramForCourse(student.course);
+        const out = (typeof student.toJSON === 'function') ? student.toJSON() : { ...student };
+        out.courseName = getCourseDisplayName(student.course);
+        out.courseCode = getCourseCode(student.course) || student.course;
+        out.departmentName = getDepartmentDisplayName(student.department);
+        out.programCost = programCost;
+        out.programName = programName;
+        res.json(out);
 
     } catch (error) {
         console.error('Error fetching student data:', error);

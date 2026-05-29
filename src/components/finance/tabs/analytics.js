@@ -1,567 +1,200 @@
-// tabs/analytics.js — finance analytics dashboard + charts.
+// tabs/analytics.js — finance analytics: accurate aggregates + production charts.
+// Data comes from GET /api/finance/analytics (server-computed against the real
+// payment / revenue / student records). Charts use Chart.js (loaded in the shell).
 window.FinanceTabs = window.FinanceTabs || {};
 
-// ---- financeAnalytics.js (verbatim) ----
-// Finance Analytics Module
-// Production-level analytics and reporting for Finance Dashboard
+(function () {
+    const API = window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : `${window.location.protocol}//${window.location.host}/api`;
+    const MAROON = '#7A0C0C';
+    const GOLD = '#D4A017';
+    const EMERALD = '#10B981';
+    const SLATE = '#64748B';
+    const ROSE = '#E11D48';
+    const BLUE = '#2563EB';
 
-const API_BASE_URL_CONFIG = window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : `${window.location.protocol}//${window.location.host}/api`;
+    const charts = {};            // canvasId -> Chart instance
+    let lastData = null;          // cache for exports
 
-// Authenticated fetch wrapper — guarded against double-declaration.
-// See note in financeDashboard.js. window assignment is idempotent across
-// both files regardless of script load order.
-window.authFetch = window.authFetch || (async (url, options = {}) => {
-    return window.AUTH.fetch(url, options);
-});
+    const fmt = (n) => `KES ${Math.round(Number(n) || 0).toLocaleString()}`;
 
-class FinanceAnalytics {
-    constructor() {
-        this.students = [];
-        this.payments = [];
-        this.programs = [];
-        this.API_BASE_URL = API_BASE_URL_CONFIG;
+    function isDark() { return document.documentElement.classList.contains('dark'); }
+    function tickColor() { return isDark() ? '#CBD5E1' : '#475569'; }
+    function gridColor() { return isDark() ? 'rgba(148,163,184,0.15)' : 'rgba(100,116,139,0.12)'; }
+
+    function destroy(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+
+    function makeChart(id, config) {
+        const el = document.getElementById(id);
+        if (!el || typeof Chart === 'undefined') return;
+        destroy(id);
+        charts[id] = new Chart(el.getContext('2d'), config);
     }
 
-    // Load all necessary data
-    async loadData() {
-        try {
-            const [studentsResponse, paymentsResponse, programsResponse] = await Promise.all([
-                authFetch(`${this.API_BASE_URL}/students?all=1`),
-                authFetch(`${this.API_BASE_URL}/payments`),
-                authFetch(`${this.API_BASE_URL}/programs`)
-            ]);
+    function setText(id, value) { const el = document.getElementById(id); if (el) el.textContent = value; }
 
-            if (!studentsResponse.ok || !paymentsResponse.ok || !programsResponse.ok) {
-                throw new Error('Failed to load data');
-            }
-
-            // /students now returns the paginated envelope; we ask for ?all=1
-            // here because analytics needs the full set.
-            const studentsBody = await studentsResponse.json();
-            this.students = Array.isArray(studentsBody) ? studentsBody : (Array.isArray(studentsBody.students) ? studentsBody.students : []);
-            this.payments = await paymentsResponse.json();
-            this.programs = await programsResponse.json();
-
-            return {
-                students: this.students.length,
-                payments: this.payments.length,
-                programs: this.programs.length
-            };
-        } catch (error) {
-            console.error('Error loading finance data:', error);
-            throw error;
-        }
+    async function loadAnalytics() {
+        const res = await window.AUTH.fetch(`${API}/finance/analytics`);
+        if (!res.ok) throw new Error('Failed to load analytics');
+        const data = await res.json();
+        lastData = data;
+        renderKpis(data);
+        renderTrend(data);
+        renderModes(data);
+        renderDepartments(data);
+        renderStreams(data);
+        renderDeptTable(data);
     }
 
-    // Calculate total revenue
-    getTotalRevenue() {
-        return this.payments.reduce((total, payment) => total + Number(payment.amount || 0), 0);
+    function renderKpis(d) {
+        const t = d.totals || {};
+        setText('an-total-revenue', fmt(t.totalRevenue));
+        setText('an-revenue-split', `Tuition ${fmt(t.tuitionRevenue)} · Other ${fmt(t.otherRevenue)}`);
+        setText('an-expected', fmt(t.expectedRevenue));
+        setText('an-collection-rate', `${t.collectionRate || 0}%`);
+        const bar = document.getElementById('an-collection-bar');
+        if (bar) bar.style.width = `${Math.min(100, t.collectionRate || 0)}%`;
+        setText('an-outstanding', fmt(t.outstandingBalance));
+        setText('an-students-summary', `${t.studentsTotal || 0} students · ${t.fullyPaid || 0} fully paid · ${t.withBalance || 0} with balance`);
     }
 
-    // Calculate expected revenue (all students * their program costs)
-    getExpectedRevenue() {
-        let expectedTotal = 0;
-        this.students.forEach(student => {
-            const program = this.findProgramByName(student.course);
-            if (program) {
-                expectedTotal += program.programCost || 0;
-            }
-        });
-        return expectedTotal;
-    }
-
-    // Calculate outstanding balance
-    getOutstandingBalance() {
-        return this.getExpectedRevenue() - this.getTotalRevenue();
-    }
-
-    // Get payment statistics by method
-    getPaymentMethodStats() {
-        const stats = {
-            mpesa: { count: 0, amount: 0 },
-            bank: { count: 0, amount: 0 },
-            bursary: { count: 0, amount: 0 }
-        };
-
-        this.payments.forEach(payment => {
-            const method = payment.paymentMode || 'unknown';
-            if (stats[method]) {
-                stats[method].count++;
-                stats[method].amount += Number(payment.amount || 0);
-            } else {
-                // Log unknown payment modes for debugging
-                console.warn('Unknown payment mode:', method, payment);
-            }
-        });
-
-        return stats;
-    }
-
-    // Format payment mode for display
-    formatPaymentMode(paymentMode) {
-        if (!paymentMode) return 'N/A';
-        
-        const modes = {
-            'mpesa': 'M-Pesa',
-            'bank': 'Bank Transfer',
-            'bursary': 'CDF Bursary'
-        };
-        
-        return modes[paymentMode] || paymentMode;
-    }
-
-    // Get formatted payment details for receipt generation
-    getFormattedPaymentDetails(payment) {
-        if (!payment) return null;
-        
-        return {
-            ...payment,
-            formattedPaymentMode: this.formatPaymentMode(payment.paymentMode),
-            formattedAmount: this.formatCurrency(payment.amount),
-            formattedDate: payment.paymentDate ? new Date(payment.paymentDate).toLocaleDateString() : 'N/A'
-        };
-    }
-
-    // Get monthly payment trends
-    getMonthlyPaymentTrends() {
-        const monthlyData = {};
-        
-        this.payments.forEach(payment => {
-            const date = new Date(payment.paymentDate || payment.createdAt);
-            const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-            
-            if (!monthlyData[monthKey]) {
-                monthlyData[monthKey] = { count: 0, amount: 0 };
-            }
-            
-            monthlyData[monthKey].count++;
-            monthlyData[monthKey].amount += Number(payment.amount || 0);
-        });
-
-        return Object.entries(monthlyData)
-            .sort(([a], [b]) => a.localeCompare(b))
-            .map(([month, data]) => ({
-                month,
-                count: data.count,
-                amount: data.amount
-            }));
-    }
-
-    // Get students with outstanding balances
-    getStudentsWithBalances(minBalance = 0) {
-        const studentsWithBalances = [];
-
-        this.students.forEach(student => {
-            const program = this.findProgramByName(student.course);
-            const programCost = program ? program.programCost : 0;
-            
-            const studentPayments = this.payments.filter(p => p.studentId === student.admissionNumber);
-            const totalPaid = studentPayments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
-            
-            const balance = programCost - totalPaid;
-            
-            if (balance > minBalance) {
-                studentsWithBalances.push({
-                    ...student,
-                    programCost,
-                    totalPaid,
-                    balance,
-                    paymentCount: studentPayments.length
-                });
-            }
-        });
-
-        return studentsWithBalances.sort((a, b) => b.balance - a.balance);
-    }
-
-    // Get students who have fully paid
-    getFullyPaidStudents() {
-        const fullyPaidStudents = [];
-
-        this.students.forEach(student => {
-            const program = this.findProgramByName(student.course);
-            const programCost = program ? program.programCost : 0;
-            
-            const studentPayments = this.payments.filter(p => p.studentId === student.admissionNumber);
-            const totalPaid = studentPayments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
-            
-            if (totalPaid >= programCost && programCost > 0) {
-                fullyPaidStudents.push({
-                    ...student,
-                    programCost,
-                    totalPaid,
-                    overpayment: totalPaid - programCost
-                });
-            }
-        });
-
-        return fullyPaidStudents;
-    }
-
-    // Get department-wise revenue analysis
-    getDepartmentRevenue() {
-        const departmentStats = {};
-
-        this.students.forEach(student => {
-            const dept = student.department || 'unknown';
-            if (!departmentStats[dept]) {
-                departmentStats[dept] = {
-                    studentCount: 0,
-                    expectedRevenue: 0,
-                    actualRevenue: 0,
-                    outstandingBalance: 0
-                };
-            }
-
-            departmentStats[dept].studentCount++;
-
-            const program = this.findProgramByName(student.course);
-            const programCost = program ? program.programCost : 0;
-            departmentStats[dept].expectedRevenue += programCost;
-
-            const studentPayments = this.payments.filter(p => p.studentId === student.admissionNumber);
-            const totalPaid = studentPayments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
-            departmentStats[dept].actualRevenue += totalPaid;
-            departmentStats[dept].outstandingBalance += Math.max(0, programCost - totalPaid);
-        });
-
-        return departmentStats;
-    }
-
-    // Get intake-wise statistics
-    getIntakeStats() {
-        const intakeStats = {};
-
-        this.students.forEach(student => {
-            const intakeKey = student.intake && student.intakeYear ? 
-                `${student.intake.charAt(0).toUpperCase() + student.intake.slice(1)} ${student.intakeYear}` : 
-                'Unknown';
-
-            if (!intakeStats[intakeKey]) {
-                intakeStats[intakeKey] = {
-                    studentCount: 0,
-                    expectedRevenue: 0,
-                    actualRevenue: 0
-                };
-            }
-
-            intakeStats[intakeKey].studentCount++;
-
-            const program = this.findProgramByName(student.course);
-            const programCost = program ? program.programCost : 0;
-            intakeStats[intakeKey].expectedRevenue += programCost;
-
-            const studentPayments = this.payments.filter(p => p.studentId === student.admissionNumber);
-            const totalPaid = studentPayments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
-            intakeStats[intakeKey].actualRevenue += totalPaid;
-        });
-
-        return intakeStats;
-    }
-
-    // Helper method to find program by course name
-    findProgramByName(courseName) {
-        // Course to Program mapping (complete mapping from finance dashboard)
-        const courseToProgram = {
-            'applied_biology_6': 'Applied Biology Level 6',
-            'analytical_chemistry_6': 'Analytical Chemistry Level 6',
-            'science_lab_technology_5': 'Science Lab Technology Level 5',
-            'general_agriculture_4': 'General Agriculture Level 4',
-            'sustainable_agriculture_5': 'Sustainable Agriculture Level 5',
-            'agricultural_extension_6': 'Agricultural Extension Level 6',
-            'building_technician_4': 'Building Technician Level 4',
-            'building_technician_6': 'Building Technician Level 6',
-            'civil_engineering_6': 'Civil Engineering Level 6',
-            'plumbing_4': 'Plumbing Level 4',
-            'plumbing_5': 'Plumbing Level 5',
-            'electrical_engineering_4': 'Electrical Engineering Level 4',
-            'electrical_engineering_5': 'Electrical Engineering Level 5',
-            'electrical_engineering_6': 'Electrical Engineering Level 6',
-            'automotive_engineering_5': 'Automotive Engineering Level 5',
-            'automotive_engineering_6': 'Automotive Engineering Level 6',
-            'food_beverage_4': 'Food and Beverage Level 4',
-            'food_beverage_5': 'Food & Beverage Level 5',
-            'food_beverage_6': 'Food & Beverage Level 6',
-            'food_and_beverage_4': 'Food and Beverage Level 4',
-            'food_and_beverage_5': 'Food & Beverage Level 5',
-            'food_and_beverage_6': 'Food & Beverage Level 6',
-            'fashion_design_4': 'Fashion & Design Level 4',
-            'fashion_design_5': 'Fashion and Design Level 5',
-            'fashion_design_6': 'Fashion and Design Level 6',
-            'fashion_and_design_4': 'Fashion & Design Level 4',
-            'fashion_and_design_5': 'Fashion and Design Level 5',
-            'fashion_and_design_6': 'Fashion and Design Level 6',
-            'hairdressing_4': 'Hairdressing Level 4',
-            'hairdressing_5': 'Hairdressing Level 5',
-            'hairdressing_6': 'Hairdressing Level 6',
-            'tourism_management_5': 'Tourism Management Level 5',
-            'tourism_management_6': 'Tourism Management Level 6',
-            'social_work_5': 'Social Work Level 5',
-            'social_work_6': 'Social Work Level 6',
-            'office_administration_5': 'Office Administration Level 5',
-            'office_administration_6': 'Office Administration Level 6',
-            'ict_5': 'ICT Level 5',
-            'ict_6': 'ICT Level 6',
-            'information_science_5': 'Information Science Level 5',
-            'information_science_6': 'Information Science Level 6',
-            // Additional variations for comprehensive mapping
-            'science_lab_tech_5': 'Science Lab Technology Level 5',
-            'science_laboratory_technology_5': 'Science Lab Technology Level 5',
-            'applied_bio_6': 'Applied Biology Level 6',
-            'analytical_chem_6': 'Analytical Chemistry Level 6',
-            'general_agric_4': 'General Agriculture Level 4',
-            'sustainable_agric_5': 'Sustainable Agriculture Level 5',
-            'agricultural_ext_6': 'Agricultural Extension Level 6',
-            'building_tech_4': 'Building Technician Level 4',
-            'building_tech_6': 'Building Technician Level 6',
-            'civil_eng_6': 'Civil Engineering Level 6',
-            'electrical_eng_4': 'Electrical Engineering Level 4',
-            'electrical_eng_5': 'Electrical Engineering Level 5',
-            'electrical_eng_6': 'Electrical Engineering Level 6',
-            'automotive_eng_5': 'Automotive Engineering Level 5',
-            'automotive_eng_6': 'Automotive Engineering Level 6',
-            'tourism_mgmt_5': 'Tourism Management Level 5',
-            'tourism_mgmt_6': 'Tourism Management Level 6',
-            'office_admin_5': 'Office Administration Level 5',
-            'office_admin_6': 'Office Administration Level 6',
-            'info_science_5': 'Information Science Level 5',
-            'info_science_6': 'Information Science Level 6',
-            // Additional course code variations to ensure all formats work
-            'agricultural_extension_6': 'Agricultural Extension Level 6',
-            'agric_extension_6': 'Agricultural Extension Level 6',
-            'building_technician_4': 'Building Technician Level 4',
-            'building_technician_6': 'Building Technician Level 6'
-        };
-
-        const programName = courseToProgram[courseName] || courseName;
-        return this.programs.find(program => 
-            program.name && program.name.toLowerCase() === programName.toLowerCase()
-        );
-    }
-
-    // Export analytics data
-    exportAnalyticsReport(format = 'json') {
-        const report = {
-            generatedAt: new Date().toISOString(),
-            summary: {
-                totalStudents: this.students.length,
-                totalPayments: this.payments.length,
-                totalRevenue: this.getTotalRevenue(),
-                expectedRevenue: this.getExpectedRevenue(),
-                outstandingBalance: this.getOutstandingBalance(),
-                collectionRate: this.getExpectedRevenue() > 0 ? 
-                    ((this.getTotalRevenue() / this.getExpectedRevenue()) * 100).toFixed(2) + '%' : '0%'
+    function renderTrend(d) {
+        const trend = d.monthlyTrend || [];
+        makeChart('an-trend-chart', {
+            type: 'line',
+            data: {
+                labels: trend.map(p => p.label),
+                datasets: [{
+                    label: 'Revenue',
+                    data: trend.map(p => p.amount),
+                    borderColor: MAROON,
+                    backgroundColor: 'rgba(122,12,12,0.12)',
+                    fill: true,
+                    tension: 0.35,
+                    pointRadius: 3,
+                    pointBackgroundColor: MAROON,
+                    borderWidth: 2,
+                }]
             },
-            paymentMethods: this.getPaymentMethodStats(),
-            monthlyTrends: this.getMonthlyPaymentTrends(),
-            departmentAnalysis: this.getDepartmentRevenue(),
-            intakeAnalysis: this.getIntakeStats(),
-            studentsWithBalances: this.getStudentsWithBalances(1000), // Students with balance > 1000
-            fullyPaidStudents: this.getFullyPaidStudents()
-        };
-
-        const filename = `finance_analytics_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.${format}`;
-
-        if (format === 'json') {
-            this.downloadFile(JSON.stringify(report, null, 2), filename, 'application/json');
-        } else if (format === 'csv') {
-            // Convert to CSV format (summary data)
-            const csvData = this.convertAnalyticsToCSV(report);
-            this.downloadFile(csvData, filename.replace('.json', '.csv'), 'text/csv');
-        } else if (format === 'pdf') {
-            this.exportAnalyticsToPDF(report, filename.replace('.json', '.pdf'));
-        }
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => fmt(c.parsed.y) } } },
+                scales: {
+                    x: { ticks: { color: tickColor() }, grid: { color: gridColor() } },
+                    y: { ticks: { color: tickColor(), callback: (v) => 'KES ' + Number(v).toLocaleString() }, grid: { color: gridColor() }, beginAtZero: true },
+                }
+            }
+        });
     }
 
-    // Export analytics to PDF
-    exportAnalyticsToPDF(report, filename) {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF('p', 'mm', 'a4'); // Portrait orientation
-        
-        // Add title
-        doc.setFontSize(18);
-        doc.setFont(undefined, 'bold');
-        doc.text('Financial Analytics Report', 20, 20);
-        
-        // Add generation date
-        doc.setFontSize(10);
-        doc.setFont(undefined, 'normal');
-        doc.text(`Generated on: ${new Date(report.generatedAt).toLocaleDateString()}`, 20, 30);
-        
-        let yPosition = 45;
-        
-        // Summary Section
-        doc.setFontSize(14);
-        doc.setFont(undefined, 'bold');
-        doc.text('Financial Summary', 20, yPosition);
-        yPosition += 10;
-        
-        doc.setFontSize(10);
-        doc.setFont(undefined, 'normal');
-        const summaryData = [
-            ['Total Students', report.summary.totalStudents.toString()],
-            ['Total Payments', report.summary.totalPayments.toString()],
-            ['Total Revenue', this.formatCurrency(report.summary.totalRevenue)],
-            ['Expected Revenue', this.formatCurrency(report.summary.expectedRevenue)],
-            ['Outstanding Balance', this.formatCurrency(report.summary.outstandingBalance)],
-            ['Collection Rate', report.summary.collectionRate]
+    function renderModes(d) {
+        const modes = d.paymentModes || [];
+        const labelMap = { mpesa: 'M-Pesa', bank: 'Bank Transfer', bursary: 'CDF Bursary', unknown: 'Other' };
+        makeChart('an-mode-chart', {
+            type: 'doughnut',
+            data: {
+                labels: modes.map(m => labelMap[m.mode] || m.mode),
+                datasets: [{ data: modes.map(m => m.amount), backgroundColor: [EMERALD, BLUE, GOLD, SLATE, ROSE], borderWidth: 0 }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false, cutout: '62%',
+                plugins: { legend: { position: 'bottom', labels: { color: tickColor(), padding: 12 } }, tooltip: { callbacks: { label: (c) => `${c.label}: ${fmt(c.parsed)}` } } }
+            }
+        });
+    }
+
+    function renderDepartments(d) {
+        const depts = d.departmentBreakdown || [];
+        makeChart('an-dept-chart', {
+            type: 'bar',
+            data: {
+                labels: depts.map(x => x.departmentName),
+                datasets: [
+                    { label: 'Collected', data: depts.map(x => x.actual), backgroundColor: MAROON, borderRadius: 4 },
+                    { label: 'Expected', data: depts.map(x => x.expected), backgroundColor: GOLD, borderRadius: 4 },
+                ]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom', labels: { color: tickColor() } }, tooltip: { callbacks: { label: (c) => `${c.dataset.label}: ${fmt(c.parsed.x)}` } } },
+                scales: {
+                    x: { ticks: { color: tickColor(), callback: (v) => Number(v).toLocaleString() }, grid: { color: gridColor() }, beginAtZero: true },
+                    y: { ticks: { color: tickColor() }, grid: { display: false } },
+                }
+            }
+        });
+    }
+
+    function renderStreams(d) {
+        const streams = (d.revenueStreams || []).filter(s => s.amount > 0);
+        makeChart('an-stream-chart', {
+            type: 'doughnut',
+            data: {
+                labels: streams.map(s => s.label),
+                datasets: [{ data: streams.map(s => s.amount), backgroundColor: [MAROON, GOLD, EMERALD, BLUE, SLATE, ROSE], borderWidth: 0 }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false, cutout: '55%',
+                plugins: { legend: { position: 'bottom', labels: { color: tickColor(), padding: 12 } }, tooltip: { callbacks: { label: (c) => `${c.label}: ${fmt(c.parsed)}` } } }
+            }
+        });
+    }
+
+    function renderDeptTable(d) {
+        const tbody = document.getElementById('an-dept-table');
+        if (!tbody) return;
+        const depts = d.departmentBreakdown || [];
+        tbody.innerHTML = depts.map(x => `
+            <tr class="text-slate-700 dark:text-slate-200">
+                <td class="px-3 py-2">${escapeHtml(x.departmentName)}</td>
+                <td class="px-3 py-2 text-right">${x.students}</td>
+                <td class="px-3 py-2 text-right">${fmt(x.expected)}</td>
+                <td class="px-3 py-2 text-right text-emerald-600 dark:text-emerald-400">${fmt(x.actual)}</td>
+                <td class="px-3 py-2 text-right text-rose-600 dark:text-rose-400">${fmt(x.outstanding)}</td>
+            </tr>
+        `).join('') || '<tr><td colspan="5" class="px-3 py-4 text-center text-slate-400">No data</td></tr>';
+    }
+
+    // ---- Exports (PDF + Excel only) ----
+    window.exportAnalyticsPDF = function exportAnalyticsPDF() {
+        if (!lastData) { showToast('Analytics still loading', 'warning'); return; }
+        if (window.FinanceDocs && window.FinanceDocs.analyticsPDF) {
+            window.FinanceDocs.analyticsPDF(lastData);
+        } else {
+            showToast('PDF exporter unavailable', 'error');
+        }
+    };
+
+    window.exportAnalyticsExcel = function exportAnalyticsExcel() {
+        if (!lastData) { showToast('Analytics still loading', 'warning'); return; }
+        const t = lastData.totals || {};
+        const rows = [
+            ['Finance Analytics Report'],
+            ['Generated', new Date().toLocaleString()],
+            [],
+            ['Metric', 'Value'],
+            ['Total Revenue', t.totalRevenue],
+            ['Tuition Revenue', t.tuitionRevenue],
+            ['Other Revenue', t.otherRevenue],
+            ['Expected Tuition', t.expectedRevenue],
+            ['Outstanding Balance', t.outstandingBalance],
+            ['Collection Rate (%)', t.collectionRate],
+            ['Total Students', t.studentsTotal],
+            ['Fully Paid', t.fullyPaid],
+            ['With Balance', t.withBalance],
+            [],
+            ['Department', 'Students', 'Expected', 'Collected', 'Outstanding'],
+            ...(lastData.departmentBreakdown || []).map(x => [x.departmentName, x.students, x.expected, x.actual, x.outstanding]),
         ];
-        
-        doc.autoTable({
-            body: summaryData,
-            startY: yPosition,
-            theme: 'striped',
-            headStyles: { fillColor: [59, 130, 246] },
-            margin: { left: 20, right: 20 },
-            columnStyles: {
-                0: { fontStyle: 'bold', cellWidth: 60 },
-                1: { cellWidth: 80 }
-            }
-        });
-        
-        yPosition = doc.lastAutoTable.finalY + 15;
-        
-        // Department Analysis
-        doc.setFontSize(14);
-        doc.setFont(undefined, 'bold');
-        doc.text('Department Revenue Analysis', 20, yPosition);
-        yPosition += 10;
-        
-        const deptHeaders = ['Department', 'Students', 'Expected Revenue', 'Actual Revenue', 'Outstanding'];
-        const deptData = Object.entries(report.departmentAnalysis).map(([dept, stats]) => [
-            dept.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-            stats.studentCount.toString(),
-            this.formatCurrency(stats.expectedRevenue),
-            this.formatCurrency(stats.actualRevenue),
-            this.formatCurrency(stats.outstandingBalance)
-        ]);
-        
-        doc.autoTable({
-            head: [deptHeaders],
-            body: deptData,
-            startY: yPosition,
-            theme: 'striped',
-            headStyles: { fillColor: [59, 130, 246] },
-            margin: { left: 20, right: 20 },
-            styles: { fontSize: 8 }
-        });
-        
-        // Add footer
-        const pageCount = doc.internal.getNumberOfPages();
-        for (let i = 1; i <= pageCount; i++) {
-            doc.setPage(i);
-            doc.setFontSize(8);
-            doc.text(`Page ${i} of ${pageCount}`, doc.internal.pageSize.width - 30, doc.internal.pageSize.height - 10);
-            doc.text('University Management System - Finance Dashboard', 20, doc.internal.pageSize.height - 10);
-        }
-        
-        doc.save(filename);
-    }
+        window.FinanceDocs.downloadExcel(rows, `finance_analytics_${new Date().toISOString().slice(0, 10)}`);
+    };
 
-    // Convert analytics to CSV format
-    convertAnalyticsToCSV(report) {
-        let csvContent = 'Finance Analytics Report\n\n';
-        
-        // Summary section
-        csvContent += 'SUMMARY\n';
-        csvContent += 'Metric,Value\n';
-        Object.entries(report.summary).forEach(([key, value]) => {
-            csvContent += `${key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())},${value}\n`;
-        });
-        
-        csvContent += '\n\nDEPARTMENT ANALYSIS\n';
-        csvContent += 'Department,Students,Expected Revenue,Actual Revenue,Outstanding Balance\n';
-        Object.entries(report.departmentAnalysis).forEach(([dept, data]) => {
-            csvContent += `${dept},${data.studentCount},${data.expectedRevenue},${data.actualRevenue},${data.outstandingBalance}\n`;
-        });
-
-        return csvContent;
-    }
-
-    // Download file helper
-    downloadFile(content, filename, mimeType) {
-        const blob = new Blob([content], { type: mimeType });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-    }
-
-    // Format currency
-    formatCurrency(amount) {
-        return `KES ${Number(amount).toLocaleString()}`;
-    }
-}
-
-// Export the class for use in other modules
-window.FinanceAnalytics = FinanceAnalytics;
-
-// ---- analytics glue (verbatim inline block) ----
-        // Navigation and Analytics functionality
-        let financeAnalytics = null;
-        
-        // Initialize analytics
-        async function initializeAnalytics() {
-            try {
-                financeAnalytics = new FinanceAnalytics();
-                await financeAnalytics.loadData();
-                updateAnalyticsDashboard();
-            } catch (error) {
-                console.error('Failed to initialize analytics:', error);
-            }
-        }
-
-        // Update analytics dashboard
-        function updateAnalyticsDashboard() {
-            if (!financeAnalytics) return;
-            
-            // Update summary cards
-            document.getElementById('total-revenue').textContent = 
-                financeAnalytics.formatCurrency(financeAnalytics.getTotalRevenue());
-            document.getElementById('outstanding-balance').textContent = 
-                financeAnalytics.formatCurrency(financeAnalytics.getOutstandingBalance());
-            document.getElementById('active-students').textContent = 
-                financeAnalytics.students.length.toLocaleString();
-                
-            const expectedRevenue = financeAnalytics.getExpectedRevenue();
-            const actualRevenue = financeAnalytics.getTotalRevenue();
-            const collectionRate = expectedRevenue > 0 ? ((actualRevenue / expectedRevenue) * 100).toFixed(1) : 0;
-            document.getElementById('collection-rate').textContent = `${collectionRate}%`;
-            
-            // Update department analysis
-            const departmentStats = financeAnalytics.getDepartmentRevenue();
-            const departmentContainer = document.getElementById('department-analysis');
-            
-            let departmentHTML = '';
-            Object.entries(departmentStats).forEach(([dept, stats]) => {
-                const deptName = dept.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                departmentHTML += `
-                    <div class="flex justify-between items-center p-4 bg-slate-50 dark:bg-slate-700 rounded-lg">
-                        <div>
-                            <h4 class="font-medium text-slate-800 dark:text-white">${escapeHtml(deptName)}</h4>
-                            <p class="text-sm text-slate-500 dark:text-slate-400">${stats.studentCount} students</p>
-                        </div>
-                        <div class="text-right">
-                            <p class="font-semibold text-slate-800 dark:text-white">${financeAnalytics.formatCurrency(stats.actualRevenue)}</p>
-                            <p class="text-sm text-slate-500 dark:text-slate-400">of ${financeAnalytics.formatCurrency(stats.expectedRevenue)}</p>
-                        </div>
-                    </div>
-                `;
+    window.FinanceTabs.analytics = {
+        init() {
+            loadAnalytics().catch(err => {
+                console.error('Analytics load failed:', err);
+                if (typeof showToast === 'function') showToast('Failed to load analytics', 'error');
             });
-            
-            departmentContainer.innerHTML = departmentHTML;
         }
-
-window.FinanceTabs.analytics = {
-    // Render once: updateAnalyticsDashboard() builds Chart.js charts; re-running on
-    // revisit would hit "Canvas is already in use". The cached pane keeps them.
-    init() {
-        if (window.__financeAnalyticsRendered) return;
-        window.__financeAnalyticsRendered = true;
-        initializeAnalytics();
-    }
-};
+    };
+})();
