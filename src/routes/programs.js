@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { db, schema } = require('../db');
 const { verifyToken, authorize } = require('../middleware/auth');
-const { toDecimal128 } = require('../utils/formatters');
+const { toDecimal128, DEPT_TEXT_TO_SHORT } = require('../utils/formatters');
 const { Program } = require('../db/models');
 
 // Create a new program
@@ -60,13 +60,20 @@ router.get('/programs', async (req, res) => {
         // other consumer) can display it without a second round trip. Existing
         // fields are preserved — departmentName is purely additive.
         const deptRows = await db
-            .select({ id: schema.departments.id, name: schema.departments.name })
+            .select({ id: schema.departments.id, name: schema.departments.name, code: schema.departments.code })
             .from(schema.departments);
-        const deptNameById = {};
-        for (const d of deptRows) deptNameById[d.id] = d.name;
+        // Reverse the snake_case → 2-letter map so we can attach the snake_case
+        // department key (e.g. 'applied_science') that students/users store and
+        // that the frontend dropdowns must emit as option values.
+        const shortToText = {};
+        for (const [text, short] of Object.entries(DEPT_TEXT_TO_SHORT)) shortToText[short] = text;
+        const deptById = {};
+        for (const d of deptRows) deptById[d.id] = d;
         const enriched = programs.map((p) => {
             const obj = (typeof p.toJSON === 'function') ? p.toJSON() : { ...p };
-            obj.departmentName = deptNameById[obj.departmentId] || null;
+            const dept = deptById[obj.departmentId];
+            obj.departmentName = dept ? dept.name : null;
+            obj.departmentCode = dept ? (shortToText[dept.code] || null) : null;
             return obj;
         });
         res.json(enriched);

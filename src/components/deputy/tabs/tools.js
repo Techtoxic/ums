@@ -562,5 +562,11 @@ window.DeputyTabs.tools = {
     init() {
         fetchToolsOfTrade();
         loadTrainers();   // populate #trainerSelect in the tool-request modal
+        // Populate the "By Department" filter from the shared catalog (Rule 7).
+        // Option values stay snake_case textCodes (drives loadTrainersByDepartment).
+        const deptSelect = document.getElementById('departmentSelect');
+        if (deptSelect && window.Catalog) {
+            window.Catalog.populateDepartmentSelect(deptSelect, { includeAll: true, allLabel: 'Select Department' });
+        }
     }
 };

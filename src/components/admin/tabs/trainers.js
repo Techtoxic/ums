@@ -107,19 +107,12 @@ function openAddTrainerModal() {
                     <label class="block text-sm font-medium text-gray-700 mb-2">
                         Department *
                     </label>
-                    <select 
-                        name="department" 
+                    <select
+                        name="department"
                         required
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                     >
                         <option value="">Select Department</option>
-                        <option value="applied_science">Applied Science</option>
-                        <option value="agriculture">Agriculture</option>
-                        <option value="building_civil">Building & Civil Engineering</option>
-                        <option value="electromechanical">Electromechanical Engineering</option>
-                        <option value="hospitality">Hospitality</option>
-                        <option value="business_liberal">Business & Liberal Studies</option>
-                        <option value="computing_informatics">Computing & Informatics</option>
                     </select>
                 </div>
 
@@ -185,6 +178,13 @@ function openAddTrainerModal() {
     `;
 
     document.body.appendChild(modal);
+
+    // Populate the department dropdown from the DB-backed catalog (Rule 7).
+    // Option values stay snake textCodes (Rule 2). Keep "Select Department" first.
+    const deptSelect = modal.querySelector('select[name="department"]');
+    if (deptSelect && window.Catalog) {
+        Catalog.populateDepartmentSelect(deptSelect, { includeAll: true, allLabel: 'Select Department' });
+    }
 
     // Add form submit handler
     document.getElementById('add-trainer-form').addEventListener('submit', handleAddTrainer);

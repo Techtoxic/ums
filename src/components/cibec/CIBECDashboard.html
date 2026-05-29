@@ -55,6 +55,7 @@
         }
     </style>
     <script src="/public/js/auth.js"></script>
+    <script src="/public/js/catalog.js"></script>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900">
     <!-- Header -->
@@ -156,13 +157,7 @@
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Department</label>
                     <select id="filter-department" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         <option value="">All Departments</option>
-                        <option value="applied_science">Applied Science</option>
-                        <option value="agriculture">Agriculture</option>
-                        <option value="building_civil">Building & Civil</option>
-                        <option value="electromechanical">Electromechanical</option>
-                        <option value="hospitality">Hospitality</option>
-                        <option value="business_liberal">Business & Liberal</option>
-                        <option value="computing_informatics">Computing & Informatics</option>
+                        <!-- Department options populated from the shared catalog in initializeDashboard() -->
                     </select>
                 </div>
 

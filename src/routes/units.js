@@ -3,7 +3,8 @@ const router = express.Router();
 const { db, schema } = require('../db');
 const { eq, and, isNull } = require('drizzle-orm');
 const { verifyToken, authorize } = require('../middleware/auth');
-const { DEPT_TEXT_TO_SHORT, formatCourseNameServer } = require('../utils/formatters');
+const { DEPT_TEXT_TO_SHORT } = require('../utils/formatters');
+const { getMaxModuleForLevel } = require('../utils/studentHelpers');
 const { Unit, Student, StudentUnitRegistration } = require('../db/models');
 
 // Get units by course code (for student portal)
@@ -26,11 +27,13 @@ router.get('/units/course/:courseCode', async (req, res) => {
                 _id: schema.units.id,
                 unitCode: schema.units.code,
                 unitName: schema.units.name,
+                module: schema.units.module,
                 year: schema.units.year,
                 semester: schema.units.semester,
                 isCommon: schema.units.is_common,
                 courseCode: schema.programs.code,
                 courseName: schema.programs.name,
+                courseLevel: schema.programs.level,
             })
             .from(schema.units)
             .innerJoin(schema.programs, eq(schema.programs.id, schema.units.program_id))
@@ -38,7 +41,17 @@ router.get('/units/course/:courseCode', async (req, res) => {
                 eq(schema.programs.code, courseCode.toUpperCase()),
                 isNull(schema.units.deleted_at),
             ))
-            .orderBy(schema.units.year, schema.units.code);
+            .orderBy(schema.units.module, schema.units.code);
+
+        // Module visibility (Rule 4): a course level only sees modules up to a cap
+        // (L3=1, L4=2, L5=4, L6=6). Units are seeded per level, but the highest
+        // level of a course also carries surplus modules — filter them here so a
+        // student never sees modules beyond their level's cap.
+        const level = unitRows.length ? unitRows[0].courseLevel : null;
+        const cap = getMaxModuleForLevel(level);
+        const visibleRows = cap == null
+            ? unitRows
+            : unitRows.filter(u => u.module == null || u.module <= cap);
 
         // Registration status — only when an admission number is supplied.
         // studentId arrives as an admission number; resolve it to the student uuid,
@@ -54,7 +67,7 @@ router.get('/units/course/:courseCode', async (req, res) => {
         }
 
         // Common units are just units rows with is_common = true (already included above).
-        const units = unitRows.map(u => ({
+        const units = visibleRows.map(u => ({
             ...u,
             department: u.isCommon ? 'common' : 'department',
             type: u.isCommon ? 'common' : 'department',
@@ -157,15 +170,31 @@ router.get('/units', verifyToken, authorize('admin', 'registrar', 'hod', 'deputy
     }
 });
 
-// Get all courses
+// Get all courses — DB-sourced from the programs table (Rule 7: no hardcoded lists).
+// `department` is the snake_case key (reverse of DEPT_TEXT_TO_SHORT) so existing
+// consumers that key on it keep working.
 router.get('/courses', async (req, res) => {
     try {
-        const { courseUnits } = require('../data/courseUnits');
-        const courses = Object.keys(courseUnits).map(courseCode => ({
-            code: courseCode,
-            name: formatCourseNameServer(courseCode),
-            department: courseUnits[courseCode].department,
-            level: courseUnits[courseCode].level
+        const shortToText = {};
+        for (const [text, short] of Object.entries(DEPT_TEXT_TO_SHORT)) shortToText[short] = text;
+
+        const rows = await db
+            .select({
+                code: schema.programs.code,
+                name: schema.programs.name,
+                level: schema.programs.level,
+                deptCode: schema.departments.code,
+            })
+            .from(schema.programs)
+            .leftJoin(schema.departments, eq(schema.departments.id, schema.programs.department_id))
+            .where(isNull(schema.programs.deleted_at))
+            .orderBy(schema.programs.code);
+
+        const courses = rows.map(r => ({
+            code: r.code,
+            name: r.name,
+            department: shortToText[r.deptCode] || null,
+            level: r.level,
         }));
         res.json(courses);
     } catch (error) {

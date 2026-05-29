@@ -50,7 +50,7 @@ window.FinanceTabs = window.FinanceTabs || {};
                 const tableData = outstandingStudents.map(student => [
                     student.admissionNumber || 'N/A',
                     student.name || 'N/A',
-                    financeAnalytics.formatCourseName(student.course),
+                    formatCourseName(student.course),
                     `KES ${(student.totalPaid || 0).toLocaleString()}`,
                     `KES ${student.balance.toLocaleString()}`,
                     student.intake ? `${student.intake} ${student.intakeYear}` : 'N/A'

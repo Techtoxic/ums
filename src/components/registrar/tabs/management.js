@@ -2,16 +2,13 @@
 // The viewStudentModal / editStudentModal markup ships inside management.html.
 window.RegistrarTabs = window.RegistrarTabs || {};
 
-// Department display labels for the table + modals.
-const departmentMapping = {
-    applied_science: 'Applied Science Department',
-    agriculture: 'Agriculture Department',
-    building_civil: 'Building and Civil Department',
-    electromechanical: 'Electromechanical Department',
-    hospitality: 'Hospitality Department',
-    business_liberal: 'Business and Liberal Studies',
-    computing_informatics: 'Computing and Informatics',
-};
+// Department display labels come from the shared DB-backed catalog (Rule 7).
+// registrar's portal-core already awaits Catalog.ready() at bootstrap, so the
+// sync lookups below are safe.
+function deptDisplay(key) {
+    if (window.Catalog) return window.Catalog.departmentName(key);
+    return String(key || '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+}
 
 // Global pagination state for students
 let studentsState = {
@@ -99,7 +96,7 @@ function renderStudentsPage() {
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-gray-50 dark:hover:bg-gray-700';
 
-        const departmentDisplay = departmentMapping[student.department] || student.department || 'Not Assigned';
+        const departmentDisplay = deptDisplay(student.department) || student.department || 'Not Assigned';
         const intakeDisplay = student.intake ? `${student.intake} ${student.intakeYear || ''}`.trim() : 'N/A';
         const statusDisplay = student.status ? student.status.charAt(0).toUpperCase() + student.status.slice(1) : 'Active';
 
@@ -187,7 +184,7 @@ async function viewStudent(studentId) {
 
         const content = document.getElementById('studentDetailsContent');
         const courseName = String(student.course || '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-        const departmentName = departmentMapping[student.department] || student.department || 'Not Assigned';
+        const departmentName = deptDisplay(student.department) || student.department || 'Not Assigned';
         const intakeLine = student.intake ? `${student.intake} ${student.intakeYear || ''}` : 'N/A';
 
         content.innerHTML = `
@@ -351,6 +348,16 @@ window.RegistrarTabs.management = {
         const moduleFilter = document.getElementById('moduleFilter');
         const intakeFilter = document.getElementById('intakeFilter');
         const searchInput = document.getElementById('studentSearchInput');
+        // Append department options from the DB-backed catalog (Rule 7); the
+        // static "All Departments" (value="all") option stays first.
+        if (departmentFilter && window.Catalog) {
+            for (const d of window.Catalog.getDepartments()) {
+                const o = document.createElement('option');
+                o.value = d.textCode || d.code;
+                o.textContent = d.name;
+                departmentFilter.appendChild(o);
+            }
+        }
         if (departmentFilter) departmentFilter.addEventListener('change', (e) => { studentsState.filters.department = e.target.value; applyAllFilters(); });
         if (moduleFilter) moduleFilter.addEventListener('change', (e) => { studentsState.filters.module = e.target.value; applyAllFilters(); });
         if (intakeFilter) intakeFilter.addEventListener('change', (e) => { studentsState.filters.intake = e.target.value; applyAllFilters(); });

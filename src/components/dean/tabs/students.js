@@ -1,25 +1,14 @@
 // tabs/students.js — dean student welfare list: search/filter + per-student actions.
 window.DeanTabs = window.DeanTabs || {};
 
-// (verbatim from deanDashboard.js)
-// Load departments
+// Load departments into the filter <select> from the shared catalog (Rule 7).
+// Option values stay snake_case textCodes so the API filter keeps working.
 async function loadDepartments() {
-    try {
-        const response = await authFetch(`${API_BASE}/programs`);
-        if (!response.ok) throw new Error('Failed to load departments');
-        
-        const programs = await response.json();
-        const departments = [...new Set(programs.map(p => p.departmentName).filter(Boolean))].sort();
-        
-        const select = document.getElementById('filter-department');
-        departments.forEach(dept => {
-            const option = document.createElement('option');
-            option.value = dept;
-            option.textContent = dept;
-            select.appendChild(option);
-        });
-    } catch (error) {
-        console.error('Error loading departments:', error);
+    const select = document.getElementById('filter-department');
+    if (!select) return;
+    if (window.Catalog) {
+        await window.Catalog.ready();
+        window.Catalog.populateDepartmentSelect(select, { includeAll: true, allLabel: 'All Departments' });
     }
 }
 
@@ -80,7 +69,7 @@ function displayStudents(students) {
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(student.admissionNumber)}</td>
             <td class="px-6 py-4">
                 <div class="text-sm text-gray-900">${escapeHtml(formatCourseName(student.course))}</div>
-                <div class="text-xs text-gray-500">${escapeHtml(student.department)}</div>
+                <div class="text-xs text-gray-500">${escapeHtml(window.Catalog ? window.Catalog.departmentName(student.department) : student.department)}</div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
                 <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">

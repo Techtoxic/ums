@@ -39,17 +39,11 @@ const TOOL_TYPE_LABELS = {
 };
 
 // ---- formatting + notification + logout utils (verbatim) ----
-// Format course name
+// Format course name — delegate to the shared DB-backed catalog (Rule 7).
 function formatCourseName(courseCode) {
-    const courseNames = {
-        'analytical_chemistry_6': 'Analytical Chemistry Level 6',
-        'applied_chemistry_6': 'Applied Chemistry Level 6',
-        'biochemistry_5': 'Biochemistry Level 5',
-        'industrial_chemistry_6': 'Industrial Chemistry Level 6',
-        'organic_chemistry_5': 'Organic Chemistry Level 5',
-        'physical_chemistry_6': 'Physical Chemistry Level 6'
-    };
-    return courseNames[courseCode] || courseCode.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    if (window.Catalog) return window.Catalog.formatCourseName(courseCode);
+    // Fallback only if the catalog helper failed to load.
+    return String(courseCode || '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 }
 
 // Format date
@@ -111,6 +105,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const user = await window.AUTH.requireAuth('/admin/login');
         if (user && user.name && nameEl) nameEl.textContent = user.name;
     }
+
+    // Load the shared programs/departments catalog once before tabs render.
+    if (window.Catalog) { await window.Catalog.ready(); }
 
     // Topbar logout button — dean role logs back into /admin/login.
     const logoutBtn = document.getElementById('logoutBtn');

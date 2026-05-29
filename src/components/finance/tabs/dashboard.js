@@ -50,6 +50,12 @@ studentCountSpan = document.getElementById('student-count');
 // element refs are captured after the dashboard partial is injected.
 async function initializeDashboard() {
     cacheDashboardEls();
+    // Populate the department filter from the shared Catalog (DB-backed). Option
+    // VALUES are snake_case textCodes; "" = all. Catalog.ready() already ran in
+    // the portal bootstrap before the router started this tab.
+    if (window.Catalog && departmentFilter) {
+        window.Catalog.populateDepartmentSelect(departmentFilter, { includeAll: true, allLabel: 'All Departments' });
+    }
     await Promise.all([
         loadStudents(),
         loadPrograms()
@@ -106,9 +112,11 @@ function renderStudentTable(students, programs, payments) {
     
     // Process each student
     students.forEach(student => {
-        // Find program cost using course mapping (exact match only)
-        const programName = courseToProgram[student.course];
-        const program = programs.find(p => p.name && p.name.toLowerCase() === (programName || '').toLowerCase());
+        // Find program cost via the shared Catalog helper. student.course holds
+        // the program CODE (e.g. 'GA5'); programByCode returns the program object.
+        const program = window.Catalog
+            ? window.Catalog.programByCode(student.course)
+            : programs.find(p => String(p.code || '').toUpperCase() === String(student.course || '').toUpperCase());
         const programCost = program ? program.programCost : 67189; // Default to standard cost
         
         // Calculate total fees based on year of study (programCost is per year)
@@ -122,17 +130,11 @@ function renderStudentTable(students, programs, payments) {
         // Calculate balance (total fees minus payments) - allow negative values for overpayment
         const balance = totalFees - totalPaid;
         
-        // Get department name
-        const departmentMap = {
-            'applied_science': 'Applied Science',
-            'agriculture': 'Agriculture',
-            'building_civil': 'Building & Civil',
-            'electromechanical': 'Electromechanical',
-            'hospitality': 'Hospitality',
-            'business_liberal': 'Business & Liberal',
-            'computing_informatics': 'Computing & Informatics'
-        };
-        const departmentName = departmentMap[student.department] || student.department || 'N/A';
+        // Get department display name from the shared Catalog helper.
+        // student.department stores the snake_case textCode (e.g. 'agriculture').
+        const departmentName = window.Catalog
+            ? (window.Catalog.departmentName(student.department) || 'N/A')
+            : (student.department || 'N/A');
         
         // Create table row
         const row = document.createElement('tr');

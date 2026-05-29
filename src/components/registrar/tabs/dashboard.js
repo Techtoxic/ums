@@ -42,7 +42,7 @@ window.RegistrarTabs = window.RegistrarTabs || {};
                 const dept = student.department;
                 if (!departmentStats[dept]) {
                     departmentStats[dept] = {
-                        name: departmentMapping[dept] || dept,
+                        name: (window.Catalog ? window.Catalog.departmentName(dept) : dept) || dept,
                         students: 0,
                         courses: new Set()
                     };

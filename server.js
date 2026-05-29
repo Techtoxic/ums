@@ -1185,6 +1185,9 @@ app.use('/api', require('./src/routes/studentRegistration'));
 // Program Routes — extracted to src/routes/programs.js
 app.use('/api', require('./src/routes/programs'));
 
+// Department Routes — public department list for portal dropdowns/labels
+app.use('/api', require('./src/routes/departments'));
+
 // Payment Routes — extracted to src/routes/payments.js
 app.use('/api', require('./src/routes/payments'));
 

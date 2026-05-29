@@ -158,22 +158,18 @@ function updateTrainerInfo() {
     });
 }
 
-// Format department name for display
+// Format department name for display — DB-backed catalog (Rule 7).
 function formatDepartmentName(departmentCode) {
-    const departmentNames = {
-        'applied_science': 'Applied Science',
-        'agriculture': 'Agriculture',
-        'building_civil': 'Building & Civil',
-        'electromechanical': 'Electromechanical',
-        'hospitality': 'Hospitality',
-        'business_liberal': 'Business & Liberal Studies',
-        'computing_informatics': 'Computing & Informatics'
-    };
-    return departmentNames[departmentCode] || departmentCode;
+    if (window.Catalog) return Catalog.departmentName(departmentCode);
+    if (!departmentCode) return departmentCode;
+    return departmentCode.split('_').map(word =>
+        word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(' ');
 }
 
-// Format course name
+// Format course name — resolve the program CODE via the DB-backed catalog (Rule 7).
 function formatCourseName(courseCode) {
+    if (window.Catalog) return Catalog.formatCourseName(courseCode) || 'N/A';
     if (!courseCode) return 'N/A';
     return courseCode.replace(/_/g, ' ').toUpperCase();
 }
@@ -344,6 +340,9 @@ async function initializeDashboard() {
         const trainer = await window.AUTH.requireAuth('/trainer/login');
         if (!trainer) return;
         currentTrainer = trainer;
+
+        // Load the shared course/department catalog before any tab renders (Rule 7).
+        if (window.Catalog) { await window.Catalog.ready(); }
 
         initializeUI();        // shell wiring (theme, sidebar, clock, phone modal, lastSync)
         updateTrainerInfo();   // paint the sidebar identity (other fields filled by tab inits)

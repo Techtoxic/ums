@@ -9,15 +9,13 @@ const authFetch = async (url, options = {}) => window.AUTH.fetch(url, options);
 class StudentExporter {
     constructor() {
         this.students = [];
-        this.departmentMapping = {
-            'applied_science': 'Applied Science Department',
-            'agriculture': 'Agriculture Department',
-            'building_civil': 'Building and Civil Department',
-            'electromechanical': 'Electromechanical Department',
-            'hospitality': 'Hospitality Department',
-            'business_liberal': 'Business and Liberal Studies',
-            'computing_informatics': 'Computing and Informatics'
-        };
+    }
+
+    // Department display name from the shared DB-backed catalog (Rule 7), with a
+    // title-case fallback if the catalog helper failed to load.
+    deptDisplay(key) {
+        if (window.Catalog) return window.Catalog.departmentName(key);
+        return String(key || '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
     }
 
     // Load students data
@@ -81,7 +79,7 @@ class StudentExporter {
             'Full Name': student.name || 'N/A',
             'ID Number': student.idNumber || 'N/A',
             'Course': student.course || 'N/A',
-            'Department': this.departmentMapping[student.department] || student.department || 'N/A',
+            'Department': this.deptDisplay(student.department) || student.department || 'N/A',
             'Module': student.module != null ? `Module ${student.module}` : 'N/A',
             'Intake': student.intake ?
                 (student.intake.charAt(0).toUpperCase() + student.intake.slice(1) + ' ' + (student.intakeYear || '')) : 'N/A',

@@ -140,6 +140,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (userAvatar) userAvatar.textContent = user.name.charAt(0).toUpperCase();
         }
     }
+
+    // Load the shared programs/departments catalog once before tabs render.
+    if (window.Catalog) { await window.Catalog.ready(); }
+
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn && window.AUTH && typeof window.AUTH.logout === 'function') {
         logoutBtn.addEventListener('click', () => window.AUTH.logout({ role: 'admin' }));

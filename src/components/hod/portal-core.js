@@ -80,16 +80,12 @@ function checkProfileUpdate() {
 // ---- department data loaders + formatters (verbatim) ----
 // Format department name for display
 function formatDepartmentName(department) {
-    const departmentNames = {
-        'applied_science': 'Applied Science',
-        'agriculture': 'Agriculture',
-        'building_civil': 'Building & Civil Engineering',
-        'electromechanical': 'Electromechanical Engineering',
-        'hospitality': 'Hospitality',
-        'business_liberal': 'Business & Liberal Studies',
-        'computing_informatics': 'Computing & Informatics'
-    };
-    return departmentNames[department] || department;
+    // DB-backed catalog (Rule 7). Title-case fallback only if catalog absent.
+    if (window.Catalog) return Catalog.departmentName(department);
+    if (!department) return department;
+    return department.split('_').map(word =>
+        word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(' ');
 }
 
 // Load all dashboard data
@@ -238,8 +234,10 @@ function groupUnitsByCourse(units) {
     return Object.values(grouped);
 }
 
-// Format course name
+// Format course name — resolve the program CODE via the DB-backed catalog (Rule 7).
 function formatCourseName(courseCode) {
+    if (window.Catalog) return Catalog.formatCourseName(courseCode);
+    if (!courseCode) return courseCode;
     return courseCode
         .split('_')
         .map(word => word.charAt(0).toUpperCase() + word.slice(1))
@@ -708,6 +706,9 @@ document.addEventListener('DOMContentLoaded', async function () {
         const user = await window.AUTH.requireAuth('/hod/login');
         if (!user) return;
         currentHOD = user;
+
+        // Load the shared course/department catalog before any tab renders (Rule 7).
+        if (window.Catalog) { await window.Catalog.ready(); }
 
         updateHODInfo();        // sidebar identity (welcome line is re-filled by overview init)
         checkProfileUpdate();   // global profile-update modal, if needed

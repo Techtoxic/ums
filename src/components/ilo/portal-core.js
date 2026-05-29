@@ -61,21 +61,12 @@ function getStatusClass(status) {
     }
 }
 
-// Format course name
+// Format course name — delegate to the shared DB-backed catalog (Rule 7).
 function formatCourseName(course) {
     if (!course) return 'N/A';
-    
-    const courseMap = {
-        'science_laboratory_technology_5': 'Science Laboratory Technology',
-        'information_communication_technology_5': 'Information Communication Technology',
-        'electrical_installation_5': 'Electrical Installation',
-        'plumbing_5': 'Plumbing',
-        'motor_vehicle_mechanics_5': 'Motor Vehicle Mechanics',
-        'building_construction_5': 'Building Construction',
-        'welding_fabrication_5': 'Welding & Fabrication'
-    };
-    
-    return courseMap[course] || course.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    if (window.Catalog) return window.Catalog.formatCourseName(course);
+    // Fallback only if the catalog helper failed to load.
+    return course.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 }
 
 // ---- review modal flow — global modal (verbatim) ----
@@ -183,6 +174,10 @@ document.addEventListener('DOMContentLoaded', async function () {
     if (window.AUTH && typeof window.AUTH.requireAuth === 'function') {
         await window.AUTH.requireAuth('/admin/login');
     }
+
+    // Load the shared programs/departments catalog once before tabs render.
+    if (window.Catalog) { await window.Catalog.ready(); }
+
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn && window.AUTH && typeof window.AUTH.logout === 'function') {
         logoutBtn.addEventListener('click', () => window.AUTH.logout({ role: 'admin' }));

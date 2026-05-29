@@ -211,6 +211,7 @@ const units = pgTable(
         program_id: uuid('program_id').references(() => programs.id),
         code: text('code').notNull(),
         name: text('name').notNull(),
+        module: integer('module'),
         year: integer('year').notNull(),
         semester: integer('semester').notNull(),
         is_common: boolean('is_common').notNull().default(false),

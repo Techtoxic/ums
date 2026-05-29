@@ -30,91 +30,7 @@ window.authFetch = window.authFetch || (async (url, options = {}) => {
 // Get student data from session storage
 window.studentData = JSON.parse(sessionStorage.getItem('studentData')) || {};
 
-// Course to Program Name Mapping
-window.courseToProgram = {
-    'applied_biology_6': 'Applied Biology Level 6',
-    'analytical_chemistry_6': 'Analytical Chemistry Level 6',
-    'science_lab_technology_5': 'Science Lab Technology Level 5',
-    'general_agriculture_4': 'General Agriculture Level 4',
-    'sustainable_agriculture_5': 'Sustainable Agriculture Level 5',
-    'agricultural_extension_6': 'Agricultural Extension Level 6',
-    'building_technician_4': 'Building Technician Level 4',
-    'building_technician_6': 'Building Technician Level 6',
-    'civil_engineering_6': 'Civil Engineering Level 6',
-    'plumbing_4': 'Plumbing Level 4',
-    'plumbing_5': 'Plumbing Level 5',
-    'electrical_engineering_4': 'Electrical Engineering Level 4',
-    'electrical_engineering_5': 'Electrical Engineering Level 5',
-    'electrical_engineering_6': 'Electrical Engineering Level 6',
-    'automotive_engineering_5': 'Automotive Engineering Level 5',
-    'automotive_engineering_6': 'Automotive Engineering Level 6',
-    'food_beverage_4': 'Food and Beverage Level 4',
-    'food_beverage_5': 'Food & Beverage Level 5',
-    'food_beverage_6': 'Food & Beverage Level 6',
-    'food_and_beverage_4': 'Food and Beverage Level 4',
-    'food_and_beverage_5': 'Food & Beverage Level 5',
-    'food_and_beverage_6': 'Food & Beverage Level 6',
-    'fashion_design_4': 'Fashion & Design Level 4',
-    'fashion_design_5': 'Fashion and Design Level 5',
-    'fashion_design_6': 'Fashion and Design Level 6',
-    'fashion_and_design_4': 'Fashion & Design Level 4',
-    'fashion_and_design_5': 'Fashion and Design Level 5',
-    'fashion_and_design_6': 'Fashion and Design Level 6',
-    'hairdressing_4': 'Hairdressing Level 4',
-    'hairdressing_5': 'Hairdressing Level 5',
-    'hairdressing_6': 'Hairdressing Level 6',
-    'tourism_management_5': 'Tourism Management Level 5',
-    'tourism_management_6': 'Tourism Management Level 6',
-    'social_work_5': 'Social Work Level 5',
-    'social_work_6': 'Social Work Level 6',
-    'office_administration_5': 'Office Administration Level 5',
-    'office_administration_6': 'Office Administration Level 6',
-    'ict_5': 'ICT Level 5',
-    'ict_6': 'ICT Level 6',
-    'information_science_5': 'Information Science Level 5',
-    'information_science_6': 'Information Science Level 6',
-    // Additional variations for comprehensive mapping
-    'science_lab_tech_5': 'Science Lab Technology Level 5',
-    'science_laboratory_technology_5': 'Science Lab Technology Level 5',
-    'applied_bio_6': 'Applied Biology Level 6',
-    'analytical_chem_6': 'Analytical Chemistry Level 6',
-    'general_agric_4': 'General Agriculture Level 4',
-    'sustainable_agric_5': 'Sustainable Agriculture Level 5',
-    'agricultural_ext_6': 'Agricultural Extension Level 6',
-    'building_tech_4': 'Building Technician Level 4',
-    'building_tech_6': 'Building Technician Level 6',
-    'civil_eng_6': 'Civil Engineering Level 6',
-    'electrical_eng_4': 'Electrical Engineering Level 4',
-    'electrical_eng_5': 'Electrical Engineering Level 5',
-    'electrical_eng_6': 'Electrical Engineering Level 6',
-    'automotive_eng_5': 'Automotive Engineering Level 5',
-    'automotive_eng_6': 'Automotive Engineering Level 6',
-    'tourism_mgmt_5': 'Tourism Management Level 5',
-    'tourism_mgmt_6': 'Tourism Management Level 6',
-    'office_admin_5': 'Office Administration Level 5',
-    'office_admin_6': 'Office Administration Level 6',
-    'info_science_5': 'Information Science Level 5',
-    'info_science_6': 'Information Science Level 6',
-    // Additional course code variations to ensure all formats work
-    'agricultural_extension_6': 'Agricultural Extension Level 6',
-    'agricultural_ext_6': 'Agricultural Extension Level 6',
-    'agric_extension_6': 'Agricultural Extension Level 6',
-    'building_technician_4': 'Building Technician Level 4',
-    'building_technician_6': 'Building Technician Level 6',
-    'building_tech_4': 'Building Technician Level 4',
-    'building_tech_6': 'Building Technician Level 6'
-};
 
-// Department Mapping
-window.departmentMapping = {
-    'applied_science': 'Applied Science Department',
-    'agriculture': 'Agriculture Department',
-    'building_civil': 'Building and Civil Department',
-    'electromechanical': 'Electromechanical Department',
-    'hospitality': 'Hospitality Department',
-    'business_liberal': 'Business and Liberal Studies',
-    'computing_informatics': 'Computing and Informatics'
-};
 
 // Format currency
 window.formatCurrency = function formatCurrency(amount) {
@@ -314,14 +230,18 @@ function updateStudentInfo(data) {
         el.textContent = studentInfo.kcseGrade || 'Loading...';
     });
     
-    // Update course name (convert to readable format)
-    const courseName = courseToProgram[studentInfo.course] || studentInfo.course || 'Loading...';
+    // Update course name. student.course holds the program CODE (e.g. 'GA5');
+    // resolve its display name via the shared DB-backed Catalog helper.
+    const courseName = (window.Catalog && window.Catalog.formatCourseName(studentInfo.course))
+        || studentInfo.course || 'Loading...';
     document.querySelectorAll('.student-course-name').forEach(el => {
         el.textContent = courseName;
     });
     
-    // Update department (convert to readable format)
-    const departmentName = departmentMapping[studentInfo.department] || studentInfo.department || 'Loading...';
+    // Update department. student.department holds the snake_case textCode
+    // (e.g. 'agriculture'); resolve its display name via the Catalog helper.
+    const departmentName = (window.Catalog && window.Catalog.departmentName(studentInfo.department))
+        || studentInfo.department || 'Loading...';
     document.querySelectorAll('.student-department').forEach(el => {
         el.textContent = departmentName;
     });
@@ -506,16 +426,15 @@ function setupLogout() {
 // Shared utils + shell wiring (verbatim from the monolith inline scripts)
 // ============================================================
 
-        // Simple function to format course names (fallback if courseToProgram is not available)
+        // Format a course CODE (e.g. 'GA5') to its program display name via the
+        // shared DB-backed Catalog helper. Title-case fallback when Catalog is
+        // unavailable (script load failure). graduation.js / attachment.js call
+        // this as a bare global (resolved via global function scope).
         function formatCourseName(courseCode) {
-            // Try to use the global courseToProgram mapping first
-            if (typeof courseToProgram !== 'undefined' && courseToProgram[courseCode]) {
-                return courseToProgram[courseCode];
+            if (window.Catalog) {
+                return window.Catalog.formatCourseName(courseCode) || 'N/A';
             }
-            
-            // Fallback: Convert course code to readable format
             if (!courseCode) return 'N/A';
-            
             return courseCode
                 .replace(/_/g, ' ')
                 .replace(/\b\w/g, l => l.toUpperCase())
@@ -790,6 +709,9 @@ async function bootstrapPortal() {
     // anything else. requireAuth bounces to /student/login on no/expired cookie.
     const me = await window.AUTH.requireAuth('/student/login');
     if (!me) return;
+    // Load the shared catalog (programs + departments) so sync Catalog lookups
+    // (formatCourseName, departmentName) resolve before any tab renders.
+    if (window.Catalog) { await window.Catalog.ready(); }
     window.studentData = { ...studentData, ...me };
     try { sessionStorage.setItem('studentData', JSON.stringify(studentData)); } catch (e) { /* private mode */ }
     console.log('Student data after auth check:', studentData);

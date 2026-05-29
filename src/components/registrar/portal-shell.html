@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="/public/js/auth.js"></script>
+    <script src="/public/js/catalog.js"></script>
     <link rel="stylesheet" href="/public/css/dashboard-styles.css">
     <!-- Theme controller: in <head>, after styles, runs pre-paint (no flash) -->
     <script src="/public/js/dashboard-theme.js"></script>
@@ -178,15 +179,9 @@
                     <div class="space-y-4" id="filter-options">
                         <div id="department-filter" class="hidden">
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Department</label>
+                            <!-- Options populated from the DB via Catalog.populateDepartmentSelect -->
                             <select id="export-department" class="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
                                 <option value="">All Departments</option>
-                                <option value="applied_science">Applied Science Department</option>
-                                <option value="agriculture">Agriculture Department</option>
-                                <option value="building_civil">Building and Civil Department</option>
-                                <option value="electromechanical">Electromechanical Department</option>
-                                <option value="hospitality">Hospitality Department</option>
-                                <option value="business_liberal">Business and Liberal Studies</option>
-                                <option value="computing_informatics">Computing and Informatics</option>
                             </select>
                         </div>
                         
@@ -443,70 +438,16 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Department</label>
+                        <!-- Options populated from the DB; auto-selected when a course is chosen -->
                         <select name="department" id="department" required class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white" disabled>
                             <option value="">Department will be auto-selected</option>
-                            <option value="applied_science">Applied Science Department</option>
-                            <option value="agriculture">Agriculture Department</option>
-                            <option value="building_civil">Building and Civil Department</option>
-                            <option value="electromechanical">Electromechanical Department</option>
-                            <option value="hospitality">Hospitality Department</option>
-                            <option value="business_liberal">Business and Liberal Studies</option>
-                            <option value="computing_informatics">Computing and Informatics</option>
                         </select>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Course <span class="text-red-600">*</span></label>
+                        <!-- Options populated from the DB via Catalog.populateCourseSelect (Rule 7) -->
                         <select name="course" id="course" required onchange="handleCourseSelection()" class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
                             <option value="">Select Course</option>
-                            <optgroup label="Applied Science Department">
-                                <option value="applied_biology_6">Applied Biology Level 6 (AP6)</option>
-                                <option value="analytical_chemistry_6">Analytical Chemistry Level 6 (AC6)</option>
-                                <option value="science_laboratory_technology_5">Science Lab Technology Level 5 (SLT5)</option>
-                            </optgroup>
-                            <optgroup label="Agriculture Department">
-                                <option value="general_agriculture_4">General Agriculture Level 4 (GA4)</option>
-                                <option value="sustainable_agriculture_5">Sustainable Agriculture Level 5 (SA5)</option>
-                                <option value="agricultural_extension_6">Agricultural Extension Level 6 (AE6)</option>
-                            </optgroup>
-                            <optgroup label="Building and Civil Department">
-                                <option value="building_technician_4">Building Technician Level 4 (BT4)</option>
-                                <option value="building_technician_6">Building Technician Level 6 (BT6)</option>
-                                <option value="civil_engineering_6">Civil Engineering Level 6 (CE6)</option>
-                                <option value="plumbing_4">Plumbing Level 4 (PL4)</option>
-                                <option value="plumbing_5">Plumbing Level 5 (PL5)</option>
-                            </optgroup>
-                            <optgroup label="Electromechanical Department">
-                                <option value="electrical_engineering_4">Electrical Engineering Level 4 (EE4)</option>
-                                <option value="electrical_engineering_5">Electrical Engineering Level 5 (EE5)</option>
-                                <option value="electrical_engineering_6">Electrical Engineering Level 6 (EE6)</option>
-                                <option value="automotive_engineering_5">Automotive Engineering Level 5 (AM5)</option>
-                                <option value="automotive_engineering_6">Automotive Engineering Level 6 (AM6)</option>
-                            </optgroup>
-                            <optgroup label="Hospitality Department">
-                                <option value="food_and_beverage_4">Food and Beverage Level 4 (FB4)</option>
-                                <option value="food_and_beverage_5">Food & Beverage Level 5 (FB5)</option>
-                                <option value="food_and_beverage_6">Food & Beverage Level 6 (FB6)</option>
-                                <option value="fashion_and_design_4">Fashion & Design Level 4 (FD4)</option>
-                                <option value="fashion_and_design_5">Fashion and Design Level 5 (FD5)</option>
-                                <option value="fashion_and_design_6">Fashion and Design Level 6 (FD6)</option>
-                                <option value="hairdressing_4">Hairdressing Level 4 (HD4)</option>
-                                <option value="hairdressing_5">Hairdressing Level 5 (HD5)</option>
-                                <option value="hairdressing_6">Hairdressing Level 6 (HD6)</option>
-                                <option value="tourism_management_5">Tourism Management Level 5 (TM5)</option>
-                                <option value="tourism_management_6">Tourism Management Level 6 (TM6)</option>
-                            </optgroup>
-                            <optgroup label="Business and Liberal Studies">
-                                <option value="social_work_5">Social Work Level 5 (SW5)</option>
-                                <option value="social_work_6">Social Work Level 6 (SW6)</option>
-                                <option value="office_administration_5">Office Administration Level 5 (OA5)</option>
-                                <option value="office_administration_6">Office Administration Level 6 (OA6)</option>
-                            </optgroup>
-                            <optgroup label="Computing and Informatics">
-                                <option value="ict_5">ICT Level 5 (ICT5)</option>
-                                <option value="ict_6">ICT Level 6 (ICT6)</option>
-                                <option value="information_science_5">Information Science Level 5 (IS5)</option>
-                                <option value="information_science_6">Information Science Level 6 (IS6)</option>
-                            </optgroup>
                         </select>
                     </div>
                     <div>
@@ -567,15 +508,9 @@
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Filter by Department</label>
+                                <!-- Options populated from the DB via Catalog.populateDepartmentSelect -->
                                 <select id="modalDeptFilter" class="px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-600 dark:text-white">
                                     <option value="all">All Departments</option>
-                                    <option value="applied_science">Applied Science</option>
-                                    <option value="agriculture">Agriculture</option>
-                                    <option value="building_civil">Building & Civil</option>
-                                    <option value="electromechanical">Electromechanical</option>
-                                    <option value="hospitality">Hospitality</option>
-                                    <option value="business_liberal">Business & Liberal</option>
-                                    <option value="computing_informatics">Computing & Informatics</option>
                                 </select>
                             </div>
                             <div class="flex items-end">

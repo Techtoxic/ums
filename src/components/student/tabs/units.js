@@ -141,8 +141,10 @@ function renderUnitsPage() {
     const endIndex = startIndex + itemsPerPage;
     const currentUnits = allUnits.slice(startIndex, endIndex);
 
-    // Get the course name for display
-    const courseName = courseToProgram[courseCode] || courseCode?.replace(/_/g, ' ').toUpperCase() || 'Your Course';
+    // Get the course name for display. courseCode is the program CODE (e.g. 'GA5');
+    // resolve its display name via the shared DB-backed Catalog helper.
+    const courseName = (window.Catalog && window.Catalog.formatCourseName(courseCode))
+        || courseCode?.replace(/_/g, ' ').toUpperCase() || 'Your Course';
 
     const unitsHTML = `
         <!-- Course Header -->
