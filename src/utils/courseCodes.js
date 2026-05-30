@@ -8,55 +8,83 @@
 // src/components/registrar/portal-core.js. The map below is the canonical
 // server-side mirror of that frontend object.
 
+// COURSE_CONFIG maps legacy snake_case course keys (stored on old student records)
+// to the canonical program codes that now live in the `programs` table.
+// Codes are derived from catalogData.js codePrefix + level (e.g. AB + 6 = AB6).
+// Keep in sync with drizzle/catalogData.js whenever programs are added/removed.
 const COURSE_CONFIG = Object.freeze({
-    // Applied Science Department
-    applied_biology_6:                  { code: 'AP6', department: 'applied_science', name: 'Applied Biology Level 6' },
-    analytical_chemistry_6:             { code: 'AC6', department: 'applied_science', name: 'Analytical Chemistry Level 6' },
-    science_laboratory_technology_5:    { code: 'SLT5', department: 'applied_science', name: 'Science Laboratory Technology Level 5' },
+    // Applied Science Department (catalogData codePrefix: AC, AB, SLT)
+    applied_biology_6:                  { code: 'AB6',   department: 'applied_science',      name: 'Applied Biology Level 6' },
+    analytical_chemistry_6:             { code: 'AC6',   department: 'applied_science',      name: 'Analytical Chemistry Level 6' },
+    science_laboratory_technology_5:    { code: 'SLT5',  department: 'applied_science',      name: 'Science Laboratory Technology Level 5' },
+    science_laboratory_technology_6:    { code: 'SLT6',  department: 'applied_science',      name: 'Science Laboratory Technology Level 6' },
 
-    // Agriculture Department
-    general_agriculture_4:              { code: 'GA4', department: 'agriculture', name: 'General Agriculture Level 4' },
-    sustainable_agriculture_5:          { code: 'SA5', department: 'agriculture', name: 'Sustainable Agriculture Level 5' },
-    agricultural_extension_6:           { code: 'AE6', department: 'agriculture', name: 'Agricultural Extension Level 6' },
+    // Agriculture Department (catalogData codePrefix: GA)
+    general_agriculture_4:              { code: 'GA4',   department: 'agriculture',           name: 'Agricultural Extension Level 4' },
+    agricultural_extension_4:           { code: 'GA4',   department: 'agriculture',           name: 'Agricultural Extension Level 4' },
+    agricultural_extension_5:           { code: 'GA5',   department: 'agriculture',           name: 'Agricultural Extension Level 5' },
+    sustainable_agriculture_5:          { code: 'GA5',   department: 'agriculture',           name: 'Agricultural Extension Level 5' },
+    agricultural_extension_6:           { code: 'GA6',   department: 'agriculture',           name: 'Agricultural Extension Level 6' },
 
-    // Building and Civil Department
-    building_technician_4:              { code: 'BT4', department: 'building_civil', name: 'Building Technician Level 4' },
-    building_technician_6:              { code: 'BT6', department: 'building_civil', name: 'Building Technician Level 6' },
-    civil_engineering_6:                { code: 'CE6', department: 'building_civil', name: 'Civil Engineering Level 6' },
-    plumbing_4:                         { code: 'PL4', department: 'building_civil', name: 'Plumbing Level 4' },
-    plumbing_5:                         { code: 'PL5', department: 'building_civil', name: 'Plumbing Level 5' },
+    // Building and Civil Department (catalogData codePrefix: BT, PL)
+    building_technology_3:              { code: 'BT3',   department: 'building_civil',        name: 'Building Technology Level 3' },
+    building_technology_4:              { code: 'BT4',   department: 'building_civil',        name: 'Building Technology Level 4' },
+    building_technician_4:              { code: 'BT4',   department: 'building_civil',        name: 'Building Technology Level 4' },
+    building_technology_5:              { code: 'BT5',   department: 'building_civil',        name: 'Building Technology Level 5' },
+    building_technology_6:              { code: 'BT6',   department: 'building_civil',        name: 'Building Technology Level 6' },
+    building_technician_6:              { code: 'BT6',   department: 'building_civil',        name: 'Building Technology Level 6' },
+    plumbing_3:                         { code: 'PL3',   department: 'building_civil',        name: 'Plumbing Level 3' },
+    plumbing_4:                         { code: 'PL4',   department: 'building_civil',        name: 'Plumbing Level 4' },
+    plumbing_5:                         { code: 'PL5',   department: 'building_civil',        name: 'Plumbing Level 5' },
 
-    // Electromechanical Department
-    electrical_engineering_4:           { code: 'EE4', department: 'electromechanical', name: 'Electrical Engineering Level 4' },
-    electrical_engineering_5:           { code: 'EE5', department: 'electromechanical', name: 'Electrical Engineering Level 5' },
-    electrical_engineering_6:           { code: 'EE6', department: 'electromechanical', name: 'Electrical Engineering Level 6' },
-    automotive_engineering_5:           { code: 'AM5', department: 'electromechanical', name: 'Automotive Engineering Level 5' },
-    automotive_engineering_6:           { code: 'AM6', department: 'electromechanical', name: 'Automotive Engineering Level 6' },
+    // Electromechanical Department (catalogData codePrefix: EE, MA)
+    electrical_engineering_3:           { code: 'EE3',   department: 'electromechanical',     name: 'Electrical Engineering Level 3' },
+    electrical_engineering_4:           { code: 'EE4',   department: 'electromechanical',     name: 'Electrical Engineering Level 4' },
+    electrical_engineering_5:           { code: 'EE5',   department: 'electromechanical',     name: 'Electrical Engineering Level 5' },
+    electrical_engineering_6:           { code: 'EE6',   department: 'electromechanical',     name: 'Electrical Engineering Level 6' },
+    automotive_engineering_3:           { code: 'MA3',   department: 'electromechanical',     name: 'Automotive Engineering Level 3' },
+    automotive_engineering_4:           { code: 'MA4',   department: 'electromechanical',     name: 'Automotive Engineering Level 4' },
+    automotive_engineering_5:           { code: 'MA5',   department: 'electromechanical',     name: 'Automotive Engineering Level 5' },
+    automotive_engineering_6:           { code: 'MA6',   department: 'electromechanical',     name: 'Automotive Engineering Level 6' },
 
-    // Hospitality Department
-    food_and_beverage_4:                { code: 'FB4', department: 'hospitality', name: 'Food and Beverage Level 4' },
-    food_and_beverage_5:                { code: 'FB5', department: 'hospitality', name: 'Food and Beverage Level 5' },
-    food_and_beverage_6:                { code: 'FB6', department: 'hospitality', name: 'Food and Beverage Level 6' },
-    fashion_and_design_4:               { code: 'FD4', department: 'hospitality', name: 'Fashion and Design Level 4' },
-    fashion_and_design_5:               { code: 'FD5', department: 'hospitality', name: 'Fashion and Design Level 5' },
-    fashion_and_design_6:               { code: 'FD6', department: 'hospitality', name: 'Fashion and Design Level 6' },
-    hairdressing_4:                     { code: 'HD4', department: 'hospitality', name: 'Hairdressing Level 4' },
-    hairdressing_5:                     { code: 'HD5', department: 'hospitality', name: 'Hairdressing Level 5' },
-    hairdressing_6:                     { code: 'HD6', department: 'hospitality', name: 'Hairdressing Level 6' },
-    tourism_management_5:               { code: 'TM5', department: 'hospitality', name: 'Tourism Management Level 5' },
-    tourism_management_6:               { code: 'TM6', department: 'hospitality', name: 'Tourism Management Level 6' },
+    // Hospitality Department (catalogData codePrefix: FB, FD, COS, TTM)
+    food_and_beverage_4:                { code: 'FB4',   department: 'hospitality',           name: 'Food and Beverage Level 4' },
+    food_and_beverage_5:                { code: 'FB5',   department: 'hospitality',           name: 'Food and Beverage Level 5' },
+    food_and_beverage_6:                { code: 'FB6',   department: 'hospitality',           name: 'Food and Beverage Level 6' },
+    fashion_and_design_3:               { code: 'FD3',   department: 'hospitality',           name: 'Fashion and Design Level 3' },
+    fashion_and_design_4:               { code: 'FD4',   department: 'hospitality',           name: 'Fashion and Design Level 4' },
+    fashion_and_design_5:               { code: 'FD5',   department: 'hospitality',           name: 'Fashion and Design Level 5' },
+    fashion_and_design_6:               { code: 'FD6',   department: 'hospitality',           name: 'Fashion and Design Level 6' },
+    cosmetology_3:                      { code: 'COS3',  department: 'hospitality',           name: 'Cosmetology Level 3' },
+    cosmetology_4:                      { code: 'COS4',  department: 'hospitality',           name: 'Cosmetology Level 4' },
+    hairdressing_4:                     { code: 'COS4',  department: 'hospitality',           name: 'Cosmetology Level 4' },
+    cosmetology_5:                      { code: 'COS5',  department: 'hospitality',           name: 'Cosmetology Level 5' },
+    hairdressing_5:                     { code: 'COS5',  department: 'hospitality',           name: 'Cosmetology Level 5' },
+    cosmetology_6:                      { code: 'COS6',  department: 'hospitality',           name: 'Cosmetology Level 6' },
+    hairdressing_6:                     { code: 'COS6',  department: 'hospitality',           name: 'Cosmetology Level 6' },
+    tour_and_travel_management_5:       { code: 'TTM5',  department: 'hospitality',           name: 'Tour and Travel Management Level 5' },
+    tourism_management_5:               { code: 'TTM5',  department: 'hospitality',           name: 'Tour and Travel Management Level 5' },
+    tour_and_travel_management_6:       { code: 'TTM6',  department: 'hospitality',           name: 'Tour and Travel Management Level 6' },
+    tourism_management_6:               { code: 'TTM6',  department: 'hospitality',           name: 'Tour and Travel Management Level 6' },
 
-    // Business and Liberal Studies Department
-    social_work_5:                      { code: 'SW5', department: 'business_liberal', name: 'Social Work Level 5' },
-    social_work_6:                      { code: 'SW6', department: 'business_liberal', name: 'Social Work Level 6' },
-    office_administration_5:            { code: 'OA5', department: 'business_liberal', name: 'Office Administration Level 5' },
-    office_administration_6:            { code: 'OA6', department: 'business_liberal', name: 'Office Administration Level 6' },
+    // Business and Liberal Studies Department (catalogData codePrefix: BM, SK, OA, SW)
+    business_management_5:              { code: 'BM5',   department: 'business_liberal',      name: 'Business Management Level 5' },
+    business_management_6:              { code: 'BM6',   department: 'business_liberal',      name: 'Business Management Level 6' },
+    storekeeping_4:                     { code: 'SK4',   department: 'business_liberal',      name: 'Storekeeping Level 4' },
+    office_administration_4:            { code: 'OA4',   department: 'business_liberal',      name: 'Office Administration Level 4' },
+    office_administration_5:            { code: 'OA5',   department: 'business_liberal',      name: 'Office Administration Level 5' },
+    office_administration_6:            { code: 'OA6',   department: 'business_liberal',      name: 'Office Administration Level 6' },
+    social_work_5:                      { code: 'SW5',   department: 'business_liberal',      name: 'Social Work Level 5' },
+    social_work_6:                      { code: 'SW6',   department: 'business_liberal',      name: 'Social Work Level 6' },
 
-    // Computing and Informatics Department
-    ict_5:                              { code: 'ICT5', department: 'computing_informatics', name: 'ICT Level 5' },
-    ict_6:                              { code: 'ICT6', department: 'computing_informatics', name: 'ICT Level 6' },
-    information_science_5:              { code: 'IS5', department: 'computing_informatics', name: 'Information Science Level 5' },
-    information_science_6:              { code: 'IS6', department: 'computing_informatics', name: 'Information Science Level 6' },
+    // Computing and Informatics Department (catalogData codePrefix: ICT, LIS)
+    ict_4:                              { code: 'ICT4',  department: 'computing_informatics', name: 'ICT Level 4' },
+    ict_5:                              { code: 'ICT5',  department: 'computing_informatics', name: 'ICT Level 5' },
+    ict_6:                              { code: 'ICT6',  department: 'computing_informatics', name: 'ICT Level 6' },
+    library_and_information_science_5:  { code: 'LIS5',  department: 'computing_informatics', name: 'Library and Information Science Level 5' },
+    information_science_5:              { code: 'LIS5',  department: 'computing_informatics', name: 'Library and Information Science Level 5' },
+    library_and_information_science_6:  { code: 'LIS6',  department: 'computing_informatics', name: 'Library and Information Science Level 6' },
+    information_science_6:              { code: 'LIS6',  department: 'computing_informatics', name: 'Library and Information Science Level 6' },
 });
 
 // Department display labels (human-readable, used by exports + listings).

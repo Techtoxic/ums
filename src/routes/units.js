@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { db, schema } = require('../db');
-const { eq, and, isNull } = require('drizzle-orm');
+const { eq, and, isNull, ilike } = require('drizzle-orm');
 const { verifyToken, authorize } = require('../middleware/auth');
 const { DEPT_TEXT_TO_SHORT } = require('../utils/formatters');
 const { getMaxModuleForLevel } = require('../utils/studentHelpers');
@@ -21,20 +21,29 @@ router.get('/units/course/:courseCode', async (req, res) => {
         // Fetch the course's units. A unit belongs to a program via program_id;
         // "units for course AC6" = units whose program has programs.code = 'AC6'.
         // Program codes are stored uppercase, so match on .toUpperCase().
-        // Modeled on the GET /api/units/department/:department endpoint below.
-        const unitRows = await db
-            .select({
-                _id: schema.units.id,
-                unitCode: schema.units.code,
-                unitName: schema.units.name,
-                module: schema.units.module,
-                year: schema.units.year,
-                semester: schema.units.semester,
-                isCommon: schema.units.is_common,
-                courseCode: schema.programs.code,
-                courseName: schema.programs.name,
-                courseLevel: schema.programs.level,
-            })
+        //
+        // Legacy support: older students (imported via registrar) have their
+        // `course` field stored as a long snake_case key like "applied_biology_6"
+        // rather than the short program code "AB6". In that case the direct code
+        // lookup returns nothing, so we fall back to matching by program name —
+        // converting e.g. "applied_biology_6" -> "Applied Biology Level 6" and
+        // doing a case-insensitive name match against programs.name.
+        const _unitSelectFields = {
+            _id: schema.units.id,
+            unitCode: schema.units.code,
+            unitName: schema.units.name,
+            module: schema.units.module,
+            year: schema.units.year,
+            semester: schema.units.semester,
+            isCommon: schema.units.is_common,
+            courseCode: schema.programs.code,
+            courseName: schema.programs.name,
+            courseLevel: schema.programs.level,
+        };
+
+        // Primary lookup: exact program code match (handles "AB6", "ICT5", etc.)
+        let unitRows = await db
+            .select(_unitSelectFields)
             .from(schema.units)
             .innerJoin(schema.programs, eq(schema.programs.id, schema.units.program_id))
             .where(and(
@@ -42,6 +51,26 @@ router.get('/units/course/:courseCode', async (req, res) => {
                 isNull(schema.units.deleted_at),
             ))
             .orderBy(schema.units.module, schema.units.code);
+
+        // Fallback: if nothing found and the key looks like a legacy snake_case key
+        // (contains underscores), normalise it to a program name and match on that.
+        // "applied_biology_6" -> "Applied Biology Level 6"
+        if (unitRows.length === 0 && courseCode.includes('_')) {
+            const normalizedName = courseCode
+                .replace(/_(\d+)$/, ' Level $1')   // trailing _6 -> " Level 6"
+                .replace(/_/g, ' ')                  // remaining _ -> spaces
+                .replace(/\w/g, l => l.toUpperCase()); // Title Case
+
+            unitRows = await db
+                .select(_unitSelectFields)
+                .from(schema.units)
+                .innerJoin(schema.programs, eq(schema.programs.id, schema.units.program_id))
+                .where(and(
+                    ilike(schema.programs.name, normalizedName),
+                    isNull(schema.units.deleted_at),
+                ))
+                .orderBy(schema.units.module, schema.units.code);
+        }
 
         // Module visibility (Rule 4): a course level only sees modules up to a cap
         // (L3=1, L4=2, L5=4, L6=6). Units are seeded per level, but the highest
