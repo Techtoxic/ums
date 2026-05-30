@@ -154,7 +154,7 @@ router.post('/student-uploads', verifyToken, authorize('admin', 'registrar', 'st
         );
 
         // Create new upload record
-        const newUpload = new StudentUpload({
+        const newUpload = await StudentUpload.create({
             studentId,
             studentName: student.name,
             admissionNumber: student.admissionNumber,
@@ -180,7 +180,6 @@ router.post('/student-uploads', verifyToken, authorize('admin', 'registrar', 'st
             semester
         });
 
-        await newUpload.save();
         console.log('Saved new upload:', newUpload._id, 'version:', newUpload.version);
 
         // Create audit log

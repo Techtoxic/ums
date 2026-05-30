@@ -77,8 +77,7 @@ router.post('/common-units', verifyToken, authorize('admin', 'registrar'), async
             });
         }
 
-        const commonUnit = new CommonUnit(commonUnitData);
-        await commonUnit.save();
+        const commonUnit = await CommonUnit.create(commonUnitData);
 
         res.status(201).json({
             success: true,

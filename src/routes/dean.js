@@ -114,7 +114,7 @@ router.post('/dean/students/:studentId/notes', verifyToken, authorize('admin', '
             return res.status(404).json({ message: 'Student not found' });
         }
 
-        const note = new StudentNote({
+        const note = await StudentNote.create({
             studentId,
             studentName: student.name,
             admissionNumber: student.admissionNumber,
@@ -125,8 +125,6 @@ router.post('/dean/students/:studentId/notes', verifyToken, authorize('admin', '
             priority: priority || 'medium',
             createdBy
         });
-
-        await note.save();
 
         // If public note, create notification
         if (noteType === 'public') {

@@ -38,7 +38,7 @@ router.post('/payments', verifyToken, authorize('admin', 'finance'), async (req,
             return res.status(400).json({ message: 'Bursary reference is required for bursary payments' });
         }
 
-        const payment = new Payment({
+        const payment = await Payment.create({
             studentId,
             amount: toDecimal128(amount), // SEV-H-016: store exact money
             paymentMode,
@@ -49,8 +49,6 @@ router.post('/payments', verifyToken, authorize('admin', 'finance'), async (req,
             reference,
             paymentDate: paymentDate || new Date()
         });
-
-        await payment.save();
 
         console.log('Payment saved successfully:', payment._id);
 

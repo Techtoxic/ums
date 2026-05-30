@@ -23,13 +23,11 @@ router.post('/programs', verifyToken, authorize('admin', 'registrar'), async (re
             return res.status(400).json({ message: 'A program with this name already exists' });
         }
 
-        const program = new Program({
+        const program = await Program.create({
             programName,
             programCost: toDecimal128(programCost), // SEV-H-016: store exact money
             department
         });
-
-        await program.save();
 
         res.status(201).json({
             message: 'Program created successfully',

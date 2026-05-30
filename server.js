@@ -997,8 +997,7 @@ async function initializeCommonUnits() {
                 console.log(`  Updated common unit: ${unitData.unitName}`);
             } else {
                 // Create new common unit
-                const commonUnit = new CommonUnit(unitData);
-                await commonUnit.save();
+                const commonUnit = await CommonUnit.create(unitData);
                 newCount++;
                 console.log(`  Created common unit: ${unitData.unitName}`);
             }
