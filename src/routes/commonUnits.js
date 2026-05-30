@@ -38,7 +38,7 @@ router.get('/common-units', verifyToken, authorize('admin', 'registrar', 'hod'),
 router.get('/common-units/:unitCode', verifyToken, authorize('admin', 'registrar', 'hod'), async (req, res) => {
     try {
         const { unitCode } = req.params;
-        const commonUnit = await CommonUnit.findByCode(unitCode);
+        const commonUnit = await CommonUnit.findOne({ code: unitCode });
 
         if (!commonUnit) {
             return res.status(404).json({
@@ -65,11 +65,27 @@ router.post('/common-units', verifyToken, authorize('admin', 'registrar'), async
     try {
         const commonUnitData = req.body;
 
-        // Check if unit code already exists
-        const existingUnit = await CommonUnit.findOne({
-            unitCode: commonUnitData.unitCode.toUpperCase()
-        });
+        // Map the V1 payload to the lean `units` columns. code + name are the
+        // genuinely client-supplied fields; year/semester are structural NOT NULL
+        // columns that aren't meaningful for a common (cross-program) unit, so
+        // they default to 1 when omitted (mirrors the seeded common units).
+        const code = String(commonUnitData.code || commonUnitData.unitCode || '').trim().toUpperCase();
+        const name = String(commonUnitData.name || commonUnitData.unitName || '').trim();
+        const year = Number.isFinite(parseInt(commonUnitData.year, 10)) ? parseInt(commonUnitData.year, 10) : 1;
+        const semester = Number.isFinite(parseInt(commonUnitData.semester, 10)) ? parseInt(commonUnitData.semester, 10) : 1;
 
+        const missing = [];
+        if (!code) missing.push('code');
+        if (!name) missing.push('name');
+        if (missing.length) {
+            return res.status(400).json({
+                success: false,
+                message: `Missing required field(s): ${missing.join(', ')}`
+            });
+        }
+
+        // Duplicate check by the real `code` column (not the non-existent unit_code).
+        const existingUnit = await CommonUnit.findOne({ code });
         if (existingUnit) {
             return res.status(400).json({
                 success: false,
@@ -77,7 +93,14 @@ router.post('/common-units', verifyToken, authorize('admin', 'registrar'), async
             });
         }
 
-        const commonUnit = await CommonUnit.create(commonUnitData);
+        const commonUnit = await CommonUnit.create({
+            code,
+            name,
+            year,
+            semester,
+            isCommon: true,
+            programId: null,
+        });
 
         res.status(201).json({
             success: true,

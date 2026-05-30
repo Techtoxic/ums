@@ -169,11 +169,11 @@ router.get('/students/:studentId/public-notes', verifyToken, authorize('student'
     try {
         const { studentId } = req.params;
 
-        // Public notes should be visible to all students, not just the assigned student
-        // Remove studentId filter to show all public notes
-        const notes = await StudentNote.find({
-            noteType: 'public'
-        }).sort({ createdAt: -1 });
+        // DELIBERATE: public notes are visible to ALL students, so there is no
+        // per-student filter here — every note_type='public' row is returned.
+        // noteType maps to the note_type column; sort via the options arg
+        // (chained .sort() on the shim is a no-op).
+        const notes = await StudentNote.find({ noteType: 'public' }, null, { sort: { createdAt: -1 } });
 
         res.json({ notes });
     } catch (error) {

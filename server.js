@@ -754,8 +754,7 @@ async function initializeTrainers() {
                 // logged - operators must set/communicate trainer credentials
                 // via the password-reset flow.
                 const seededTrainerPassword = `Aa1!${crypto.randomBytes(18).toString('base64').replace(/[+/=]/g, 'A')}`;
-                const trainer = new Trainer({ ...trainerData, password: seededTrainerPassword });
-                await trainer.save();
+                await Trainer.create({ ...trainerData, password: seededTrainerPassword });
                     newTrainersAdded++;
                 }
             }
@@ -1049,7 +1048,7 @@ async function initializeAdminStaff() {
         ];
 
         for (const data of defaultStaff) {
-            const staff = new AdminStaff({
+            await AdminStaff.create({
                 ...data,
                 password: initialPassword,
                 isActive: true,
@@ -1057,7 +1056,6 @@ async function initializeAdminStaff() {
                 mustUpdateEmail: true,
                 mustUpdatePassword: true
             });
-            await staff.save();
         }
 
         // SEV-H-015: never log the initial password (logs persist in cloud

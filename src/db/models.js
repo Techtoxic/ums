@@ -716,6 +716,23 @@ StudentUpload.getCIBECUploads = async function getCIBECUploads(filters = {}) {
 // TODO: implement $match/$group aggregation (e.g. GROUP BY upload_type/department/course).
 StudentUpload.aggregate = async function aggregate() { return []; };
 
+// ---- StudentNote: notes for a student, newest first ----
+// studentIdOrAdmission may be an admission number ("AC6/0001/S25"); resolve it
+// to the student uuid before querying the student_id uuid column. Optionally
+// filters by note_type. Returns [] (never throws) when the student isn't found.
+StudentNote.getStudentNotes = async function getStudentNotes(studentIdOrAdmission, noteType) {
+    const studentId = await _resolveStudentId(studentIdOrAdmission);
+    if (!studentId) return [];
+    const conds = [eq(schema.studentNotes.student_id, studentId)];
+    if (noteType) conds.push(eq(schema.studentNotes.note_type, noteType));
+    const rows = await db.select().from(schema.studentNotes)
+        .where(conds.length === 1 ? conds[0] : and(...conds))
+        .orderBy(desc(schema.studentNotes.created_at));
+    // rowToDoc → camelCase + _id; carries note, noteType, title, category,
+    // priority, createdAt, authorId, studentName, admissionNumber.
+    return rows.map((r) => rowToDoc(r, {}));
+};
+
 module.exports = {
     // Shim factory + helpers (escape hatch for advanced callers)
     makeModel, buildWhere, buildUpdate, buildInsertValues, rowToDoc,
