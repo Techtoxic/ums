@@ -42,21 +42,23 @@ router.post('/student-uploads', verifyToken, authorize('admin', 'registrar', 'st
             return res.status(404).json({ message: 'Student not found' });
         }
 
+        // academic_year / semester are integer columns — coerce the V1 strings.
+        const acadYearInt = Number.isFinite(parseInt(String(academicYear).split('/')[0], 10))
+            ? parseInt(String(academicYear).split('/')[0], 10) : null;
+        const semInt = Number.isFinite(parseInt(String(semester), 10)) ? parseInt(String(semester), 10) : null;
+
         // Validate unit-related uploads
         if (['assessment', 'practical', 'combined_video'].includes(uploadType)) {
             if (!unitId || !unitCode) {
                 return res.status(400).json({ message: 'Unit information required for this upload type' });
             }
 
-            // Check if student is registered for this unit
-            const registration = await StudentUnitRegistration.findOne({
-                studentId,
-                unitId,
-                status: 'registered',
-                isActive: true,
-                academicYear,
-                semester
-            });
+            // Check if student is registered for this unit. Use the resolved
+            // helper (it maps admission number -> student uuid) instead of a raw
+            // findOne, which would try to cast the admission number into the
+            // student_id uuid column and 500.
+            const regs = await StudentUnitRegistration.getStudentRegistrations(studentId);
+            const registration = regs.find(r => String(r.unitId) === String(unitId));
 
             if (!registration) {
                 return res.status(403).json({ message: 'You are not registered for this unit' });
@@ -92,10 +94,12 @@ router.post('/student-uploads', verifyToken, authorize('admin', 'registrar', 'st
             }
         }
 
-            // Check for existing upload (to replace)
+            // Check for existing upload (to replace). Query by the resolved
+            // student uuid (not the admission number) and the integer-coerced
+            // academic period.
             let existingUpload = null;
             const searchCriteria = {
-                studentId,
+                studentId: student.id,
                 uploadType,
                 status: 'uploaded'
             };
@@ -105,17 +109,17 @@ router.post('/student-uploads', verifyToken, authorize('admin', 'registrar', 'st
             if (uploadType === 'assessment') {
                 searchCriteria.unitId = unitId;
                 searchCriteria.assessmentNumber = assessmentNumber;
-                searchCriteria.academicYear = academicYear;
-                searchCriteria.semester = semester;
+                searchCriteria.academicYear = acadYearInt;
+                searchCriteria.semester = semInt;
             } else if (uploadType === 'practical') {
                 searchCriteria.unitId = unitId;
                 searchCriteria.practicalNumber = practicalNumber;
-                searchCriteria.academicYear = academicYear;
-                searchCriteria.semester = semester;
+                searchCriteria.academicYear = acadYearInt;
+                searchCriteria.semester = semInt;
             } else if (uploadType === 'combined_video') {
                 searchCriteria.unitId = unitId;
-                searchCriteria.academicYear = academicYear;
-                searchCriteria.semester = semester;
+                searchCriteria.academicYear = acadYearInt;
+                searchCriteria.semester = semInt;
             }
             // For profile_photo, kcse_results, kcpe_results - don't filter by academic year/semester
 
@@ -153,9 +157,14 @@ router.post('/student-uploads', verifyToken, authorize('admin', 'registrar', 'st
             { displayName: v.displayName, inlineImage: v.isImage }
         );
 
-        // Create new upload record
+        // Create new upload record. NOT NULL columns: student_id (resolved uuid),
+        // category (= uploadType), file_path (= s3 key), uploaded_by (token user),
+        // file_size, mime_type. The rest are the V1 metadata columns added in 0010.
         const newUpload = await StudentUpload.create({
-            studentId,
+            studentId: student.id,
+            uploadedBy: req.user.userId,
+            category: uploadType,
+            filePath: s3Result.key,
             studentName: student.name,
             admissionNumber: student.admissionNumber,
             course: student.course,
@@ -176,8 +185,8 @@ router.post('/student-uploads', verifyToken, authorize('admin', 'registrar', 'st
             status: 'uploaded',
             version: existingUpload ? existingUpload.version + 1 : 1,
             replaces: existingUpload ? existingUpload._id : null,
-            academicYear,
-            semester
+            academicYear: acadYearInt,
+            semester: semInt
         });
 
         console.log('Saved new upload:', newUpload._id, 'version:', newUpload.version);
@@ -239,12 +248,18 @@ router.get('/student-uploads/:studentId', verifyToken, authorize('admin', 'regis
         const { studentId } = req.params;
         const { uploadType, status = 'uploaded' } = req.query;
 
-        const query = { studentId, status };
+        // :studentId is an admission number; resolve it to the student uuid
+        // before querying the student_id uuid column (mirrors payments.js).
+        const student = await Student.findOne({ admissionNumber: studentId });
+        if (!student) {
+            return res.status(404).json({ message: 'Student not found' });
+        }
+
+        const query = { studentId: student.id, status };
         if (uploadType) query.uploadType = uploadType;
 
-        const uploads = await StudentUpload.find(query)
-            .populate('unitId')
-            .sort({ uploadedAt: -1 });
+        // Sort via the options arg (chained .sort() on the shim is a no-op).
+        const uploads = await StudentUpload.find(query, null, { sort: { uploadedAt: -1 } });
 
         // Log view action
         await AuditLog.logAction({
@@ -267,11 +282,17 @@ router.get('/student-uploads/:studentId/unit/:unitId', verifyToken, authorize('a
     try {
         const { studentId, unitId } = req.params;
 
-        const uploads = await StudentUpload.find({
-            studentId,
-            unitId,
-            status: 'uploaded'
-        }).sort({ uploadType: 1, assessmentNumber: 1 });
+        // :studentId is an admission number; resolve it to the student uuid.
+        const student = await Student.findOne({ admissionNumber: studentId });
+        if (!student) {
+            return res.status(404).json({ message: 'Student not found' });
+        }
+
+        const uploads = await StudentUpload.find(
+            { studentId: student.id, unitId, status: 'uploaded' },
+            null,
+            { sort: { uploadType: 1, assessmentNumber: 1 } }
+        );
 
         res.json(uploads);
     } catch (error) {

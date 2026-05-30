@@ -71,6 +71,13 @@
 			"when": 1780000001000,
 			"tag": "0009_common_unit_assignment_trainer",
 			"breakpoints": true
+		},
+		{
+			"idx": 10,
+			"version": "7",
+			"when": 1780000002000,
+			"tag": "0010_extend_notes_uploads",
+			"breakpoints": true
 		}
 	]
 }

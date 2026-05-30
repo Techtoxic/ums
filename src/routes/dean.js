@@ -114,28 +114,28 @@ router.post('/dean/students/:studentId/notes', verifyToken, authorize('admin', '
             return res.status(404).json({ message: 'Student not found' });
         }
 
+        // Map V1 payload to the V2 columns: content -> note (NOT NULL),
+        // author_id from the verified token, studentId -> resolved student uuid.
         const note = await StudentNote.create({
-            studentId,
-            studentName: student.name,
-            admissionNumber: student.admissionNumber,
+            studentId: student.id,
+            authorId: req.user.userId,
+            note: content,
             noteType,
             title,
-            content,
             category: category || 'general',
             priority: priority || 'medium',
-            createdBy
+            studentName: student.name,
+            admissionNumber: student.admissionNumber,
         });
 
-        // If public note, create notification
+        // If public note, create notification (recipient_id is a uuid; body is
+        // NOT NULL — mirror the working notification shape used elsewhere).
         if (noteType === 'public') {
             await Notification.create({
-                recipientId: studentId,
+                recipientId: student.id,
                 recipientType: 'student',
                 title: `New Note: ${title}`,
-                message: content,
-                type: 'general',
-                relatedId: note._id.toString(),
-                priority: priority || 'medium'
+                body: content,
             });
         }
 

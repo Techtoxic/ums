@@ -639,6 +639,83 @@ StudentUnitRegistration.registerStudent = async function registerStudent(data) {
     return { _id: r.id, id: r.id, unitId: r.unit_id, academicYear: r.academic_year, semester: r.semester, status: 'registered' };
 };
 
+// ---- AuditLog: best-effort action logger ----
+// V1 exposed AuditLog.logAction(payload). The payload mixes real uuid columns
+// (userId, fileId) with non-uuid identifiers (studentId is often an admission
+// number like "AC6/0001/S25"), so we fold the non-column identifiers into the
+// jsonb `details` and ONLY put genuine uuids into uuid columns. Logging must
+// NEVER throw or 500 the calling route — every failure is swallowed.
+const _UUID_RE = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+const _isUuid = (v) => typeof v === 'string' && _UUID_RE.test(v);
+
+AuditLog.logAction = async function logAction(payload = {}) {
+    try {
+        if (!payload || !payload.action) return null; // action is NOT NULL
+        const fileIdIsUuid = _isUuid(payload.fileId);
+        const values = {
+            actor_id: _isUuid(payload.userId) ? payload.userId : null,
+            actor_type: payload.userType || null,
+            action: payload.action,
+            // fileId => student_upload; otherwise a studentId implies a student.
+            resource_type: payload.fileId ? 'student_upload' : (payload.studentId ? 'student' : null),
+            // resource_id is a uuid column — NEVER store an admission number here.
+            resource_id: fileIdIsUuid ? payload.fileId : null,
+            // Non-column identifiers live in details.
+            details: { ...(payload.details || {}), studentId: payload.studentId, fileId: payload.fileId },
+            ip_address: payload.ipAddress || null,
+            user_agent: payload.userAgent || null,
+        };
+        const rows = await db.insert(schema.auditLogs).values(values).returning();
+        return rows[0] ? rowToDoc(rows[0], {}) : null;
+    } catch (err) {
+        console.error('AuditLog.logAction failed (non-fatal):', err.message);
+        return null;
+    }
+};
+
+// ---- StudentUpload: CIBEC filtered listing over the student_uploads table ----
+// Builds a Drizzle WHERE from only the filters that map to real columns; unknown
+// filters are ignored. Returns an array and never throws.
+StudentUpload.getCIBECUploads = async function getCIBECUploads(filters = {}) {
+    try {
+        const u = schema.studentUploads;
+        const conds = [];
+        const eqText = (col, val) => { if (val !== undefined && val !== null && val !== '') conds.push(eq(col, val)); };
+        const eqInt = (col, val) => {
+            if (val === undefined || val === null || val === '') return;
+            const n = parseInt(String(val).split('/')[0], 10);
+            if (Number.isFinite(n)) conds.push(eq(col, n));
+        };
+        eqText(u.course, filters.course);
+        eqText(u.department, filters.department);
+        eqText(u.unit_code, filters.unitCode);
+        eqInt(u.module, filters.module);
+        eqText(u.upload_type, filters.uploadType);
+        eqInt(u.academic_year, filters.academicYear);
+        eqInt(u.semester, filters.semester);
+        eqText(u.status, filters.status);
+        eqText(u.admission_number, filters.admissionNumber);
+        if (filters.studentId) {
+            const val = String(filters.studentId);
+            conds.push(_isUuid(val) ? eq(u.student_id, val) : eq(u.admission_number, val));
+        }
+        // NOTE: `courseLevel` has no column on student_uploads — ignored.
+        // TODO: derive level (e.g. join programs) if CIBEC needs level filtering.
+        let q = db.select().from(u);
+        if (conds.length) q = q.where(conds.length === 1 ? conds[0] : and(...conds));
+        q = q.orderBy(desc(u.uploaded_at));
+        const rows = await q;
+        return rows.map((r) => rowToDoc(r, {}));
+    } catch (err) {
+        console.error('StudentUpload.getCIBECUploads failed:', err.message);
+        return [];
+    }
+};
+
+// CIBEC statistics use aggregation pipelines the shim doesn't translate.
+// TODO: implement $match/$group aggregation (e.g. GROUP BY upload_type/department/course).
+StudentUpload.aggregate = async function aggregate() { return []; };
+
 module.exports = {
     // Shim factory + helpers (escape hatch for advanced callers)
     makeModel, buildWhere, buildUpdate, buildInsertValues, rowToDoc,
