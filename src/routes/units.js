@@ -72,35 +72,53 @@ router.get('/units/course/:courseCode', async (req, res) => {
                 .orderBy(schema.units.module, schema.units.code);
         }
 
-        // Module visibility (Rule 4): a course level only sees modules up to a cap
-        // (L3=1, L4=2, L5=4, L6=6). Units are seeded per level, but the highest
-        // level of a course also carries surplus modules — filter them here so a
-        // student never sees modules beyond their level's cap.
-        const level = unitRows.length ? unitRows[0].courseLevel : null;
-        const cap = getMaxModuleForLevel(level);
-        const visibleRows = cap == null
-            ? unitRows
-            : unitRows.filter(u => u.module == null || u.module <= cap);
+        // -------------------------------------------------------------------
+        // Module visibility: students only see modules up to their current
+        // module of study. Modules they have already passed are shown but
+        // flagged as history (isHistory: true). Units in future modules are
+        // completely hidden.
+        //
+        // When no studentId is supplied (e.g. unauthenticated preview),
+        // fall back to the level-based cap so only valid modules show.
+        // -------------------------------------------------------------------
 
-        // Registration status — only when an admission number is supplied.
-        // studentId arrives as an admission number; resolve it to the student uuid,
-        // then collect the unit_id uuids the student is registered for. A unit counts
-        // as registered if any registration row exists for that student + unit.
+        // Resolve the student record once — used for both module filtering
+        // and registration status (avoids a second DB round-trip).
+        let studentRecord = null;
         let registeredUnitIds = new Set();
         if (studentId) {
-            const student = await Student.findOne({ admissionNumber: studentId });
-            if (student) {
-                const regs = await StudentUnitRegistration.find({ studentId: student.id });
+            studentRecord = await Student.findOne({ admissionNumber: studentId });
+            if (studentRecord) {
+                const regs = await StudentUnitRegistration.find({ studentId: studentRecord.id });
                 registeredUnitIds = new Set(regs.map(r => r.unitId));
             }
         }
 
-        // Common units are just units rows with is_common = true (already included above).
+        // Determine the effective module ceiling:
+        //   - When the student is known: their current module of study.
+        //   - Fallback: the course-level cap (L3→1, L4→2, L5→4, L6→6) so
+        //     surplus seeded modules never leak to unauthenticated callers.
+        const courseLevel = unitRows.length ? unitRows[0].courseLevel : null;
+        const levelCap = getMaxModuleForLevel(courseLevel);
+        const studentModule = studentRecord ? Number(studentRecord.module || 1) : null;
+
+        // Apply the ceiling filter. A null levelCap means no restriction.
+        const effectiveCap = studentModule !== null ? studentModule : levelCap;
+        const visibleRows = effectiveCap == null
+            ? unitRows
+            : unitRows.filter(u => u.module == null || u.module <= effectiveCap);
+
+        // Build the final unit list. Past modules are marked isHistory so the
+        // frontend can render them in a collapsed "History" section instead of
+        // as active/registerable units.
         const units = visibleRows.map(u => ({
             ...u,
             department: u.isCommon ? 'common' : 'department',
             type: u.isCommon ? 'common' : 'department',
             isRegistered: registeredUnitIds.has(u._id),
+            // isHistory: true when this module has already been passed
+            // (module number is strictly less than the student's current module).
+            isHistory: studentModule !== null && u.module != null && u.module < studentModule,
         }));
 
         if (units.length === 0) {
@@ -110,10 +128,12 @@ router.get('/units/course/:courseCode', async (req, res) => {
         res.json({
             success: true,
             courseCode: courseCode,
+            studentModule: studentModule,
             totalUnits: units.length,
             departmentUnits: units.filter(u => !u.isCommon).length,
             commonUnits: units.filter(u => u.isCommon).length,
             registeredUnits: units.filter(u => u.isRegistered).length,
+            historyUnits: units.filter(u => u.isHistory).length,
             units: units,
         });
     } catch (error) {

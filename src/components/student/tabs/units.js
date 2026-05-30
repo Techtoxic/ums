@@ -117,15 +117,20 @@ function updateUnitsDisplay(units, courseCode = '', apiData = null, registration
         return;
     }
 
-    // Count unit types and registration status
-    const departmentUnits = units.filter(unit => unit.type === 'department').length;
-    const commonUnits = units.filter(unit => unit.type === 'common').length;
-    const registeredUnits = units.filter(unit => unit.isRegistered).length;
-    const unregisteredUnits = units.length - registeredUnits;
+    // Split history (past modules) from active (current module) units.
+    const historyUnits = units.filter(unit => unit.isHistory);
+    const activeUnits  = units.filter(unit => !unit.isHistory);
 
-    // Update global state
-    unitsState.allUnits = units;
-    unitsState.totalUnits = units.length;
+    // Count unit types and registration status on active units only
+    const departmentUnits = activeUnits.filter(unit => unit.type === 'department').length;
+    const commonUnits     = activeUnits.filter(unit => unit.type === 'common').length;
+    const registeredUnits = activeUnits.filter(unit => unit.isRegistered).length;
+    const unregisteredUnits = activeUnits.length - registeredUnits;
+
+    // Update global state — pagination works over active units only
+    unitsState.allUnits = activeUnits;
+    unitsState.historyUnits = historyUnits;
+    unitsState.totalUnits = activeUnits.length;
     unitsState.courseCode = courseCode;
     unitsState.departmentUnits = departmentUnits;
     unitsState.commonUnits = commonUnits;
@@ -142,7 +147,9 @@ function renderUnitsPage() {
     const unitsContainer = document.getElementById('student-units');
     if (!unitsContainer) return;
 
-    const { currentPage, itemsPerPage, totalUnits, allUnits, courseCode, departmentUnits, commonUnits, registeredUnits, unregisteredUnits, registrationEligibility } = unitsState;
+    const { currentPage, itemsPerPage, totalUnits, allUnits, historyUnits = [], courseCode,
+            departmentUnits, commonUnits, registeredUnits, unregisteredUnits,
+            registrationEligibility } = unitsState;
     const totalPages = Math.ceil(totalUnits / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
@@ -165,6 +172,7 @@ function renderUnitsPage() {
                         <span class="text-blue-600 dark:text-blue-400">Common: ${commonUnits || 0}</span>
                         ${registeredUnits !== undefined ? `<span class="text-green-600 dark:text-green-400">Registered: ${registeredUnits || 0}</span>` : ''}
                         ${unregisteredUnits !== undefined ? `<span class="text-orange-600 dark:text-orange-400">Unregistered: ${unregisteredUnits || 0}</span>` : ''}
+                        ${historyUnits.length > 0 ? `<span class="text-gray-400 dark:text-gray-500">History: ${historyUnits.length}</span>` : ''}
                     </div>
                 </div>
                 <div class="text-sm text-gray-500 dark:text-gray-400">
@@ -195,7 +203,13 @@ function renderUnitsPage() {
             ` : ''}
         </div>
 
-        <!-- Units Grid -->
+        <!-- Units Grid: Current Module Units -->
+        ${allUnits.length === 0 ? `
+            <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+                <i class="ri-book-open-line text-3xl mb-2 block"></i>
+                <p>No active units for your current module.</p>
+            </div>
+        ` : `
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-4 mb-6">
             ${currentUnits.map((unit, index) => {
                 const globalIndex = startIndex + index + 1;
@@ -218,6 +232,7 @@ function renderUnitsPage() {
                                             <span class="font-mono bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded text-xs">
                                                 ${escapeHtml(unit.unitCode)}
                                             </span>
+                                            ${unit.module ? `<span class="ml-2 text-gray-400">Module ${unit.module}</span>` : ''}
                                         </p>
                                     </div>
                                     <div class="flex-shrink-0 flex flex-col gap-1">
@@ -252,10 +267,11 @@ function renderUnitsPage() {
                 `;
             }).join('')}
         </div>
+        `}
 
         <!-- Pagination Controls -->
         ${totalPages > 1 ? `
-            <div class="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t border-gray-200 dark:border-gray-700 mb-6">
                 <div class="text-sm text-gray-600 dark:text-gray-400">
                     Showing ${startIndex + 1}-${Math.min(endIndex, totalUnits)} of ${totalUnits} units
                 </div>
@@ -263,12 +279,11 @@ function renderUnitsPage() {
                     <button 
                         onclick="navigateUnitsPage('prev')" 
                         ${currentPage <= 1 ? 'disabled' : ''}
-                        class="flex items-center gap-1 px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-gray-800 transition-colors"
+                        class="flex items-center gap-1 px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                         <i class="ri-arrow-left-s-line"></i>
                         Previous
                     </button>
-                    
                     <div class="flex items-center gap-1">
                         ${Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                             let pageNum;
@@ -281,7 +296,6 @@ function renderUnitsPage() {
                             } else {
                                 pageNum = currentPage - 2 + i;
                             }
-                            
                             const isActive = pageNum === currentPage;
                             return `
                                 <button 
@@ -297,11 +311,10 @@ function renderUnitsPage() {
                             `;
                         }).join('')}
                     </div>
-
                     <button 
                         onclick="navigateUnitsPage('next')" 
                         ${currentPage >= totalPages ? 'disabled' : ''}
-                        class="flex items-center gap-1 px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-gray-800 transition-colors"
+                        class="flex items-center gap-1 px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                         Next
                         <i class="ri-arrow-right-s-line"></i>
@@ -309,7 +322,64 @@ function renderUnitsPage() {
                 </div>
             </div>
         ` : ''}
-    `;
+
+        <!-- History Section: Past Module Units (collapsible) -->
+        ${historyUnits.length > 0 ? `
+            <div class="mt-4 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                <button onclick="toggleHistorySection()" id="historyToggleBtn"
+                    class="w-full flex items-center justify-between px-4 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-left">
+                    <div class="flex items-center gap-2">
+                        <i class="ri-history-line text-gray-500 dark:text-gray-400"></i>
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            History — Past Module Units
+                        </span>
+                        <span class="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-full">
+                            ${historyUnits.length}
+                        </span>
+                    </div>
+                    <i id="historyChevron" class="ri-arrow-down-s-line text-gray-500 dark:text-gray-400 transition-transform"></i>
+                </button>
+                <div id="historySection" class="hidden">
+                    <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+                        ${historyUnits.map(unit => `
+                            <div class="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-3 opacity-70 border border-gray-200 dark:border-gray-700">
+                                <div class="flex items-start gap-3">
+                                    <div class="flex-shrink-0 w-7 h-7 bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400 rounded-full flex items-center justify-center">
+                                        <i class="ri-check-double-line text-xs"></i>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-start justify-between gap-2">
+                                            <div class="flex-1">
+                                                <h4 class="text-sm font-medium text-gray-600 dark:text-gray-400 leading-tight">
+                                                    ${escapeHtml(unit.unitName)}
+                                                </h4>
+                                                <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                                                    <span class="font-mono bg-gray-200 dark:bg-gray-600 px-1.5 py-0.5 rounded">${escapeHtml(unit.unitCode)}</span>
+                                                    ${unit.module ? `<span class="ml-2">Module ${unit.module}</span>` : ''}
+                                                </p>
+                                            </div>
+                                            <div class="flex-shrink-0">
+                                                ${unit.isRegistered ? `
+                                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400">
+                                                        <i class="ri-check-line mr-1 text-xs"></i>
+                                                        Done
+                                                    </span>
+                                                ` : `
+                                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500">
+                                                        <i class="ri-history-line mr-1 text-xs"></i>
+                                                        Past
+                                                    </span>
+                                                `}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+        ` : ''}  `;
 
     unitsContainer.innerHTML = unitsHTML;
 }
@@ -333,6 +403,18 @@ function navigateUnitsPage(direction) {
     const unitsSection = document.getElementById('units');
     if (unitsSection && !unitsSection.classList.contains('hidden')) {
         unitsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+
+// Toggle the collapsible history section
+function toggleHistorySection() {
+    const section = document.getElementById('historySection');
+    const chevron = document.getElementById('historyChevron');
+    if (!section) return;
+    const isHidden = section.classList.contains('hidden');
+    section.classList.toggle('hidden', !isHidden);
+    if (chevron) {
+        chevron.style.transform = isHidden ? 'rotate(180deg)' : '';
     }
 }
 
