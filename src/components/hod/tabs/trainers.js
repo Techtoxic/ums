@@ -28,8 +28,8 @@ function populateTrainersDisplay() {
                 
                 <div class="space-y-3">
                     <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-600">Assigned Units</span>
-                        <span class="font-medium text-gray-800">${trainerAssignments.length}</span>
+                        <span class="text-sm text-gray-600 dark:text-gray-400">Assigned Units</span>
+                        <span class="font-medium text-gray-800 dark:text-gray-100">${trainerAssignments.length}</span>
                     </div>
                     
                     ${trainerAssignments.length > 0 ? `
@@ -50,10 +50,10 @@ function populateTrainersDisplay() {
                     `}
                 </div>
                 
-                <div class="mt-4 pt-4 border-t border-gray-100">
+                <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-600">
                     <button 
                         onclick="assignUnitsToSpecificTrainer('${escapeAttr(trainer._id)}')" 
-                        class="w-full bg-blue-50 hover:bg-blue-100 text-blue-600 py-2 px-4 rounded-lg transition-colors text-sm font-medium"
+                        class="w-full bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 dark:text-blue-300 py-2 px-4 rounded-lg transition-colors text-sm font-medium"
                     >
                         <i class="fas fa-plus mr-2"></i>Assign Units
                     </button>

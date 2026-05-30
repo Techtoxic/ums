@@ -1,10 +1,44 @@
                     <div class="card">
                         <div class="card__body">
-                        <h2 class="text-headline-sm text-gray-800 dark:text-gray-200 mb-6">Department Analytics</h2>
-                        
+                        <div class="flex items-center justify-between mb-6">
+                            <h2 class="text-headline-sm text-gray-800 dark:text-gray-200">Department Analytics</h2>
+                            <span id="an-dept-label" class="text-sm text-gray-500 dark:text-gray-400"></span>
+                        </div>
+
+                        <!-- KPI cards -->
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                            <div class="rounded-xl p-4 border border-gray-200 dark:border-gray-600 bg-gradient-to-br from-blue-50 to-white dark:from-blue-900/20 dark:to-gray-800">
+                                <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Units</p>
+                                <p class="text-2xl font-bold text-gray-800 dark:text-white mt-1" id="an-total-units">0</p>
+                            </div>
+                            <div class="rounded-xl p-4 border border-gray-200 dark:border-gray-600 bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-900/20 dark:to-gray-800">
+                                <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Assigned</p>
+                                <p class="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1" id="an-assigned-units">0</p>
+                            </div>
+                            <div class="rounded-xl p-4 border border-gray-200 dark:border-gray-600 bg-gradient-to-br from-rose-50 to-white dark:from-rose-900/20 dark:to-gray-800">
+                                <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Unassigned</p>
+                                <p class="text-2xl font-bold text-rose-600 dark:text-rose-400 mt-1" id="an-unassigned-units">0</p>
+                            </div>
+                            <div class="rounded-xl p-4 border border-gray-200 dark:border-gray-600 bg-gradient-to-br from-amber-50 to-white dark:from-amber-900/20 dark:to-gray-800">
+                                <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Trainers</p>
+                                <p class="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1" id="an-trainers">0</p>
+                            </div>
+                        </div>
+
+                        <!-- Coverage bar -->
+                        <div class="mb-6">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="text-sm font-medium text-gray-600 dark:text-gray-300">Unit Assignment Coverage</span>
+                                <span class="text-sm font-semibold text-gray-800 dark:text-gray-100" id="an-coverage-pct">0%</span>
+                            </div>
+                            <div class="w-full h-2.5 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
+                                <div id="an-coverage-bar" class="h-2.5 rounded-full bg-emerald-500 transition-all duration-500" style="width:0%"></div>
+                            </div>
+                        </div>
+
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             <!-- Unit Assignment Chart -->
-                            <div class="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-6">
+                            <div class="bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-6">
                                 <h3 class="text-base font-medium text-gray-800 dark:text-gray-200 mb-4">Unit Assignment Status</h3>
                                 <div class="relative h-64">
                                     <canvas id="assignmentChart"></canvas>
@@ -12,7 +46,7 @@
                             </div>
 
                             <!-- Trainer Workload Chart -->
-                            <div class="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-6">
+                            <div class="bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-6">
                                 <h3 class="text-base font-medium text-gray-800 dark:text-gray-200 mb-4">Trainer Workload Distribution</h3>
                                 <div class="relative h-64">
                                     <canvas id="workloadChart"></canvas>

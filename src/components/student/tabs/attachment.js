@@ -97,7 +97,7 @@ window.StudentTabs = window.StudentTabs || {};
             document.querySelector('.attachment-student-admission').textContent = studentData.admissionNumber || 'N/A';
             document.querySelector('.attachment-student-course').textContent = formatCourseName(studentData.course);
             document.querySelector('.attachment-student-level').textContent = `Level ${data.level}`;
-            document.querySelector('.attachment-student-year').textContent = `Year ${data.yearOfStudy}`;
+            document.querySelector('.attachment-student-year').textContent = `Module ${data.moduleOfStudy}`;
             
             // Additional fields - intake formatting (same logic as profile section)
             console.log('Intake data for attachment:', { 

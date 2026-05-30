@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="icon" type="image/png" href="/public/img/favicon.png">
+    <link rel="shortcut icon" href="/public/favicon.ico">
+    <link rel="apple-touch-icon" href="/public/img/favicon.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Finance Dashboard - University Management System</title>
@@ -41,6 +44,8 @@
     <script src="/public/js/catalog.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="/public/js/edtti-docs.js"></script>
 </head>
 <body class="text-slate-800 dark:text-white">
     <div class="dashboard-shell">
@@ -65,12 +70,6 @@
                 </a>
                 <a href="/finance/revenue" class="nav-link nav-item">
                     <i class="ri-money-dollar-circle-line"></i><span>Revenue</span>
-                </a>
-                <a href="/finance/expenditure" class="nav-link nav-item">
-                    <i class="ri-arrow-down-circle-line"></i><span>Expenditure</span>
-                </a>
-                <a href="/finance/collections" class="nav-link nav-item">
-                    <i class="ri-wallet-3-line"></i><span>Collections</span>
                 </a>
                 <a href="/finance/payslips" class="nav-link nav-item">
                     <i class="ri-file-list-3-line"></i><span>Trainer Payslips</span>
@@ -127,8 +126,6 @@
     <script src="/src/components/finance/tabs/analytics.js"></script>
     <script src="/src/components/finance/tabs/reports.js"></script>
     <script src="/src/components/finance/tabs/revenue.js"></script>
-    <script src="/src/components/finance/tabs/expenditure.js"></script>
-    <script src="/src/components/finance/tabs/collections.js"></script>
     <script src="/src/components/finance/tabs/payslips.js"></script>
     <script src="/src/components/finance/tabs/settings.js"></script>
 </body>

@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="icon" type="image/png" href="/public/img/favicon.png">
+    <link rel="shortcut icon" href="/public/favicon.ico">
+    <link rel="apple-touch-icon" href="/public/img/favicon.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registrar Dashboard - University Management System</title>
@@ -44,15 +47,12 @@
 </head>
 <body class="bg-slate-50 dark:bg-gray-900 text-slate-800 dark:text-white overflow-x-hidden">
     <!-- Auth gate: covers the dashboard until requireAuth() resolves, suppressing
-         the bfcache back-button flash. Skeleton matches registrar layout (6 nav
-         items: Dashboard, Admission, Management, Promotion, Enrollment,
-         Graduation; 4 tiles: Total Students, New Admissions, Active Courses,
-         Departments). -->
+         the bfcache back-button flash. Skeleton matches registrar layout (4 nav
+         items: Dashboard, Admission, Management, Promotion;
+         4 tiles: Total Students, New Admissions, Active Courses, Departments). -->
     <div id="authGate" class="auth-gate" aria-live="polite" aria-busy="true">
         <aside class="skel-sidebar">
             <div class="skel skel-sidebar__logo"></div>
-            <div class="skel skel-sidebar__item"></div>
-            <div class="skel skel-sidebar__item"></div>
             <div class="skel skel-sidebar__item"></div>
             <div class="skel skel-sidebar__item"></div>
             <div class="skel skel-sidebar__item"></div>
@@ -97,12 +97,6 @@
                 </a>
                 <a class="nav-link" data-section="promotion" href="/registrar/promotion">
                     <i class="ri-arrow-up-line"></i><span>Student Promotion</span>
-                </a>
-                <a class="nav-link" data-section="enrollment" href="/registrar/enrollment">
-                    <i class="ri-file-list-3-line"></i><span>Enrollment</span>
-                </a>
-                <a class="nav-link" data-section="graduation" href="/registrar/graduation">
-                    <i class="ri-graduation-cap-line"></i><span>Graduation</span>
                 </a>
             </nav>
             <div class="dashboard-sidebar__profile">
@@ -253,127 +247,258 @@
     <!-- Toast Notification Container -->
     <div id="toastContainer" class="fixed bottom-4 right-4 z-50"></div>
 
-    <div id="admissionLetterModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
-        <div class="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <!-- Modal Header -->
-            <div class="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-600 no-print">
-                <h2 class="text-2xl font-bold text-gray-800 dark:text-white">
-                    <i class="ri-graduation-cap-line mr-2 text-blue-600"></i>
-                    Admission Letter Generated
-                </h2>
-                <div class="flex space-x-2">
-                    <button onclick="printLetter()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
-                        <i class="ri-printer-line"></i>
-                        <span>Print</span>
+    <!-- ╔══════════════════════════════════════════════════════════════╗
+         ║  ADMISSION LETTER MODAL — production-grade, print-ready    ║
+         ║  All visible styles are inline so html2pdf renders a clean  ║
+         ║  white A4 page with zero dark-mode bleed-through.           ║
+         ╚══════════════════════════════════════════════════════════════╝ -->
+    <div id="admissionLetterModal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg shadow-2xl w-full max-h-[95vh] overflow-y-auto" style="max-width:820px;">
+
+            <!-- Toolbar — screen only, excluded from PDF / print -->
+            <div class="no-print flex items-center justify-between px-5 py-3 border-b border-gray-200 bg-gray-50 rounded-t-lg">
+                <span class="font-semibold text-gray-700 text-sm flex items-center gap-2">
+                    <i class="ri-graduation-cap-line" style="color:#7A0C0C;"></i>
+                    Admission Letter
+                </span>
+                <div class="flex gap-2">
+                    <button onclick="printLetter()"
+                        class="flex items-center gap-1 px-3 py-1.5 text-sm text-white rounded transition-colors"
+                        style="background:#16a34a;" onmouseover="this.style.background='#15803d'" onmouseout="this.style.background='#16a34a'">
+                        <i class="ri-printer-line"></i> Print
                     </button>
-                    <button onclick="downloadPDF()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
-                        <i class="ri-file-pdf-line"></i>
-                        <span>PDF</span>
+                    <button onclick="downloadPDF()"
+                        class="flex items-center gap-1 px-3 py-1.5 text-sm text-white rounded transition-colors"
+                        style="background:#7A0C0C;" onmouseover="this.style.background='#5C0808'" onmouseout="this.style.background='#7A0C0C'">
+                        <i class="ri-file-pdf-line"></i> PDF
                     </button>
-                    <button onclick="closeAdmissionLetterModal()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
-                        <i class="ri-close-line"></i>
-                        <span>Close</span>
+                    <button onclick="closeAdmissionLetterModal()"
+                        class="flex items-center gap-1 px-3 py-1.5 text-sm text-white rounded transition-colors"
+                        style="background:#6b7280;" onmouseover="this.style.background='#4b5563'" onmouseout="this.style.background='#6b7280'">
+                        <i class="ri-close-line"></i> Close
                     </button>
                 </div>
             </div>
 
-            <!-- Letter Content -->
-            <div id="letterContent" class="p-8 bg-white dark:bg-gray-800 text-black dark:text-white" style="font-family: 'Times New Roman', serif; line-height: 1.6;">
-                <!-- Letterhead -->
-                <div class="text-center border-b-4 border-blue-600 pb-6 mb-8">
-                    <div class="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center text-white text-2xl mx-auto mb-4">
-                        <i class="ri-graduation-cap-line"></i>
-                    </div>
-                    <h1 class="text-3xl font-bold text-blue-800 dark:text-blue-400 mb-2">EMURUA DIKIRR TECHNICAL TRAINING INSTITUTE</h1>
-                    <div class="text-sm text-gray-600 dark:text-gray-300 mb-2">
-                        P.O. Box 49, Emurua Dikirr - 20500<br>
-                        Tel: +254 729 123 456 | Email: info@emurua-tech.ac.ke<br>
-                        Website: www.emurua-tech.ac.ke
-                    </div>
-                    <div class="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                        <strong>ISO 9001:2015 Certified Institution</strong>
+            <!-- ═══════════════════════════════════════════════════════════
+                 PRINTABLE LETTER — everything below uses only inline
+                 styles so html2pdf / browser print captures exactly
+                 what you see. No Tailwind, no dark: classes.
+                 ═══════════════════════════════════════════════════════════ -->
+            <div id="letterContent" style="
+                background:#ffffff;
+                color:#1a1a1a;
+                font-family:'Georgia','Times New Roman',serif;
+                font-size:10.5pt;
+                line-height:1.55;
+                position:relative;
+                overflow:hidden;
+                margin:0;
+                padding:0;">
+
+                <!-- Diagonal watermark (decorative, low-opacity) -->
+                <div aria-hidden="true" style="
+                    position:absolute;inset:0;
+                    display:flex;align-items:center;justify-content:center;
+                    pointer-events:none;user-select:none;z-index:0;">
+                    <div style="
+                        font-size:82px;font-weight:900;
+                        color:rgba(122,12,12,0.04);
+                        transform:rotate(-30deg);
+                        letter-spacing:10px;
+                        white-space:nowrap;
+                        font-family:Arial,sans-serif;">
+                        OFFICIAL &middot; EDTTI
                     </div>
                 </div>
 
-                <!-- Reference and Date -->
-                <div class="flex justify-between mb-6">
-                    <div></div>
-                    <div class="text-right">
-                        <div class="font-bold">Ref: EDTTI/ADMISSIONS/<span id="refYear">2024</span>/<span id="refNumber">001</span></div>
-                        <div id="letterDate" class="mt-2"></div>
-                    </div>
-                </div>
+                <!-- All visible content above the watermark -->
+                <div style="position:relative;z-index:1;">
 
-                <!-- Letter Title -->
-                <div class="text-center text-headline underline mb-8 uppercase">
-                    LETTER OF ADMISSION
-                </div>
-
-                <!-- Letter Body -->
-                <div class="text-justify text-base leading-relaxed">
-                    <p class="mb-4"><strong>Dear <span id="studentName">[Student Name]</span>,</strong></p>
-
-                    <p class="mb-6">Following your application for admission to <strong>Emurua Dikirr Technical Training Institute</strong>, I am pleased to inform you that you have been <strong>SUCCESSFULLY ADMITTED</strong> to pursue the following course:</p>
-
-                    <div class="bg-yellow-50 dark:bg-yellow-900 border-l-4 border-yellow-400 dark:border-yellow-500 p-4 mb-6">
-                        <p class="mb-2 text-gray-800 dark:text-gray-200"><strong>Course:</strong> <span id="courseName">[Course Name]</span></p>
-                        <p class="mb-2 text-gray-800 dark:text-gray-200"><strong>Admission Number:</strong> <span id="letterAdmissionNumber">[Admission Number]</span></p>
-                        <p class="text-gray-800 dark:text-gray-200"><strong>Academic Year:</strong> <span id="intakeYear">[Intake Year]</span></p>
-                    </div>
-
-                    <p class="mb-4">This admission is subject to:</p>
-                    <ol class="list-decimal list-inside mb-6 space-y-1">
-                        <li>Payment of required fees as per the institute's fee structure</li>
-                        <li>Submission of original academic certificates and other required documents</li>
-                        <li>Compliance with the institute's rules and regulations</li>
-                        <li>Medical examination and fitness certification</li>
-                    </ol>
-
-                    <div class="bg-blue-50 dark:bg-blue-900 border-2 border-blue-200 dark:border-blue-700 rounded-lg p-6 mb-6">
-                        <h3 class="text-lg font-bold mb-3 text-blue-800 dark:text-blue-200 flex items-center">
-                            <i class="ri-computer-line mr-2"></i>STUDENT PORTAL ACCESS INSTRUCTIONS
-                        </h3>
-                        <p class="mb-3 text-gray-800 dark:text-gray-200"><strong>To access your student portal and academic services:</strong></p>
-                        <div class="bg-white dark:bg-gray-700 p-4 rounded border border-gray-200 dark:border-gray-600 mb-3">
-                            <p class="mb-2 text-gray-800 dark:text-gray-200"><strong>🌐 Website:</strong> <span class="text-blue-600 dark:text-blue-400 font-mono">https://ums.emurua-tech.ac.ke/login</span></p>
-                            <p class="mb-2 text-gray-800 dark:text-gray-200"><strong>👤 Username:</strong> <span class="font-mono bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-gray-200 px-2 py-1 rounded" id="portalUsername">[Admission Number]</span></p>
-                            <p class="text-gray-800 dark:text-gray-200"><strong>🔑 Initial Password:</strong> <span class="font-mono bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-gray-200 px-2 py-1 rounded" id="portalPassword">[Your Phone Number]</span></p>
+                    <!-- ── HEADER BAND ── -->
+                    <div style="background:#7A0C0C;color:#ffffff;padding:20px 32px 14px;text-align:center;">
+                        <!-- Logo row -->
+                        <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:8px;">
+                            <div style="
+                                width:52px;height:52px;
+                                border-radius:50%;
+                                background:#ffffff;
+                                display:flex;align-items:center;justify-content:center;
+                                flex-shrink:0;">
+                                <i class="ri-graduation-cap-line" style="font-size:26px;color:#7A0C0C;"></i>
+                            </div>
+                            <div style="text-align:left;">
+                                <div style="font-size:15.5pt;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;line-height:1.2;">
+                                    Emurua Dikirr Technical Training Institute
+                                </div>
+                                <div style="height:2px;background:#D4A017;width:100%;margin:5px 0 3px;"></div>
+                                <div style="font-size:8pt;color:#f5d9d9;letter-spacing:0.3px;">
+                                    P.O. Box 49, Emurua Dikirr &ndash; 20500 &nbsp;&bull;&nbsp;
+                                    Tel: +254 729 123 456 &nbsp;&bull;&nbsp;
+                                    info@emurua-tech.ac.ke &nbsp;&bull;&nbsp;
+                                    www.emurua-tech.ac.ke
+                                </div>
+                            </div>
                         </div>
-                        <div class="bg-yellow-50 dark:bg-yellow-900 border border-yellow-200 dark:border-yellow-700 rounded p-3">
-                            <p class="text-sm text-gray-800 dark:text-gray-200"><strong>⚠️ IMPORTANT:</strong> On your first login, you will be required to:</p>
-                            <ul class="list-disc list-inside text-sm mt-2 space-y-1 text-gray-800 dark:text-gray-200">
-                                <li>Change your password to a secure one</li>
-                                <li>Provide a valid Gmail account for password recovery</li>
-                                <li>Update your profile information</li>
-                            </ul>
+                        <div style="font-size:7.5pt;color:#D4A017;font-style:italic;letter-spacing:0.5px;">
+                            ISO 9001:2015 Certified &nbsp;&bull;&nbsp; TVETA Accredited Institution
                         </div>
                     </div>
 
-                    <p class="mb-4">We congratulate you on this achievement and look forward to welcoming you to our prestigious institution. Should you require any clarification, please do not hesitate to contact our admissions office.</p>
-
-                    <p class="mb-8"><strong>Welcome to Emurua Dikirr Technical Training Institute!</strong></p>
-                </div>
-
-                <!-- Signature Section -->
-                <div class="flex justify-between mt-12">
-                    <div class="text-center w-48">
-                        <div class="border-b-2 border-black h-16 mb-2"></div>
-                        <p><strong>REGISTRAR</strong><br>
-                        Emurua Dikirr Technical Training Institute</p>
+                    <!-- ── REF + DATE BAR ── -->
+                    <div style="
+                        display:flex;
+                        justify-content:space-between;
+                        align-items:center;
+                        padding:8px 32px;
+                        background:#f9f4f4;
+                        border-bottom:3px solid #7A0C0C;
+                        font-size:9pt;">
+                        <div style="font-weight:700;color:#7A0C0C;font-family:Arial,sans-serif;">
+                            Ref:&nbsp;EDTTI/ADM/<span id="refYear">2025</span>/<span id="refNumber">0001</span>
+                        </div>
+                        <div id="letterDate" style="color:#444;font-style:italic;"></div>
                     </div>
-                    <div class="text-center w-48">
-                        <div class="border-b-2 border-black h-16 mb-2"></div>
-                        <p><strong>PRINCIPAL</strong><br>
-                        Emurua Dikirr Technical Training Institute</p>
-                    </div>
-                </div>
 
-                <!-- Footer -->
-                <div class="text-center mt-10 pt-6 border-t border-gray-300 dark:border-gray-600 text-xs text-gray-500 dark:text-gray-400">
-                    <p><em>This is an official admission letter from Emurua Dikirr Technical Training Institute</em></p>
-                    <p>Generated on <span id="generationDate"></span> | Student Portal: ums.emurua-tech.ac.ke</p>
-                </div>
-            </div>
+                    <!-- ── BODY CONTENT ── -->
+                    <div style="padding:18px 32px 4px;">
+
+                        <!-- Letter Title -->
+                        <div style="
+                            text-align:center;
+                            font-size:13pt;
+                            font-weight:700;
+                            text-decoration:underline;
+                            text-transform:uppercase;
+                            letter-spacing:1.5px;
+                            color:#7A0C0C;
+                            margin-bottom:16px;">
+                            Letter of Admission
+                        </div>
+
+                        <!-- Salutation -->
+                        <p style="margin:0 0 10px;">
+                            <strong>Dear <span id="studentName">[Student Name]</span>,</strong>
+                        </p>
+
+                        <!-- Opening paragraph -->
+                        <p style="margin:0 0 12px;text-align:justify;">
+                            Following your application for admission to
+                            <strong>Emurua Dikirr Technical Training Institute</strong>,
+                            I am pleased to inform you that you have been
+                            <strong style="color:#7A0C0C;text-transform:uppercase;">Successfully Admitted</strong>
+                            to pursue the following programme:
+                        </p>
+
+                        <!-- Course info block -->
+                        <div style="
+                            border-left:4px solid #7A0C0C;
+                            background:#fdf7f7;
+                            padding:11px 16px;
+                            margin-bottom:14px;
+                            border-radius:0 4px 4px 0;">
+                            <table style="width:100%;border-collapse:collapse;font-size:10pt;">
+                                <tr>
+                                    <td style="padding:4px 0;width:38%;color:#555;font-weight:600;font-family:Arial,sans-serif;font-size:9pt;">Programme / Course</td>
+                                    <td style="padding:4px 0;font-weight:700;color:#1a1a1a;" id="courseName">[Course Name]</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:4px 0;color:#555;font-weight:600;font-family:Arial,sans-serif;font-size:9pt;">Department</td>
+                                    <td style="padding:4px 0;" id="letterDepartmentName">[Department]</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:4px 0;color:#555;font-weight:600;font-family:Arial,sans-serif;font-size:9pt;">Admission Number</td>
+                                    <td style="padding:4px 0;font-weight:700;font-family:monospace;font-size:11pt;color:#7A0C0C;" id="letterAdmissionNumber">[Admission Number]</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:4px 0;color:#555;font-weight:600;font-family:Arial,sans-serif;font-size:9pt;">Academic Year</td>
+                                    <td style="padding:4px 0;" id="intakeYear">[Academic Year]</td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <!-- Conditions -->
+                        <p style="margin:0 0 5px;font-size:10pt;"><strong>This admission is subject to the following conditions:</strong></p>
+                        <ol style="margin:0 0 14px;padding-left:22px;font-size:10pt;line-height:1.7;">
+                            <li>Payment of all required fees as per the Institute's fee structure.</li>
+                            <li>Submission of original academic certificates and supporting documents.</li>
+                            <li>Compliance with the Institute's rules, regulations and code of conduct.</li>
+                            <li>Successful medical examination and fitness certification.</li>
+                        </ol>
+
+                        <!-- Portal access box -->
+                        <div style="border:1.5px solid #7A0C0C;border-radius:5px;margin-bottom:14px;overflow:hidden;">
+                            <div style="background:#7A0C0C;color:#fff;padding:7px 14px;font-family:Arial,sans-serif;font-size:9pt;font-weight:700;letter-spacing:0.8px;">
+                                STUDENT PORTAL ACCESS
+                            </div>
+                            <div style="padding:10px 14px;background:#ffffff;">
+                                <table style="width:100%;border-collapse:collapse;font-size:9.5pt;">
+                                    <tr>
+                                        <td style="padding:3px 0;width:30%;color:#555;font-weight:600;font-family:Arial,sans-serif;font-size:9pt;">Website</td>
+                                        <td style="padding:3px 0;color:#7A0C0C;font-family:monospace;">https://ums.emurua-tech.ac.ke/login</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:3px 0;color:#555;font-weight:600;font-family:Arial,sans-serif;font-size:9pt;">Username</td>
+                                        <td style="padding:3px 0;font-family:monospace;font-weight:700;" id="portalUsername">[Admission Number]</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:3px 0;color:#555;font-weight:600;font-family:Arial,sans-serif;font-size:9pt;">Initial Password</td>
+                                        <td style="padding:3px 0;font-style:italic;color:#444;" id="portalPassword">Delivered separately (see registrar)</td>
+                                    </tr>
+                                </table>
+                                <div style="
+                                    margin-top:8px;padding:6px 10px;
+                                    background:#fffbeb;border:1px solid #D4A017;
+                                    border-radius:3px;font-size:8.5pt;color:#5a3e00;">
+                                    <strong>&#9888; IMPORTANT:</strong>&nbsp;
+                                    On first login you must change your password, add a recovery email address, and complete your profile.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Closing -->
+                        <p style="margin:0 0 6px;text-align:justify;font-size:10pt;">
+                            We congratulate you on this achievement and warmly welcome you to our institution.
+                            For any clarification, please contact the Admissions Office during working hours.
+                        </p>
+                        <p style="margin:0 0 20px;font-weight:700;">
+                            Welcome to Emurua Dikirr Technical Training Institute!
+                        </p>
+
+                        <!-- Signatures -->
+                        <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:20px;">
+                            <div style="width:40%;text-align:center;">
+                                <div style="height:48px;border-bottom:1.5px solid #1a1a1a;margin-bottom:6px;"></div>
+                                <div style="font-size:9.5pt;font-family:Arial,sans-serif;">
+                                    <strong>REGISTRAR</strong><br>
+                                    <span style="color:#555;font-size:8.5pt;">Emurua Dikirr Technical Training Institute</span>
+                                </div>
+                            </div>
+                            <div style="width:40%;text-align:center;">
+                                <div style="height:48px;border-bottom:1.5px solid #1a1a1a;margin-bottom:6px;"></div>
+                                <div style="font-size:9.5pt;font-family:Arial,sans-serif;">
+                                    <strong>PRINCIPAL</strong><br>
+                                    <span style="color:#555;font-size:8.5pt;">Emurua Dikirr Technical Training Institute</span>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div><!-- /.body padding -->
+
+                    <!-- ── FOOTER BAND ── -->
+                    <div style="
+                        background:#7A0C0C;color:#f5d9d9;
+                        text-align:center;padding:8px 16px;
+                        font-size:7.5pt;font-family:Arial,sans-serif;line-height:1.6;">
+                        <em>This is an official document issued by Emurua Dikirr Technical Training Institute.
+                        Any alteration renders it invalid.</em><br>
+                        Generated:&nbsp;<span id="generationDate"></span>
+                        &nbsp;&bull;&nbsp;
+                        Portal: ums.emurua-tech.ac.ke
+                    </div>
+
+                </div><!-- /z-index wrapper -->
+            </div><!-- /#letterContent -->
         </div>
     </div>
 
@@ -507,6 +632,18 @@
                                 </select>
                             </div>
                             <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Filter by Module</label>
+                                <select id="modalModuleFilter" class="px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-600 dark:text-white">
+                                    <option value="all">All Modules</option>
+                                    <option value="1">Module 1</option>
+                                    <option value="2">Module 2</option>
+                                    <option value="3">Module 3</option>
+                                    <option value="4">Module 4</option>
+                                    <option value="5">Module 5</option>
+                                    <option value="6">Module 6</option>
+                                </select>
+                            </div>
+                            <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Filter by Department</label>
                                 <!-- Options populated from the DB via Catalog.populateDepartmentSelect -->
                                 <select id="modalDeptFilter" class="px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-600 dark:text-white">
@@ -587,7 +724,5 @@
     <script src="/src/components/registrar/tabs/admission.js"></script>
     <script src="/src/components/registrar/tabs/management.js"></script>
     <script src="/src/components/registrar/tabs/promotion.js"></script>
-    <script src="/src/components/registrar/tabs/enrollment.js"></script>
-    <script src="/src/components/registrar/tabs/graduation.js"></script>
 </body>
 </html>

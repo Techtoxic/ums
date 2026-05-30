@@ -508,7 +508,7 @@ const User       = makeModel(schema.users, usersOpts); // unfiltered (login look
 const Program                  = makeModel(schema.programs, { fieldMap: { programName: 'name', programCost: 'program_cost', departmentId: 'department_id', durationYears: 'duration_years', isActive: 'is_active' } });
 const Unit                     = makeModel(schema.units, { fieldMap: { programId: 'program_id', isCommon: 'is_common' } });
 const CommonUnit               = makeModel(schema.units, { fieldMap: { programId: 'program_id', isCommon: 'is_common' } }); // V1 had separate "common" model; map onto units
-const CommonUnitAssignment     = makeModel(schema.commonUnitAssignments, { fieldMap: { unitId: 'unit_id', programId: 'program_id' } });
+const CommonUnitAssignment     = makeModel(schema.commonUnitAssignments, { fieldMap: { commonUnitId: 'unit_id', unitId: 'unit_id', programId: 'program_id', trainerId: 'trainer_id', assignedBy: 'assigned_by', assignedByDepartment: 'assigned_by_department', trainerDepartment: 'trainer_department' } });
 const TrainerAssignment        = makeModel(schema.trainerAssignments, { fieldMap: { trainerId: 'trainer_id', unitId: 'unit_id', academicYear: 'academic_year' } });
 const StudentUnitRegistration  = makeModel(schema.unitRegistrations, { fieldMap: { studentId: 'student_id', unitId: 'unit_id', academicYear: 'academic_year' } });
 const ToolRequest              = makeModel(schema.toolRequests, { fieldMap: { toolType: 'tool_type', targetType: 'target_type', targetTrainerId: 'target_trainer_id', targetDepartment: 'target_department', dueDate: 'due_date', requestedBy: 'requested_by' } });
@@ -524,6 +524,120 @@ const PasswordReset            = makeModel(schema.passwordResets, { fieldMap: { 
 const LoginOTP                 = makeModel(schema.loginOtps, { fieldMap: { codeHash: 'code_hash', expiresAt: 'expires_at', usedAt: 'used_at' } });
 const Payment                  = makeModel(schema.payments, { fieldMap: { studentId: 'student_id', paymentMode: 'payment_mode', bankName: 'bank_name', paymentDate: 'payment_date', referenceNumber: 'reference_number', reference: 'reference_number', recordedBy: 'recorded_by' } });
 const Payslip                  = makeModel(schema.payslips, { fieldMap: { trainerId: 'trainer_id', grossPay: 'gross_pay', netPay: 'net_pay', paymentDate: 'payment_date' } });
+
+// ============================================================================
+// CUSTOM STATIC METHODS — V1 models exposed bespoke helpers (getSetting,
+// registerStudent, ...) that the generic CRUD shim does not provide. Implement
+// them directly against Drizzle so the call sites keep working.
+// ============================================================================
+
+// ---- SystemSettings: key/value config helpers (value column is jsonb) ----
+SystemSettings.getSetting = async function getSetting(key, defaultValue = null) {
+    const rows = await db.select().from(schema.systemSettings).where(eq(schema.systemSettings.key, key)).limit(1);
+    if (!rows.length) return defaultValue;
+    const v = rows[0].value;
+    return (v === null || v === undefined) ? defaultValue : v;
+};
+
+SystemSettings.setSetting = async function setSetting(key, value, description, updatedBy = null) {
+    const rows = await db.insert(schema.systemSettings)
+        .values({ key, value, updated_by: updatedBy, updated_at: new Date() })
+        .onConflictDoUpdate({
+            target: schema.systemSettings.key,
+            set: { value, updated_by: updatedBy, updated_at: new Date() },
+        })
+        .returning();
+    return rows[0] ? rowToDoc(rows[0], {}) : null;
+};
+
+SystemSettings.getSettingsByCategory = async function getSettingsByCategory() {
+    // The V2 schema has no category column; return every setting (matches the
+    // un-categorised GET /system-settings behaviour).
+    const rows = await db.select().from(schema.systemSettings);
+    return rows.map((r) => rowToDoc(r, {}));
+};
+
+// ---- StudentUnitRegistration: V1 helpers over the unit_registrations table ----
+// The table is lean (student_id, unit_id, academic_year:int, semester:int) and
+// has no denormalised course/unit code or status columns, so these helpers join
+// units for display and treat every persisted row as a 'registered' unit.
+function _toYearInt(academicYear) {
+    if (academicYear === null || academicYear === undefined) {
+        return require('../utils/academicPeriod').getCurrentAcademicYearStart();
+    }
+    const n = parseInt(String(academicYear).split('/')[0], 10);
+    return Number.isFinite(n) ? n : require('../utils/academicPeriod').getCurrentAcademicYearStart();
+}
+
+async function _resolveStudentId(studentIdOrAdmission) {
+    if (!studentIdOrAdmission) return null;
+    const val = String(studentIdOrAdmission);
+    // A UUID is used directly; anything else is treated as an admission number.
+    if (/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(val)) {
+        return val;
+    }
+    const rows = await db.select({ id: schema.students.id }).from(schema.students)
+        .where(eq(schema.students.admission_number, val)).limit(1);
+    return rows[0]?.id || null;
+}
+
+StudentUnitRegistration.getStudentRegistrations = async function getStudentRegistrations(studentIdOrAdmission, status = 'registered') {
+    const studentId = await _resolveStudentId(studentIdOrAdmission);
+    if (!studentId) return [];
+    const rows = await db
+        .select({
+            id: schema.unitRegistrations.id,
+            unitId: schema.unitRegistrations.unit_id,
+            academicYear: schema.unitRegistrations.academic_year,
+            semester: schema.unitRegistrations.semester,
+            registeredAt: schema.unitRegistrations.registered_at,
+            unitCode: schema.units.code,
+            unitName: schema.units.name,
+            isCommon: schema.units.is_common,
+        })
+        .from(schema.unitRegistrations)
+        .leftJoin(schema.units, eq(schema.unitRegistrations.unit_id, schema.units.id))
+        .where(eq(schema.unitRegistrations.student_id, studentId));
+    return rows.map((r) => ({
+        _id: r.id,
+        id: r.id,
+        unitId: r.unitId,
+        unitCode: r.unitCode,
+        unitName: r.unitName,
+        unitType: r.isCommon ? 'common' : 'department',
+        academicYear: r.academicYear,
+        semester: r.semester,
+        status: 'registered',
+        registeredAt: r.registeredAt,
+    }));
+};
+
+StudentUnitRegistration.registerStudent = async function registerStudent(data) {
+    const studentId = await _resolveStudentId(data.studentId);
+    if (!studentId) throw new Error('Student not found for registration');
+    if (!data.unitId) throw new Error('unitId is required for registration');
+    const academicYear = _toYearInt(data.academicYear);
+    const semester = Number.isFinite(parseInt(data.semester, 10)) ? parseInt(data.semester, 10) : 1;
+
+    // Idempotent: do not double-register the same unit for the same period.
+    const existing = await db.select({ id: schema.unitRegistrations.id })
+        .from(schema.unitRegistrations)
+        .where(and(
+            eq(schema.unitRegistrations.student_id, studentId),
+            eq(schema.unitRegistrations.unit_id, data.unitId),
+            eq(schema.unitRegistrations.academic_year, academicYear),
+            eq(schema.unitRegistrations.semester, semester),
+        )).limit(1);
+    if (existing.length) {
+        return { _id: existing[0].id, id: existing[0].id, unitId: data.unitId, academicYear, semester, status: 'registered', alreadyRegistered: true };
+    }
+
+    const rows = await db.insert(schema.unitRegistrations)
+        .values({ student_id: studentId, unit_id: data.unitId, academic_year: academicYear, semester })
+        .returning();
+    const r = rows[0];
+    return { _id: r.id, id: r.id, unitId: r.unit_id, academicYear: r.academic_year, semester: r.semester, status: 'registered' };
+};
 
 module.exports = {
     // Shim factory + helpers (escape hatch for advanced callers)

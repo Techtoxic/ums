@@ -1,36 +1,98 @@
 const express = require('express');
 const router = express.Router();
+const { db, schema } = require('../db');
+const { eq, and, or, isNull, ilike, sql, desc, asc } = require('drizzle-orm');
 const { verifyToken, authorize, verifyOwnership } = require('../middleware/auth');
 const { escapeRegex } = require('../utils/validators');
+const { getCourseDisplayName, getCourseCode, getDepartmentDisplayName } = require('../utils/courseCodes');
 const { Student, StudentNote, Notification } = require('../db/models');
 
-// Get all students for Dean Portal
+// Get all students for Dean Portal (PAGINATED).
+//
+// Returns the same { students, total, page, totalPages, limit } envelope the
+// main /students endpoint uses, plus the dean-specific filters (department,
+// module, intake, course, search). Set `?all=1` to fetch everything in one go
+// (used by the dean dashboard's per-module breakdown widget).
 router.get('/dean/students', verifyToken, authorize('admin', 'dean', 'registrar'), async (req, res) => {
     try {
-        const { course, department, module: moduleField, intake, search } = req.query;
+        const {
+            course,
+            department,
+            module: moduleField,
+            intake,
+            search,
+            page: pageParam,
+            limit: limitParam,
+            all,
+        } = req.query;
 
-        let query = {};
-        if (course) query.course = course;
-        if (department) query.department = department;
-        if (moduleField) query.module = parseInt(moduleField);
-        if (intake) query.intake = intake;
-
-        if (search) {
-            // SEV-H-019: search comes from req.query; escape regex metachars.
-            const safeSearch = escapeRegex(search);
-            query.$or = [
-                { name: { $regex: safeSearch, $options: 'i' } },
-                { admissionNumber: { $regex: safeSearch, $options: 'i' } },
-                { idNumber: { $regex: safeSearch, $options: 'i' } },
-                { email: { $regex: safeSearch, $options: 'i' } }
-            ];
+        const conds = [isNull(schema.students.deleted_at)];
+        if (course) conds.push(eq(schema.students.course, course));
+        if (department) conds.push(eq(schema.students.department, department));
+        if (moduleField) {
+            const n = parseInt(moduleField, 10);
+            if (Number.isFinite(n)) conds.push(eq(schema.students.module, n));
         }
+        if (intake) conds.push(eq(schema.students.intake, String(intake).toLowerCase()));
+        if (search && String(search).trim()) {
+            const needle = '%' + String(search).trim().replace(/[%_]/g, m => '\\' + m) + '%';
+            conds.push(or(
+                ilike(schema.students.name, needle),
+                ilike(schema.students.admission_number, needle),
+                ilike(schema.students.id_number, needle),
+                ilike(schema.students.email, needle),
+                ilike(schema.students.phone_number, needle),
+            ));
+        }
+        const where = and(...conds);
 
-        const students = await Student.find(query)
-            .select('-password')
-            .sort({ name: 1 });
+        const allFlag = String(all || limitParam || '').toLowerCase() === 'all' || all === '1' || all === 'true';
+        let page = parseInt(pageParam, 10);
+        if (!Number.isFinite(page) || page < 1) page = 1;
+        let limit = parseInt(limitParam, 10);
+        if (!Number.isFinite(limit) || limit < 1) limit = 20;
+        if (limit > 200) limit = 200;
 
-        res.json(students);
+        const countRows = await db.select({ c: sql`count(*)` }).from(schema.students).where(where);
+        const total = Number(countRows[0]?.c || 0);
+
+        let q = db.select({
+            _id: schema.students.id,
+            id: schema.students.id,
+            admissionNumber: schema.students.admission_number,
+            name: schema.students.name,
+            idNumber: schema.students.id_number,
+            course: schema.students.course,
+            department: schema.students.department,
+            module: schema.students.module,
+            intake: schema.students.intake,
+            intakeYear: schema.students.intake_year,
+            phoneNumber: schema.students.phone_number,
+            email: schema.students.email,
+            kcseGrade: schema.students.kcse_grade,
+            createdAt: schema.students.created_at,
+        }).from(schema.students).where(where).orderBy(asc(schema.students.name));
+
+        if (!allFlag) q = q.limit(limit).offset((page - 1) * limit);
+        const rows = await q;
+
+        const decorated = rows.map(r => ({
+            ...r,
+            courseName: getCourseDisplayName(r.course),
+            courseCode: getCourseCode(r.course) || r.course,
+            departmentName: getDepartmentDisplayName(r.department),
+        }));
+
+        const effectiveLimit = allFlag ? Math.max(total, 1) : limit;
+        const totalPages = Math.max(1, Math.ceil(total / effectiveLimit));
+
+        res.json({
+            students: decorated,
+            total,
+            page,
+            limit: effectiveLimit,
+            totalPages,
+        });
     } catch (error) {
         console.error('Error fetching students for dean:', error);
         res.status(500).json({ message: 'Error fetching students' });

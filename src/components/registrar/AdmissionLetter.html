@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="icon" type="image/png" href="/public/img/favicon.png">
+    <link rel="shortcut icon" href="/public/favicon.ico">
+    <link rel="apple-touch-icon" href="/public/img/favicon.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admission Letter Template</title>
@@ -43,16 +46,18 @@
         }
         
         .logo {
-            width: 80px;
-            height: 80px;
+            width: 90px;
+            height: 90px;
             margin: 0 auto 15px;
-            background: #2563eb;
-            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
-            font-size: 32px;
+            object-fit: contain;
+        }
+        .logo img {
+            width: 90px;
+            height: 90px;
+            object-fit: contain;
         }
         
         .institute-name {
@@ -168,7 +173,7 @@
                 <!-- Letterhead -->
                 <div class="letterhead">
                     <div class="logo">
-                        <i class="fas fa-graduation-cap"></i>
+                        <img src="/public/img/logo.png" alt="EDTTI Logo" crossorigin="anonymous">
                     </div>
                     <div class="institute-name">EMURUA DIKIRR TECHNICAL TRAINING INSTITUTE</div>
                     <div class="institute-details">

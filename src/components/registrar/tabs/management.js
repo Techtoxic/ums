@@ -1,5 +1,11 @@
-// tabs/management.js — student management: table, pagination, search, view/edit.
-// The viewStudentModal / editStudentModal markup ships inside management.html.
+// tabs/management.js — student management: server-paginated table, search,
+// view/edit. The viewStudentModal / editStudentModal markup ships inside
+// management.html.
+//
+// Pagination + filters round-trip to GET /api/students?page=&limit=20&search=
+// &department=&module=&intake= and render the returned slice. The frontend
+// keeps a tiny `state` object only to drive the controls; the source of truth
+// is always the server.
 window.RegistrarTabs = window.RegistrarTabs || {};
 
 // Department display labels come from the shared DB-backed catalog (Rule 7).
@@ -10,13 +16,21 @@ function deptDisplay(key) {
     return String(key || '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 }
 
-// Global pagination state for students
-let studentsState = {
+// Course display labels come from the shared DB-backed catalog (Rule 7), with
+// a title-case fallback when the catalog has not loaded.
+function courseDisplay(codeOrCourse) {
+    if (window.Catalog) return window.Catalog.formatCourseName(codeOrCourse);
+    return String(codeOrCourse || '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+}
+
+const STUDENTS_PAGE_SIZE = 20;
+
+let managementState = {
     currentPage: 1,
-    itemsPerPage: 10,
-    totalStudents: 0,
-    allStudents: [],
-    filteredStudents: [],
+    itemsPerPage: STUDENTS_PAGE_SIZE,
+    total: 0,
+    totalPages: 1,
+    students: [],
     filters: {
         search: '',
         department: 'all',
@@ -25,84 +39,77 @@ let studentsState = {
     },
 };
 
-function applyAllFilters() {
-    const { search, department, moduleFilter, intake } = {
-        search: studentsState.filters.search,
-        department: studentsState.filters.department,
-        moduleFilter: studentsState.filters.module,
-        intake: studentsState.filters.intake,
-    };
-
-    studentsState.filteredStudents = studentsState.allStudents.filter(student => {
-        if (department !== 'all' && student.department !== department) return false;
-        if (moduleFilter !== 'all' && String(student.module) !== String(moduleFilter)) return false;
-        if (intake !== 'all' && (student.intake || '').toLowerCase() !== intake) return false;
-        if (search) {
-            const haystack = `${student.name || ''} ${student.admissionNumber || ''} ${student.course || ''} ${student.department || ''} ${student.phoneNumber || ''} ${student.email || ''}`.toLowerCase();
-            if (!haystack.includes(search)) return false;
-        }
-        return true;
-    });
-    studentsState.totalStudents = studentsState.filteredStudents.length;
-    studentsState.currentPage = 1;
-    renderStudentsPage();
+function buildStudentsQuery({ page, limit, filters }) {
+    const params = new URLSearchParams();
+    params.set('page', String(page));
+    params.set('limit', String(limit));
+    if (filters.search && filters.search.trim() !== '') params.set('search', filters.search.trim());
+    if (filters.department && filters.department !== 'all') params.set('department', filters.department);
+    if (filters.module && filters.module !== 'all') params.set('module', filters.module);
+    if (filters.intake && filters.intake !== 'all') params.set('intake', filters.intake);
+    return params.toString();
 }
 
-async function fetchAndDisplayStudents() {
+async function fetchAndDisplayStudents(opts = {}) {
+    if (opts && typeof opts === 'object') {
+        if (Number.isFinite(opts.page)) managementState.currentPage = opts.page;
+        if (Number.isFinite(opts.limit)) managementState.itemsPerPage = opts.limit;
+    }
     try {
-        const response = await window.AUTH.fetch(`${API_BASE_URL}/students`);
+        const query = buildStudentsQuery({
+            page: managementState.currentPage,
+            limit: managementState.itemsPerPage,
+            filters: managementState.filters,
+        });
+        const response = await window.AUTH.fetch(`${API_BASE_URL}/students?${query}`);
         if (!response.ok) {
             let errorMessage = 'Failed to fetch students';
             try { const errorData = await response.json(); errorMessage = errorData.message || errorMessage; }
             catch (e) { errorMessage += ` (Status: ${response.status})`; }
             throw new Error(errorMessage);
         }
-        const students = await response.json();
-        if (!Array.isArray(students)) {
-            throw new Error('Invalid student list payload');
-        }
-        displayStudents(students);
+        const body = await response.json();
+        managementState.students = Array.isArray(body.students) ? body.students : [];
+        managementState.total = body.total || 0;
+        managementState.totalPages = body.totalPages || 1;
+        managementState.currentPage = body.page || managementState.currentPage;
+        managementState.itemsPerPage = body.limit || managementState.itemsPerPage;
+        renderStudentsPage();
     } catch (error) {
         console.error('Error fetching students:', error);
         showToast(error.message, 'error');
     }
 }
 
-function displayStudents(students) {
-    studentsState.allStudents = students;
-    studentsState.filteredStudents = students;
-    studentsState.totalStudents = students.length;
-    studentsState.currentPage = 1;
-    applyAllFilters();
-}
-
 function renderStudentsPage() {
     const tbody = document.querySelector('#content-management table tbody');
     if (!tbody) return;
     tbody.innerHTML = '';
-    const { currentPage, itemsPerPage, filteredStudents } = studentsState;
-    const totalPages = Math.max(1, Math.ceil(filteredStudents.length / itemsPerPage));
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const currentStudents = filteredStudents.slice(startIndex, endIndex);
+    const students = managementState.students;
 
-    if (!currentStudents.length) {
+    if (!students.length) {
         tbody.innerHTML = '<tr><td colspan="7" class="px-3 py-6 text-center text-gray-500">No students match these filters.</td></tr>';
         updatePaginationControls();
         return;
     }
 
-    currentStudents.forEach(student => {
+    students.forEach(student => {
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-gray-50 dark:hover:bg-gray-700';
 
+        const courseLabel = courseDisplay(student.course) || student.course || '';
         const departmentDisplay = deptDisplay(student.department) || student.department || 'Not Assigned';
-        const intakeDisplay = student.intake ? `${student.intake} ${student.intakeYear || ''}`.trim() : 'N/A';
+        const intakeDisplay = student.intake
+            ? `${capitalize(student.intake)} ${student.intakeYear || ''}`.trim()
+            : 'N/A';
         const statusDisplay = student.status ? student.status.charAt(0).toUpperCase() + student.status.slice(1) : 'Active';
 
         tr.innerHTML = `
             <td class="px-3 py-4 text-sm font-mono">${escapeHtml(student.admissionNumber || '')}</td>
-            <td class="px-3 py-4 text-sm">${escapeHtml(student.name || '')}</td>
+            <td class="px-3 py-4 text-sm">
+                <div class="font-medium">${escapeHtml(student.name || '')}</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">${escapeHtml(courseLabel)}</div>
+            </td>
             <td class="px-3 py-4 text-sm">${escapeHtml(departmentDisplay)}</td>
             <td class="px-3 py-4 text-sm">${student.module != null ? `Module ${student.module}` : ''}</td>
             <td class="px-3 py-4 text-sm">${escapeHtml(intakeDisplay)}</td>
@@ -122,17 +129,21 @@ function renderStudentsPage() {
     updatePaginationControls();
 }
 
+function capitalize(s) {
+    if (!s) return '';
+    return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
 function updatePaginationControls() {
-    const { currentPage, itemsPerPage, filteredStudents } = studentsState;
-    const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = Math.min(startIndex + itemsPerPage, filteredStudents.length);
+    const { currentPage, itemsPerPage, total, totalPages } = managementState;
+    const startIndex = total === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+    const endIndex = Math.min(currentPage * itemsPerPage, total);
 
     const paginationInfo = document.getElementById('pagination-info');
     if (paginationInfo) {
-        paginationInfo.textContent = filteredStudents.length === 0
+        paginationInfo.textContent = total === 0
             ? 'No students found'
-            : `Showing ${startIndex + 1}-${endIndex} of ${filteredStudents.length} students`;
+            : `Showing ${startIndex}-${endIndex} of ${total} student${total === 1 ? '' : 's'} · Page ${currentPage} of ${totalPages}`;
     }
     const prevBtn = document.getElementById('prev-page-btn');
     if (prevBtn) prevBtn.disabled = currentPage <= 1;
@@ -142,7 +153,7 @@ function updatePaginationControls() {
     const pageNumbersContainer = document.getElementById('page-numbers');
     if (pageNumbersContainer && totalPages > 1) {
         const maxButtons = 5;
-        let startPage, endPage;
+        let startPage; let endPage;
         if (totalPages <= maxButtons) { startPage = 1; endPage = totalPages; }
         else if (currentPage <= 3) { startPage = 1; endPage = maxButtons; }
         else if (currentPage >= totalPages - 2) { startPage = totalPages - maxButtons + 1; endPage = totalPages; }
@@ -160,19 +171,23 @@ function updatePaginationControls() {
 
     const paginationContainer = document.getElementById('pagination-container');
     if (paginationContainer) {
-        paginationContainer.style.display = totalPages > 1 ? 'flex' : 'none';
+        paginationContainer.style.display = total > 0 ? 'flex' : 'none';
     }
 }
 
 function navigateStudentsPage(direction) {
-    const { currentPage, filteredStudents, itemsPerPage } = studentsState;
-    const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
+    const { currentPage, totalPages } = managementState;
+    if (direction === 'prev' && currentPage > 1) managementState.currentPage = currentPage - 1;
+    else if (direction === 'next' && currentPage < totalPages) managementState.currentPage = currentPage + 1;
+    else if (typeof direction === 'number' && direction >= 1 && direction <= totalPages) managementState.currentPage = direction;
+    else return;
+    fetchAndDisplayStudents();
+}
 
-    if (direction === 'prev' && currentPage > 1) studentsState.currentPage = currentPage - 1;
-    else if (direction === 'next' && currentPage < totalPages) studentsState.currentPage = currentPage + 1;
-    else if (typeof direction === 'number' && direction >= 1 && direction <= totalPages) studentsState.currentPage = direction;
-
-    renderStudentsPage();
+function applyAllFilters() {
+    // Going back to page 1 whenever filters change.
+    managementState.currentPage = 1;
+    fetchAndDisplayStudents();
 }
 
 // ---------- View student ----------
@@ -183,9 +198,9 @@ async function viewStudent(studentId) {
         const student = await response.json();
 
         const content = document.getElementById('studentDetailsContent');
-        const courseName = String(student.course || '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        const courseName = courseDisplay(student.course) || student.course || '';
         const departmentName = deptDisplay(student.department) || student.department || 'Not Assigned';
-        const intakeLine = student.intake ? `${student.intake} ${student.intakeYear || ''}` : 'N/A';
+        const intakeLine = student.intake ? `${capitalize(student.intake)} ${student.intakeYear || ''}`.trim() : 'N/A';
 
         content.innerHTML = `
             <div class="space-y-3">
@@ -254,11 +269,11 @@ async function editStudent(studentId) {
         document.getElementById('editNextOfKinName').value = student.nextOfKinName || '';
         document.getElementById('editNextOfKinPhone').value = student.nextOfKinPhone || '';
         document.getElementById('editModule').value = student.module || 1;
-        document.getElementById('editCourse').value = String(student.course || '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        document.getElementById('editCourse').value = student.courseName || (typeof formatCourseName === 'function' ? formatCourseName(student.course) : (student.course || ''));
 
         // Clamp the module dropdown to the course's level cap and explain.
         const level = (typeof extractLevelFromCourse === 'function') ? extractLevelFromCourse(student.course) : null;
-        const cap = level ? (window.MAX_MODULE_BY_LEVEL ? window.MAX_MODULE_BY_LEVEL[level] : ({3:1,4:2,5:4,6:6})[level]) : null;
+        const cap = level ? (window.MAX_MODULE_BY_LEVEL ? window.MAX_MODULE_BY_LEVEL[level] : ({ 3: 1, 4: 2, 5: 4, 6: 6 })[level]) : null;
         const moduleSel = document.getElementById('editModule');
         const help = document.getElementById('editModuleHelp');
         if (moduleSel && cap) {
@@ -341,7 +356,7 @@ window.fetchAndDisplayStudents = fetchAndDisplayStudents;
 
 window.RegistrarTabs.management = {
     init() {
-        fetchAndDisplayStudents();
+        fetchAndDisplayStudents({ page: 1 });
         if (window.__regMgmtWired) return;
         window.__regMgmtWired = true;
         const departmentFilter = document.getElementById('departmentFilter');
@@ -358,9 +373,17 @@ window.RegistrarTabs.management = {
                 departmentFilter.appendChild(o);
             }
         }
-        if (departmentFilter) departmentFilter.addEventListener('change', (e) => { studentsState.filters.department = e.target.value; applyAllFilters(); });
-        if (moduleFilter) moduleFilter.addEventListener('change', (e) => { studentsState.filters.module = e.target.value; applyAllFilters(); });
-        if (intakeFilter) intakeFilter.addEventListener('change', (e) => { studentsState.filters.intake = e.target.value; applyAllFilters(); });
-        if (searchInput) searchInput.addEventListener('input', (e) => { studentsState.filters.search = e.target.value.toLowerCase(); applyAllFilters(); });
+        let searchDebounce;
+        if (departmentFilter) departmentFilter.addEventListener('change', (e) => { managementState.filters.department = e.target.value; applyAllFilters(); });
+        if (moduleFilter) moduleFilter.addEventListener('change', (e) => { managementState.filters.module = e.target.value; applyAllFilters(); });
+        if (intakeFilter) intakeFilter.addEventListener('change', (e) => { managementState.filters.intake = e.target.value; applyAllFilters(); });
+        if (searchInput) searchInput.addEventListener('input', (e) => {
+            const value = e.target.value;
+            clearTimeout(searchDebounce);
+            searchDebounce = setTimeout(() => {
+                managementState.filters.search = value;
+                applyAllFilters();
+            }, 250);
+        });
     },
 };

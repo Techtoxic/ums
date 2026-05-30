@@ -1,62 +1,76 @@
 {
-  "version": "7",
-  "dialect": "postgresql",
-  "entries": [
-    {
-      "idx": 0,
-      "version": "7",
-      "when": 1779289482969,
-      "tag": "0000_fearless_maximus",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1779302230896,
-      "tag": "0001_faithful_demogoblin",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1779303090699,
-      "tag": "0002_colossal_whistler",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1779367795367,
-      "tag": "0003_light_anita_blake",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1779562051153,
-      "tag": "0004_lonely_malice",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1779569236101,
-      "tag": "0005_wealthy_shooting_star",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1779655542265,
-      "tag": "0006_robust_oracle",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1779969292770,
-      "tag": "0007_student_module_kin_counters",
-      "breakpoints": true
-    }
-  ]
+	"version": "7",
+	"dialect": "postgresql",
+	"entries": [
+		{
+			"idx": 0,
+			"version": "7",
+			"when": 1779289482969,
+			"tag": "0000_fearless_maximus",
+			"breakpoints": true
+		},
+		{
+			"idx": 1,
+			"version": "7",
+			"when": 1779302230896,
+			"tag": "0001_faithful_demogoblin",
+			"breakpoints": true
+		},
+		{
+			"idx": 2,
+			"version": "7",
+			"when": 1779303090699,
+			"tag": "0002_colossal_whistler",
+			"breakpoints": true
+		},
+		{
+			"idx": 3,
+			"version": "7",
+			"when": 1779367795367,
+			"tag": "0003_light_anita_blake",
+			"breakpoints": true
+		},
+		{
+			"idx": 4,
+			"version": "7",
+			"when": 1779562051153,
+			"tag": "0004_lonely_malice",
+			"breakpoints": true
+		},
+		{
+			"idx": 5,
+			"version": "7",
+			"when": 1779569236101,
+			"tag": "0005_wealthy_shooting_star",
+			"breakpoints": true
+		},
+		{
+			"idx": 6,
+			"version": "7",
+			"when": 1779655542265,
+			"tag": "0006_robust_oracle",
+			"breakpoints": true
+		},
+		{
+			"idx": 7,
+			"version": "7",
+			"when": 1779969292770,
+			"tag": "0007_student_module_kin_counters",
+			"breakpoints": true
+		},
+		{
+			"idx": 8,
+			"version": "7",
+			"when": 1780000000000,
+			"tag": "0008_revenue_and_payslip_generator",
+			"breakpoints": true
+		},
+		{
+			"idx": 9,
+			"version": "7",
+			"when": 1780000001000,
+			"tag": "0009_common_unit_assignment_trainer",
+			"breakpoints": true
+		}
+	]
 }

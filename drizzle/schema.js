@@ -231,9 +231,16 @@ const units = pgTable(
 const commonUnitAssignments = pgTable('common_unit_assignments', {
     id: uuid('id').primaryKey().defaultRandom(),
     unit_id: uuid('unit_id').notNull().references(() => units.id),
-    program_id: uuid('program_id').notNull().references(() => programs.id),
+    program_id: uuid('program_id').references(() => programs.id),
+    trainer_id: uuid('trainer_id').references(() => users.id),
+    assigned_by: uuid('assigned_by').references(() => users.id),
+    assigned_by_department: text('assigned_by_department'),
+    trainer_department: text('trainer_department'),
+    notes: text('notes'),
+    status: text('status').notNull().default('active'),
     created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    deleted_at: timestamp('deleted_at', { withTimezone: true }),
 });
 
 // ============================================================================
@@ -544,11 +551,33 @@ const payslips = pgTable(
         is_viewed: boolean('is_viewed').notNull().default(false),
         viewed_at: timestamp('viewed_at', { withTimezone: true }),
         description: text('description'),
+        generated_by: uuid('generated_by').references(() => users.id),
         created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
         updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     },
     (t) => ({
         trainerYearMonthIdx: index('payslips_trainer_year_month_idx').on(t.trainer_id, t.year, t.month),
+    }),
+);
+
+// ============================================================================
+// REVENUE ENTRIES — non-tuition institutional income (farm sales, bus rental,
+// hall hire, ...). Recorded by the finance officer in the Revenue tab.
+// ============================================================================
+const revenueEntries = pgTable(
+    'revenue_entries',
+    {
+        id: uuid('id').primaryKey().defaultRandom(),
+        note: text('note').notNull(),                 // description of the income source
+        amount: numeric('amount', { precision: 12, scale: 2 }).notNull(),
+        source: text('source'),                        // optional category label
+        recorded_by: uuid('recorded_by').references(() => users.id),
+        created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+        updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+        deleted_at: timestamp('deleted_at', { withTimezone: true }),
+    },
+    (t) => ({
+        createdIdx: index('revenue_entries_created_at_idx').on(t.created_at),
     }),
 );
 
@@ -590,4 +619,5 @@ module.exports = {
     admissionNumberCounter,
     payments,
     payslips,
+    revenueEntries,
 };

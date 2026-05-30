@@ -6,7 +6,22 @@
                             <i class="ri-user-add-line mr-1"></i><span class="hidden sm:inline">Add </span>Trainer
                         </button>
                     </div>
-                    
+
+                    <!-- Search and Filters -->
+                    <div class="mb-3 grid grid-cols-12 gap-2">
+                        <input type="text" id="trainer-search" placeholder="Search name or email..." class="col-span-12 sm:col-span-7 px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded focus:ring-1 focus:ring-primary">
+                        <select id="trainer-dept-filter" class="col-span-12 sm:col-span-5 px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded">
+                            <option value="">All Departments</option>
+                            <option value="applied_science">Applied Science</option>
+                            <option value="agriculture">Agriculture</option>
+                            <option value="building_civil">Building & Civil</option>
+                            <option value="electromechanical">Electromechanical</option>
+                            <option value="hospitality">Hospitality</option>
+                            <option value="business_liberal">Business & Liberal</option>
+                            <option value="computing_informatics">Computing & Informatics</option>
+                        </select>
+                    </div>
+
                     <div id="trainers-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2"></div>
                     </div>
                 </div>

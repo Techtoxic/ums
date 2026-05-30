@@ -229,6 +229,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    // Academic year is dynamic (Sept–Aug); never hard-code it in the header.
+    const acadYearEl = document.getElementById('academicYear');
+    if (acadYearEl) {
+        const now = new Date();
+        const y = now.getFullYear();
+        acadYearEl.textContent = now.getMonth() >= 8 ? `${y}/${y + 1}` : `${y - 1}/${y}`;
+    }
+
     // Topbar logout button — finance role logs back into /admin/login.
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn && window.AUTH && typeof window.AUTH.logout === 'function') {

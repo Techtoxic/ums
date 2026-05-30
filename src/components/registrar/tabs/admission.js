@@ -7,15 +7,24 @@ window.RegistrarTabs = window.RegistrarTabs || {};
 
 async function loadAdmissionTabData() {
     try {
-        const [studentsRes, nextRes] = await Promise.all([
-            window.AUTH.fetch(`${API_BASE_URL}/students`),
+        // Stats + recent students fetched in parallel. The "next admission #"
+        // preview here is the raw global number (no course/intake context),
+        // which doubles as the canonical counter value on the registrar
+        // landing page; the full COURSE/SEQ/INTAKE preview appears inside the
+        // admission modal once a course and intake are selected.
+        const [statsRes, recentRes, nextRes] = await Promise.all([
+            window.AUTH.fetch(`${API_BASE_URL}/students/stats`),
+            window.AUTH.fetch(`${API_BASE_URL}/students?page=1&limit=10`),
             window.AUTH.fetch(`${API_BASE_URL}/students/next-admission-number`),
         ]);
 
-        let students = [];
-        if (studentsRes.ok) {
-            const body = await studentsRes.json();
-            students = Array.isArray(body) ? body : [];
+        let stats = null;
+        if (statsRes.ok) stats = await statsRes.json();
+
+        let recent = [];
+        if (recentRes.ok) {
+            const body = await recentRes.json();
+            recent = Array.isArray(body && body.students) ? body.students : (Array.isArray(body) ? body : []);
         }
 
         let nextAdmission = '—';
@@ -29,33 +38,24 @@ async function loadAdmissionTabData() {
         const todayEl = document.getElementById('admissionTabToday');
         const latestEl = document.getElementById('admissionTabLatestNumber');
 
-        if (totalEl) totalEl.textContent = students.length.toLocaleString();
+        if (totalEl) totalEl.textContent = stats ? (stats.totalStudents || 0).toLocaleString() : '—';
         if (nextEl) nextEl.textContent = nextAdmission;
-
-        const today = new Date(); today.setHours(0, 0, 0, 0);
-        const admittedToday = students.filter(s => {
-            if (!s.createdAt) return false;
-            const d = new Date(s.createdAt);
-            return d >= today;
-        });
-        if (todayEl) todayEl.textContent = admittedToday.length.toLocaleString();
-
-        const sorted = students.slice().sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-        if (latestEl) latestEl.textContent = (sorted[0] && sorted[0].admissionNumber) || '—';
+        if (todayEl) todayEl.textContent = stats ? (stats.studentsAdmittedToday || 0).toLocaleString() : '—';
+        if (latestEl) latestEl.textContent = stats && stats.latestAdmissionNumber ? stats.latestAdmissionNumber : '—';
 
         const tbody = document.getElementById('recentAdmissionsBody');
         if (tbody) {
-            const recent = sorted.slice(0, 10);
             if (!recent.length) {
                 tbody.innerHTML = '<tr><td colspan="6" class="px-3 py-4 text-center text-gray-500">No admissions yet.</td></tr>';
             } else {
                 tbody.innerHTML = recent.map(s => {
                     const created = s.createdAt ? new Date(s.createdAt).toLocaleString() : '—';
+                    const courseLabel = s.courseName || (typeof formatCourseName === 'function' ? formatCourseName(s.course) : (s.course || ''));
                     return `
                         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
                             <td class="px-3 py-3 text-sm font-mono">${escapeHtml(s.admissionNumber || '')}</td>
                             <td class="px-3 py-3 text-sm">${escapeHtml(s.name || '')}</td>
-                            <td class="px-3 py-3 text-sm">${escapeHtml(String(s.course || '').replace(/_/g, ' '))}</td>
+                            <td class="px-3 py-3 text-sm">${escapeHtml(courseLabel || '')}</td>
                             <td class="px-3 py-3 text-sm">Module ${s.module ?? '-'}</td>
                             <td class="px-3 py-3 text-sm">${escapeHtml(s.intake || '')} ${escapeHtml(String(s.intakeYear || ''))}</td>
                             <td class="px-3 py-3 text-sm">${escapeHtml(created)}</td>

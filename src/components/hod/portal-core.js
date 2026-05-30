@@ -657,7 +657,7 @@ function showToast(message, type = 'info') {
     const config = configs[type] || configs.info;
     
     toastIcon.className = config.icon;
-    toast.querySelector('.bg-white').className = `bg-white rounded-lg shadow-lg border-l-4 ${config.borderColor} p-4 min-w-[300px]`;
+    toast.querySelector('.bg-white').className = `bg-white dark:bg-gray-800 rounded-lg shadow-lg border-l-4 ${config.borderColor} p-4 min-w-[300px]`;
     toastMessage.textContent = message;
     
     toast.classList.remove('translate-x-full');

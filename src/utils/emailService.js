@@ -186,7 +186,7 @@ function roleLabel(role) {
         dean: 'Dean of Students',
         deputy: 'Deputy Principal',
         ilo: 'Industry Liaison Officer',
-        cibec: 'CIBEC Officer',
+        cibec: 'CBET Officer',
         hod: 'Head of Department',
         trainer: 'Trainer',
         student: 'Student',

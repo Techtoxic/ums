@@ -2,9 +2,13 @@ const express = require('express');
 const router = express.Router();
 const { db, schema } = require('../db');
 const { eq, and, desc } = require('drizzle-orm');
+const { alias } = require('drizzle-orm/pg-core');
 const { verifyToken, authorize, verifyOwnership } = require('../middleware/auth');
 const { isValidId } = require('../utils/validators');
 const { Notification } = require('../db/models');
+
+// Aliased users join to resolve the finance officer who generated a payslip.
+const generatorUsers = alias(schema.users, 'generator');
 
 // Column selection shared by the payslip GET endpoints: every payslips column
 // (aliased to the camelCase keys the frontend/PDF reads) plus the trainer's
@@ -25,6 +29,8 @@ const payslipSelection = {
     isViewed: schema.payslips.is_viewed,
     viewedAt: schema.payslips.viewed_at,
     description: schema.payslips.description,
+    generatedById: schema.payslips.generated_by,
+    generatedByName: generatorUsers.name,
     createdAt: schema.payslips.created_at,
     updatedAt: schema.payslips.updated_at,
     trainerName: schema.users.name,
@@ -38,10 +44,7 @@ router.post('/payslips/generate', verifyToken, authorize('admin', 'finance'), as
         const { trainerIds, month, year, amount, description } = req.body;
 
         // SEV-H-008: actor identity comes from the verified token, never the body.
-        const generatedBy = {
-            userId: String(req.user.userId),
-            userName: req.user.email || req.user.role
-        };
+        const generatedById = req.user.userId || null;
 
         if (!trainerIds || !Array.isArray(trainerIds) || trainerIds.length === 0 || !month || !year || !amount) {
             return res.status(400).json({ message: 'Missing required fields' });
@@ -91,6 +94,7 @@ router.post('/payslips/generate', verifyToken, authorize('admin', 'finance'), as
                     year: yearInt,
                     amount: String(amount), // numeric(12,2) — pass exact string
                     description: description || 'Monthly Salary',
+                    generated_by: generatedById,
                 })
                 .returning();
             payslips.push(payslip);
@@ -127,6 +131,7 @@ router.get('/trainers/:trainerId/payslips', verifyToken, authorize('admin', 'fin
             .select(payslipSelection)
             .from(schema.payslips)
             .innerJoin(schema.users, eq(schema.users.id, schema.payslips.trainer_id))
+            .leftJoin(generatorUsers, eq(generatorUsers.id, schema.payslips.generated_by))
             .where(eq(schema.payslips.trainer_id, trainerId))
             .orderBy(desc(schema.payslips.created_at));
 
@@ -151,7 +156,8 @@ router.get('/payslips', verifyToken, authorize('admin', 'finance'), async (req, 
         const query = db
             .select(payslipSelection)
             .from(schema.payslips)
-            .innerJoin(schema.users, eq(schema.users.id, schema.payslips.trainer_id));
+            .innerJoin(schema.users, eq(schema.users.id, schema.payslips.trainer_id))
+            .leftJoin(generatorUsers, eq(generatorUsers.id, schema.payslips.generated_by));
 
         const payslips = await (conds.length ? query.where(and(...conds)) : query)
             .orderBy(desc(schema.payslips.created_at));

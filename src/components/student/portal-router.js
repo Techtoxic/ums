@@ -11,7 +11,7 @@
 
 window.StudentRouter = (function () {
     const BASE = '/student';
-    const VALID_TABS = ['dashboard', 'profile', 'financial', 'payments', 'uploads', 'notes', 'units', 'transcript', 'graduation', 'attachment'];
+    const VALID_TABS = ['dashboard', 'profile', 'financial', 'payments', 'uploads', 'notes', 'units', 'graduation', 'attachment'];
 
     // Page titles — same map the monolith's activateTab() used.
     const TITLES = {
@@ -22,7 +22,6 @@ window.StudentRouter = (function () {
         'uploads': 'Uploads',
         'notes': 'Notes',
         'units': 'Units & Courses',
-        'transcript': 'Transcript',
         'graduation': 'Apply for Graduation',
         'attachment': 'Apply for Attachment'
     };
