@@ -503,6 +503,13 @@ const passwordResets = pgTable('password_resets', {
     id: uuid('id').primaryKey().defaultRandom(),
     email: text('email').notNull(),
     token_hash: text('token_hash').notNull(),
+    // Added in migration 0011 so a reset can identify which account to update.
+    // user_id has NO foreign key: it points at users.id OR students.id,
+    // disambiguated by user_role. reset_type is 'otp' | 'token'.
+    user_id: uuid('user_id'),
+    user_role: text('user_role'),
+    reset_type: text('reset_type'),
+    attempts: integer('attempts').notNull().default(0),
     expires_at: timestamp('expires_at', { withTimezone: true }).notNull(),
     used_at: timestamp('used_at', { withTimezone: true }),
     created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

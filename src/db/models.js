@@ -26,6 +26,7 @@
  *   - .session() (silently no-op chained — single-statement writes only)
  */
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const { eq, and, or, ne, gt, gte, lt, lte, inArray, isNull, isNotNull, sql, desc, asc } = require('drizzle-orm');
 const { db, schema } = require('./index');
 
@@ -520,7 +521,7 @@ const StudentNote              = makeModel(schema.studentNotes, { fieldMap: { st
 const StudentUpload            = makeModel(schema.studentUploads, { fieldMap: { studentId: 'student_id', fileName: 'file_name', filePath: 'file_path', fileSize: 'file_size', mimeType: 'mime_type', uploadedBy: 'uploaded_by', uploadedAt: 'uploaded_at' } });
 const AuditLog                 = makeModel(schema.auditLogs, { fieldMap: { actorId: 'actor_id', actorType: 'actor_type', resourceType: 'resource_type', resourceId: 'resource_id', ipAddress: 'ip_address', userAgent: 'user_agent' } });
 const SystemSettings           = makeModel(schema.systemSettings, { fieldMap: { updatedBy: 'updated_by' } });
-const PasswordReset            = makeModel(schema.passwordResets, { fieldMap: { tokenHash: 'token_hash', expiresAt: 'expires_at', usedAt: 'used_at' } });
+const PasswordReset            = makeModel(schema.passwordResets, { fieldMap: { tokenHash: 'token_hash', expiresAt: 'expires_at', usedAt: 'used_at', userId: 'user_id', userRole: 'user_role', resetType: 'reset_type' } });
 const LoginOTP                 = makeModel(schema.loginOtps, { fieldMap: { codeHash: 'code_hash', expiresAt: 'expires_at', usedAt: 'used_at' } });
 const Payment                  = makeModel(schema.payments, { fieldMap: { studentId: 'student_id', paymentMode: 'payment_mode', bankName: 'bank_name', paymentDate: 'payment_date', referenceNumber: 'reference_number', reference: 'reference_number', recordedBy: 'recorded_by' } });
 const Payslip                  = makeModel(schema.payslips, { fieldMap: { trainerId: 'trainer_id', grossPay: 'gross_pay', netPay: 'net_pay', paymentDate: 'payment_date' } });
@@ -731,6 +732,120 @@ StudentNote.getStudentNotes = async function getStudentNotes(studentIdOrAdmissio
     // rowToDoc → camelCase + _id; carries note, noteType, title, category,
     // priority, createdAt, authorId, studentName, admissionNumber.
     return rows.map((r) => rowToDoc(r, {}));
+};
+
+// ---- PasswordReset: hashed OTP / reset-token flow ----
+// SECURITY: the raw OTP / reset token is NEVER stored. We persist only its
+// SHA-256 hash in token_hash (V1 stored raw values — deliberately NOT preserved).
+const MAX_OTP_ATTEMPTS = 5;
+
+function hashValue(v) {
+    return crypto.createHash('sha256').update(String(v)).digest('hex');
+}
+
+// Constant-time compare of a raw secret against a stored hex hash.
+function compareHash(raw, storedHash) {
+    if (!raw || !storedHash) return false;
+    const supplied = hashValue(raw);
+    if (supplied.length !== String(storedHash).length) return false;
+    try {
+        return crypto.timingSafeEqual(Buffer.from(supplied, 'hex'), Buffer.from(String(storedHash), 'hex'));
+    } catch (_) {
+        return false;
+    }
+}
+
+PasswordReset.hashValue = hashValue;
+PasswordReset.compareHash = compareHash;
+PasswordReset.generateOTP = function generateOTP() {
+    return String(crypto.randomInt(0, 1_000_000)).padStart(6, '0');
+};
+PasswordReset.generateResetToken = function generateResetToken() {
+    return crypto.randomBytes(32).toString('hex');
+};
+
+// Attach the per-row instance helpers the route relies on. markAsUsed /
+// incrementAttempts write directly by id (we never call the generic .save() on
+// a reset doc, which would try to persist these function props as columns).
+function _attachResetMethods(doc) {
+    if (!doc) return null;
+    doc.canAttempt = function () { return Number(this.attempts || 0) < MAX_OTP_ATTEMPTS; };
+    doc.markAsUsed = async function () {
+        await db.update(schema.passwordResets)
+            .set({ used_at: new Date(), updated_at: new Date() })
+            .where(eq(schema.passwordResets.id, this.id));
+        this.usedAt = new Date();
+        return this;
+    };
+    doc.incrementAttempts = async function () {
+        const rows = await db.update(schema.passwordResets)
+            .set({ attempts: sql`${schema.passwordResets.attempts} + 1`, updated_at: new Date() })
+            .where(eq(schema.passwordResets.id, this.id))
+            .returning({ attempts: schema.passwordResets.attempts });
+        this.attempts = rows[0] ? rows[0].attempts : Number(this.attempts || 0) + 1;
+        return this.attempts;
+    };
+    return doc;
+}
+
+async function _hydrateReset(id) {
+    const doc = await PasswordReset.findById(id); // hydrated doc (camelCase + _id)
+    return _attachResetMethods(doc);
+}
+
+// Mark every still-active reset for a user as used (used_at = now()).
+PasswordReset.invalidateUserResets = async function invalidateUserResets(userId, userRole) {
+    if (!userId) return 0;
+    const conds = [eq(schema.passwordResets.user_id, userId), isNull(schema.passwordResets.used_at)];
+    if (userRole) conds.push(eq(schema.passwordResets.user_role, userRole));
+    const rows = await db.update(schema.passwordResets)
+        .set({ used_at: new Date(), updated_at: new Date() })
+        .where(and(...conds))
+        .returning({ id: schema.passwordResets.id });
+    return rows.length;
+};
+
+// Find a row by HASHED secret — used for the token (email-link / session) path.
+// Returns null unless the hash matches an unused, unexpired row of the right
+// role + reset_type. (A wrong/forged secret simply won't match — see the
+// verify-otp route for OTP attempt counting, which can't key on the hash.)
+PasswordReset.findValidReset = async function findValidReset({ email, userRole, resetType, otp, token } = {}) {
+    const secret = otp || token;
+    if (!secret || !userRole || !resetType) return null;
+    const conds = [
+        eq(schema.passwordResets.token_hash, hashValue(secret)),
+        eq(schema.passwordResets.user_role, userRole),
+        eq(schema.passwordResets.reset_type, resetType),
+        isNull(schema.passwordResets.used_at),
+        gt(schema.passwordResets.expires_at, sql`NOW()`),
+    ];
+    if (email) conds.push(eq(schema.passwordResets.email, String(email).toLowerCase()));
+    const rows = await db.select({ id: schema.passwordResets.id })
+        .from(schema.passwordResets)
+        .where(and(...conds))
+        .limit(1);
+    if (!rows.length) return null;
+    return _hydrateReset(rows[0].id);
+};
+
+// Find the newest still-active OTP row for an email+role WITHOUT matching the
+// code, so verify-otp can compare the hash itself and increment attempts on a
+// wrong guess (a hash-keyed lookup can't find the row on a miss).
+PasswordReset.findOtpRequest = async function findOtpRequest({ email, userRole } = {}) {
+    if (!email || !userRole) return null;
+    const rows = await db.select({ id: schema.passwordResets.id })
+        .from(schema.passwordResets)
+        .where(and(
+            eq(schema.passwordResets.email, String(email).toLowerCase()),
+            eq(schema.passwordResets.user_role, userRole),
+            eq(schema.passwordResets.reset_type, 'otp'),
+            isNull(schema.passwordResets.used_at),
+            gt(schema.passwordResets.expires_at, sql`NOW()`),
+        ))
+        .orderBy(desc(schema.passwordResets.created_at))
+        .limit(1);
+    if (!rows.length) return null;
+    return _hydrateReset(rows[0].id);
 };
 
 module.exports = {
