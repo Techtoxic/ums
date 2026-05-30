@@ -23,6 +23,13 @@
             modal.style.display = 'flex';
             document.body.classList.add('menu-open');
             document.body.style.overflow = 'hidden';
+            // Populate course + department dropdowns from the DB-backed catalog.
+            if (window.Catalog) {
+                window.Catalog.ready().then(() => {
+                    window.Catalog.populateCourseSelect(document.getElementById('course'), { grouped: true, blankLabel: 'Select Course' });
+                    window.Catalog.populateDepartmentSelect(document.getElementById('department'), { allLabel: 'Department will be auto-selected', includeAll: true });
+                });
+            }
             // Reset grade dropdown until a course is picked, then fetch the
             // next admission number for the preview field.
             populateGradeDropdown(null);
@@ -78,6 +85,7 @@
                 // applicable), so we filter client-side.
                 const filteredStudents = students.filter(student => {
                     const level = extractLevelFromCourse(student.course);
+                    // Department is already filtered server-side (params above); only level here.
                     return levelFilter === 'all' || String(level) === String(levelFilter);
                 });
 
@@ -136,7 +144,7 @@
                             </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                            ${escapeHtml(courseDisplay)}
+                            ${escapeHtml(formatCourseName(student.course) || '')}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                             Module ${currentModule || '-'}
@@ -265,9 +273,11 @@
             6: ['C-', 'C', 'C+', 'B-', 'B', 'B+'],
         };
 
+        // Course identifiers are program CODES (e.g. 'GA5', 'EE6'): the level is the
+        // trailing digit. Also tolerates legacy snake keys like 'electrical_engineering_6'.
         function extractLevelFromCourse(course) {
             if (!course) return null;
-            const m = String(course).match(/_(\d+)$/);
+            const m = String(course).match(/(\d+)$/);
             if (!m) return null;
             const n = parseInt(m[1], 10);
             return Number.isFinite(n) ? n : null;
@@ -278,69 +288,19 @@
             return list ? list.slice() : [];
         }
 
-        // Course configurations with new numbering system
-        const courseConfig = {
-            // Applied Science Department
-            applied_biology_6: { code: 'AP6', department: 'applied_science', name: 'Applied Biology Level 6' },
-            analytical_chemistry_6: { code: 'AC6', department: 'applied_science', name: 'Analytical Chemistry Level 6' },
-            science_laboratory_technology_5: { code: 'SLT5', department: 'applied_science', name: 'Science Lab Technology Level 5' },
-            
-            // Agriculture Department
-            general_agriculture_4: { code: 'GA4', department: 'agriculture', name: 'General Agriculture Level 4' },
-            sustainable_agriculture_5: { code: 'SA5', department: 'agriculture', name: 'Sustainable Agriculture Level 5' },
-            agricultural_extension_6: { code: 'AE6', department: 'agriculture', name: 'Agricultural Extension Level 6' },
-            
-            // Building and Civil Department
-            building_technician_4: { code: 'BT4', department: 'building_civil', name: 'Building Technician Level 4' },
-            building_technician_6: { code: 'BT6', department: 'building_civil', name: 'Building Technician Level 6' },
-            civil_engineering_6: { code: 'CE6', department: 'building_civil', name: 'Civil Engineering Level 6' },
-            plumbing_4: { code: 'PL4', department: 'building_civil', name: 'Plumbing Level 4' },
-            plumbing_5: { code: 'PL5', department: 'building_civil', name: 'Plumbing Level 5' },
-            
-            // Electromechanical Department
-            electrical_engineering_4: { code: 'EE4', department: 'electromechanical', name: 'Electrical Engineering Level 4' },
-            electrical_engineering_5: { code: 'EE5', department: 'electromechanical', name: 'Electrical Engineering Level 5' },
-            electrical_engineering_6: { code: 'EE6', department: 'electromechanical', name: 'Electrical Engineering Level 6' },
-            automotive_engineering_5: { code: 'AM5', department: 'electromechanical', name: 'Automotive Engineering Level 5' },
-            automotive_engineering_6: { code: 'AM6', department: 'electromechanical', name: 'Automotive Engineering Level 6' },
-            
-            // Hospitality Department
-            food_and_beverage_4: { code: 'FB4', department: 'hospitality', name: 'Food and Beverage Level 4' },
-            food_and_beverage_5: { code: 'FB5', department: 'hospitality', name: 'Food & Beverage Level 5' },
-            food_and_beverage_6: { code: 'FB6', department: 'hospitality', name: 'Food & Beverage Level 6' },
-            fashion_and_design_4: { code: 'FD4', department: 'hospitality', name: 'Fashion & Design Level 4' },
-            fashion_and_design_5: { code: 'FD5', department: 'hospitality', name: 'Fashion and Design Level 5' },
-            fashion_and_design_6: { code: 'FD6', department: 'hospitality', name: 'Fashion and Design Level 6' },
-            hairdressing_4: { code: 'HD4', department: 'hospitality', name: 'Hairdressing Level 4' },
-            hairdressing_5: { code: 'HD5', department: 'hospitality', name: 'Hairdressing Level 5' },
-            hairdressing_6: { code: 'HD6', department: 'hospitality', name: 'Hairdressing Level 6' },
-            tourism_management_5: { code: 'TM5', department: 'hospitality', name: 'Tourism Management Level 5' },
-            tourism_management_6: { code: 'TM6', department: 'hospitality', name: 'Tourism Management Level 6' },
-            
-            // Business and Liberal Studies Department
-            social_work_5: { code: 'SW5', department: 'business_liberal', name: 'Social Work Level 5' },
-            social_work_6: { code: 'SW6', department: 'business_liberal', name: 'Social Work Level 6' },
-            office_administration_5: { code: 'OA5', department: 'business_liberal', name: 'Office Administration Level 5' },
-            office_administration_6: { code: 'OA6', department: 'business_liberal', name: 'Office Administration Level 6' },
-            
-            // Computing and Informatics Department
-            ict_5: { code: 'ICT5', department: 'computing_informatics', name: 'ICT Level 5' },
-            ict_6: { code: 'ICT6', department: 'computing_informatics', name: 'ICT Level 6' },
-            information_science_5: { code: 'IS5', department: 'computing_informatics', name: 'Information Science Level 5' },
-            information_science_6: { code: 'IS6', department: 'computing_informatics', name: 'Information Science Level 6' }
-        };
-
         // Handle course selection: auto-fill department, repopulate the grade
         // dropdown for the selected level, and preview the next admission #.
+        // The course <select> value is a program CODE; the matching program (with
+        // its department + level) comes from the DB-backed Catalog (Rule 7).
         function handleCourseSelection() {
             const courseSelect = document.getElementById('course');
             const departmentSelect = document.getElementById('department');
             const selectedCourse = courseSelect.value;
+            const program = (window.Catalog && selectedCourse) ? window.Catalog.programByCode(selectedCourse) : null;
 
-            if (selectedCourse && courseConfig[selectedCourse]) {
-                const courseInfo = courseConfig[selectedCourse];
-                departmentSelect.value = courseInfo.department;
-                populateGradeDropdown(extractLevelFromCourse(selectedCourse));
+            if (program) {
+                departmentSelect.value = program.departmentCode || '';
+                populateGradeDropdown(program.level || extractLevelFromCourse(selectedCourse));
                 refreshAdmissionNumberPreview();
             } else {
                 departmentSelect.value = '';
@@ -446,12 +406,12 @@
 
             const formData = new FormData(event.target);
             const courseValue = formData.get('course');
-            const courseInfo = courseConfig[courseValue];
+            const program = (window.Catalog && courseValue) ? window.Catalog.programByCode(courseValue) : null;
             const moduleValue = formData.get('module');
             const intakeValue = formData.get('intake');
             const intakeYearValue = formData.get('intakeYear');
             const grade = formData.get('kcseGrade');
-            const level = extractLevelFromCourse(courseValue);
+            const level = (program && program.level) || extractLevelFromCourse(courseValue);
 
             // Frontend validation — backend re-checks everything.
             if (!grade) {
@@ -475,7 +435,7 @@
                 idNumber: formData.get('idNumber'),
                 kcseGrade: grade,
                 course: courseValue,
-                department: courseInfo ? courseInfo.department : '',
+                department: program ? (program.departmentCode || '') : '',
                 module: moduleInt,
                 intake: intakeValue,
                 intakeYear: intakeYearValue ? parseInt(intakeYearValue, 10) : new Date().getFullYear(),
@@ -706,24 +666,18 @@
 // (window.switchTab is set by portal-router.js as a router alias.)
 // ============================================================
 
+        // Course/department display names come from the DB-backed Catalog (Rule 7).
+        // Both keep a title-case fallback for any unknown/legacy value.
         function formatCourseName(courseName) {
             if (!courseName) return courseName;
-
-            // Replace underscores with spaces and convert to title case
-            return courseName
-                .replace(/_/g, ' ')
-                .replace(/\b\w/g, l => l.toUpperCase())
-                .replace(/(\d+)$/, ' Level $1'); // Add "Level" before numbers at the end
+            if (window.Catalog) return window.Catalog.formatCourseName(courseName);
+            return courseName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
         }
 
-        // Function to format department names
         function formatDepartmentName(department) {
             if (!department) return department;
-
-            // Replace underscores with spaces and convert to title case
-            return department
-                .replace(/_/g, ' ')
-                .replace(/\b\w/g, l => l.toUpperCase());
+            if (window.Catalog) return window.Catalog.departmentName(department);
+            return department.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
         }
 
         // Deterministic reference number built from the admission number so a
@@ -872,6 +826,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!user) return;
     window.registrarUser = user;
     updateIdentityUI();
+
+    // Preload the DB-backed catalog and populate the static filter dropdowns
+    // (admission-modal course/department are populated lazily on modal open).
+    if (window.Catalog) {
+        await window.Catalog.ready();
+        window.Catalog.populateDepartmentSelect(document.getElementById('export-department'), { includeAll: true, allLabel: 'All Departments' });
+        window.Catalog.populateDepartmentSelect(document.getElementById('modalDeptFilter'), { includeAll: true, allLabel: 'All Departments' });
+    }
 
     // Logout button — registrar logs back into /admin/login.
     const logoutBtn = document.getElementById('logoutBtn');

@@ -12,6 +12,13 @@ window.FinanceTabs = window.FinanceTabs || {};
     const fmt = (n) => `KES ${Math.round(Number(n) || 0).toLocaleString()}`;
     const today = () => new Date().toISOString().slice(0, 10);
 
+    // Program display name from the shared DB-backed catalog (Rule 7), with a
+    // title-case fallback when window.Catalog has not loaded.
+    const formatCourseName = (codeOrCourse) => {
+        if (window.Catalog) return window.Catalog.formatCourseName(codeOrCourse);
+        return String(codeOrCourse || 'N/A').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    };
+
     async function getAnalytics() {
         const res = await window.AUTH.fetch(`${API}/finance/analytics`);
         if (!res.ok) throw new Error('analytics');
@@ -81,7 +88,7 @@ window.FinanceTabs = window.FinanceTabs || {};
                     ['Total outstanding', totalOut],
                     [],
                     ['Admission No', 'Student', 'Program', 'Module', 'Intake', 'Expected', 'Paid', 'Balance'],
-                    ...outstanding.map(s => [s.admissionNumber, s.name, s.course, s.module, intakeLabel(s), s.expected, s.paid, s.balance]),
+                    ...outstanding.map(s => [s.admissionNumber, s.name, formatCourseName(s.course), s.module, intakeLabel(s), s.expected, s.paid, s.balance]),
                 ];
                 d.downloadExcel(rows, `outstanding_balances_${today()}`);
             } else {
@@ -93,7 +100,7 @@ window.FinanceTabs = window.FinanceTabs || {};
                         ['Total Outstanding', fmt(totalOut)],
                     ],
                     columns: ['Admission No', 'Student', 'Program', 'Mod', 'Intake', 'Expected', 'Paid', 'Balance'],
-                    rows: outstanding.map(s => [s.admissionNumber, s.name, s.course, String(s.module), intakeLabel(s), fmt(s.expected), fmt(s.paid), fmt(s.balance)]),
+                    rows: outstanding.map(s => [s.admissionNumber, s.name, formatCourseName(s.course), String(s.module), intakeLabel(s), fmt(s.expected), fmt(s.paid), fmt(s.balance)]),
                     filename: `outstanding_balances_${today()}.pdf`,
                     footer: 'EDTTI UMS — Outstanding Balances · Confidential',
                     landscape: true,
@@ -152,7 +159,7 @@ window.FinanceTabs = window.FinanceTabs || {};
                     ['Total students', list.length],
                     [],
                     ['Admission No', 'Student', 'Program', 'Department', 'Module', 'Intake', 'Expected', 'Paid', 'Balance', 'Status'],
-                    ...list.map(s => [s.admissionNumber, s.name, s.course, s.department, s.module, intakeLabel(s), s.expected, s.paid, s.balance, s.status]),
+                    ...list.map(s => [s.admissionNumber, s.name, formatCourseName(s.course), (window.Catalog ? window.Catalog.departmentName(s.department) : s.department), s.module, intakeLabel(s), s.expected, s.paid, s.balance, s.status]),
                 ];
                 d.downloadExcel(rows, `student_financials_${today()}`);
             } else {
@@ -161,7 +168,7 @@ window.FinanceTabs = window.FinanceTabs || {};
                     subtitle: 'Per-student tuition expected, paid and balance',
                     summary: [['Total Students', String(list.length)]],
                     columns: ['Admission No', 'Student', 'Program', 'Mod', 'Expected', 'Paid', 'Balance', 'Status'],
-                    rows: list.map(s => [s.admissionNumber, s.name, s.course, String(s.module), fmt(s.expected), fmt(s.paid), fmt(s.balance), s.status]),
+                    rows: list.map(s => [s.admissionNumber, s.name, formatCourseName(s.course), String(s.module), fmt(s.expected), fmt(s.paid), fmt(s.balance), s.status]),
                     filename: `student_financials_${today()}.pdf`,
                     footer: 'EDTTI UMS — Student Financials · Confidential',
                     landscape: true,

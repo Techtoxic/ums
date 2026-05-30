@@ -23,42 +23,9 @@ router.get('/students/:studentId/can-register', verifyToken, authorize('admin', 
         const payments = await Payment.find({ studentId: student.id }).sort({ date: -1 });
         const paidAmount = payments.reduce((sum, payment) => sum + toMoneyNumber(payment.amount), 0); // SEV-H-016
 
-        // Get program cost using the same mapping as frontend
-        const courseToProgram = {
-            'applied_biology_6': 'Applied Biology Level 6',
-            'analytical_chemistry_6': 'Analytical Chemistry Level 6',
-            'science_lab_technology_5': 'Science Lab Technology Level 5',
-            'science_laboratory_technology_5': 'Science Lab Technology Level 5',
-            'general_agriculture_4': 'General Agriculture Level 4',
-            'sustainable_agriculture_5': 'Sustainable Agriculture Level 5',
-            'building_construction_4': 'Building Construction Level 4',
-            'building_construction_5': 'Building Construction Level 5',
-            'plumbing_4': 'Plumbing Level 4',
-            'plumbing_5': 'Plumbing Level 5',
-            'electrical_engineering_4': 'Electrical Engineering Level 4',
-            'electrical_engineering_5': 'Electrical Engineering Level 5',
-            'electrical_engineering_6': 'Electrical Engineering Level 6',
-            'automotive_engineering_5': 'Automotive Engineering Level 5',
-            'automotive_engineering_6': 'Automotive Engineering Level 6',
-            'food_beverage_4': 'Food and Beverage Level 4',
-            'food_beverage_5': 'Food & Beverage Level 5',
-            'food_beverage_6': 'Food & Beverage Level 6',
-            'hospitality_management_4': 'Hospitality Management Level 4',
-            'hospitality_management_5': 'Hospitality Management Level 5',
-            'hospitality_management_6': 'Hospitality Management Level 6',
-            'business_administration_4': 'Business Administration Level 4',
-            'business_administration_5': 'Business Administration Level 5',
-            'business_administration_6': 'Business Administration Level 6',
-            'liberal_studies_4': 'Liberal Studies Level 4',
-            'liberal_studies_5': 'Liberal Studies Level 5',
-            'liberal_studies_6': 'Liberal Studies Level 6',
-            'computing_informatics_4': 'Computing & Informatics Level 4',
-            'computing_informatics_5': 'Computing & Informatics Level 5',
-            'computing_informatics_6': 'Computing & Informatics Level 6'
-        };
-
-        const programName = courseToProgram[student.course];
-        const program = programName ? await Program.findOne({ programName: programName }) : null;
+        // Program cost is looked up directly from the DB by course CODE
+        // (student.course holds the program code, e.g. 'AC6'). No hardcoded map.
+        const program = student.course ? await Program.findOne({ code: String(student.course).toUpperCase() }) : null;
         const totalFees = program ? toMoneyNumber(program.programCost) : 67189; // SEV-H-016: numeric for comparison
 
         const outstandingBalance = totalFees - paidAmount;
@@ -119,42 +86,9 @@ router.post('/students/register-units', verifyToken, authorize('admin', 'registr
         const payments = await Payment.find({ studentId: student.id }).sort({ date: -1 });
         const paidAmount = payments.reduce((sum, payment) => sum + toMoneyNumber(payment.amount), 0); // SEV-H-016
 
-        // Get program cost using the same mapping as frontend
-        const courseToProgram = {
-            'applied_biology_6': 'Applied Biology Level 6',
-            'analytical_chemistry_6': 'Analytical Chemistry Level 6',
-            'science_lab_technology_5': 'Science Lab Technology Level 5',
-            'science_laboratory_technology_5': 'Science Lab Technology Level 5',
-            'general_agriculture_4': 'General Agriculture Level 4',
-            'sustainable_agriculture_5': 'Sustainable Agriculture Level 5',
-            'building_construction_4': 'Building Construction Level 4',
-            'building_construction_5': 'Building Construction Level 5',
-            'plumbing_4': 'Plumbing Level 4',
-            'plumbing_5': 'Plumbing Level 5',
-            'electrical_engineering_4': 'Electrical Engineering Level 4',
-            'electrical_engineering_5': 'Electrical Engineering Level 5',
-            'electrical_engineering_6': 'Electrical Engineering Level 6',
-            'automotive_engineering_5': 'Automotive Engineering Level 5',
-            'automotive_engineering_6': 'Automotive Engineering Level 6',
-            'food_beverage_4': 'Food and Beverage Level 4',
-            'food_beverage_5': 'Food & Beverage Level 5',
-            'food_beverage_6': 'Food & Beverage Level 6',
-            'hospitality_management_4': 'Hospitality Management Level 4',
-            'hospitality_management_5': 'Hospitality Management Level 5',
-            'hospitality_management_6': 'Hospitality Management Level 6',
-            'business_administration_4': 'Business Administration Level 4',
-            'business_administration_5': 'Business Administration Level 5',
-            'business_administration_6': 'Business Administration Level 6',
-            'liberal_studies_4': 'Liberal Studies Level 4',
-            'liberal_studies_5': 'Liberal Studies Level 5',
-            'liberal_studies_6': 'Liberal Studies Level 6',
-            'computing_informatics_4': 'Computing & Informatics Level 4',
-            'computing_informatics_5': 'Computing & Informatics Level 5',
-            'computing_informatics_6': 'Computing & Informatics Level 6'
-        };
-
-        const programName = courseToProgram[student.course];
-        const program = programName ? await Program.findOne({ programName: programName }) : null;
+        // Program cost is looked up directly from the DB by course CODE
+        // (student.course holds the program code, e.g. 'AC6'). No hardcoded map.
+        const program = student.course ? await Program.findOne({ code: String(student.course).toUpperCase() }) : null;
         const totalFees = program ? toMoneyNumber(program.programCost) : 67189; // SEV-H-016: numeric for comparison
 
         const outstandingBalance = totalFees - paidAmount;
@@ -162,7 +96,7 @@ router.post('/students/register-units', verifyToken, authorize('admin', 'registr
         console.log('Backend register-units balance calculation:', {
             studentId,
             studentCourse: student.course,
-            programName: programName,
+            programName: program ? program.programName : null,
             programFound: !!program,
             actualProgramCost: toMoneyNumber(program?.programCost),
             finalProgramCost: totalFees,

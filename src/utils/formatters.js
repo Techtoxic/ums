@@ -26,6 +26,13 @@ const DEPT_TEXT_TO_SHORT = {
     computing_informatics:  'IT',
 };
 
+// Reverse of DEPT_TEXT_TO_SHORT: 2-letter departments.code → snake_case key.
+// Used by the public catalog endpoints so the frontend can map a DB department
+// row back to the snake_case value students/users store.
+const DEPT_SHORT_TO_TEXT = Object.fromEntries(
+    Object.entries(DEPT_TEXT_TO_SHORT).map(([text, short]) => [short, text]),
+);
+
 // SEV-H-016: money is stored as Decimal128 for exactness. These helpers
 // convert at the boundary. Choice (documented in STAGE2A_REPORT.md):
 // arithmetic/comparisons are done in Number space via parseFloat(String(...));
@@ -43,31 +50,12 @@ function toDecimal128(v) {
     return n.toFixed(2);
 }
 
-// Utility function to format course names
+// Title-case fallback for a course code/key when a DB-sourced program name is
+// not available. The authoritative course names live in the programs table
+// (Rule 7: no hardcoded catalog) — this is only a display fallback.
 function formatCourseNameServer(courseCode) {
     if (!courseCode) return 'Unknown Course';
-
-    // Course name mappings
-    const courseNames = {
-        'analytical_chemistry_6': 'Analytical Chemistry',
-        'sustainable_agriculture_5': 'Sustainable Agriculture',
-        'building_technology_6': 'Building Technology',
-        'electrical_installation_6': 'Electrical Installation',
-        'food_beverage_6': 'Food & Beverage Service',
-        'business_management_6': 'Business Management',
-        'computer_science_6': 'Computer Science',
-        'fashion_design_4': 'Fashion & Design',
-        'science_laboratory_technology_6': 'Science Laboratory Technology',
-        'crop_production_6': 'Crop Production',
-        'civil_engineering_6': 'Civil Engineering',
-        'mechanical_engineering_6': 'Mechanical Engineering',
-        'hospitality_management_6': 'Hospitality Management',
-        'accounting_6': 'Accounting',
-        'information_technology_6': 'Information Technology',
-        'interior_design_4': 'Interior Design'
-    };
-
-    return courseNames[courseCode] || courseCode.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    return String(courseCode).replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 }
 
-module.exports = { hodDepartmentDisplayName, toMoneyNumber, toDecimal128, formatCourseNameServer, DEPT_TEXT_TO_SHORT };
+module.exports = { hodDepartmentDisplayName, toMoneyNumber, toDecimal128, formatCourseNameServer, DEPT_TEXT_TO_SHORT, DEPT_SHORT_TO_TEXT };

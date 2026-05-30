@@ -54,11 +54,12 @@ function getMaxModuleForLevel(level) {
     return MAX_MODULE_BY_LEVEL[n];
 }
 
-// Pull the level (3-6) from a course code like `electrical_engineering_4`.
-// Returns null when nothing parses.
+// Pull the level (3-6) from a course identifier. Course is the program CODE
+// (e.g. `GA5`, `EE6`) — the level is the trailing digit. Also tolerates legacy
+// snake keys like `electrical_engineering_4`. Returns null when nothing parses.
 function extractLevelFromCourse(course) {
     if (!course) return null;
-    const m = String(course).match(/_(\d+)$/);
+    const m = String(course).match(/(\d+)$/);
     if (!m) return null;
     const n = parseInt(m[1], 10);
     return Number.isFinite(n) ? n : null;

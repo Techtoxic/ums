@@ -103,12 +103,12 @@ router.get('/cibec/student/:studentId/uploads', verifyToken, authorize('admin', 
             return res.status(404).json({ message: 'Student not found' });
         }
 
-        const uploads = await StudentUpload.find({
-            studentId,
-            status: 'uploaded'
-        })
-            .populate('unitId')
-            .sort({ uploadedAt: -1 });
+        // Query by the resolved student uuid, not the admission number param.
+        const uploads = await StudentUpload.find(
+            { studentId: student.id, status: 'uploaded' },
+            null,
+            { sort: { uploadedAt: -1 } }
+        );
 
         // Log view action
         await AuditLog.logAction({

@@ -9,7 +9,7 @@
 // Load order: dashboard-theme.js -> config.js -> auth.js -> portal-core.js ->
 // portal-router.js -> tab modules.
 
-// ---- authFetch, courseToProgram map, formatCourseName (verbatim financeDashboard.js) ----
+// ---- authFetch + formatCourseName (formatCourseName now DB-backed via Catalog) ----
 // Authenticated fetch wrapper — guarded against double-declaration.
 // financeAnalytics.js also defines this; both load as classic scripts so a
 // bare top-level `const` collides in global scope. window assignment is
@@ -19,100 +19,22 @@ window.authFetch = window.authFetch || (async (url, options = {}) => {
     return window.AUTH.fetch(url, options);
 });
 
-const courseToProgram = {
-    'applied_biology_6': 'Applied Biology Level 6',
-    'analytical_chemistry_6': 'Analytical Chemistry Level 6',
-    'science_lab_technology_5': 'Science Lab Technology Level 5',
-    'general_agriculture_4': 'General Agriculture Level 4',
-    'sustainable_agriculture_5': 'Sustainable Agriculture Level 5',
-    'agricultural_extension_6': 'Agricultural Extension Level 6',
-    'building_technician_4': 'Building Technician Level 4',
-    'building_technician_6': 'Building Technician Level 6',
-    'civil_engineering_6': 'Civil Engineering Level 6',
-    'plumbing_4': 'Plumbing Level 4',
-    'plumbing_5': 'Plumbing Level 5',
-    'electrical_engineering_4': 'Electrical Engineering Level 4',
-    'electrical_engineering_5': 'Electrical Engineering Level 5',
-    'electrical_engineering_6': 'Electrical Engineering Level 6',
-    'automotive_engineering_5': 'Automotive Engineering Level 5',
-    'automotive_engineering_6': 'Automotive Engineering Level 6',
-    'food_beverage_4': 'Food and Beverage Level 4',
-    'food_beverage_5': 'Food & Beverage Level 5',
-    'food_beverage_6': 'Food & Beverage Level 6',
-    'food_and_beverage_4': 'Food and Beverage Level 4',
-    'food_and_beverage_5': 'Food & Beverage Level 5',
-    'food_and_beverage_6': 'Food & Beverage Level 6',
-    'fashion_design_4': 'Fashion & Design Level 4',
-    'fashion_design_5': 'Fashion and Design Level 5',
-    'fashion_design_6': 'Fashion and Design Level 6',
-    'fashion_and_design_4': 'Fashion & Design Level 4',
-    'fashion_and_design_5': 'Fashion and Design Level 5',
-    'fashion_and_design_6': 'Fashion and Design Level 6',
-    'hairdressing_4': 'Hairdressing Level 4',
-    'hairdressing_5': 'Hairdressing Level 5',
-    'hairdressing_6': 'Hairdressing Level 6',
-    'tourism_management_5': 'Tourism Management Level 5',
-    'tourism_management_6': 'Tourism Management Level 6',
-    'social_work_5': 'Social Work Level 5',
-    'social_work_6': 'Social Work Level 6',
-    'office_administration_5': 'Office Administration Level 5',
-    'office_administration_6': 'Office Administration Level 6',
-    'ict_5': 'ICT Level 5',
-    'ict_6': 'ICT Level 6',
-    'information_science_5': 'Information Science Level 5',
-    'information_science_6': 'Information Science Level 6',
-    // Additional variations for comprehensive mapping
-    'science_lab_tech_5': 'Science Lab Technology Level 5',
-    'science_laboratory_technology_5': 'Science Lab Technology Level 5',
-    'applied_bio_6': 'Applied Biology Level 6',
-    'analytical_chem_6': 'Analytical Chemistry Level 6',
-    'general_agric_4': 'General Agriculture Level 4',
-    'sustainable_agric_5': 'Sustainable Agriculture Level 5',
-    'agricultural_ext_6': 'Agricultural Extension Level 6',
-    'building_tech_4': 'Building Technician Level 4',
-    'building_tech_6': 'Building Technician Level 6',
-    'civil_eng_6': 'Civil Engineering Level 6',
-    'electrical_eng_4': 'Electrical Engineering Level 4',
-    'electrical_eng_5': 'Electrical Engineering Level 5',
-    'electrical_eng_6': 'Electrical Engineering Level 6',
-    'automotive_eng_5': 'Automotive Engineering Level 5',
-    'automotive_eng_6': 'Automotive Engineering Level 6',
-    'tourism_mgmt_5': 'Tourism Management Level 5',
-    'tourism_mgmt_6': 'Tourism Management Level 6',
-    'office_admin_5': 'Office Administration Level 5',
-    'office_admin_6': 'Office Administration Level 6',
-    'info_science_5': 'Information Science Level 5',
-    'info_science_6': 'Information Science Level 6',
-    // Additional course code variations to ensure all formats work
-    'agricultural_extension_6': 'Agricultural Extension Level 6',
-    'agricultural_ext_6': 'Agricultural Extension Level 6',
-    'agric_extension_6': 'Agricultural Extension Level 6',
-    'building_technician_4': 'Building Technician Level 4',
-    'building_technician_6': 'Building Technician Level 6',
-    'building_tech_4': 'Building Technician Level 4',
-    'building_tech_6': 'Building Technician Level 6'
-};
 
-// Function to format course names for display
+// Function to format course names for display. Delegates to the shared Catalog
+// helper (single DB-backed source of program names). student.course stores the
+// program CODE (e.g. 'GA5'); Catalog.formatCourseName resolves it. Title-case
+// fallback only when Catalog is unavailable (script load failure).
 function formatCourseName(courseCode) {
-    // First try to get the proper program name from our mapping
-    const programName = courseToProgram[courseCode];
-    if (programName) {
-        return programName;
+    if (window.Catalog) {
+        return window.Catalog.formatCourseName(courseCode);
     }
-    
-    // If not found in mapping, format the course code nicely
     if (!courseCode) return 'Unknown Course';
-    
-    // Replace underscores with spaces and capitalize
     return courseCode
         .split('_')
         .map(word => {
-            // Handle numbers at the end (convert to "Level X")
             if (/^\d+$/.test(word)) {
                 return `Level ${word}`;
             }
-            // Capitalize first letter of each word
             return word.charAt(0).toUpperCase() + word.slice(1);
         })
         .join(' ');
@@ -324,6 +246,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
     }
+
+    // Load the shared catalog (programs + departments) before any tab renders,
+    // so sync Catalog lookups (formatCourseName, programByCode) resolve.
+    if (window.Catalog) { await window.Catalog.ready(); }
 
     if (window.FinanceRouter) window.FinanceRouter.start();
 });

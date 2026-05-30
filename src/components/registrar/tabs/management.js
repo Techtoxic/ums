@@ -8,18 +8,20 @@
 // is always the server.
 window.RegistrarTabs = window.RegistrarTabs || {};
 
-// Department display labels for the table + modals (mirrors the server-side
-// map in src/utils/courseCodes.js).
-const departmentMapping = {
-    applied_science: 'Applied Science Department',
-    agriculture: 'Agriculture Department',
-    building_civil: 'Building and Civil Department',
-    electromechanical: 'Electromechanical Department',
-    hospitality: 'Hospitality Department',
-    business_liberal: 'Business and Liberal Studies',
-    computing_informatics: 'Computing and Informatics',
-};
-window.departmentMapping = departmentMapping;
+// Department display labels come from the shared DB-backed catalog (Rule 7).
+// registrar's portal-core already awaits Catalog.ready() at bootstrap, so the
+// sync lookups below are safe.
+function deptDisplay(key) {
+    if (window.Catalog) return window.Catalog.departmentName(key);
+    return String(key || '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+}
+
+// Course display labels come from the shared DB-backed catalog (Rule 7), with
+// a title-case fallback when the catalog has not loaded.
+function courseDisplay(codeOrCourse) {
+    if (window.Catalog) return window.Catalog.formatCourseName(codeOrCourse);
+    return String(codeOrCourse || '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+}
 
 const STUDENTS_PAGE_SIZE = 20;
 
@@ -95,8 +97,8 @@ function renderStudentsPage() {
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-gray-50 dark:hover:bg-gray-700';
 
-        const courseDisplay = student.courseName || (typeof formatCourseName === 'function' ? formatCourseName(student.course) : (student.course || ''));
-        const departmentDisplay = student.departmentName || departmentMapping[student.department] || student.department || 'Not Assigned';
+        const courseLabel = courseDisplay(student.course) || student.course || '';
+        const departmentDisplay = deptDisplay(student.department) || student.department || 'Not Assigned';
         const intakeDisplay = student.intake
             ? `${capitalize(student.intake)} ${student.intakeYear || ''}`.trim()
             : 'N/A';
@@ -106,7 +108,7 @@ function renderStudentsPage() {
             <td class="px-3 py-4 text-sm font-mono">${escapeHtml(student.admissionNumber || '')}</td>
             <td class="px-3 py-4 text-sm">
                 <div class="font-medium">${escapeHtml(student.name || '')}</div>
-                <div class="text-xs text-gray-500 dark:text-gray-400">${escapeHtml(courseDisplay)}</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">${escapeHtml(courseLabel)}</div>
             </td>
             <td class="px-3 py-4 text-sm">${escapeHtml(departmentDisplay)}</td>
             <td class="px-3 py-4 text-sm">${student.module != null ? `Module ${student.module}` : ''}</td>
@@ -196,8 +198,8 @@ async function viewStudent(studentId) {
         const student = await response.json();
 
         const content = document.getElementById('studentDetailsContent');
-        const courseName = student.courseName || (typeof formatCourseName === 'function' ? formatCourseName(student.course) : (student.course || ''));
-        const departmentName = student.departmentName || departmentMapping[student.department] || student.department || 'Not Assigned';
+        const courseName = courseDisplay(student.course) || student.course || '';
+        const departmentName = deptDisplay(student.department) || student.department || 'Not Assigned';
         const intakeLine = student.intake ? `${capitalize(student.intake)} ${student.intakeYear || ''}`.trim() : 'N/A';
 
         content.innerHTML = `
@@ -361,6 +363,16 @@ window.RegistrarTabs.management = {
         const moduleFilter = document.getElementById('moduleFilter');
         const intakeFilter = document.getElementById('intakeFilter');
         const searchInput = document.getElementById('studentSearchInput');
+        // Append department options from the DB-backed catalog (Rule 7); the
+        // static "All Departments" (value="all") option stays first.
+        if (departmentFilter && window.Catalog) {
+            for (const d of window.Catalog.getDepartments()) {
+                const o = document.createElement('option');
+                o.value = d.textCode || d.code;
+                o.textContent = d.name;
+                departmentFilter.appendChild(o);
+            }
+        }
         let searchDebounce;
         if (departmentFilter) departmentFilter.addEventListener('change', (e) => { managementState.filters.department = e.target.value; applyAllFilters(); });
         if (moduleFilter) moduleFilter.addEventListener('change', (e) => { managementState.filters.module = e.target.value; applyAllFilters(); });

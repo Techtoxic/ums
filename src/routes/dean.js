@@ -114,30 +114,28 @@ router.post('/dean/students/:studentId/notes', verifyToken, authorize('admin', '
             return res.status(404).json({ message: 'Student not found' });
         }
 
-        const note = new StudentNote({
-            studentId,
-            studentName: student.name,
-            admissionNumber: student.admissionNumber,
+        // Map V1 payload to the V2 columns: content -> note (NOT NULL),
+        // author_id from the verified token, studentId -> resolved student uuid.
+        const note = await StudentNote.create({
+            studentId: student.id,
+            authorId: req.user.userId,
+            note: content,
             noteType,
             title,
-            content,
             category: category || 'general',
             priority: priority || 'medium',
-            createdBy
+            studentName: student.name,
+            admissionNumber: student.admissionNumber,
         });
 
-        await note.save();
-
-        // If public note, create notification
+        // If public note, create notification (recipient_id is a uuid; body is
+        // NOT NULL — mirror the working notification shape used elsewhere).
         if (noteType === 'public') {
             await Notification.create({
-                recipientId: studentId,
+                recipientId: student.id,
                 recipientType: 'student',
                 title: `New Note: ${title}`,
-                message: content,
-                type: 'general',
-                relatedId: note._id.toString(),
-                priority: priority || 'medium'
+                body: content,
             });
         }
 
@@ -171,11 +169,11 @@ router.get('/students/:studentId/public-notes', verifyToken, authorize('student'
     try {
         const { studentId } = req.params;
 
-        // Public notes should be visible to all students, not just the assigned student
-        // Remove studentId filter to show all public notes
-        const notes = await StudentNote.find({
-            noteType: 'public'
-        }).sort({ createdAt: -1 });
+        // DELIBERATE: public notes are visible to ALL students, so there is no
+        // per-student filter here — every note_type='public' row is returned.
+        // noteType maps to the note_type column; sort via the options arg
+        // (chained .sort() on the shim is a no-op).
+        const notes = await StudentNote.find({ noteType: 'public' }, null, { sort: { createdAt: -1 } });
 
         res.json({ notes });
     } catch (error) {

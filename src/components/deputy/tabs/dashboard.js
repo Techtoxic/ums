@@ -54,9 +54,9 @@ window.DeputyTabs = window.DeputyTabs || {};
                     document.getElementById('pendingTools').textContent = pendingTools.length;
                 }
 
-                // Load departments count
-                const departments = ['applied_science', 'agriculture', 'building_civil', 'electromechanical', 'hospitality', 'business_liberal', 'computing_informatics'];
-                document.getElementById('totalDepartments').textContent = departments.length;
+                // Load departments count from the shared catalog (Rule 7).
+                const departmentCount = window.Catalog ? window.Catalog.getDepartments().length : 0;
+                document.getElementById('totalDepartments').textContent = departmentCount;
 
                 // Load notifications count
                 const notificationsResponse = await window.AUTH.fetch(`${API_BASE_URL}/notifications`);

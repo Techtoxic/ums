@@ -23,15 +23,13 @@ const authFetch = async (url, options = {}) => window.AUTH.fetch(url, options);
 class StudentExporter {
     constructor() {
         this.students = [];
-        this.departmentMapping = {
-            'applied_science': 'Applied Science Department',
-            'agriculture': 'Agriculture Department',
-            'building_civil': 'Building and Civil Department',
-            'electromechanical': 'Electromechanical Department',
-            'hospitality': 'Hospitality Department',
-            'business_liberal': 'Business and Liberal Studies',
-            'computing_informatics': 'Computing and Informatics',
-        };
+    }
+
+    // Department display name from the shared DB-backed catalog (Rule 7), with a
+    // title-case fallback if the catalog helper failed to load.
+    deptDisplay(key) {
+        if (window.Catalog) return window.Catalog.departmentName(key);
+        return String(key || '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
     }
 
     // Load students data (always pulls the full set via ?all=1 — exports must
@@ -102,8 +100,15 @@ class StudentExporter {
     // are stable so CSV columns stay aligned across runs.
     formatStudentData(students) {
         return students.map(student => {
-            const courseDisplay = student.courseName || (typeof formatCourseName === 'function' ? formatCourseName(student.course) : (student.course || 'N/A'));
-            const departmentDisplay = student.departmentName || this.departmentMapping[student.department] || student.department || 'N/A';
+            // Program/course DISPLAY via the shared catalog (Rule 7); prefer a
+            // server-provided display name, then the catalog, then title-case.
+            const courseDisplay = student.courseName
+                || (window.Catalog ? window.Catalog.formatCourseName(student.course) : null)
+                || student.course || 'N/A';
+            // Department DISPLAY via the catalog-backed deptDisplay() helper.
+            const departmentDisplay = student.departmentName
+                || this.deptDisplay(student.department)
+                || student.department || 'N/A';
             return {
                 'Admission Number': student.admissionNumber || 'N/A',
                 'Full Name': student.name || 'N/A',

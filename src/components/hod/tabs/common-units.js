@@ -203,9 +203,16 @@ async function showAssignCommonUnitsModal() {
     }
     
     
+    // Populate department filter from the DB-backed catalog (keep snake textCode
+    // values; preserve the "All Departments" default at the top).
+    const deptFilter = document.getElementById('trainerDepartmentFilter');
+    if (deptFilter && window.Catalog) {
+        Catalog.populateDepartmentSelect(deptFilter, { includeAll: true, allLabel: 'All Departments' });
+    }
+
     // Load trainers list
     populateTrainersForCommonUnit();
-    
+
     // Setup event listeners
     setupCommonUnitModalEventListeners();
     

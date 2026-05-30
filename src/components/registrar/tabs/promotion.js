@@ -68,8 +68,8 @@ function displayPromotionStudents(students) {
         const cap = MAX_MODULE_BY_LEVEL[level];
         const currentModule = Number(student.module || 0);
         const isEligible = isStudentEligibleForPromotion(student);
-        const courseDisplay = student.courseName || (typeof formatCourseName === 'function' ? formatCourseName(student.course) : (student.course || ''));
-        const departmentDisplay = student.departmentName || (window.departmentMapping && window.departmentMapping[student.department]) || student.department || '';
+        const courseDisplay = (window.Catalog ? window.Catalog.formatCourseName(student.course) : String(student.course || '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()));
+        const departmentDisplay = (window.Catalog ? window.Catalog.departmentName(student.department) : String(student.department || '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()));
         const statusBadge = isEligible
             ? `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">Eligible → Module ${currentModule + 1}</span>`
             : `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">Max Module Reached</span>`;
@@ -191,6 +191,18 @@ window.promoteSingleStudent = promoteSingleStudent;
 
 window.RegistrarTabs.promotion = {
     init() {
+        // Append department options from the DB-backed catalog (Rule 7); the
+        // static "All Departments" (value="all") option stays first.
+        const deptFilterEl = document.getElementById('deptFilter');
+        if (deptFilterEl && window.Catalog && !deptFilterEl.dataset.catalogFilled) {
+            for (const d of window.Catalog.getDepartments()) {
+                const o = document.createElement('option');
+                o.value = d.textCode || d.code;
+                o.textContent = d.name;
+                deptFilterEl.appendChild(o);
+            }
+            deptFilterEl.dataset.catalogFilled = '1';
+        }
         loadPromotionStudents();
     },
 };

@@ -1,10 +1,19 @@
 /**
- * EDTTI UMS — V2 seed script.
+ * EDTTI UMS — V2 seed script (clean wipe + reseed).
  *
- * Idempotent: every insert checks for an existing record by a stable natural key
- * (email / code / admission_number) before inserting. Safe to re-run.
+ * Runs resetCatalog() FIRST (drops departments/programs/units + dependent rows),
+ * then reseeds the whole catalog from drizzle/catalogData.js — the verbatim
+ * transcription of "COURSES PRESENT AND THEIR CODES.docx".
  *
  *   node drizzle/seed.js
+ *
+ * Catalog rules baked in here:
+ *   - 7 departments, 18 courses, 48 program-levels (one program per code level).
+ *   - Every program costs KES 67,189.
+ *   - Units are seeded PER LEVEL (duplicate-per-level): a level program holds
+ *     modules 1..cap(level) where cap = MAX_MODULE_BY_LEVEL; the highest-level
+ *     program of each course holds ALL its modules so no unit is lost. The
+ *     backend hides modules above cap(level) at runtime.
  *
  * NOTE on passwords:
  *   V1 bcrypt hashes are not reachable from this environment, so the documented
@@ -25,6 +34,9 @@ const {
     payments,
     payslips,
 } = require('./schema');
+const { DEPARTMENTS, COURSES } = require('./catalogData');
+const { resetCatalog } = require('./reset');
+const { MAX_MODULE_BY_LEVEL } = require('../src/utils/studentHelpers');
 
 const BCRYPT_COST = 12;
 const DEFAULT_PROGRAM_COST = '67189';
@@ -32,6 +44,8 @@ const DEFAULT_PROGRAM_COST = '67189';
 async function hash(pw) {
     return bcrypt.hash(pw, BCRYPT_COST);
 }
+
+const pad2 = (n) => String(n).padStart(2, '0');
 
 /** Insert a row only if a row matching `whereClause` doesn't already exist.
  *  Returns the existing or newly-inserted row. */
@@ -43,120 +57,81 @@ async function upsert(table, whereClause, values) {
 }
 
 async function seedDepartments() {
-    const items = [
-        { name: 'Applied Science',     code: 'AS' },
-        { name: 'Agriculture',         code: 'AG' },
-        { name: 'Building & Civil',    code: 'BC' },
-        { name: 'Electromechanical',   code: 'EM' },
-        { name: 'Hospitality',         code: 'HO' },
-        { name: 'Business & Liberal',  code: 'BL' },
-        { name: 'ICT & Digital Media', code: 'IT' },
-    ];
+    // Catalog was just truncated, so bulk-insert (one round trip) instead of
+    // per-row upserts. Returning() gives us the new ids keyed by textCode.
+    const rows = await db.insert(departments).values(
+        DEPARTMENTS.map((d) => ({ name: d.name, code: d.code })),
+    ).returning();
+    const rowByCode = {};
+    for (const r of rows) rowByCode[r.code] = r;
     const out = {};
-    for (const it of items) {
-        const row = await upsert(departments, eq(departments.code, it.code), it);
-        out[it.code] = row;
-    }
-    console.log(`  ✓ departments: ${items.length}`);
+    for (const d of DEPARTMENTS) out[d.textCode] = rowByCode[d.code];
+    console.log(`  ✓ departments: ${rows.length}`);
     return out;
 }
 
-async function seedPrograms(deptByCode) {
-    const items = [
-        { code: 'AC6', name: 'Analytical Chemistry Level 6', level: 6, dept: 'AS' },
-        { code: 'AP6', name: 'Applied Biology Level 6',      level: 6, dept: 'AS' },
-        { code: 'EE6', name: 'Electrical Engineering Level 6', level: 6, dept: 'EM' },
-        { code: 'AT5', name: 'Automotive Technology Level 5', level: 5, dept: 'EM' },
-        { code: 'BT5', name: 'Building Technology Level 5',   level: 5, dept: 'BC' },
-        { code: 'HM5', name: 'Hospitality Management Level 5', level: 5, dept: 'HO' },
-        { code: 'FB4', name: 'Food & Beverage Level 4',       level: 4, dept: 'HO' },
-        { code: 'IT5', name: 'ICT Level 5',                   level: 5, dept: 'IT' },
-        { code: 'AG4', name: 'Agriculture Level 4',           level: 4, dept: 'AG' },
-        { code: 'BM5', name: 'Business Management Level 5',   level: 5, dept: 'BL' },
-        { code: 'AM5', name: 'Applied Mathematics Level 5',   level: 5, dept: 'AS' },
-    ];
-    const out = {};
-    for (const it of items) {
-        const row = await upsert(programs, eq(programs.code, it.code), {
-            code: it.code,
-            name: it.name,
-            level: it.level,
-            department_id: deptByCode[it.dept].id,
-            program_cost: DEFAULT_PROGRAM_COST,
-            duration_years: 3,
-            is_active: true,
-        });
-        out[it.code] = row;
+async function seedPrograms(deptByText) {
+    const values = [];
+    for (const course of COURSES) {
+        for (const level of course.levels) {
+            const dept = deptByText[course.department];
+            if (!dept) throw new Error(`Unknown department '${course.department}' for course ${course.name}`);
+            values.push({
+                code: `${course.codePrefix}${level}`,
+                name: `${course.name} Level ${level}`,
+                level,
+                department_id: dept.id,
+                program_cost: DEFAULT_PROGRAM_COST,
+                duration_years: 3,
+                is_active: true,
+            });
+        }
     }
-    console.log(`  ✓ programs: ${items.length}`);
+    const rows = await db.insert(programs).values(values).returning();
+    const out = {};
+    for (const r of rows) out[r.code] = r;
+    console.log(`  ✓ programs: ${rows.length}`);
     return out;
 }
 
 async function seedUnits(progByCode) {
-    // 3 units per program × representative 6 programs = 18 sample units.
-    const sample = [
-        { prog: 'AC6', code: 'AC6-101', name: 'General Chemistry I', year: 1, semester: 1 },
-        { prog: 'AC6', code: 'AC6-102', name: 'Quantitative Analysis', year: 1, semester: 2 },
-        { prog: 'AC6', code: 'AC6-201', name: 'Organic Chemistry',  year: 2, semester: 1 },
-        { prog: 'EE6', code: 'EE6-101', name: 'Circuit Theory I',   year: 1, semester: 1 },
-        { prog: 'EE6', code: 'EE6-102', name: 'Electronics I',      year: 1, semester: 2 },
-        { prog: 'EE6', code: 'EE6-201', name: 'Power Systems',      year: 2, semester: 1 },
-        { prog: 'IT5', code: 'IT5-101', name: 'Computer Networks',  year: 1, semester: 1 },
-        { prog: 'IT5', code: 'IT5-102', name: 'Programming Fundamentals', year: 1, semester: 2 },
-        { prog: 'IT5', code: 'IT5-201', name: 'Database Systems',   year: 2, semester: 1 },
-        { prog: 'BT5', code: 'BT5-101', name: 'Construction Materials', year: 1, semester: 1 },
-        { prog: 'BT5', code: 'BT5-102', name: 'Site Surveying',     year: 1, semester: 2 },
-        { prog: 'HM5', code: 'HM5-101', name: 'Front Office Operations', year: 1, semester: 1 },
-        { prog: 'HM5', code: 'HM5-102', name: 'Food Production I',  year: 1, semester: 2 },
-        { prog: 'BM5', code: 'BM5-101', name: 'Principles of Management', year: 1, semester: 1 },
-        { prog: 'BM5', code: 'BM5-102', name: 'Business Communication', year: 1, semester: 2 },
-        { prog: 'AG4', code: 'AG4-101', name: 'Crop Production',    year: 1, semester: 1 },
-        { prog: 'AM5', code: 'AM5-101', name: 'Calculus I',         year: 1, semester: 1 },
-        { prog: 'AM5', code: 'AM5-102', name: 'Linear Algebra',     year: 1, semester: 2 },
-    ];
-    let count = 0;
-    for (const u of sample) {
-        const program = progByCode[u.prog];
-        if (!program) continue;
-        await upsert(units, eq(units.code, u.code), {
-            program_id: program.id,
-            code: u.code,
-            name: u.name,
-            year: u.year,
-            semester: u.semester,
-            is_common: false,
-        });
-        count++;
+    // Duplicate-per-level: each level program gets modules 1..cap(level); the
+    // highest-level program of a course gets ALL modules present in the doc.
+    const values = [];
+    for (const course of COURSES) {
+        const availableModules = Object.keys(course.modules).map(Number).sort((a, b) => a - b);
+        const maxLevel = Math.max(...course.levels);
+        for (const level of course.levels) {
+            const code = `${course.codePrefix}${level}`;
+            const program = progByCode[code];
+            if (!program) continue;
+            const cap = MAX_MODULE_BY_LEVEL[level] || 0;
+            const isTopLevel = level === maxLevel;
+            const modulesToSeed = availableModules.filter((m) => (isTopLevel ? true : m <= cap));
+            for (const m of modulesToSeed) {
+                const names = course.modules[m] || [];
+                let seq = 0;
+                for (const name of names) {
+                    seq++;
+                    values.push({
+                        program_id: program.id,
+                        code: `${code}-M${m}-${pad2(seq)}`,
+                        name,
+                        module: m,
+                        year: m,
+                        semester: 1,
+                        is_common: false,
+                    });
+                }
+            }
+        }
     }
-    console.log(`  ✓ units: ${count}`);
-}
-
-async function seedCommonUnits(_progByCode) {
-    // Common units sit alongside program-specific units in the `units` table
-    // with program_id=NULL and is_common=true. The schema's program_id column
-    // is nullable specifically for this case.
-    const items = [
-        { code: 'CU-001', name: 'Communication Skills' },
-        { code: 'CU-002', name: 'Numeracy Skills' },
-        { code: 'CU-003', name: 'Digital Literacy' },
-        { code: 'CU-004', name: 'Entrepreneurial Skills' },
-        { code: 'CU-005', name: 'Employability Skills' },
-        { code: 'CU-006', name: 'Environmental Literacy' },
-        { code: 'CU-007', name: 'Occupational Safety and Health (OSH) Practices' },
-    ];
-    let count = 0;
-    for (const u of items) {
-        await upsert(units, eq(units.code, u.code), {
-            program_id: null,
-            code: u.code,
-            name: u.name,
-            year: 1,
-            semester: 1,
-            is_common: true,
-        });
-        count++;
+    // Chunk the bulk insert to stay well under Postgres' parameter limit.
+    const CHUNK = 500;
+    for (let i = 0; i < values.length; i += CHUNK) {
+        await db.insert(units).values(values.slice(i, i + CHUNK));
     }
-    console.log(`  ✓ common units: ${items.length} (${count} ensured)`);
+    console.log(`  ✓ units: ${values.length}`);
 }
 
 async function seedUsers() {
@@ -178,6 +153,12 @@ async function seedUsers() {
         { email: 'okmomanyi56+deputy@gmail.com',    role: 'deputy',    staff_id: 'DEPUTY001',    name: 'Deputy Principal',   department: 'Administration',     password: adminPw },
         { email: 'okmomanyi56+ilo@gmail.com',       role: 'ilo',       staff_id: 'ILO001',       name: 'ILO Officer',        department: 'Industrial Liaison', password: adminPw },
         { email: 'okmomanyi56+cibec@gmail.com',     role: 'cibec',     staff_id: 'CIBEC001',     name: 'CIBEC Officer',      department: 'CIBEC',              password: adminPw },
+        { email: 'maxxciey302+finance@gmail.com',   role: 'finance',   staff_id: 'FINANCE002',   name: 'Finance Officer',    department: 'Finance',            password: adminPw },
+        { email: 'maxxciey302+dean@gmail.com',      role: 'dean',      staff_id: 'DEAN002',      name: 'Dean of Students',   department: 'Academic Affairs',   password: adminPw },
+        { email: 'maxxciey302+deputy@gmail.com',    role: 'deputy',    staff_id: 'DEPUTY002',    name: 'Deputy Principal',   department: 'Administration',     password: adminPw },
+        { email: 'maxxciey302+ilo@gmail.com',       role: 'ilo',       staff_id: 'ILO002',       name: 'ILO Officer',        department: 'Industrial Liaison', password: adminPw },
+        { email: 'maxxciey302+cibec@gmail.com',     role: 'cibec',     staff_id: 'CIBEC002',     name: 'CIBEC Officer',      department: 'CIBEC',              password: adminPw },
+
         // Additional trainers across departments
         { email: 'james.kiprop@edtti.ac.ke',  role: 'trainer', name: 'James Kiprop',  department: 'electromechanical', password: trainerPw },
         { email: 'mary.atieno@edtti.ac.ke',   role: 'trainer', name: 'Mary Atieno',   department: 'business_liberal',  password: trainerPw },
@@ -208,7 +189,8 @@ async function seedUsers() {
 }
 
 async function seedStudents() {
-    // Each student's initial password = their phone number (hashed).
+    // Test "replica" students re-pointed onto the new catalog. `course` holds the
+    // program CODE (e.g. GA5); `department` holds the snake_case department key.
     async function s(opts) {
         return {
             ...opts,
@@ -219,13 +201,13 @@ async function seedStudents() {
         };
     }
     const items = [
-        await s({ admission_number: 'AC6/0001/S25', name: 'Severina Chepkoech', phone_number: '0712345689', course: 'AC6', department: 'applied_science',     year: 3, intake: 'september', intake_year: 2025, email: 'severina@example.com', admission_type: 'KUCCPS' }),
-        await s({ admission_number: 'AM5/0001/J26', name: 'Michael Olunga',     phone_number: '0712456783', course: 'AM5', department: 'applied_science',     year: 2, intake: 'january',   intake_year: 2026, email: 'michael@example.com', admission_type: 'self-sponsored' }),
-        await s({ admission_number: 'EE6/0001/S25', name: 'Janet Mwende',       phone_number: '0723456781', course: 'EE6', department: 'electromechanical',   year: 2, intake: 'september', intake_year: 2025, email: null, admission_type: 'KUCCPS' }),
-        await s({ admission_number: 'IT5/0001/J26', name: 'Daniel Mwangi',      phone_number: '0712111222', course: 'IT5', department: 'computing_informatics', year: 1, intake: 'january',   intake_year: 2026, email: 'daniel@example.com', admission_type: 'self-sponsored' }),
-        await s({ admission_number: 'BT5/0001/S25', name: 'Ruth Akinyi',        phone_number: '0712333444', course: 'BT5', department: 'building_civil',      year: 2, intake: 'september', intake_year: 2025, email: null, admission_type: 'KUCCPS' }),
-        await s({ admission_number: 'HM5/0001/S25', name: 'Brian Otieno',       phone_number: '0712555666', course: 'HM5', department: 'hospitality',         year: 2, intake: 'september', intake_year: 2025, email: 'brian@example.com', admission_type: 'self-sponsored' }),
-        await s({ admission_number: 'BM5/0001/J26', name: 'Faith Njeri',        phone_number: '0712777888', course: 'BM5', department: 'business_liberal',    year: 1, intake: 'january',   intake_year: 2026, email: null, admission_type: 'KUCCPS' }),
+        await s({ admission_number: 'AC6/0001/S25',  name: 'Severina Chepkoech', phone_number: '0712345689', course: 'AC6',  department: 'applied_science',       module: 3, intake: 'september', intake_year: 2025, email: 'severina@example.com', admission_type: 'KUCCPS' }),
+        await s({ admission_number: 'GA5/0001/J26',  name: 'Michael Olunga',     phone_number: '0712456783', course: 'GA5',  department: 'agriculture',           module: 2, intake: 'january',   intake_year: 2026, email: 'michael@example.com', admission_type: 'self-sponsored' }),
+        await s({ admission_number: 'EE6/0001/S25',  name: 'Janet Mwende',       phone_number: '0723456781', course: 'EE6',  department: 'electromechanical',     module: 2, intake: 'september', intake_year: 2025, email: null, admission_type: 'KUCCPS' }),
+        await s({ admission_number: 'ICT5/0001/J26', name: 'Daniel Mwangi',      phone_number: '0712111222', course: 'ICT5', department: 'computing_informatics', module: 1, intake: 'january',   intake_year: 2026, email: 'daniel@example.com', admission_type: 'self-sponsored' }),
+        await s({ admission_number: 'BT5/0001/S25',  name: 'Ruth Akinyi',        phone_number: '0712333444', course: 'BT5',  department: 'building_civil',        module: 2, intake: 'september', intake_year: 2025, email: null, admission_type: 'KUCCPS' }),
+        await s({ admission_number: 'FB5/0001/S25',  name: 'Brian Otieno',       phone_number: '0712555666', course: 'FB5',  department: 'hospitality',           module: 2, intake: 'september', intake_year: 2025, email: 'brian@example.com', admission_type: 'self-sponsored' }),
+        await s({ admission_number: 'BM5/0001/J26',  name: 'Faith Njeri',        phone_number: '0712777888', course: 'BM5',  department: 'business_liberal',      module: 1, intake: 'january',   intake_year: 2026, email: null, admission_type: 'KUCCPS' }),
     ];
     const out = {};
     for (const it of items) {
@@ -239,14 +221,14 @@ async function seedStudents() {
 async function seedPayments(studentByAdmission, userByEmail) {
     const recorder = userByEmail['okmomanyi56@gmail.com'];
     const items = [
-        { adm: 'AC6/0001/S25', amount: '1200000.00', mode: 'bursary', bank: null, ref: 'HEF-001' },
-        { adm: 'AC6/0001/S25', amount: '70000.00',   mode: 'mpesa',   bank: null, ref: 'MPE-987' },
-        { adm: 'AM5/0001/J26', amount: '30000.00',   mode: 'mpesa',   bank: null, ref: 'MPE-100' },
-        { adm: 'EE6/0001/S25', amount: '45000.00',   mode: 'bank',    bank: 'Equity', ref: 'EQB-100' },
-        { adm: 'IT5/0001/J26', amount: '15000.00',   mode: 'mpesa',   bank: null, ref: 'MPE-200' },
-        { adm: 'BT5/0001/S25', amount: '50000.00',   mode: 'bank',    bank: 'KCB', ref: 'KCB-100' },
-        { adm: 'HM5/0001/S25', amount: '25000.00',   mode: 'mpesa',   bank: null, ref: 'MPE-300' },
-        { adm: 'BM5/0001/J26', amount: '20000.00',   mode: 'bursary', bank: null, ref: 'HEF-002' },
+        { adm: 'AC6/0001/S25',  amount: '1200000.00', mode: 'bursary', bank: null, ref: 'HEF-001' },
+        { adm: 'AC6/0001/S25',  amount: '70000.00',   mode: 'mpesa',   bank: null, ref: 'MPE-987' },
+        { adm: 'GA5/0001/J26',  amount: '30000.00',   mode: 'mpesa',   bank: null, ref: 'MPE-100' },
+        { adm: 'EE6/0001/S25',  amount: '45000.00',   mode: 'bank',    bank: 'Equity', ref: 'EQB-100' },
+        { adm: 'ICT5/0001/J26', amount: '15000.00',   mode: 'mpesa',   bank: null, ref: 'MPE-200' },
+        { adm: 'BT5/0001/S25',  amount: '50000.00',   mode: 'bank',    bank: 'KCB', ref: 'KCB-100' },
+        { adm: 'FB5/0001/S25',  amount: '25000.00',   mode: 'mpesa',   bank: null, ref: 'MPE-300' },
+        { adm: 'BM5/0001/J26',  amount: '20000.00',   mode: 'bursary', bank: null, ref: 'HEF-002' },
     ];
     let count = 0;
     for (const p of items) {
@@ -336,10 +318,10 @@ async function seedHODs() {
 
 async function main() {
     console.log('🌱 Seeding V2 database...');
+    await resetCatalog();
     const dept = await seedDepartments();
     const prog = await seedPrograms(dept);
     await seedUnits(prog);
-    await seedCommonUnits(prog);
     const userByEmail = await seedUsers();
     await seedHODs();
     const studentByAdmission = await seedStudents();

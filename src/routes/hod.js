@@ -159,7 +159,7 @@ router.put('/hod/:hodId/profile', verifyToken, authorize('admin', 'hod'), verify
                 email: hod.email,
                 phone: hod.phone,
                 department: hod.department,
-                departmentName: HOD.getDepartmentDisplayName(hod.department)
+                departmentName: hodDepartmentDisplayName(hod.department)
             }
         });
     } catch (error) {

@@ -218,33 +218,30 @@ function formatCurrency(amount) {
 }
 
 function formatDepartmentName(code) {
-    const names = {
-        'applied_science': 'Applied Science',
-        'agriculture': 'Agriculture',
-        'building_civil': 'Building & Civil',
-        'electromechanical': 'Electromechanical',
-        'hospitality': 'Hospitality',
-        'business_liberal': 'Business & Liberal',
-        'computing_informatics': 'Computing & Informatics'
-    };
-    return names[code] || code;
+    // DB-backed catalog (Rule 7). Title-case fallback only if catalog absent.
+    if (window.Catalog) return Catalog.departmentName(code);
+    if (!code) return code;
+    return code.split('_').map(word =>
+        word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(' ');
 }
 
 function formatCourseName(courseCode) {
+    // student.course holds the program CODE (e.g. 'GA5'); resolve via catalog.
+    if (window.Catalog) return Catalog.formatCourseName(courseCode) || 'N/A';
     if (!courseCode) return 'N/A';
-    return courseCode.split('_').map(word => 
+    return courseCode.split('_').map(word =>
         word.charAt(0).toUpperCase() + word.slice(1)
     ).join(' ');
 }
 
 function getCourseProgram(courseCode) {
-    const mapping = {
-        'applied_biology_6': 'Applied Biology Level 6',
-        'analytical_chemistry_6': 'Analytical Chemistry Level 6',
-        'science_lab_technology_5': 'Science Lab Technology Level 5',
-        // Add more mappings as needed
-    };
-    return mapping[courseCode] || 'Unknown Program';
+    // Resolve a course CODE to its program display name via the catalog.
+    if (window.Catalog) {
+        const p = Catalog.programByCode(courseCode);
+        return p ? p.name : Catalog.formatCourseName(courseCode);
+    }
+    return formatCourseName(courseCode);
 }
 
 function getTimeAgo(dateString) {
@@ -359,6 +356,9 @@ document.addEventListener('DOMContentLoaded', async function () {
         window.location.href = '/admin/first-login';
         return;
     }
+
+    // Load the shared course/department catalog before any tab renders (Rule 7).
+    if (window.Catalog) { await window.Catalog.ready(); }
 
     const adminNameEl = document.getElementById('admin-name');
     if (adminNameEl) adminNameEl.textContent = admin.name || 'Administrator';

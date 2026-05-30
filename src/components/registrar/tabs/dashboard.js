@@ -77,7 +77,7 @@ function loadCourseOverview(students) {
         const dept = student.department;
         if (!departmentStats[dept]) {
             departmentStats[dept] = {
-                name: (window.departmentMapping && window.departmentMapping[dept]) || dept,
+                name: (window.Catalog ? window.Catalog.departmentName(dept) : dept) || dept,
                 students: 0,
                 courses: new Set(),
             };

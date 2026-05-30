@@ -5,6 +5,13 @@ const { PasswordReset, AdminStaff, HOD, Trainer, Student } = require('../db/mode
 const config = require('../config/config');
 const EmailService = require('../utils/emailService');
 
+// Reset lifetimes.
+const OTP_TTL_MS = 10 * 60 * 1000;      // OTP code valid 10 minutes
+const LINK_TTL_MS = 60 * 60 * 1000;     // email reset link valid 60 minutes
+const SESSION_TTL_MS = 30 * 60 * 1000;  // post-OTP reset session token valid 30 minutes
+
+const ROLE_TYPES = ['student', 'trainer', 'hod', 'admin', 'finance', 'registrar', 'dean', 'ilo', 'deputy', 'cibec'];
+
 // Own email-service instance. Mirror server.js's try/catch stub so requiring
 // this module can never crash on load if the constructor throws.
 let emailService;
@@ -19,6 +26,27 @@ try {
         sendPassword: async () => console.log('Email stub: sendPassword'),
         sendStudentCredentials: async () => console.log('Email stub: sendStudentCredentials')
     };
+}
+
+// Resolve a (email, userType) pair to the user + the data we email. Returns null
+// when no matching active account exists. user.id is the uuid stored on the
+// reset row; user_role = userType disambiguates which table to update later.
+async function resolveUser(email, userType) {
+    const lower = email.toLowerCase();
+    if (userType === 'hod') {
+        return HOD.findOne({ email: lower, isActive: true });
+    }
+    if (userType === 'trainer') {
+        return Trainer.findOne({ email: lower, isActive: true });
+    }
+    if (userType === 'student') {
+        return Student.findOne({ email: lower });
+    }
+    if (userType === 'admin') {
+        return AdminStaff.findOne({ email: lower, isActive: true });
+    }
+    // finance / registrar / dean / ilo / deputy / cibec all live in `users`.
+    return AdminStaff.findOne({ email: lower, role: userType, isActive: true });
 }
 
 // Forgot password endpoint - Initiate password reset (OTP or Token)
@@ -40,123 +68,61 @@ router.post('/auth/forgot-password', authLimiter, async (req, res) => {
             });
         }
 
-        if (!['student', 'trainer', 'hod', 'admin', 'finance', 'registrar', 'dean', 'ilo', 'deputy', 'cibec'].includes(userType)) {
+        if (!ROLE_TYPES.includes(userType)) {
             return res.status(400).json({
                 success: false,
                 message: 'Invalid user type'
             });
         }
 
-        // Find user based on type
-        let user = null;
-        let userData = null;
+        const user = await resolveUser(email, userType);
 
-        if (userType === 'admin') {
-            user = await AdminStaff.findOne({ email: email.toLowerCase(), isActive: true });
-            if (user) {
-                userData = {
-                    userId: user._id,
-                    name: user.name,
-                    email: user.email,
-                    department: user.department || 'Administration'
-                };
-            }
-        } else if (userType === 'hod') {
-            user = await HOD.findOne({ email: email.toLowerCase(), isActive: true });
-            if (user) {
-                userData = {
-                    userId: user._id,
-                    name: user.name,
-                    email: user.email,
-                    department: user.department
-                };
-            }
-        } else if (userType === 'trainer') {
-            user = await Trainer.findOne({ email: email.toLowerCase(), isActive: true });
-            if (user) {
-                userData = {
-                    userId: user._id,
-                    name: user.name,
-                    email: user.email,
-                    department: user.department
-                };
-            }
-        } else if (userType === 'student') {
-            user = await Student.findOne({ email: email.toLowerCase() });
-            if (user) {
-                userData = {
-                    userId: user._id,
-                    name: user.name,
-                    email: user.email,
-                    admissionNumber: user.admissionNumber
-                };
-            }
-        } else if (['finance', 'registrar', 'dean', 'ilo', 'deputy', 'cibec'].includes(userType)) {
-            user = await AdminStaff.findOne({ email: email.toLowerCase(), role: userType, isActive: true });
-            if (user) {
-                userData = {
-                    userId: user._id,
-                    name: user.name,
-                    email: user.email,
-                    department: user.department || userType
-                };
-            }
-        }
-
-        // Always return the same response to prevent email enumeration
+        // Always return the same response to prevent email enumeration.
         const standardResponse = {
             success: true,
             message: `If an account with that email exists, you will receive a ${resetMethod === 'otp' ? 'verification code' : 'reset link'} shortly.`
         };
 
-        // If user not found, still return success but don't send email
+        // If user not found, still return success but don't send anything.
         if (!user) {
             return res.json(standardResponse);
         }
 
-        // Check rate limiting - max 3 attempts per 15 minutes per email
+        // Rate limit: max 3 reset requests per 15 minutes per (email, role).
         const recentAttempts = await PasswordReset.countDocuments({
             email: email.toLowerCase(),
-            userType: userType,
+            userRole: userType,
             createdAt: { $gt: new Date(Date.now() - 15 * 60 * 1000) }
         });
-
         if (recentAttempts >= 3) {
             return res.json(standardResponse); // Don't reveal rate limiting
         }
 
-        // Invalidate any existing reset requests for this user
-        await PasswordReset.invalidateUserResets(userData.userId, userType);
+        // Invalidate any still-active reset requests for this user.
+        await PasswordReset.invalidateUserResets(user.id, userType);
 
-        // Create new reset request
-        const resetData = {
-            userId: userData.userId,
-            userType: userType,
+        // Generate the raw secret, store ONLY its hash.
+        const isOtp = resetMethod === 'otp';
+        const rawSecret = isOtp ? PasswordReset.generateOTP() : PasswordReset.generateResetToken();
+        await PasswordReset.create({
+            userId: user.id,
+            userRole: userType,
             email: email.toLowerCase(),
             resetType: resetMethod,
-            ipAddress: req.ip || (req.socket && req.socket.remoteAddress) || 'unknown',
-            userAgent: req.get('User-Agent') || 'unknown'
-        };
+            tokenHash: PasswordReset.hashValue(rawSecret),
+            expiresAt: new Date(Date.now() + (isOtp ? OTP_TTL_MS : LINK_TTL_MS)),
+        });
 
-        if (resetMethod === 'otp') {
-            resetData.otp = PasswordReset.generateOTP();
-        } else {
-            resetData.resetToken = PasswordReset.generateResetToken();
-        }
-
-        const passwordReset = new PasswordReset(resetData);
-        await passwordReset.save();
-
-        // Send email. Do not log recipient email, OTP value, or token.
+        // Send email. Never log recipient email, OTP value, or token.
         try {
             const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'https';
             const host = req.headers['x-forwarded-host'] || req.headers.host || config.baseUrl;
             const baseUrl = `${protocol}://${host}`;
 
-            if (resetMethod === 'otp') {
-                await emailService.sendOTPEmail(userData.email, resetData.otp, userData.name, userType);
+            if (isOtp) {
+                await emailService.sendOTPEmail(user.email, rawSecret, user.name, userType);
             } else {
-                await emailService.sendResetLinkEmail(userData.email, resetData.resetToken, userData.name, userType, baseUrl);
+                await emailService.sendResetLinkEmail(user.email, rawSecret, user.name, userType, baseUrl);
             }
         } catch (emailError) {
             console.error('Password reset email failed to send:', emailError.message);
@@ -173,7 +139,8 @@ router.post('/auth/forgot-password', authLimiter, async (req, res) => {
     }
 });
 
-// Verify OTP endpoint
+// Verify OTP endpoint — validates the code, consumes the OTP row, and issues a
+// short-lived reset_type='token' session token (hashed) for the reset step.
 router.post('/auth/verify-otp', authLimiter, async (req, res) => {
     try {
         const { email, otp, userType } = req.body;
@@ -185,12 +152,11 @@ router.post('/auth/verify-otp', authLimiter, async (req, res) => {
             });
         }
 
-        // Find valid OTP reset request
-        const resetRequest = await PasswordReset.findValidReset({
+        // Load the active OTP row by email+role (NOT by hash), so a wrong guess
+        // can still be counted against the attempts cap.
+        const resetRequest = await PasswordReset.findOtpRequest({
             email: email.toLowerCase(),
-            userType: userType,
-            resetType: 'otp',
-            otp: otp
+            userRole: userType,
         });
 
         if (!resetRequest) {
@@ -200,35 +166,36 @@ router.post('/auth/verify-otp', authLimiter, async (req, res) => {
             });
         }
 
+        // Attempts cap (expiry is already enforced by findOtpRequest).
         if (!resetRequest.canAttempt()) {
+            await resetRequest.markAsUsed(); // burn it so no further guesses work
             return res.status(400).json({
                 success: false,
-                message: 'Maximum OTP attempts exceeded or OTP expired'
+                message: 'Maximum OTP attempts exceeded. Please request a new code.'
             });
         }
 
-        // Generate session token for password reset
+        // Constant-time compare against the stored hash.
+        if (!PasswordReset.compareHash(otp, resetRequest.tokenHash)) {
+            await resetRequest.incrementAttempts();
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid or expired OTP'
+            });
+        }
+
+        // Success: consume the OTP row, then issue ONE new hashed session token.
+        await resetRequest.markAsUsed();
+
         const sessionToken = PasswordReset.generateResetToken();
-
-        // Create a session token entry (reuse the same document)
-        resetRequest.resetToken = sessionToken;
-        resetRequest.isUsed = true; // Mark OTP as used
-        resetRequest.usedAt = new Date();
-        await resetRequest.save();
-
-        // Create new session for password reset
-        const sessionReset = new PasswordReset({
+        await PasswordReset.create({
             userId: resetRequest.userId,
-            userType: userType,
+            userRole: userType,
             email: email.toLowerCase(),
             resetType: 'token',
-            resetToken: sessionToken,
-            ipAddress: req.ip || req.connection.remoteAddress || 'unknown',
-            userAgent: req.get('User-Agent') || 'unknown',
-            expiresAt: new Date(Date.now() + 30 * 60 * 1000) // 30 minutes for password reset
+            tokenHash: PasswordReset.hashValue(sessionToken),
+            expiresAt: new Date(Date.now() + SESSION_TTL_MS),
         });
-
-        await sessionReset.save();
 
         res.json({
             success: true,
@@ -245,12 +212,21 @@ router.post('/auth/verify-otp', authLimiter, async (req, res) => {
     }
 });
 
+// Look up the account behind a reset row, by user_role.
+async function findUserByRole(userId, userType) {
+    if (userType === 'hod') return HOD.findById(userId);
+    if (userType === 'trainer') return Trainer.findById(userId);
+    if (userType === 'student') return Student.findById(userId);
+    // admin + finance/registrar/dean/ilo/deputy/cibec all live in `users`.
+    return AdminStaff.findById(userId);
+}
+
 // Reset password endpoint
 router.post('/auth/reset-password', authLimiter, async (req, res) => {
     try {
         const { token, newPassword, userType, sessionToken } = req.body;
 
-        // Check if it's a session token (from OTP flow) or reset token (from email link)
+        // Either a session token (OTP flow) or a reset token (email link).
         const resetToken = sessionToken || token;
 
         if (!resetToken || !newPassword || !userType) {
@@ -260,8 +236,8 @@ router.post('/auth/reset-password', authLimiter, async (req, res) => {
             });
         }
 
-        // Strong password rules - must match what AdminStaff routes enforce
-        // 8+ characters, uppercase, lowercase, number, special character
+        // Strong password rules — must match what the AdminStaff routes enforce:
+        // 8+ characters, uppercase, lowercase, number, special character.
         if (newPassword.length < 8) {
             return res.status(400).json({
                 success: false,
@@ -276,10 +252,10 @@ router.post('/auth/reset-password', authLimiter, async (req, res) => {
             });
         }
 
-        // Find valid reset request
+        // Validate the hashed reset/session token.
         const resetRequest = await PasswordReset.findValidReset({
-            resetToken: resetToken,
-            userType: userType,
+            token: resetToken,
+            userRole: userType,
             resetType: 'token'
         });
 
@@ -290,18 +266,7 @@ router.post('/auth/reset-password', authLimiter, async (req, res) => {
             });
         }
 
-        // Find and update user password
-        let user = null;
-        if (userType === 'admin' || ['finance', 'registrar', 'dean', 'ilo', 'deputy', 'cibec'].includes(userType)) {
-            user = await AdminStaff.findById(resetRequest.userId);
-        } else if (userType === 'hod') {
-            user = await HOD.findById(resetRequest.userId);
-        } else if (userType === 'trainer') {
-            user = await Trainer.findById(resetRequest.userId);
-        } else if (userType === 'student') {
-            user = await Student.findById(resetRequest.userId);
-        }
-
+        const user = await findUserByRole(resetRequest.userId, userType);
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -309,21 +274,13 @@ router.post('/auth/reset-password', authLimiter, async (req, res) => {
             });
         }
 
-        // Update password
-        if (userType === 'student') {
-            // For students, password is stored as plain text (phone number)
-            user.password = newPassword;
-        } else {
-            // For HOD and trainers, set the plain password - the model's pre-save hook will hash it
-            user.password = newPassword;
-        }
-
+        // Set the plaintext password; the Student/users facades hash it (bcrypt)
+        // in their pre-save hook. No account type stores raw passwords.
+        user.password = newPassword;
         await user.save();
 
-        // Mark reset request as used
+        // Consume the token and invalidate any other active resets for this user.
         await resetRequest.markAsUsed();
-
-        // Invalidate all other reset requests for this user
         await PasswordReset.invalidateUserResets(resetRequest.userId, userType);
 
         res.json({
@@ -354,8 +311,8 @@ router.get('/auth/validate-reset-token/:token', async (req, res) => {
         }
 
         const resetRequest = await PasswordReset.findValidReset({
-            resetToken: token,
-            userType: type,
+            token: token,
+            userRole: type,
             resetType: 'token'
         });
 
@@ -366,31 +323,27 @@ router.get('/auth/validate-reset-token/:token', async (req, res) => {
             });
         }
 
-        // Fetch user details to return to frontend
+        // Fetch user details to return to the frontend (best-effort).
         let userData = { name: 'User', identifier: resetRequest.email };
         try {
-            if (type === 'admin') {
-                const admin = await AdminStaff.findById(resetRequest.userId).select('name email staffId');
-                if (admin) userData = { name: admin.name, identifier: admin.staffId || admin.email };
-            } else if (type === 'hod') {
-                const hod = await HOD.findById(resetRequest.userId).select('name email department');
-                if (hod) userData = { name: hod.name, identifier: hod.department || hod.email };
-            } else if (type === 'trainer') {
-                const trainer = await Trainer.findById(resetRequest.userId).select('name email');
-                if (trainer) userData = { name: trainer.name, identifier: trainer.email };
-            } else if (type === 'student') {
-                const student = await Student.findById(resetRequest.userId).select('name admissionNumber');
-                if (student) userData = { name: student.name, identifier: student.admissionNumber || resetRequest.email };
+            const user = await findUserByRole(resetRequest.userId, type);
+            if (user) {
+                const identifier = type === 'student'
+                    ? (user.admissionNumber || resetRequest.email)
+                    : type === 'admin'
+                        ? (user.staffId || user.email)
+                        : (user.department || user.email);
+                userData = { name: user.name, identifier };
             }
         } catch (userLookupError) {
-            console.error('Error looking up user details:', userLookupError);
+            console.error('Error looking up user details:', userLookupError.message);
         }
 
         res.json({
             success: true,
             message: 'Token is valid',
             email: resetRequest.email,
-            userType: resetRequest.userType,
+            userType: resetRequest.userRole,
             user: userData
         });
 

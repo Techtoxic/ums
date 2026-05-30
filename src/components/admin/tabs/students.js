@@ -170,5 +170,13 @@ window.openAddStudentModal = openAddStudentModal;
 window.exportStudents = exportStudents;
 
 window.AdminTabs.students = {
-    init() { displayStudents(); }
+    init() {
+        // Populate the program filter from the DB-backed catalog (Rule 7).
+        // Catalog.ready() already awaited in the portal bootstrap.
+        const programFilter = document.getElementById('program-filter');
+        if (programFilter && window.Catalog) {
+            Catalog.populateCourseSelect(programFilter, { includeBlank: true, blankLabel: 'All Programs' });
+        }
+        displayStudents();
+    }
 };

@@ -754,8 +754,7 @@ async function initializeTrainers() {
                 // logged - operators must set/communicate trainer credentials
                 // via the password-reset flow.
                 const seededTrainerPassword = `Aa1!${crypto.randomBytes(18).toString('base64').replace(/[+/=]/g, 'A')}`;
-                const trainer = new Trainer({ ...trainerData, password: seededTrainerPassword });
-                await trainer.save();
+                await Trainer.create({ ...trainerData, password: seededTrainerPassword });
                     newTrainersAdded++;
                 }
             }
@@ -997,8 +996,7 @@ async function initializeCommonUnits() {
                 console.log(`  Updated common unit: ${unitData.unitName}`);
             } else {
                 // Create new common unit
-                const commonUnit = new CommonUnit(unitData);
-                await commonUnit.save();
+                const commonUnit = await CommonUnit.create(unitData);
                 newCount++;
                 console.log(`  Created common unit: ${unitData.unitName}`);
             }
@@ -1050,7 +1048,7 @@ async function initializeAdminStaff() {
         ];
 
         for (const data of defaultStaff) {
-            const staff = new AdminStaff({
+            await AdminStaff.create({
                 ...data,
                 password: initialPassword,
                 isActive: true,
@@ -1058,7 +1056,6 @@ async function initializeAdminStaff() {
                 mustUpdateEmail: true,
                 mustUpdatePassword: true
             });
-            await staff.save();
         }
 
         // SEV-H-015: never log the initial password (logs persist in cloud
@@ -1187,6 +1184,9 @@ app.use('/api', require('./src/routes/studentRegistration'));
 
 // Program Routes — extracted to src/routes/programs.js
 app.use('/api', require('./src/routes/programs'));
+
+// Department Routes — public department list for portal dropdowns/labels
+app.use('/api', require('./src/routes/departments'));
 
 // Payment Routes — extracted to src/routes/payments.js
 app.use('/api', require('./src/routes/payments'));

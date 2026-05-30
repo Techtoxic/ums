@@ -18,56 +18,33 @@ let allUploads = [];
 let currentPage = 1;
 const itemsPerPage = 20;
 
-// Course mappings
-const courseNames = {
-    'applied_biology_6': 'Applied Biology Level 6',
-    'analytical_chemistry_6': 'Analytical Chemistry Level 6',
-    'science_lab_technology_5': 'Science Lab Technology Level 5',
-    'general_agriculture_4': 'General Agriculture Level 4',
-    'sustainable_agriculture_5': 'Sustainable Agriculture Level 5',
-    'agricultural_extension_6': 'Agricultural Extension Level 6',
-    'building_technician_4': 'Building Technician Level 4',
-    'building_technician_6': 'Building Technician Level 6',
-    'civil_engineering_6': 'Civil Engineering Level 6',
-    'plumbing_4': 'Plumbing Level 4',
-    'plumbing_5': 'Plumbing Level 5',
-    'electrical_engineering_4': 'Electrical Engineering Level 4',
-    'electrical_engineering_5': 'Electrical Engineering Level 5',
-    'electrical_engineering_6': 'Electrical Engineering Level 6',
-    'automotive_engineering_5': 'Automotive Engineering Level 5',
-    'automotive_engineering_6': 'Automotive Engineering Level 6',
-    'food_beverage_4': 'Food and Beverage Level 4',
-    'food_beverage_5': 'Food & Beverage Level 5',
-    'food_beverage_6': 'Food & Beverage Level 6',
-    'hairdressing_4': 'Hairdressing Level 4',
-    'hairdressing_5': 'Hairdressing Level 5',
-    'hairdressing_6': 'Hairdressing Level 6',
-    'tourism_management_5': 'Tourism Management Level 5',
-    'tourism_management_6': 'Tourism Management Level 6',
-    'social_work_5': 'Social Work Level 5',
-    'social_work_6': 'Social Work Level 6',
-    'office_administration_5': 'Office Administration Level 5',
-    'office_administration_6': 'Office Administration Level 6',
-    'ict_5': 'ICT Level 5',
-    'ict_6': 'ICT Level 6',
-    'information_science_5': 'Information Science Level 5',
-    'information_science_6': 'Information Science Level 6'
-};
-
-const departmentNames = {
-    'applied_science': 'Applied Science',
-    'agriculture': 'Agriculture',
-    'building_civil': 'Building & Civil',
-    'electromechanical': 'Electromechanical',
-    'hospitality': 'Hospitality',
-    'business_liberal': 'Business & Liberal',
-    'computing_informatics': 'Computing & Informatics'
-};
+// Course + department display names come from the shared DB-backed catalog
+// (Rule 7). These helpers keep a title-case fallback if the catalog failed to
+// load, and route through Catalog.formatCourseName / Catalog.departmentName.
+function _titleCase(s) {
+    return String(s || '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+}
+function courseName(code) {
+    return window.Catalog ? window.Catalog.formatCourseName(code) : _titleCase(code);
+}
+function deptName(key) {
+    return window.Catalog ? window.Catalog.departmentName(key) : _titleCase(key);
+}
 
 // Initialize dashboard
 async function initializeDashboard() {
     console.log('Initializing CIBEC Dashboard...');
-    
+
+    // Load the shared programs/departments catalog before anything renders.
+    if (window.Catalog) { await window.Catalog.ready(); }
+
+    // Populate the department filter from the catalog (snake_case textCode
+    // values — CIBEC sends `department` as a query param).
+    const deptFilter = document.getElementById('filter-department');
+    if (deptFilter && window.Catalog) {
+        window.Catalog.populateDepartmentSelect(deptFilter, { includeAll: true, allLabel: 'All Departments' });
+    }
+
     // Load statistics
     await loadStatistics();
     
@@ -191,11 +168,11 @@ function createUploadCard(upload) {
         'practical': 'bg-orange-100 text-orange-700'
     };
     
-    const courseName = courseNames[upload.course] || upload.course;
-    const departmentName = departmentNames[upload.department] || upload.department;
-    
+    const courseLabel = courseName(upload.course);
+    const departmentLabel = deptName(upload.department);
+
     // Extract level from course name
-    const levelMatch = courseName.match(/Level (\d+)/);
+    const levelMatch = courseLabel.match(/Level (\d+)/);
     const levelBadge = levelMatch ? `<span class="px-2 py-0.5 bg-indigo-100 text-indigo-700 text-xs rounded-full font-medium">Level ${levelMatch[1]}</span>` : '';
     
     return `
@@ -211,12 +188,12 @@ function createUploadCard(upload) {
                             <span class="px-2 py-0.5 bg-gray-100 text-gray-700 text-xs rounded-full">${escapeHtml(upload.admissionNumber)}</span>
                             ${levelBadge}
                         </div>
-                        <p class="text-sm text-gray-600 mb-2">${escapeHtml(courseName)}</p>
+                        <p class="text-sm text-gray-600 mb-2">${escapeHtml(courseLabel)}</p>
                         <div class="flex items-center flex-wrap gap-2 text-xs">
                             <span class="px-2 py-1 ${uploadTypeColors[upload.uploadType]} rounded-full font-medium">
                                 ${uploadTypeLabels[upload.uploadType]}
                             </span>
-                            <span class="text-gray-500">${escapeHtml(departmentName)}</span>
+                            <span class="text-gray-500">${escapeHtml(departmentLabel)}</span>
                             <span class="text-gray-500">•</span>
                             <span class="text-gray-500">Module ${escapeHtml(upload.module)}</span>
                             ${upload.unitName ? `
@@ -328,8 +305,8 @@ async function viewStudentDetails(studentId) {
         // Update modal
         document.getElementById('modal-student-name').textContent = data.student.name;
         document.getElementById('modal-student-id').textContent = data.student.studentId;
-        document.getElementById('modal-student-course').textContent = courseNames[data.student.course] || data.student.course;
-        document.getElementById('modal-student-department').textContent = departmentNames[data.student.department] || data.student.department;
+        document.getElementById('modal-student-course').textContent = courseName(data.student.course);
+        document.getElementById('modal-student-department').textContent = deptName(data.student.department);
         document.getElementById('modal-student-year').textContent = `Module ${data.student.module}`;
         
         // Display uploads
@@ -541,8 +518,8 @@ function exportToExcel() {
     const rows = allUploads.map(upload => [
         upload.studentName,
         upload.admissionNumber,
-        courseNames[upload.course] || upload.course,
-        departmentNames[upload.department] || upload.department,
+        courseName(upload.course),
+        deptName(upload.department),
         upload.module,
         upload.uploadType,
         upload.unitName || '-',

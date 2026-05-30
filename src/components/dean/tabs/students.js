@@ -13,28 +13,16 @@ let deanStudentsState = {
     filters: { search: '', department: '', module: '', intake: '' },
 };
 
-// Load departments
+// Load departments into the filter <select> from the shared catalog (Rule 7).
+// Option values stay snake_case textCodes so the API filter keeps working.
 async function loadDepartments() {
+    const select = document.getElementById('filter-department');
+    if (!select) return;
     try {
-        const response = await authFetch(`${API_BASE}/programs`);
-        if (!response.ok) throw new Error('Failed to load departments');
-
-        const programs = await response.json();
-        const departments = [...new Set(programs.map(p => p.departmentName).filter(Boolean))].sort();
-
-        const select = document.getElementById('filter-department');
-        if (!select) return;
-        // Reset (avoid duplicating options if the partial is re-shown).
-        const initialOption = select.querySelector('option[value=""]');
-        select.innerHTML = '';
-        if (initialOption) select.appendChild(initialOption);
-        else select.innerHTML = '<option value="">All Departments</option>';
-        departments.forEach(dept => {
-            const option = document.createElement('option');
-            option.value = dept;
-            option.textContent = dept;
-            select.appendChild(option);
-        });
+        if (window.Catalog) {
+            await window.Catalog.ready();
+            window.Catalog.populateDepartmentSelect(select, { includeAll: true, allLabel: 'All Departments' });
+        }
     } catch (error) {
         console.error('Error loading departments:', error);
     }
@@ -100,8 +88,8 @@ function displayStudents(students) {
     }
 
     tbody.innerHTML = students.map(student => {
-        const courseDisplay = student.courseName || (typeof formatCourseName === 'function' ? formatCourseName(student.course) : (student.course || ''));
-        const departmentDisplay = student.departmentName || student.department || '';
+        const courseDisplay = window.Catalog ? window.Catalog.formatCourseName(student.course) : (typeof formatCourseName === 'function' ? formatCourseName(student.course) : (student.course || ''));
+        const departmentDisplay = window.Catalog ? window.Catalog.departmentName(student.department) : (student.department || '');
         return `
         <tr class="hover:bg-gray-50 transition">
             <td class="px-6 py-4">
