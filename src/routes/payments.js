@@ -91,7 +91,9 @@ router.post('/payments', verifyToken, authorize('admin', 'finance'), async (req,
             bankName: bankName || null,
             referenceNumber,
             recordedBy: req.user.userId, // actor from the verified token
-            paymentDate: paymentDate || new Date()
+            // The client sends an ISO string; Drizzle's timestamp column needs a
+            // Date object (it calls .toISOString() on the value), so coerce it.
+            paymentDate: paymentDate ? new Date(paymentDate) : new Date()
         });
 
         console.log('Payment saved successfully:', payment._id);
