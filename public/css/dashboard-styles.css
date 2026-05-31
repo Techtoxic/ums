@@ -320,6 +320,11 @@ a { color: inherit; text-decoration: none; }
        the table's own overflow-x-auto wrapper scrolling. min-width:0 lets the
        column shrink so inner scroll containers handle overflow locally. */
     min-width: 0;
+    /* Belt-and-suspenders: never let content create a PAGE-level horizontal
+       scrollbar. Wide tables/charts stay inside their own overflow-x-auto
+       wrappers; anything else is clipped here rather than widening the viewport.
+       (Modals are position:fixed, so they're unaffected.) */
+    overflow-x: hidden;
 }
 
 /* D5. Theme toggle ------------------------------------------------------ */
