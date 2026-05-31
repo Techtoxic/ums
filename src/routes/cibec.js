@@ -179,6 +179,9 @@ router.get('/cibec/completeness', verifyToken, authorize(...REVIEWER_ROLES), asy
         if (academicYear != null) regConds.push(eq(schema.unitRegistrations.academic_year, academicYear));
         if (semester != null) regConds.push(eq(schema.unitRegistrations.semester, semester));
         if (intakeYear != null) regConds.push(eq(schema.students.intake_year, intakeYear));
+        // GROUP BY the student so a cross-period retake (a second unit_registrations
+        // row for the same student+unit) does not double-count them in the matrix /
+        // completion %. One row per student = the true roster.
         const roster = await db.select({
             studentId: schema.students.id,
             admissionNumber: schema.students.admission_number,
@@ -186,6 +189,7 @@ router.get('/cibec/completeness', verifyToken, authorize(...REVIEWER_ROLES), asy
         }).from(schema.unitRegistrations)
           .innerJoin(schema.students, eq(schema.students.id, schema.unitRegistrations.student_id))
           .where(and(...regConds))
+          .groupBy(schema.students.id, schema.students.admission_number, schema.students.name)
           .orderBy(asc(schema.students.admission_number));
 
         // 3. Current uploads for this unit cohort, keyed by student+slot.

@@ -228,7 +228,9 @@ router.post('/student-uploads', verifyToken, authorize('admin', 'registrar', 'st
         // Create new upload record. NOT NULL columns: student_id (resolved uuid),
         // category (= uploadType), file_path (= s3 key), uploaded_by (token user),
         // file_size, mime_type. The rest are the V1 metadata columns added in 0010.
-        const newUpload = await StudentUpload.create({
+        let newUpload;
+        try {
+        newUpload = await StudentUpload.create({
             studentId: student.id,
             uploadedBy: req.user.userId,
             category: uploadType,
@@ -260,6 +262,19 @@ router.post('/student-uploads', verifyToken, authorize('admin', 'registrar', 'st
             intakeYear: intakeYearVal,
             contentHash: contentHash
         });
+        } catch (insertErr) {
+            // Defence-in-depth: if the insert fails AFTER the prior row was
+            // superseded, restore it so the slot never ends up with zero current
+            // documents (e.g. a race: two replaces of the same slot+period).
+            if (existingUpload) {
+                try { existingUpload.status = 'uploaded'; existingUpload.updatedAt = Date.now(); await existingUpload.save(); } catch (_) { /* best-effort restore */ }
+            }
+            const code = insertErr && (insertErr.code || (insertErr.cause && insertErr.cause.code));
+            if (code === '23505' || /duplicate key|unique/i.test(insertErr.message || '')) {
+                return res.status(409).json({ message: 'This slot already has a current document for this period. Refresh and replace it instead.' });
+            }
+            throw insertErr;
+        }
 
         console.log('Saved new upload:', newUpload._id, 'version:', newUpload.version);
 

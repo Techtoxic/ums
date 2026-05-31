@@ -92,6 +92,13 @@
 			"when": 1780000004000,
 			"tag": "0012_cbet_integrity",
 			"breakpoints": true
+		},
+		{
+			"idx": 13,
+			"version": "7",
+			"when": 1780000005000,
+			"tag": "0013_cbet_slot_period",
+			"breakpoints": true
 		}
 	]
 }
