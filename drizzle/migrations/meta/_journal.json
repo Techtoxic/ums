@@ -85,6 +85,13 @@
 			"when": 1780000003000,
 			"tag": "0011_password_reset_fields",
 			"breakpoints": true
+		},
+		{
+			"idx": 12,
+			"version": "7",
+			"when": 1780000004000,
+			"tag": "0012_cbet_integrity",
+			"breakpoints": true
 		}
 	]
 }

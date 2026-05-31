@@ -451,10 +451,25 @@ const studentUploads = pgTable('student_uploads', {
     module: integer('module'),
     assessment_number: integer('assessment_number'),
     practical_number: integer('practical_number'),
+    // CBET integrity (migration 0012): point-in-time cohort snapshot + content hash.
+    // No verification/review-status column — `status` is the only document state.
+    intake: text('intake'),
+    intake_year: integer('intake_year'),
+    content_hash: text('content_hash'),
     uploaded_at: timestamp('uploaded_at', { withTimezone: true }).notNull().defaultNow(),
     created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-});
+}, (t) => ({
+    // Reviewer tree / completeness / search support (migration 0012).
+    courseIntakeModuleUnitIdx: index('student_uploads_course_intake_module_unit_idx').on(
+        t.course, t.intake_year, t.module, t.unit_id,
+    ),
+    unitYearSemStatusIdx: index('student_uploads_unit_year_sem_status_idx').on(
+        t.unit_id, t.academic_year, t.semester, t.status,
+    ),
+    admissionNumberIdx: index('student_uploads_admission_number_idx').on(t.admission_number),
+    contentHashIdx: index('student_uploads_content_hash_idx').on(t.content_hash),
+}));
 
 // ============================================================================
 // AUDIT LOGS  (append-only; no updated_at — events are immutable)
