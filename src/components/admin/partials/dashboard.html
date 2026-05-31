@@ -1,111 +1,91 @@
-                <!-- Dashboard content from existing code... -->
-                <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-3">
-                    <!-- Stats Cards -->
-                    <div class="card hover:shadow-md transition-shadow">
-                        <div class="card__body">
-                        <div class="flex items-start justify-between">
-                            <div class="w-10 h-10 rounded-lg bg-[#7A0C0C]/10 flex items-center justify-center text-[#7A0C0C]">
-                                <i class="ri-graduation-cap-line text-lg"></i>
-                            </div>
-                            <span class="flex items-center gap-1 text-xs font-medium text-[#7A0C0C]">
-                                <i class="ri-arrow-up-line"></i>Live
-                            </span>
-                        </div>
-                        <p class="mt-3 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Students</p>
-                        <h3 id="stat-students" class="text-headline-lg text-gray-800 dark:text-white truncate">-</h3>
-                        <div class="mt-3 h-1 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                            <div class="h-full bg-[#7A0C0C] rounded-full" style="width:72%"></div>
-                        </div>
-                        </div>
-                    </div>
+<!-- Admin Dashboard tab — KPIs, trend + department charts, recent payments, side panel.
+     Data ids preserved for tabs/dashboard.js: stat-students, stat-trainers,
+     stat-revenue, stat-outstanding, students-this-month, collection-rate,
+     students-owing-count, enrollmentChart, departmentChart, recent-activity,
+     system-alerts (+ new: recent-payments, collection-rate-big/-bar, dash-*). -->
 
-                    <div class="card hover:shadow-md transition-shadow">
-                        <div class="card__body">
-                        <div class="flex items-start justify-between">
-                            <div class="w-10 h-10 rounded-lg bg-[#7A0C0C]/10 flex items-center justify-center text-[#7A0C0C]">
-                                <i class="ri-user-star-line text-lg"></i>
-                            </div>
-                            <span class="flex items-center gap-1 text-xs font-medium text-[#7A0C0C]">
-                                <i class="ri-arrow-up-line"></i>Live
-                            </span>
-                        </div>
-                        <p class="mt-3 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Trainers</p>
-                        <h3 id="stat-trainers" class="text-headline-lg text-gray-800 dark:text-white truncate">-</h3>
-                        <div class="mt-3 h-1 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                            <div class="h-full bg-[#7A0C0C] rounded-full" style="width:64%"></div>
-                        </div>
-                        </div>
-                    </div>
+<!-- Welcome -->
+<div class="flex items-center justify-between gap-4 flex-wrap" style="margin-bottom:20px">
+    <div>
+        <h1 style="font-size:24px;font-weight:800;color:var(--text-primary);line-height:1.2"><span id="dash-greeting">Welcome back</span>, <span id="dash-name">Admin</span> 👋</h1>
+        <p style="color:var(--text-muted);font-size:13.5px;margin-top:4px">Here's what's happening at EDTTI today.</p>
+    </div>
+    <button class="adm-btn adm-btn--primary" onclick="showSection('students')"><i class="ri-user-add-line"></i> Manage Students</button>
+</div>
 
-                    <div class="card hover:shadow-md transition-shadow">
-                        <div class="card__body">
-                        <div class="flex items-start justify-between">
-                            <div class="w-10 h-10 rounded-lg bg-[#7A0C0C]/10 flex items-center justify-center text-[#7A0C0C]">
-                                <i class="ri-money-dollar-circle-line text-lg"></i>
-                            </div>
-                            <span class="flex items-center gap-1 text-xs font-medium text-[#7A0C0C]">
-                                <i class="ri-arrow-up-line"></i>Live
-                            </span>
-                        </div>
-                        <p class="mt-3 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Revenue</p>
-                        <h3 id="stat-revenue" class="text-headline-lg text-gray-800 dark:text-white truncate">-</h3>
-                        <div class="mt-3 h-1 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                            <div class="h-full bg-[#7A0C0C] rounded-full" style="width:80%"></div>
-                        </div>
-                        </div>
-                    </div>
+<!-- KPI cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4" style="margin-bottom:18px">
+    <div class="kpi">
+        <div class="kpi__top"><span class="kpi__icon"><i class="ri-graduation-cap-line"></i></span><span class="kpi__label">Total Students</span></div>
+        <div class="kpi__value" id="stat-students">—</div>
+        <div class="kpi__foot"><span class="kpi__delta kpi__delta--up"><i class="ri-arrow-up-line"></i> <span id="students-this-month">+0</span></span><span class="kpi__note">new this month</span></div>
+    </div>
+    <div class="kpi">
+        <div class="kpi__top"><span class="kpi__icon"><i class="ri-user-star-line"></i></span><span class="kpi__label">Active Trainers</span></div>
+        <div class="kpi__value" id="stat-trainers">—</div>
+        <div class="kpi__foot"><span class="kpi__note">across all departments</span></div>
+    </div>
+    <div class="kpi">
+        <div class="kpi__top"><span class="kpi__icon kpi__icon--gold"><i class="ri-money-dollar-circle-line"></i></span><span class="kpi__label">Fee Collections</span></div>
+        <div class="kpi__value" id="stat-revenue">—</div>
+        <div class="kpi__foot"><span class="kpi__delta kpi__delta--up"><i class="ri-line-chart-line"></i> <span id="collection-rate">0%</span></span><span class="kpi__note">collected</span></div>
+    </div>
+    <div class="kpi">
+        <div class="kpi__top"><span class="kpi__icon"><i class="ri-error-warning-line"></i></span><span class="kpi__label">Outstanding Balance</span></div>
+        <div class="kpi__value" id="stat-outstanding">—</div>
+        <div class="kpi__foot"><span class="kpi__note"><span id="students-owing-count">0 students</span> owing</span></div>
+    </div>
+</div>
 
-                    <div class="card hover:shadow-md transition-shadow">
-                        <div class="card__body">
-                        <div class="flex items-start justify-between">
-                            <div class="w-10 h-10 rounded-lg bg-[#D4A017]/15 flex items-center justify-center text-[#D4A017]">
-                                <i class="ri-alert-line text-lg"></i>
-                            </div>
-                            <span class="flex items-center gap-1 text-xs font-medium text-[#D4A017]">
-                                <i class="ri-error-warning-line"></i>Attention
-                            </span>
-                        </div>
-                        <p class="mt-3 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Outstanding</p>
-                        <h3 id="stat-outstanding" class="text-headline-lg text-gray-800 dark:text-white truncate">-</h3>
-                        <div class="mt-3 h-1 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                            <div class="h-full bg-[#D4A017] rounded-full" style="width:45%"></div>
-                        </div>
-                        </div>
-                    </div>
-                </div>
+<!-- Charts row -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4" style="margin-bottom:18px">
+    <div class="adm-card lg:col-span-2">
+        <div class="adm-card__head">
+            <div class="adm-card__title"><i class="ri-line-chart-line"></i> Enrollment Trend</div>
+            <div class="adm-rangetoggle">
+                <button onclick="admSetEnrollmentRange(3,this)">3M</button>
+                <button class="active" onclick="admSetEnrollmentRange(6,this)">6M</button>
+                <button onclick="admSetEnrollmentRange(12,this)">1Y</button>
+            </div>
+        </div>
+        <div class="adm-card__body"><div class="adm-chart" style="height:300px"><canvas id="enrollmentChart"></canvas></div></div>
+    </div>
+    <div class="adm-card">
+        <div class="adm-card__head"><div class="adm-card__title"><i class="ri-pie-chart-2-line"></i> Students by Department</div></div>
+        <div class="adm-card__body"><div class="adm-chart" style="height:300px"><canvas id="departmentChart"></canvas></div></div>
+    </div>
+</div>
 
-                <!-- Charts -->
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-2 mb-3">
-                    <div class="bg-white dark:bg-gray-800 rounded-lg p-2 md:p-3 shadow-sm">
-                        <h3 class="text-xs md:text-sm font-bold text-gray-800 dark:text-white mb-2">Enrollment Trends</h3>
-                        <canvas id="enrollmentChart"></canvas>
-                    </div>
-                    
-                    <div class="bg-white dark:bg-gray-800 rounded-lg p-2 md:p-3 shadow-sm">
-                        <h3 class="text-xs md:text-sm font-bold text-gray-800 dark:text-white mb-2">Revenue Overview</h3>
-                        <canvas id="revenueChart"></canvas>
-                    </div>
-                    
-                    <div class="bg-white dark:bg-gray-800 rounded-lg p-2 md:p-3 shadow-sm">
-                        <h3 class="text-xs md:text-sm font-bold text-gray-800 dark:text-white mb-2">Department Distribution</h3>
-                        <canvas id="departmentChart"></canvas>
-                    </div>
-                </div>
+<!-- Lower row: recent payments + side panel -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <div class="adm-card lg:col-span-2">
+        <div class="adm-card__head">
+            <div class="adm-card__title"><i class="ri-bank-card-line"></i> Recent Payments</div>
+            <button class="adm-btn adm-btn--ghost adm-btn--sm" onclick="showSection('financial')">View all <i class="ri-arrow-right-line"></i></button>
+        </div>
+        <div class="adm-table-wrap">
+            <table class="adm-table">
+                <thead><tr><th>Date</th><th>Student</th><th>Method</th><th>Reference</th><th style="text-align:right">Amount</th></tr></thead>
+                <tbody id="recent-payments"><tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:20px">Loading…</td></tr></tbody>
+            </table>
+        </div>
+    </div>
 
-                <!-- Quick Links -->
-                <div class="grid grid-cols-2 lg:grid-cols-3 gap-2">
-                    <button onclick="showSection('students')" class="bg-primary dark:bg-primary text-white p-3 rounded-lg hover:bg-secondary dark:hover:bg-secondary transition shadow-sm">
-                        <i class="ri-user-add-line text-xl mb-1"></i>
-                        <h4 class="text-xs font-semibold">Manage Students</h4>
-                    </button>
-                    
-                    <button onclick="showSection('financial')" class="bg-[#7A0C0C] hover:bg-[#5C0808] text-white p-3 rounded-lg transition shadow-sm">
-                        <i class="ri-file-list-line text-xl mb-1"></i>
-                        <h4 class="text-xs font-semibold">Financial Reports</h4>
-                    </button>
+    <div style="display:flex;flex-direction:column;gap:16px">
+        <div class="adm-card"><div class="adm-card__body">
+            <div class="kpi__label">Fee Collection Rate</div>
+            <div style="display:flex;align-items:baseline;gap:8px;margin:6px 0 12px"><span style="font-size:26px;font-weight:800;color:var(--text-primary)" id="collection-rate-big">0%</span><span class="kpi__note">of expected tuition</span></div>
+            <div class="adm-progress"><div class="adm-progress__fill" id="collection-rate-bar" style="width:0%"></div></div>
+        </div></div>
 
-                    <button onclick="openAddTrainerModal()" class="bg-[#7A0C0C] hover:bg-[#5C0808] text-white p-3 rounded-lg transition shadow-sm col-span-2 lg:col-span-1">
-                        <i class="ri-user-star-line text-xl mb-1"></i>
-                        <h4 class="text-xs font-semibold">Add Trainer</h4>
-                    </button>
-                </div>
+        <div class="adm-card">
+            <div class="adm-card__head"><div class="adm-card__title"><i class="ri-notification-3-line"></i> Alerts</div></div>
+            <div class="adm-card__body" id="system-alerts" style="display:flex;flex-direction:column;gap:8px"></div>
+        </div>
+
+        <div class="adm-card">
+            <div class="adm-card__head"><div class="adm-card__title"><i class="ri-history-line"></i> Recent Activity</div></div>
+            <div class="adm-card__body" id="recent-activity" style="display:flex;flex-direction:column;gap:2px;padding:8px"></div>
+        </div>
+    </div>
+</div>
