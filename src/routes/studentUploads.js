@@ -3,7 +3,10 @@ const router = express.Router();
 const crypto = require('crypto');
 const { verifyToken, authorize, verifyOwnership } = require('../middleware/auth');
 const { upload, validateUploadBuffer, FILE_IMAGE_EXT_RE } = require('../utils/uploads');
-const { uploadToS3, getPresignedUrl, deleteFromS3 } = require('../utils/s3Service');
+// NOTE: deleteFromS3 is intentionally NOT imported here. Student CBET evidence is
+// immutable — deletes are soft (status='deleted') and the S3 bytes are retained as
+// the permanent audit record. Never delete evidence bytes.
+const { uploadToS3, getPresignedUrl } = require('../utils/s3Service');
 const { StudentUpload, Student, StudentUnitRegistration, AuditLog, User, Notification } = require('../db/models');
 
 // Staff roles allowed to view/manage ANY student's upload.
@@ -48,11 +51,21 @@ router.post('/student-uploads', verifyToken, authorize('admin', 'registrar', 'st
             return res.status(v.status).json({ message: v.message });
         }
 
+        // SHA-256 of the validated bytes — integrity proof + duplicate detection.
+        const contentHash = crypto.createHash('sha256').update(req.file.buffer).digest('hex');
+
         // Get student details
         const student = await Student.findOne({ admissionNumber: studentId });
         if (!student) {
             return res.status(404).json({ message: 'Student not found' });
         }
+
+        // Cohort snapshot — frozen point-in-time, taken from the resolved student
+        // record (never trusted from the client). intake_year is NOT NULL on
+        // students; intake is the enum.
+        const intakeVal = student.intake || null;
+        const intakeYearVal = (student.intakeYear != null) ? student.intakeYear
+            : (student.intake_year != null ? student.intake_year : null);
 
         // academic_year / semester are integer columns — coerce the V1 strings.
         const acadYearInt = Number.isFinite(parseInt(String(academicYear).split('/')[0], 10))
@@ -79,6 +92,13 @@ router.post('/student-uploads', verifyToken, authorize('admin', 'registrar', 'st
             // Check if unit is common (should not allow uploads for common units)
             if (registration.unitType === 'common') {
                 return res.status(403).json({ message: 'Cannot upload assessments for common units' });
+            }
+
+            // Completeness at write: every unit-scoped evidence row MUST have a
+            // complete, valid address. unit_id is validated above; academic_year +
+            // semester must coerce to integers (slot numbers are enforced below).
+            if (acadYearInt == null || semInt == null) {
+                return res.status(400).json({ message: 'Valid academic year and semester are required for this upload type' });
             }
         }
 
@@ -139,7 +159,29 @@ router.post('/student-uploads', verifyToken, authorize('admin', 'registrar', 'st
 
             console.log('Existing upload check:', searchCriteria, 'Found:', !!existingUpload);
 
-        // If replacing existing, mark old as replaced FIRST to avoid duplicate key error
+        // Duplicate detection: if the current document for this exact slot already
+        // holds identical bytes, this is a no-op re-submit. Return the existing
+        // current row instead of creating a redundant new version (no S3 write, no
+        // supersede). Keeps the version chain meaningful.
+        if (existingUpload && existingUpload.contentHash && existingUpload.contentHash === contentHash) {
+            return res.json({
+                success: true,
+                message: 'Identical file already on record for this slot — no new version created',
+                duplicate: true,
+                data: {
+                    id: existingUpload._id,
+                    uploadType: existingUpload.uploadType,
+                    fileName: existingUpload.originalFileName,
+                    status: existingUpload.status,
+                    version: existingUpload.version,
+                    uploadedAt: existingUpload.uploadedAt
+                }
+            });
+        }
+
+        // If replacing existing, mark old as replaced FIRST to avoid duplicate key
+        // error (the partial unique index allows only one status='uploaded' row per
+        // slot; superseding before insert keeps the transition legal).
         if (existingUpload) {
             existingUpload.status = 'replaced';
             existingUpload.updatedAt = Date.now();
@@ -147,18 +189,32 @@ router.post('/student-uploads', verifyToken, authorize('admin', 'registrar', 'st
             console.log('Marked old upload as replaced:', existingUpload._id);
         }
 
-        // SEV-H-011: server-generated UUID storage name (no user input in the
-        // key); identifier path segments sanitised; original kept as display.
-        const month = new Date().getMonth() + 1;
-        const year = new Date().getFullYear();
-        const seg = (s) => String(s).replace(/[^A-Za-z0-9._-]/g, '_');
-        const fileName = `${crypto.randomUUID()}.${v.ext}`;
+        // Version for this new row (computed up-front so it can stamp the key).
+        const newVersion = existingUpload ? (existingUpload.version || 1) + 1 : 1;
+
+        // Human-meaningful, sanitised S3 key built from ACADEMIC metadata (not the
+        // upload calendar month), so a forensic browse of the bucket is legible:
+        //   cibec/{intakeYear}/{course}/module-{module}/{unitCode|general}/{adm}/{type}{slot}_v{n}.{ext}
+        // Student-level docs (no unit) land under a /student/ folder. The DB row
+        // (s3_key) remains the source of truth; this is for human legibility only.
+        // EXISTING keys are never rebuilt — this affects new uploads only.
+        const seg = (s) => String(s == null ? '' : s).replace(/[^A-Za-z0-9._-]/g, '_') || 'na';
+        const slotNum = uploadType === 'assessment' ? assessmentNumber
+            : uploadType === 'practical' ? practicalNumber : '';
+        // Object name is fully server-derived (fixed type, validated 1-3 slot,
+        // computed version, magic-byte ext) — no user input, so SEV-H-011 holds —
+        // and the version stamp guarantees uniqueness per slot (old versions kept).
+        const slotPart = slotNum ? String(slotNum) : '';
+        const fileName = `${seg(uploadType)}${slotPart}_v${newVersion}.${v.ext}`;
+        const cohortYear = intakeYearVal || acadYearInt || new Date().getFullYear();
+        const courseSeg = seg(student.course || 'general');
+        const admSeg = seg(student.admissionNumber || studentId);
 
         let folderPath;
         if (['profile_photo', 'kcse_results', 'kcpe_results'].includes(uploadType)) {
-            folderPath = `cibec/${seg(uploadType)}/${seg(studentId)}/${year}/${month.toString().padStart(2, '0')}`;
+            folderPath = `cibec/${cohortYear}/${courseSeg}/student/${admSeg}`;
         } else {
-            folderPath = `cibec/${seg(unitId)}/${seg(studentId)}/${seg(uploadType)}/${year}/${month.toString().padStart(2, '0')}`;
+            folderPath = `cibec/${cohortYear}/${courseSeg}/module-${seg(student.module || 0)}/${seg(unitCode || 'general')}/${admSeg}`;
         }
 
         const s3Result = await uploadToS3(
@@ -195,10 +251,14 @@ router.post('/student-uploads', verifyToken, authorize('admin', 'registrar', 'st
             fileSize: req.file.size,
             mimeType: req.file.mimetype,
             status: 'uploaded',
-            version: existingUpload ? existingUpload.version + 1 : 1,
+            version: newVersion,
             replaces: existingUpload ? existingUpload._id : null,
             academicYear: acadYearInt,
-            semester: semInt
+            semester: semInt,
+            // CBET integrity (Phase 2): frozen cohort snapshot + content hash.
+            intake: intakeVal,
+            intakeYear: intakeYearVal,
+            contentHash: contentHash
         });
 
         console.log('Saved new upload:', newUpload._id, 'version:', newUpload.version);
@@ -382,10 +442,8 @@ router.delete('/student-uploads/:uploadId', verifyToken, authorize('admin', 'reg
             return res.status(403).json({ message: 'Forbidden' });
         }
 
-        // Delete from S3
-        await deleteFromS3(upload.s3Key);
-
-        // Mark as deleted in DB (soft delete)
+        // Evidence is immutable: soft-delete the row ONLY. The S3 bytes are
+        // deliberately retained as the permanent audit record — never deleted.
         upload.status = 'deleted';
         upload.updatedAt = Date.now();
         await upload.save();
