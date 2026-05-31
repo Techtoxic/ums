@@ -166,6 +166,22 @@ window.updateApplicationStatus = updateApplicationStatus;
 window.logout = logout;
 
 // ---- bootstrap (new): clock + identity, then start the router ----
+// Fetch + show the current academic year in the topbar chip (best-effort).
+async function loadAcademicYearChip() {
+    const chip = document.getElementById('academic-year-chip');
+    if (!chip) return;
+    try {
+        const res = await authFetch(`${API_BASE_URL}/system-settings/current_academic_year`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const value = data && (data.value || data.current_academic_year);
+        if (!value) return;
+        const valEl = chip.querySelector('.ay-value');
+        if (valEl) valEl.textContent = 'AY ' + value;
+        chip.style.display = 'inline-flex';
+    } catch (e) { /* best-effort: leave the chip hidden */ }
+}
+
 document.addEventListener('DOMContentLoaded', async function () {
     updateCurrentTime();
     setInterval(updateCurrentTime, 1000);
@@ -182,6 +198,9 @@ document.addEventListener('DOMContentLoaded', async function () {
     if (logoutBtn && window.AUTH && typeof window.AUTH.logout === 'function') {
         logoutBtn.addEventListener('click', () => window.AUTH.logout({ role: 'admin' }));
     }
+
+    // Academic-year chip in the topbar (best-effort; stays hidden on failure).
+    loadAcademicYearChip();
 
     if (window.ILORouter) window.ILORouter.start();
 });

@@ -334,6 +334,22 @@ function getTimeAgo(dateString) {
 }
 
 // ---- bootstrap (new): identity once, then start the router ----
+// Fetch + show the current academic year in the topbar chip (best-effort).
+async function loadAcademicYearChip() {
+    const chip = document.getElementById('academic-year-chip');
+    if (!chip) return;
+    try {
+        const res = await authFetch(`${API_BASE_URL}/system-settings/current_academic_year`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const value = data && (data.value || data.current_academic_year);
+        if (!value) return;
+        const valEl = chip.querySelector('.ay-value');
+        if (valEl) valEl.textContent = 'AY ' + value;
+        chip.style.display = 'inline-flex';
+    } catch (e) { /* best-effort: leave the chip hidden */ }
+}
+
 async function initializeDashboard() {
     try {
         // Cookie-based auth: requireAuth bounces to /trainer/login if no session.
@@ -347,6 +363,9 @@ async function initializeDashboard() {
         initializeUI();        // shell wiring (theme, sidebar, clock, phone modal, lastSync)
         updateTrainerInfo();   // paint the sidebar identity (other fields filled by tab inits)
         checkPhoneUpdate();    // global phone-update modal, if needed
+
+        // Academic-year chip in the topbar (best-effort; stays hidden on failure).
+        loadAcademicYearChip();
 
         // Hand off to the History-API router: shows the tab for the current URL
         // (or dashboard), injects its partial, and calls that tab's init().

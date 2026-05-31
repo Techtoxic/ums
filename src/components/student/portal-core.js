@@ -729,6 +729,22 @@ function setupLogout() {
 // merge server identity into studentData, fetch the fresh record, and paint the
 // sidebar. Per-tab data (program cost, payments, units, notes) is loaded by each
 // tab's init() when the router shows it.
+// Fetch + show the current academic year in the topbar chip (best-effort).
+async function loadAcademicYearChip() {
+    const chip = document.getElementById('academic-year-chip');
+    if (!chip) return;
+    try {
+        const res = await authFetch(`${API_BASE_URL}/system-settings/current_academic_year`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const value = data && (data.value || data.current_academic_year);
+        if (!value) return;
+        const valEl = chip.querySelector('.ay-value');
+        if (valEl) valEl.textContent = 'AY ' + value;
+        chip.style.display = 'inline-flex';
+    } catch (e) { /* best-effort: leave the chip hidden */ }
+}
+
 async function bootstrapPortal() {
     console.log('Initializing student portal...');
 
@@ -757,6 +773,8 @@ async function bootstrapPortal() {
         }
         updateStudentInfo();
         setupLogout();
+        // Academic-year chip in the topbar (best-effort; stays hidden on failure).
+        loadAcademicYearChip();
         console.log('Portal initialization completed');
     } catch (error) {
         console.error('Error initializing portal:', error);

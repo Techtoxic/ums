@@ -697,6 +697,22 @@ function getStatusBadge(status) {
 }
 
 // ---- bootstrap (new): theme + shell + identity + department data, then router ----
+// Fetch + show the current academic year in the topbar chip (best-effort).
+async function loadAcademicYearChip() {
+    const chip = document.getElementById('academic-year-chip');
+    if (!chip) return;
+    try {
+        const res = await authFetch('/api/system-settings/current_academic_year');
+        if (!res.ok) return;
+        const data = await res.json();
+        const value = data && (data.value || data.current_academic_year);
+        if (!value) return;
+        const valEl = chip.querySelector('.ay-value');
+        if (valEl) valEl.textContent = 'AY ' + value;
+        chip.style.display = 'inline-flex';
+    } catch (e) { /* best-effort: leave the chip hidden */ }
+}
+
 document.addEventListener('DOMContentLoaded', async function () {
     try {
         initializeTheme();
@@ -721,6 +737,9 @@ document.addEventListener('DOMContentLoaded', async function () {
         console.error('Error initializing dashboard:', error);
         showToast('Error loading dashboard data', 'error');
     }
+
+    // Academic-year chip in the topbar (best-effort; stays hidden on failure).
+    loadAcademicYearChip();
 
     if (window.HODRouter) window.HODRouter.start();
 });

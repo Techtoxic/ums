@@ -212,6 +212,22 @@ window.closeSidebar = closeSidebar;
 window.toggleDarkMode = toggleDarkMode;
 window.generateFeesStatement = generateFeesStatement;
 
+// Fetch + show the current academic year in the topbar chip (best-effort).
+async function loadAcademicYearChip() {
+    const chip = document.getElementById('academic-year-chip');
+    if (!chip) return;
+    try {
+        const res = await authFetch(`${API_BASE_URL}/system-settings/current_academic_year`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const value = data && (data.value || data.current_academic_year);
+        if (!value) return;
+        const valEl = chip.querySelector('.ay-value');
+        if (valEl) valEl.textContent = 'AY ' + value;
+        chip.style.display = 'inline-flex';
+    } catch (e) { /* best-effort: leave the chip hidden */ }
+}
+
 // ---- bootstrap (new): identity, then start the router ----
 document.addEventListener('DOMContentLoaded', async () => {
     // Cookie-based auth: requireAuth bounces to /admin/login on no/expired session.
@@ -250,6 +266,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Load the shared catalog (programs + departments) before any tab renders,
     // so sync Catalog lookups (formatCourseName, programByCode) resolve.
     if (window.Catalog) { await window.Catalog.ready(); }
+
+    // Academic-year chip in the topbar (best-effort; stays hidden on failure).
+    loadAcademicYearChip();
 
     if (window.FinanceRouter) window.FinanceRouter.start();
 });

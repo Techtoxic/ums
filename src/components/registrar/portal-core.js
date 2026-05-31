@@ -820,6 +820,22 @@ function updateIdentityUI() {
 }
 window.updateIdentityUI = updateIdentityUI;
 
+// Fetch + show the current academic year in the topbar chip (best-effort).
+async function loadAcademicYearChip() {
+    const chip = document.getElementById('academic-year-chip');
+    if (!chip) return;
+    try {
+        const res = await window.AUTH.fetch(`${API_BASE_URL}/system-settings/current_academic_year`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const value = data && (data.value || data.current_academic_year);
+        if (!value) return;
+        const valEl = chip.querySelector('.ay-value');
+        if (valEl) valEl.textContent = 'AY ' + value;
+        chip.style.display = 'inline-flex';
+    } catch (e) { /* best-effort: leave the chip hidden */ }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     // Cookie-based auth: bounce to login if no valid session.
     const user = await window.AUTH.requireAuth('/admin/login');
@@ -844,6 +860,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
     }
+
+    // Academic-year chip in the topbar (best-effort; stays hidden on failure).
+    loadAcademicYearChip();
 
     // Hand off to the History-API router: it shows the tab for the current URL
     // (or dashboard), injects its partial, and calls that tab's init().
