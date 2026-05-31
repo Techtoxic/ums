@@ -101,43 +101,44 @@
         
         <!-- Statistics Cards -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div class="stat-card cibec-stat-card bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white">
+            <!-- Stat tiles on the EDTTI palette: maroon (brand), emerald, gold (accent), slate. -->
+            <div class="stat-card cibec-stat-card bg-gradient-to-br from-primary to-secondary rounded-xl shadow-lg p-6 text-white">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-blue-100 text-sm font-medium">Total Uploads</p>
+                        <p class="text-red-100 text-sm font-medium">Total Uploads</p>
                         <h3 id="stat-total" class="text-3xl font-bold mt-2">-</h3>
                     </div>
-                    <i class="ri-file-upload-line text-4xl text-blue-200"></i>
+                    <i class="ri-file-upload-line text-4xl text-red-200"></i>
                 </div>
             </div>
 
-            <div class="stat-card cibec-stat-card bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white">
+            <div class="stat-card cibec-stat-card bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg p-6 text-white">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-green-100 text-sm font-medium">Assessments</p>
+                        <p class="text-emerald-100 text-sm font-medium">Assessments</p>
                         <h3 id="stat-assessments" class="text-3xl font-bold mt-2">-</h3>
                     </div>
-                    <i class="ri-file-list-line text-4xl text-green-200"></i>
+                    <i class="ri-file-list-line text-4xl text-emerald-200"></i>
                 </div>
             </div>
 
-            <div class="stat-card cibec-stat-card bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
+            <div class="stat-card cibec-stat-card bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl shadow-lg p-6 text-white">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-purple-100 text-sm font-medium">Practicals</p>
+                        <p class="text-amber-100 text-sm font-medium">Practicals</p>
                         <h3 id="stat-practicals" class="text-3xl font-bold mt-2">-</h3>
                     </div>
-                    <i class="ri-video-line text-4xl text-purple-200"></i>
+                    <i class="ri-video-line text-4xl text-amber-200"></i>
                 </div>
             </div>
 
-            <div class="stat-card cibec-stat-card bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg p-6 text-white">
+            <div class="stat-card cibec-stat-card bg-gradient-to-br from-slate-600 to-slate-700 rounded-xl shadow-lg p-6 text-white">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-orange-100 text-sm font-medium">Profile Docs</p>
+                        <p class="text-slate-200 text-sm font-medium">Profile Docs</p>
                         <h3 id="stat-profiles" class="text-3xl font-bold mt-2">-</h3>
                     </div>
-                    <i class="ri-user-star-line text-4xl text-orange-200"></i>
+                    <i class="ri-user-star-line text-4xl text-slate-300"></i>
                 </div>
             </div>
         </div>
@@ -146,10 +147,10 @@
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-8">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
-                    <i class="ri-filter-3-line mr-2 text-blue-600"></i>
+                    <i class="ri-filter-3-line mr-2 text-primary"></i>
                     Filters
                 </h2>
-                <button id="clear-filters-btn" class="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                <button id="clear-filters-btn" class="text-sm text-primary hover:text-secondary dark:text-red-300 dark:hover:text-red-200 font-medium">
                     Clear All
                 </button>
             </div>
@@ -158,7 +159,7 @@
                 <!-- Department Filter -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Department</label>
-                    <select id="filter-department" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <select id="filter-department" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
                         <option value="">All Departments</option>
                         <!-- Department options populated from the shared catalog in initializeDashboard() -->
                     </select>
@@ -167,7 +168,7 @@
                 <!-- Course Level Filter -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Course Level</label>
-                    <select id="filter-course-level" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <select id="filter-course-level" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
                         <option value="">All Levels</option>
                         <option value="4">Level 4</option>
                         <option value="5">Level 5</option>
@@ -178,7 +179,7 @@
                 <!-- Upload Type Filter -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Upload Type</label>
-                    <select id="filter-upload-type" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <select id="filter-upload-type" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
                         <option value="">All Types</option>
                         <option value="profile_photo">Profile Photo</option>
                         <option value="kcse_results">KCSE Results</option>
@@ -191,7 +192,7 @@
                 <!-- Year Filter -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Year of Study</label>
-                    <select id="filter-year" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <select id="filter-year" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
                         <option value="">All Years</option>
                         <option value="1">Year 1</option>
                         <option value="2">Year 2</option>
@@ -203,15 +204,15 @@
                 <!-- Search Student -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Search Student</label>
-                    <input type="text" id="search-student" placeholder="Admission No. or Name" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <input type="text" id="search-student" placeholder="Admission No. or Name" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
                 </div>
             </div>
 
             <div class="mt-4 flex items-center space-x-2">
-                <button id="apply-filters-btn" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors">
+                <button id="apply-filters-btn" class="px-6 py-2 bg-primary hover:bg-secondary text-white rounded-lg font-medium transition-colors">
                     <i class="ri-search-line mr-2"></i>Apply Filters
                 </button>
-                <button id="export-btn" class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors">
+                <button id="export-btn" class="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors">
                     <i class="ri-file-excel-line mr-2"></i>Export to Excel
                 </button>
             </div>
@@ -229,23 +230,23 @@
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
             <div class="flex items-center justify-between mb-6">
                 <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
-                    <i class="ri-folder-line mr-2 text-blue-600"></i>
+                    <i class="ri-folder-line mr-2 text-primary"></i>
                     Student Uploads
-                    <span id="results-count" class="ml-3 px-3 py-1 bg-blue-100 text-blue-700 text-sm rounded-full">0 results</span>
+                    <span id="results-count" class="ml-3 px-3 py-1 bg-primary/10 text-primary dark:bg-primary/25 dark:text-red-200 text-sm rounded-full">0 results</span>
                 </h2>
                 <div class="flex items-center space-x-2">
-                    <button id="view-grid-btn" class="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
-                        <i class="ri-layout-grid-line text-gray-600 dark:text-gray-400"></i>
+                    <button id="view-grid-btn" class="p-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors">
+                        <i class="ri-layout-grid-line text-gray-600 dark:text-gray-300"></i>
                     </button>
                     <button id="view-list-btn" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-                        <i class="ri-list-check text-gray-600 dark:text-gray-400"></i>
+                        <i class="ri-list-check text-gray-600 dark:text-gray-300"></i>
                     </button>
                 </div>
             </div>
 
             <!-- Loading State -->
             <div id="loading-state" class="hidden text-center py-12">
-                <i class="ri-loader-4-line text-4xl text-blue-600 animate-spin mb-4"></i>
+                <i class="ri-loader-4-line text-4xl text-primary animate-spin mb-4"></i>
                 <p class="text-gray-600 dark:text-gray-400">Loading uploads...</p>
             </div>
 
@@ -279,27 +280,27 @@
     <!-- Student Details Modal -->
     <div id="student-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
-            <div class="bg-blue-600 text-white p-6">
+            <div class="bg-gradient-to-br from-primary to-secondary text-white p-6">
                 <div class="flex items-center justify-between">
                     <div>
                         <h2 id="modal-student-name" class="text-2xl font-bold">-</h2>
-                        <p id="modal-student-id" class="text-blue-100 mt-1">-</p>
+                        <p id="modal-student-id" class="text-red-100 mt-1">-</p>
                     </div>
-                    <button onclick="closeStudentModal()" class="p-2 hover:bg-blue-700 rounded-full transition-colors">
+                    <button onclick="closeStudentModal()" class="p-2 hover:bg-secondary rounded-full transition-colors">
                         <i class="ri-close-line text-2xl"></i>
                     </button>
                 </div>
                 <div class="grid grid-cols-3 gap-4 mt-4">
                     <div>
-                        <p class="text-blue-200 text-sm">Course</p>
+                        <p class="text-red-200 text-sm">Course</p>
                         <p id="modal-student-course" class="font-medium">-</p>
                     </div>
                     <div>
-                        <p class="text-blue-200 text-sm">Department</p>
+                        <p class="text-red-200 text-sm">Department</p>
                         <p id="modal-student-department" class="font-medium">-</p>
                     </div>
                     <div>
-                        <p class="text-blue-200 text-sm">Year</p>
+                        <p class="text-red-200 text-sm">Year</p>
                         <p id="modal-student-year" class="font-medium">-</p>
                     </div>
                 </div>

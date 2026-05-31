@@ -161,22 +161,22 @@ function createUploadCard(upload) {
     };
     
     const uploadTypeColors = {
-        'profile_photo': 'bg-purple-100 text-purple-700',
-        'kcse_results': 'bg-blue-100 text-blue-700',
-        'kcpe_results': 'bg-blue-100 text-blue-700',
-        'assessment': 'bg-green-100 text-green-700',
-        'practical': 'bg-orange-100 text-orange-700'
+        'profile_photo': 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
+        'kcse_results': 'bg-primary/10 text-primary dark:bg-primary/25 dark:text-red-200',
+        'kcpe_results': 'bg-primary/10 text-primary dark:bg-primary/25 dark:text-red-200',
+        'assessment': 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
+        'practical': 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
     };
-    
+
     const courseLabel = courseName(upload.course);
     const departmentLabel = deptName(upload.department);
 
     // Extract level from course name
     const levelMatch = courseLabel.match(/Level (\d+)/);
-    const levelBadge = levelMatch ? `<span class="px-2 py-0.5 bg-indigo-100 text-indigo-700 text-xs rounded-full font-medium">Level ${levelMatch[1]}</span>` : '';
-    
+    const levelBadge = levelMatch ? `<span class="px-2 py-0.5 bg-accent/20 text-amber-800 dark:bg-accent/25 dark:text-amber-200 text-xs rounded-full font-medium">Level ${levelMatch[1]}</span>` : '';
+
     return `
-        <div class="upload-card border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all">
+        <div class="upload-card border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-all">
             <div class="flex items-start justify-between">
                 <div class="flex items-start space-x-4 flex-1">
                     <div class="p-3 ${uploadTypeColors[upload.uploadType]} rounded-lg">
@@ -184,39 +184,39 @@ function createUploadCard(upload) {
                     </div>
                     <div class="flex-1">
                         <div class="flex items-center space-x-2 mb-1">
-                            <h3 class="font-semibold text-gray-900">${escapeHtml(upload.studentName)}</h3>
-                            <span class="px-2 py-0.5 bg-gray-100 text-gray-700 text-xs rounded-full">${escapeHtml(upload.admissionNumber)}</span>
+                            <h3 class="font-semibold text-gray-900 dark:text-gray-100">${escapeHtml(upload.studentName)}</h3>
+                            <span class="px-2 py-0.5 bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200 text-xs rounded-full">${escapeHtml(upload.admissionNumber)}</span>
                             ${levelBadge}
                         </div>
-                        <p class="text-sm text-gray-600 mb-2">${escapeHtml(courseLabel)}</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">${escapeHtml(courseLabel)}</p>
                         <div class="flex items-center flex-wrap gap-2 text-xs">
                             <span class="px-2 py-1 ${uploadTypeColors[upload.uploadType]} rounded-full font-medium">
                                 ${uploadTypeLabels[upload.uploadType]}
                             </span>
-                            <span class="text-gray-500">${escapeHtml(departmentLabel)}</span>
-                            <span class="text-gray-500">•</span>
-                            <span class="text-gray-500">Module ${escapeHtml(upload.module)}</span>
+                            <span class="text-gray-500 dark:text-gray-400">${escapeHtml(departmentLabel)}</span>
+                            <span class="text-gray-400 dark:text-gray-500">•</span>
+                            <span class="text-gray-500 dark:text-gray-400">Module ${escapeHtml(upload.module)}</span>
                             ${upload.unitName ? `
-                                <span class="text-gray-500">•</span>
-                                <span class="text-gray-500">${escapeHtml(upload.unitName)}</span>
+                                <span class="text-gray-400 dark:text-gray-500">•</span>
+                                <span class="text-gray-500 dark:text-gray-400">${escapeHtml(upload.unitName)}</span>
                             ` : ''}
                         </div>
-                        <div class="mt-2 flex items-center space-x-4 text-xs text-gray-500">
+                        <div class="mt-2 flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
                             <span><i class="ri-file-line mr-1"></i>${escapeHtml(upload.originalFileName)}</span>
                             <span><i class="ri-calendar-line mr-1"></i>${new Date(upload.uploadedAt).toLocaleDateString()}</span>
                             <span><i class="ri-folder-line mr-1"></i>${(upload.fileSize / 1024).toFixed(1)} KB</span>
-                            ${upload.version > 1 ? `<span class="text-orange-600"><i class="ri-refresh-line mr-1"></i>v${upload.version}</span>` : ''}
+                            ${upload.version > 1 ? `<span class="text-amber-600 dark:text-amber-400"><i class="ri-refresh-line mr-1"></i>v${upload.version}</span>` : ''}
                         </div>
                     </div>
                 </div>
                 <div class="flex items-center space-x-2">
-                    <button onclick="viewFile('${escapeAttr(upload._id)}')" class="p-2 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors" title="View File">
+                    <button onclick="viewFile('${escapeAttr(upload._id)}')" class="p-2 hover:bg-primary/10 text-primary dark:text-red-300 rounded-lg transition-colors" title="View File">
                         <i class="ri-eye-line text-lg"></i>
                     </button>
-                    <button onclick="downloadFile('${escapeAttr(upload._id)}')" class="p-2 hover:bg-green-50 text-green-600 rounded-lg transition-colors" title="Download">
+                    <button onclick="downloadFile('${escapeAttr(upload._id)}')" class="p-2 hover:bg-green-50 dark:hover:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg transition-colors" title="Download">
                         <i class="ri-download-line text-lg"></i>
                     </button>
-                    <button onclick="viewStudentDetails('${escapeAttr(upload.studentId)}')" class="p-2 hover:bg-purple-50 text-purple-600 rounded-lg transition-colors" title="Student Details">
+                    <button onclick="viewStudentDetails('${escapeAttr(upload.studentId)}')" class="p-2 hover:bg-accent/15 text-amber-700 dark:text-amber-300 rounded-lg transition-colors" title="Student Details">
                         <i class="ri-user-search-line text-lg"></i>
                     </button>
                 </div>
@@ -314,8 +314,8 @@ async function viewStudentDetails(studentId) {
         if (data.uploads.length === 0) {
             modalContent.innerHTML = `
                 <div class="text-center py-8">
-                    <i class="ri-inbox-line text-4xl text-gray-300 mb-2"></i>
-                    <p class="text-gray-600">No uploads found for this student</p>
+                    <i class="ri-inbox-line text-4xl text-gray-300 dark:text-gray-600 mb-2"></i>
+                    <p class="text-gray-600 dark:text-gray-300">No uploads found for this student</p>
                 </div>
             `;
         } else {
@@ -348,20 +348,20 @@ function createModalUploadItem(upload) {
     };
     
     return `
-        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+        <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
             <div class="flex-1">
                 <div class="flex items-center space-x-2 mb-1">
-                    <span class="font-medium text-gray-900">${escapeHtml(uploadTypeLabels[upload.uploadType])}</span>
-                    ${upload.unitName ? `<span class="text-sm text-gray-500">• ${escapeHtml(upload.unitName)}</span>` : ''}
+                    <span class="font-medium text-gray-900 dark:text-gray-100">${escapeHtml(uploadTypeLabels[upload.uploadType])}</span>
+                    ${upload.unitName ? `<span class="text-sm text-gray-500 dark:text-gray-400">• ${escapeHtml(upload.unitName)}</span>` : ''}
                 </div>
-                <p class="text-sm text-gray-600">${escapeHtml(upload.originalFileName)}</p>
-                <p class="text-xs text-gray-500 mt-1">Uploaded: ${escapeHtml(new Date(upload.uploadedAt).toLocaleString())}</p>
+                <p class="text-sm text-gray-600 dark:text-gray-300">${escapeHtml(upload.originalFileName)}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Uploaded: ${escapeHtml(new Date(upload.uploadedAt).toLocaleString())}</p>
             </div>
             <div class="flex items-center space-x-2">
-                <button onclick="viewFile('${escapeAttr(upload._id)}')" class="p-2 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors">
+                <button onclick="viewFile('${escapeAttr(upload._id)}')" class="p-2 hover:bg-primary/10 text-primary dark:text-red-300 rounded-lg transition-colors">
                     <i class="ri-eye-line"></i>
                 </button>
-                <button onclick="downloadFile('${escapeAttr(upload._id)}')" class="p-2 hover:bg-green-100 text-green-600 rounded-lg transition-colors">
+                <button onclick="downloadFile('${escapeAttr(upload._id)}')" class="p-2 hover:bg-green-50 dark:hover:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg transition-colors">
                     <i class="ri-download-line"></i>
                 </button>
             </div>
@@ -476,9 +476,9 @@ function updateActiveFilters() {
     };
     
     chipsContainer.innerHTML = Object.entries(currentFilters).map(([key, value]) => `
-        <span class="filter-chip px-3 py-1 bg-blue-100 text-blue-700 text-sm rounded-full flex items-center space-x-2">
+        <span class="filter-chip px-3 py-1 bg-primary/10 text-primary dark:bg-primary/25 dark:text-red-200 text-sm rounded-full flex items-center space-x-2">
             <span>${filterLabels[key]}: ${escapeHtml(value)}</span>
-            <button onclick="removeFilter('${escapeAttr(key)}')" class="hover:bg-blue-200 rounded-full p-0.5">
+            <button onclick="removeFilter('${escapeAttr(key)}')" class="hover:bg-primary/20 dark:hover:bg-primary/40 rounded-full p-0.5">
                 <i class="ri-close-line text-sm"></i>
             </button>
         </span>
