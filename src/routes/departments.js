@@ -1,15 +1,16 @@
 const express = require('express');
 const router = express.Router();
 const { db, schema } = require('../db');
+const { verifyToken } = require('../middleware/auth');
 const { DEPT_SHORT_TO_TEXT } = require('../utils/formatters');
 
-// Get all departments - PUBLIC (needed by every portal's department dropdowns
-// and label lookups; Rule 7: no hardcoded department lists in the frontend).
+// Get all departments - authenticated (used by every portal's department
+// dropdowns and label lookups; Rule 7: no hardcoded department lists frontend).
 //
 // `textCode` is the snake_case key stored on students.department / users.department
 // (reverse of DEPT_TEXT_TO_SHORT) — dropdowns emit it as the option value so the
 // existing SQL joins and finance grouping keep working.
-router.get('/departments', async (req, res) => {
+router.get('/departments', verifyToken, async (req, res) => {
     try {
         const rows = await db
             .select({

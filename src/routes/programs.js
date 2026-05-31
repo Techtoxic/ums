@@ -49,8 +49,8 @@ router.post('/programs', verifyToken, authorize('admin', 'registrar'), async (re
     }
 });
 
-// Get all programs - PUBLIC (needed for registration)
-router.get('/programs', async (req, res) => {
+// Get all programs - authenticated (catalog metadata for portal dropdowns).
+router.get('/programs', verifyToken, async (req, res) => {
     try {
         const programs = await Program.find().sort({ createdAt: -1 });
         // V2: programs carry departmentId (UUID) but no department name. Attach

@@ -8,10 +8,20 @@ const { getMaxModuleForLevel } = require('../utils/studentHelpers');
 const { Unit, Student, StudentUnitRegistration } = require('../db/models');
 
 // Get units by course code (for student portal)
-router.get('/units/course/:courseCode', async (req, res) => {
+// SECURITY: authenticated only. Exposes the full curriculum + per-student
+// registration status, so it must not be public. Students may only ever view
+// their OWN data — the studentId is taken from the verified token for them,
+// never from the (spoofable) query string. Staff may pass any studentId.
+router.get('/units/course/:courseCode', verifyToken, authorize('student', 'admin', 'registrar', 'hod', 'trainer', 'dean', 'deputy', 'cibec'), async (req, res) => {
     try {
         const { courseCode } = req.params;
-        const { studentId } = req.query; // Optional admission number for registration status
+        // Optional admission number for registration status. For students we
+        // FORCE it to their own admission number (ignoring any query value) so
+        // one student can't probe another student's module / registrations.
+        let studentId = req.query.studentId;
+        if (req.user.role === 'student') {
+            studentId = req.user.admissionNumber;
+        }
 
         // Validate course code
         if (!courseCode || courseCode.trim() === '') {
@@ -221,8 +231,8 @@ router.get('/units', verifyToken, authorize('admin', 'registrar', 'hod', 'deputy
 
 // Get all courses — DB-sourced from the programs table (Rule 7: no hardcoded lists).
 // `department` is the snake_case key (reverse of DEPT_TEXT_TO_SHORT) so existing
-// consumers that key on it keep working.
-router.get('/courses', async (req, res) => {
+// consumers that key on it keep working. Authenticated only (catalog metadata).
+router.get('/courses', verifyToken, async (req, res) => {
     try {
         const shortToText = {};
         for (const [text, short] of Object.entries(DEPT_TEXT_TO_SHORT)) shortToText[short] = text;
