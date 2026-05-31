@@ -1,133 +1,230 @@
-/* admin-portal.css — portal-specific styles extracted verbatim from the
-   adminDashboard.html inline <style> block during the SPA refactor.
-   Loaded alongside dashboard-styles.css (which owns the design system). */
-        /* Make Inter the active typeface (font-family only — Tailwind sizing unchanged) */
-        body {
-            font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-        }
-        .content-section {
-            display: none;
-        }
-        .content-section.active {
-            display: block;
-        }
-        .nav-link.active {
-            background-color: #7A0C0C;
-            color: white;
-        }
-        
-        /* DARK MODE CSS - Direct styles since Tailwind CDN doesn't fully support dark mode properly */
-        .dark body {
-            background-color: #111827 !important; /* gray-900 */
-        }
-        
-        .dark aside {
-            background-color: #1F2937 !important; /* gray-800 */
-            border-color: #374151 !important; /* gray-700 */
-        }
-        
-        .dark header {
-            background-color: #1F2937 !important; /* gray-800 */
-            border-color: #374151 !important; /* gray-700 */
-        }
-        
-        .dark h1, .dark h2, .dark h3, .dark h4 {
-            color: #FFFFFF !important;
-        }
-        
-        .dark .nav-link {
-            color: #D1D5DB !important; /* gray-300 */
-        }
-        
-        .dark .nav-link:hover {
-            background-color: #7A0C0C !important;
-            color: #FFFFFF !important;
-        }
-        
-        .dark .nav-link.active {
-            background-color: #7A0C0C !important;
-            color: #FFFFFF !important;
-        }
-        
-        .dark .bg-white {
-            background-color: #1F2937 !important; /* gray-800 */
-        }
-        
-        .dark .text-gray-800 {
-            color: #FFFFFF !important;
-        }
-        
-        .dark .text-gray-700 {
-            color: #D1D5DB !important; /* gray-300 */
-        }
-        
-        .dark .text-gray-500 {
-            color: #9CA3AF !important; /* gray-400 */
-        }
-        
-        .dark .text-gray-600 {
-            color: #D1D5DB !important; /* gray-300 */
-        }
-        
-        .dark .border-gray-200 {
-            border-color: #374151 !important; /* gray-700 */
-        }
-        
-        .dark .border-gray-300 {
-            border-color: #4B5563 !important; /* gray-600 */
-        }
-        
-        .dark input, .dark select {
-            background-color: #374151 !important; /* gray-700 */
-            border-color: #4B5563 !important; /* gray-600 */
-            color: #FFFFFF !important;
-        }
-        
-        .dark .bg-gray-100 {
-            background-color: #374151 !important; /* gray-700 */
-        }
-        
-        .dark #profile-menu {
-            background-color: #1F2937 !important; /* gray-800 */
-            border-color: #374151 !important; /* gray-700 */
-        }
-        
-        .dark #profile-menu a, .dark #profile-menu button {
-            color: #D1D5DB !important; /* gray-300 */
-        }
-        
-        .dark #profile-menu a:hover, .dark #profile-menu button:hover {
-            background-color: #374151 !important; /* gray-700 */
-        }
-        
-        .dark .bg-blue-100 {
-            background-color: #1E3A8A !important; /* blue-900 */
-        }
-        
-        .dark .text-blue-600 {
-            color: #60A5FA !important; /* blue-400 */
-        }
-        
-        .dark .bg-green-100 {
-            background-color: #064E3B !important; /* green-900 */
-        }
-        
-        .dark .text-green-600 {
-            color: #4ADE80 !important; /* green-400 */
-        }
-        
-        .dark .bg-yellow-100 {
-            background-color: #78350F !important; /* yellow-900 */
-        }
-        
-        .dark .text-yellow-600 {
-            color: #FCD34D !important; /* yellow-400 */
-        }
-        
-        .dark .bg-red-100 {
-            background-color: #7F1D1D !important; /* red-900 */
-        }
-        
-        .dark .text-red-600 {
-            color: #F87171 !important; /* red-400 */
-        }
+/* admin-portal.css — EDTTI Admin portal design layer.
+ *
+ * Token-based (uses the :root / html.dark custom properties from
+ * dashboard-styles.css). Dark mode comes "for free" because every colour is a
+ * var() that the .dark scope re-defines — NO `.dark .bg-* !important` hacks.
+ *
+ * Sections:
+ *   0. Base + routing       1. App shell (grid)      2. Sidebar (wide + rail)
+ *   3. Topbar               4. Buttons               5. Cards / KPI / pills
+ *   6. Data tables          7. Charts                8. Legacy-utility bridge
+ */
+
+/* ── 0. Base + routing ─────────────────────────────────────────────────── */
+body { font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif; }
+.content-section { display: none; }
+.content-section.active { display: block; animation: adm-fade .18s ease; }
+@keyframes adm-fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+/* ── 1. App shell ──────────────────────────────────────────────────────── */
+.admin-shell { display: grid; grid-template-columns: var(--adm-sb, 248px) 1fr; min-height: 100vh; background: var(--bg-base); color: var(--text-primary); }
+.admin-shell.sidebar-collapsed { --adm-sb: 76px; }
+
+/* ── 2. Sidebar ────────────────────────────────────────────────────────── */
+.admin-sidebar {
+    position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column;
+    background: var(--bg-surface); border-right: 1px solid var(--border-default);
+    overflow: hidden; z-index: 40;
+}
+.admin-sidebar__brand {
+    display: flex; align-items: center; gap: 10px; padding: 18px 18px 14px;
+    flex-shrink: 0; overflow: hidden; white-space: nowrap;
+}
+.admin-sidebar__brand img { width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0; object-fit: contain; }
+.admin-sidebar__brand-text { font-weight: 800; font-size: 18px; letter-spacing: .2px; color: var(--text-primary); }
+.admin-sidebar__brand-text small { display: block; font-weight: 500; font-size: 11px; color: var(--text-muted); letter-spacing: .3px; }
+
+.admin-sidebar__nav { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 6px 12px 12px; }
+.admin-sidebar__label {
+    font-size: 10.5px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--text-muted); padding: 14px 10px 6px; white-space: nowrap;
+}
+.nav-link {
+    display: flex; align-items: center; gap: 12px; padding: 9px 10px; margin-bottom: 2px;
+    border-radius: var(--radius); color: var(--text-secondary); font-size: 14px; font-weight: 500;
+    text-decoration: none; white-space: nowrap; position: relative;
+    border-left: 3px solid transparent; transition: background var(--transition-fast), color var(--transition-fast);
+}
+.nav-link i { font-size: 19px; flex-shrink: 0; width: 22px; text-align: center; }
+.nav-link:hover { background: var(--bg-muted); color: var(--text-primary); }
+.nav-link.active {
+    background: color-mix(in srgb, var(--maroon) 14%, transparent);
+    color: var(--maroon); font-weight: 600; border-left-color: var(--gold);
+}
+.dark .nav-link.active { color: var(--gold-light, #F4D58D); background: color-mix(in srgb, var(--maroon) 30%, transparent); }
+
+/* Sidebar footer: help/docs mini-card + user chip */
+.admin-sidebar__footer { flex-shrink: 0; padding: 10px 12px 14px; border-top: 1px solid var(--border-default); }
+.admin-sidebar__mini {
+    background: var(--bg-muted); border: 1px solid var(--border-default); border-radius: var(--radius);
+    padding: 10px 12px; margin-bottom: 10px; overflow: hidden; white-space: nowrap;
+}
+.admin-sidebar__mini-title { font-size: 11px; color: var(--text-muted); margin-bottom: 6px; }
+.admin-sidebar__mini a { font-size: 12.5px; color: var(--text-secondary); text-decoration: none; margin-right: 12px; }
+.admin-sidebar__mini a:hover { color: var(--maroon); }
+.admin-userchip { display: flex; align-items: center; gap: 10px; overflow: hidden; white-space: nowrap; }
+.admin-userchip__avatar {
+    width: 36px; height: 36px; border-radius: var(--radius-full); flex-shrink: 0;
+    background: var(--maroon); color: #fff; display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 15px;
+}
+.admin-userchip__name { font-size: 13.5px; font-weight: 600; color: var(--text-primary); line-height: 1.2; }
+.admin-userchip__role { font-size: 11.5px; color: var(--text-muted); }
+
+/* Collapsed rail: hide labels, center icons */
+.sidebar-collapsed .admin-sidebar__brand-text,
+.sidebar-collapsed .admin-sidebar__label,
+.sidebar-collapsed .nav-link span,
+.sidebar-collapsed .admin-sidebar__mini,
+.sidebar-collapsed .admin-userchip__meta { display: none; }
+.sidebar-collapsed .admin-sidebar__brand { justify-content: center; padding-left: 0; padding-right: 0; }
+.sidebar-collapsed .nav-link { justify-content: center; gap: 0; padding: 11px 0; border-left: none; }
+.sidebar-collapsed .nav-link.active { border-left: none; box-shadow: inset 3px 0 0 var(--gold); }
+.sidebar-collapsed .admin-userchip { justify-content: center; }
+.sidebar-collapsed .admin-sidebar__footer { padding-left: 0; padding-right: 0; }
+
+/* Mobile: off-canvas */
+.admin-sidebar__backdrop { display: none; }
+@media (max-width: 1023px) {
+    .admin-shell { grid-template-columns: 1fr; }
+    .admin-sidebar {
+        position: fixed; top: 0; left: 0; width: 248px;
+        transform: translateX(-100%); transition: transform var(--transition);
+        box-shadow: var(--shadow-lg);
+    }
+    .admin-shell.sidebar-open .admin-sidebar { transform: translateX(0); }
+    .admin-shell.sidebar-open .admin-sidebar__backdrop {
+        display: block; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 35;
+    }
+    /* On mobile the rail-collapse is irrelevant; always show full labels when open. */
+    .sidebar-collapsed { --adm-sb: 248px; }
+    .sidebar-collapsed .admin-sidebar__brand-text,
+    .sidebar-collapsed .admin-sidebar__label,
+    .sidebar-collapsed .nav-link span,
+    .sidebar-collapsed .admin-sidebar__mini,
+    .sidebar-collapsed .admin-userchip__meta { display: revert; }
+    .sidebar-collapsed .nav-link { justify-content: flex-start; gap: 12px; padding: 9px 10px; border-left: 3px solid transparent; }
+}
+
+/* ── 3. Topbar ─────────────────────────────────────────────────────────── */
+.admin-topbar {
+    position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: 14px;
+    padding: 12px 20px; background: color-mix(in srgb, var(--bg-base) 88%, transparent);
+    backdrop-filter: blur(8px); border-bottom: 1px solid var(--border-default);
+}
+.admin-topbar__title { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 700; color: var(--text-primary); }
+.admin-topbar__title i { color: var(--maroon); }
+.admin-topbar__spacer { flex: 1; }
+.admin-search {
+    display: flex; align-items: center; gap: 8px; background: var(--bg-muted);
+    border: 1px solid var(--border-default); border-radius: var(--radius); padding: 7px 10px; min-width: 220px;
+}
+.admin-search i { color: var(--text-muted); font-size: 15px; }
+.admin-search input { background: transparent; border: none; outline: none; color: var(--text-primary); font-size: 13.5px; width: 100%; }
+.admin-search kbd { font-size: 10.5px; color: var(--text-muted); border: 1px solid var(--border-default); border-radius: 5px; padding: 1px 5px; background: var(--bg-surface); }
+.admin-iconbtn {
+    width: 38px; height: 38px; border-radius: var(--radius); display: inline-flex; align-items: center; justify-content: center;
+    color: var(--text-secondary); background: transparent; border: 1px solid transparent; cursor: pointer; position: relative;
+    transition: background var(--transition-fast), color var(--transition-fast);
+}
+.admin-iconbtn:hover { background: var(--bg-muted); color: var(--text-primary); }
+.admin-iconbtn .dot { position: absolute; top: 8px; right: 8px; width: 7px; height: 7px; border-radius: 50%; background: var(--error); border: 1.5px solid var(--bg-base); }
+.admin-avatar { width: 38px; height: 38px; border-radius: var(--radius-full); background: var(--maroon); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; cursor: pointer; border: none; }
+.admin-main { padding: 22px; }
+/* Main column: min-width:0 lets the 1fr grid track shrink so wide tables scroll
+   inside their own wrapper instead of widening the page (no horizontal scrollbar). */
+.admin-colmain { min-width: 0; display: flex; flex-direction: column; }
+
+/* Profile dropdown */
+.admin-menu { position: absolute; right: 0; margin-top: 8px; width: 200px; background: var(--bg-surface-elevated); border: 1px solid var(--border-default); border-radius: var(--radius); box-shadow: var(--shadow-lg); padding: 6px; z-index: 50; }
+.admin-menu a, .admin-menu button { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; padding: 9px 10px; border-radius: 6px; font-size: 13.5px; color: var(--text-secondary); background: transparent; border: none; cursor: pointer; text-decoration: none; }
+.admin-menu a:hover, .admin-menu button:hover { background: var(--bg-muted); color: var(--text-primary); }
+.admin-menu hr { border: none; border-top: 1px solid var(--border-default); margin: 6px 0; }
+.admin-menu .danger { color: var(--error); }
+
+/* ── 4. Buttons ────────────────────────────────────────────────────────── */
+.adm-btn { display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; border-radius: var(--radius); font-size: 13.5px; font-weight: 600; cursor: pointer; border: 1px solid transparent; transition: all var(--transition-fast); white-space: nowrap; text-decoration: none; }
+.adm-btn--primary { background: var(--maroon); color: #fff; }
+.adm-btn--primary:hover { background: var(--maroon-dark); }
+.adm-btn--gold { background: var(--gold); color: #3a2c00; }
+.adm-btn--gold:hover { filter: brightness(1.05); }
+.adm-btn--outline { background: transparent; border-color: var(--border-strong); color: var(--text-secondary); }
+.adm-btn--outline:hover { background: var(--bg-muted); color: var(--text-primary); }
+.adm-btn--ghost { background: transparent; color: var(--text-secondary); }
+.adm-btn--ghost:hover { background: var(--bg-muted); color: var(--text-primary); }
+.adm-btn--sm { padding: 6px 11px; font-size: 12.5px; }
+
+/* ── 5. Cards / KPI / pills ────────────────────────────────────────────── */
+.adm-card { background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius-md); }
+.adm-card__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 18px; border-bottom: 1px solid var(--border-default); }
+.adm-card__title { font-size: 15px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 8px; }
+.adm-card__body { padding: 18px; }
+
+.kpi { background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: 18px; display: flex; flex-direction: column; gap: 10px; transition: border-color var(--transition-fast), box-shadow var(--transition-fast); }
+.kpi:hover { border-color: var(--border-strong); box-shadow: var(--shadow-sm); }
+.kpi__top { display: flex; align-items: center; gap: 10px; }
+.kpi__icon { width: 36px; height: 36px; border-radius: var(--radius); display: flex; align-items: center; justify-content: center; font-size: 18px; background: color-mix(in srgb, var(--maroon) 12%, transparent); color: var(--maroon); }
+.dark .kpi__icon { color: var(--gold-light, #F4D58D); }
+.kpi__icon--gold { background: color-mix(in srgb, var(--gold) 18%, transparent); color: #9a7400; }
+.dark .kpi__icon--gold { color: var(--gold-light, #F4D58D); }
+.kpi__label { font-size: 12.5px; color: var(--text-muted); font-weight: 500; }
+.kpi__value { font-size: 27px; font-weight: 800; letter-spacing: -.5px; color: var(--text-primary); line-height: 1.1; }
+.kpi__foot { display: flex; align-items: center; gap: 8px; }
+.kpi__delta { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: var(--radius-full); }
+.kpi__delta--up { color: var(--success); background: var(--success-bg); }
+.kpi__delta--down { color: var(--error); background: var(--error-bg); }
+.kpi__delta--flat { color: var(--text-muted); background: var(--bg-muted); }
+.kpi__note { font-size: 11.5px; color: var(--text-muted); }
+
+.pill { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: var(--radius-full); }
+.pill::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.pill--success { color: var(--success); background: var(--success-bg); }
+.pill--warning { color: var(--warning); background: var(--warning-bg); }
+.pill--error { color: var(--error); background: var(--error-bg); }
+.pill--info { color: var(--info); background: var(--info-bg); }
+.pill--neutral { color: var(--text-tertiary); background: var(--bg-muted); }
+
+/* form fields */
+.adm-label { display: block; font-size: 12.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; }
+.adm-input, .adm-select, .adm-textarea { width: 100%; background: var(--bg-base); border: 1px solid var(--border-default); border-radius: var(--radius); padding: 9px 11px; font-size: 13.5px; color: var(--text-primary); outline: none; transition: border-color var(--transition-fast), box-shadow var(--transition-fast); }
+.adm-input:focus, .adm-select:focus, .adm-textarea:focus { border-color: var(--maroon); box-shadow: 0 0 0 3px color-mix(in srgb, var(--maroon) 18%, transparent); }
+.adm-page-title { font-size: 22px; font-weight: 800; color: var(--text-primary); }
+
+/* modal */
+.adm-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 60; display: flex; align-items: center; justify-content: center; padding: 16px; }
+.adm-modal { background: var(--bg-surface-elevated); border: 1px solid var(--border-default); border-radius: var(--radius-lg); width: 100%; max-width: 520px; max-height: 90vh; overflow: auto; box-shadow: var(--shadow-lg); }
+.adm-modal__head { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px; border-bottom: 1px solid var(--border-default); }
+.adm-modal__title { font-size: 16px; font-weight: 700; color: var(--text-primary); }
+.adm-modal__body { padding: 18px; }
+
+/* progress bar */
+.adm-progress { height: 8px; border-radius: var(--radius-full); background: var(--bg-muted); overflow: hidden; }
+.adm-progress__fill { height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--maroon), var(--gold)); }
+
+/* ── 6. Data tables ────────────────────────────────────────────────────── */
+.adm-table-wrap { overflow-x: auto; }
+.adm-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.adm-table thead th { text-align: left; padding: 11px 14px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); border-bottom: 1px solid var(--border-default); white-space: nowrap; }
+.adm-table tbody td { padding: 12px 14px; border-bottom: 1px solid var(--border-default); color: var(--text-secondary); }
+.adm-table tbody tr:last-child td { border-bottom: none; }
+.adm-table tbody tr:hover { background: var(--bg-muted); }
+.adm-table .td-strong { color: var(--text-primary); font-weight: 600; }
+
+/* ── 7. Charts ─────────────────────────────────────────────────────────── */
+.adm-chart { position: relative; width: 100%; }
+.adm-rangetoggle { display: inline-flex; background: var(--bg-muted); border-radius: var(--radius); padding: 3px; gap: 2px; }
+.adm-rangetoggle button { border: none; background: transparent; color: var(--text-muted); font-size: 12px; font-weight: 600; padding: 4px 11px; border-radius: 6px; cursor: pointer; }
+.adm-rangetoggle button.active { background: var(--bg-surface); color: var(--text-primary); box-shadow: var(--shadow-sm); }
+
+/* ── 8. Legacy-utility bridge ──────────────────────────────────────────────
+   Tab partials not yet migrated to the component classes still use raw Tailwind
+   utilities (bg-white, text-gray-*, …). Map the common ones to tokens so they
+   stay legible in BOTH themes without per-element dark: variants. These are
+   transitional and removed as each tab is migrated to the .adm-* components. */
+.dark .bg-white { background-color: var(--bg-surface); }
+.dark .bg-gray-50, .dark .bg-gray-100 { background-color: var(--bg-muted); }
+.dark .text-gray-900, .dark .text-gray-800 { color: var(--text-primary); }
+.dark .text-gray-700, .dark .text-gray-600 { color: var(--text-secondary); }
+.dark .text-gray-500, .dark .text-gray-400 { color: var(--text-muted); }
+.dark .border-gray-200, .dark .border-gray-300 { border-color: var(--border-default); }
+.dark input, .dark select, .dark textarea { background-color: var(--bg-muted); border-color: var(--border-default); color: var(--text-primary); }

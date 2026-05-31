@@ -7,17 +7,19 @@ const adminToday = () => new Date().toISOString().slice(0, 10);
 
 function reportCard(id, icon, color, title, desc) {
     return `
-        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800">
-            <div class="flex items-center gap-3 mb-2">
-                <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background:${color}1A;color:${color}"><i class="${icon} text-xl"></i></div>
-                <div>
-                    <h4 class="font-bold text-sm text-gray-800 dark:text-white">${title}</h4>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">${desc}</p>
+        <div class="adm-card">
+            <div class="adm-card__body">
+                <div class="flex items-center gap-3" style="margin-bottom:14px">
+                    <div style="width:42px;height:42px;border-radius:var(--radius);display:flex;align-items:center;justify-content:center;flex-shrink:0;background:color-mix(in srgb, ${color} 12%, transparent);color:${color}"><i class="${icon}" style="font-size:20px"></i></div>
+                    <div>
+                        <div class="adm-card__title" style="font-size:14px">${title}</div>
+                        <p style="font-size:12px;color:var(--text-muted);margin-top:2px">${desc}</p>
+                    </div>
                 </div>
-            </div>
-            <div class="flex gap-2 mt-3">
-                <button onclick="generateReport('${id}','pdf')" class="flex-1 inline-flex items-center justify-center gap-1 px-3 py-1.5 text-xs text-white rounded" style="background:#7A0C0C"><i class="ri-file-pdf-2-line"></i> PDF</button>
-                <button onclick="generateReport('${id}','excel')" class="flex-1 inline-flex items-center justify-center gap-1 px-3 py-1.5 text-xs text-white rounded" style="background:#15803d"><i class="ri-file-excel-2-line"></i> Excel</button>
+                <div class="flex gap-2">
+                    <button onclick="generateReport('${id}','pdf')" class="adm-btn adm-btn--primary adm-btn--sm" style="flex:1;justify-content:center"><i class="ri-file-pdf-2-line"></i> PDF</button>
+                    <button onclick="generateReport('${id}','excel')" class="adm-btn adm-btn--outline adm-btn--sm" style="flex:1;justify-content:center"><i class="ri-file-excel-2-line"></i> Excel</button>
+                </div>
             </div>
         </div>`;
 }
@@ -26,11 +28,11 @@ function displayReports() {
     const container = document.getElementById('reports-container');
     if (!container) return;
     container.innerHTML = `
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
             ${reportCard('enrollment', 'ri-user-follow-line', '#2563EB', 'Enrollment Report', 'Students by department & module')}
-            ${reportCard('financial', 'ri-money-dollar-circle-line', '#15803d', 'Financial Report', 'Revenue, collection & outstanding')}
-            ${reportCard('department', 'ri-building-line', '#7A0C0C', 'Department Report', 'Expected vs collected by department')}
-            ${reportCard('students', 'ri-graduation-cap-line', '#D4A017', 'Student Financials', 'Per-student expected, paid, balance')}
+            ${reportCard('financial', 'ri-money-dollar-circle-line', 'var(--success)', 'Financial Report', 'Revenue, collection & outstanding')}
+            ${reportCard('department', 'ri-building-line', 'var(--maroon)', 'Department Report', 'Expected vs collected by department')}
+            ${reportCard('students', 'ri-graduation-cap-line', 'var(--gold)', 'Student Financials', 'Per-student expected, paid, balance')}
         </div>`;
 }
 

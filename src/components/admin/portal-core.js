@@ -154,13 +154,11 @@ function toggleDarkMode() {
     if (html.classList.contains('dark')) {
         html.classList.remove('dark');
         localStorage.setItem('darkMode', 'false');
-        if (icon) icon.className = 'ri-moon-line text-2xl';
-        console.log('Dark mode DISABLED - removed "dark" class');
+        if (icon) icon.className = 'ri-moon-line text-lg';
     } else {
         html.classList.add('dark');
         localStorage.setItem('darkMode', 'true');
-        if (icon) icon.className = 'ri-sun-line text-2xl';
-        console.log('Dark mode ENABLED - added "dark" class');
+        if (icon) icon.className = 'ri-sun-line text-lg';
     }
     
     // Double-check the class is there
@@ -175,21 +173,36 @@ function initDarkMode() {
     
     if (darkMode === 'true') {
         document.documentElement.classList.add('dark');
-        if (icon) icon.className = 'ri-sun-line text-2xl';
+        if (icon) icon.className = 'ri-sun-line text-lg';
     }
 }
 
 // Call on page load
 document.addEventListener('DOMContentLoaded', initDarkMode);
 
-// ---- sidebar / profile menu / logout (verbatim) ----
+// ---- sidebar / profile menu / logout ----
+// One toggle for both modes: on mobile (<1024) it slides the off-canvas sidebar
+// in/out; on desktop it collapses the wide sidebar to an icon rail and persists
+// that choice. Styling is driven by classes on #admin-shell (see admin-portal.css).
 function toggleSidebar() {
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('sidebar-overlay');
-    
-    sidebar.classList.toggle('-translate-x-full');
-    overlay.classList.toggle('hidden');
+    const shell = document.getElementById('admin-shell');
+    if (!shell) return;
+    if (window.innerWidth < 1024) {
+        shell.classList.toggle('sidebar-open');
+    } else {
+        const collapsed = shell.classList.toggle('sidebar-collapsed');
+        try { localStorage.setItem('admin-sidebar-collapsed', collapsed ? '1' : '0'); } catch (e) { /* ignore */ }
+    }
 }
+
+// Restore the persisted desktop collapse state on load.
+function applySidebarState() {
+    const shell = document.getElementById('admin-shell');
+    if (shell && localStorage.getItem('admin-sidebar-collapsed') === '1') {
+        shell.classList.add('sidebar-collapsed');
+    }
+}
+document.addEventListener('DOMContentLoaded', applySidebarState);
 
 function toggleProfileMenu() {
     const menu = document.getElementById('profile-menu');
@@ -362,6 +375,8 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     const adminNameEl = document.getElementById('admin-name');
     if (adminNameEl) adminNameEl.textContent = admin.name || 'Administrator';
+    const avatarEl = document.getElementById('admin-avatar-initial');
+    if (avatarEl) avatarEl.textContent = (admin.name || 'A').trim().charAt(0).toUpperCase();
 
     // Search shortcut (Ctrl+K) + global search input (both in the shell topbar).
     document.addEventListener('keydown', function (e) {

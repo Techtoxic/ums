@@ -58,16 +58,11 @@ window.AdminRouter = (function () {
         document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
         pane.classList.add('active');
 
-        // Active nav link (verbatim class swap from showSection()).
-        document.querySelectorAll('.nav-link').forEach(link => {
-            link.classList.remove('active', 'bg-primary', 'text-white');
-            link.classList.add('text-gray-700');
-        });
+        // Active nav link — styling is owned by CSS (.nav-link.active in
+        // admin-portal.css), so we only toggle the .active class.
+        document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
         const activeLink = document.querySelector(`.nav-link[data-section="${tab}"]`);
-        if (activeLink) {
-            activeLink.classList.add('active', 'bg-primary', 'text-white');
-            activeLink.classList.remove('text-gray-700');
-        }
+        if (activeLink) activeLink.classList.add('active');
 
         // Run the tab's data load. init() must be idempotent (re-run on revisit).
         const mod = window.AdminTabs && window.AdminTabs[tab];

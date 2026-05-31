@@ -30,31 +30,31 @@ function renderAdminTrainers() {
     });
 
     if (list.length === 0) {
-        container.innerHTML = '<p class="col-span-full text-center text-gray-400 text-xs py-6">No trainers match the current filters</p>';
+        container.innerHTML = '<p class="col-span-full" style="text-align:center;color:var(--text-muted);font-size:13px;padding:24px">No trainers match the current filters</p>';
         return;
     }
 
     container.innerHTML = list.map(trainer => {
         const isActive = trainer.isActive !== false; // endpoint may omit the flag
+        const initial = escapeHtml((trainer.name || '?').trim().charAt(0).toUpperCase() || '?');
         return `
-            <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-lg transition bg-white dark:bg-gray-800">
-                <div class="flex items-center space-x-3 mb-3">
-                    <div class="w-12 h-12 bg-green-100 dark:bg-green-900/40 rounded-full flex items-center justify-center">
-                        <i class="ri-user-line text-2xl text-green-600 dark:text-green-400"></i>
+            <div class="adm-card">
+                <div class="adm-card__body">
+                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+                        <div style="width:44px;height:44px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;color:var(--maroon);background:color-mix(in srgb, var(--maroon) 12%, transparent)">${initial}</div>
+                        <div style="min-width:0">
+                            <div class="td-strong" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(trainer.name)}</div>
+                            <div style="color:var(--text-muted);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(trainer.email || '')}</div>
+                        </div>
                     </div>
-                    <div class="min-w-0">
-                        <h4 class="font-semibold text-gray-800 dark:text-white truncate">${escapeHtml(trainer.name)}</h4>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 truncate">${escapeHtml(trainer.email || '')}</p>
+                    <div style="display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--text-secondary)">
+                        ${trainer.phoneNumber || trainer.phone ? `<div><i class="ri-phone-line" style="color:var(--text-muted);margin-right:8px"></i>${escapeHtml(trainer.phoneNumber || trainer.phone)}</div>` : ''}
+                        <div><i class="ri-building-line" style="color:var(--text-muted);margin-right:8px"></i>${escapeHtml(formatDepartmentName(trainer.department))}</div>
+                        ${trainer.specialization ? `<div><i class="ri-star-line" style="color:var(--text-muted);margin-right:8px"></i>${escapeHtml(trainer.specialization)}</div>` : ''}
                     </div>
-                </div>
-                <div class="space-y-2 text-sm">
-                    <p class="text-gray-600 dark:text-gray-300">
-                        <i class="ri-building-line mr-2"></i>${escapeHtml(formatDepartmentName(trainer.department))}
-                    </p>
-                    ${trainer.specialization ? `<p class="text-gray-600 dark:text-gray-300"><i class="ri-star-line mr-2"></i>${escapeHtml(trainer.specialization)}</p>` : ''}
-                    <span class="inline-block px-2 py-1 ${isActive ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'} text-xs rounded-full">
-                        ${isActive ? 'Active' : 'Inactive'}
-                    </span>
+                    <div style="margin-top:14px">
+                        <span class="pill ${isActive ? 'pill--success' : 'pill--neutral'}">${isActive ? 'Active' : 'Inactive'}</span>
+                    </div>
                 </div>
             </div>
         `;
@@ -83,132 +83,52 @@ async function displayTrainers() {
 function openAddTrainerModal() {
     const modal = document.createElement('div');
     modal.id = 'add-trainer-modal';
-    modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
+    modal.className = 'adm-modal-overlay';
     modal.innerHTML = `
-        <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div class="bg-primary p-6">
-                <div class="flex items-center justify-between">
-                    <h2 class="text-2xl font-bold text-white">Add New Trainer</h2>
-                    <button onclick="closeAddTrainerModal()" class="text-white hover:bg-white hover:bg-opacity-20 p-2 rounded-full transition">
-                        <i class="ri-close-line text-2xl"></i>
-                    </button>
-                </div>
+        <div class="adm-modal">
+            <div class="adm-modal__head">
+                <span class="adm-modal__title">Add New Trainer</span>
+                <button class="admin-iconbtn" onclick="closeAddTrainerModal()"><i class="ri-close-line"></i></button>
             </div>
-            
-            <form id="add-trainer-form" class="p-6 space-y-4">
-                <!-- Name -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        Full Name *
-                    </label>
-                    <input 
-                        type="text" 
-                        name="name" 
-                        required
-                        placeholder="e.g., Madam Nelly Chepkwony"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                    >
-                </div>
-
-                <!-- Email -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        Email Address *
-                    </label>
-                    <input 
-                        type="email" 
-                        name="email" 
-                        required
-                        placeholder="e.g., nelly.chepkwony@ace.ac.ke"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                    >
-                </div>
-
-                <!-- Phone -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        Phone Number
-                    </label>
-                    <input 
-                        type="tel" 
-                        name="phone" 
-                        placeholder="e.g., 0712345678"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                    >
-                </div>
-
-                <!-- Department -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        Department *
-                    </label>
-                    <select
-                        name="department"
-                        required
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                    >
-                        <option value="">Select Department</option>
-                    </select>
-                </div>
-
-                <!-- Specialization -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        Specialization
-                    </label>
-                    <input 
-                        type="text" 
-                        name="specialization" 
-                        placeholder="e.g., Chemistry, Mathematics"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                    >
-                </div>
-
-                <!-- Qualifications -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        Qualifications
-                    </label>
-                    <textarea 
-                        name="qualifications" 
-                        rows="3"
-                        placeholder="e.g., MSc Chemistry, BSc Education"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                    ></textarea>
-                </div>
-
-                <!-- Password -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        Default Password
-                    </label>
-                    <input 
-                        type="text" 
-                        name="password" 
-                        value="trainer123"
-                        readonly
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100"
-                    >
-                    <p class="text-xs text-gray-500 mt-1">Default password: trainer123 (can be changed after first login)</p>
-                </div>
-
-                <!-- Buttons -->
-                <div class="flex items-center justify-end space-x-3 pt-4 border-t">
-                    <button 
-                        type="button"
-                        onclick="closeAddTrainerModal()"
-                        class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
-                    >
-                        Cancel
-                    </button>
-                    <button 
-                        type="submit"
-                        class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition"
-                    >
-                        <i class="ri-save-line mr-2"></i>Add Trainer
-                    </button>
-                </div>
-            </form>
+            <div class="adm-modal__body">
+                <form id="add-trainer-form" style="display:flex;flex-direction:column;gap:14px">
+                    <div>
+                        <label class="adm-label">Full Name *</label>
+                        <input type="text" name="name" required placeholder="e.g., Madam Nelly Chepkwony" class="adm-input">
+                    </div>
+                    <div>
+                        <label class="adm-label">Email Address *</label>
+                        <input type="email" name="email" required placeholder="e.g., nelly.chepkwony@ace.ac.ke" class="adm-input">
+                    </div>
+                    <div>
+                        <label class="adm-label">Phone Number</label>
+                        <input type="tel" name="phone" placeholder="e.g., 0712345678" class="adm-input">
+                    </div>
+                    <div>
+                        <label class="adm-label">Department *</label>
+                        <select name="department" required class="adm-select">
+                            <option value="">Select Department</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="adm-label">Specialization</label>
+                        <input type="text" name="specialization" placeholder="e.g., Chemistry, Mathematics" class="adm-input">
+                    </div>
+                    <div>
+                        <label class="adm-label">Qualifications</label>
+                        <textarea name="qualifications" rows="3" placeholder="e.g., MSc Chemistry, BSc Education" class="adm-textarea"></textarea>
+                    </div>
+                    <div>
+                        <label class="adm-label">Default Password</label>
+                        <input type="text" name="password" value="trainer123" readonly class="adm-input">
+                        <p class="kpi__note" style="margin-top:6px">Default password: trainer123 (can be changed after first login)</p>
+                    </div>
+                    <div style="display:flex;align-items:center;justify-content:flex-end;gap:10px;padding-top:8px;border-top:1px solid var(--border-default)">
+                        <button type="button" onclick="closeAddTrainerModal()" class="adm-btn adm-btn--outline">Cancel</button>
+                        <button type="submit" class="adm-btn adm-btn--primary"><i class="ri-save-line"></i> Add Trainer</button>
+                    </div>
+                </form>
+            </div>
         </div>
     `;
 

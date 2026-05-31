@@ -88,127 +88,86 @@
         </main>
     </div>
 
-    <!-- Sidebar -->
-    <aside id="sidebar" class="fixed top-0 left-0 z-30 w-16 lg:w-20 h-screen transition-transform -translate-x-full lg:translate-x-0 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
-        <div class="h-full px-1 py-2 overflow-y-auto flex flex-col">
-            <!-- Logo -->
-            <div class="flex items-center justify-center mb-2 p-1 flex-shrink-0">
-                <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-                    <i class="ri-shield-star-line text-xl text-white"></i>
-                </div>
+    <!-- ── App shell: wide collapsible sidebar + main column ──────────────── -->
+    <div id="admin-shell" class="admin-shell">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="admin-sidebar">
+            <div class="admin-sidebar__brand">
+                <img src="/public/img/logo.png" alt="EDTTI" onerror="this.replaceWith(Object.assign(document.createElement('i'),{className:'ri-shield-star-line',style:'font-size:28px;color:var(--maroon)'}))">
+                <div class="admin-sidebar__brand-text">EDTTI<small>Admin Portal</small></div>
             </div>
 
-            <!-- Navigation -->
-            <nav class="space-y-1 flex-1 overflow-y-auto">
-                <a href="/admin/dashboard" data-section="dashboard" title="Dashboard" class="nav-link flex items-center justify-center p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-primary dark:hover:bg-primary hover:text-white transition active">
-                    <i class="ri-dashboard-line text-xl"></i>
-                </a>
-                
-                <a href="/admin/students" data-section="students" title="Students" class="nav-link flex items-center justify-center p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-primary dark:hover:bg-primary hover:text-white transition">
-                    <i class="ri-graduation-cap-line text-xl"></i>
-                </a>
-                
-                <a href="/admin/trainers" data-section="trainers" title="Trainers" class="nav-link flex items-center justify-center p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-primary dark:hover:bg-primary hover:text-white transition">
-                    <i class="ri-user-star-line text-xl"></i>
-                </a>
-                
-                <a href="/admin/financial" data-section="financial" title="Financial" class="nav-link flex items-center justify-center p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-primary dark:hover:bg-primary hover:text-white transition">
-                    <i class="ri-money-dollar-circle-line text-xl"></i>
-                </a>
-                
-                <a href="/admin/programs" data-section="programs" title="Programs" class="nav-link flex items-center justify-center p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-primary dark:hover:bg-primary hover:text-white transition">
-                    <i class="ri-book-line text-xl"></i>
-                </a>
-                
-                <a href="/admin/reports" data-section="reports" title="Reports" class="nav-link flex items-center justify-center p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-primary dark:hover:bg-primary hover:text-white transition">
-                    <i class="ri-bar-chart-box-line text-xl"></i>
-                </a>
-                
-                <!-- Settings -->
-                <div class="pt-2 flex-shrink-0 border-t border-gray-200 dark:border-gray-700 mt-2">
-                    <a href="/admin/settings" data-section="settings" title="Settings" class="nav-link flex items-center justify-center p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-primary dark:hover:bg-primary hover:text-white transition">
-                        <i class="ri-settings-line text-xl"></i>
-                    </a>
-                </div>
+            <nav class="admin-sidebar__nav">
+                <div class="admin-sidebar__label">Portal</div>
+                <a href="/admin/dashboard" data-section="dashboard" title="Dashboard" class="nav-link active"><i class="ri-dashboard-line"></i><span>Dashboard</span></a>
+                <a href="/admin/students"  data-section="students"  title="Students"  class="nav-link"><i class="ri-graduation-cap-line"></i><span>Students</span></a>
+                <a href="/admin/trainers"  data-section="trainers"  title="Trainers"  class="nav-link"><i class="ri-user-star-line"></i><span>Trainers</span></a>
+                <a href="/admin/financial" data-section="financial" title="Financial" class="nav-link"><i class="ri-money-dollar-circle-line"></i><span>Financial</span></a>
+                <a href="/admin/programs"  data-section="programs"  title="Programs"  class="nav-link"><i class="ri-book-2-line"></i><span>Programs</span></a>
+                <a href="/admin/reports"   data-section="reports"   title="Reports"   class="nav-link"><i class="ri-bar-chart-box-line"></i><span>Reports</span></a>
+                <div class="admin-sidebar__label">System</div>
+                <a href="/admin/settings"  data-section="settings"  title="Settings"  class="nav-link"><i class="ri-settings-3-line"></i><span>Settings</span></a>
             </nav>
-        </div>
-    </aside>
 
-    <!-- Overlay for mobile -->
-    <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-20 hidden lg:hidden" onclick="toggleSidebar()"></div>
-
-    <!-- Main Content -->
-    <div class="lg:ml-20">
-        <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
-            <div class="flex items-center justify-between px-2 md:px-4 py-2">
-                <div class="flex items-center gap-2">
-                    <button onclick="toggleSidebar()" class="lg:hidden text-gray-600 dark:text-gray-300 hover:text-primary p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-                        <i class="ri-menu-line text-lg"></i>
-                    </button>
-                    <div>
-                        <h1 class="text-sm md:text-base font-bold text-gray-800 dark:text-white">Admin Dashboard</h1>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 hidden md:block">Welcome, <span id="admin-name">Admin</span></p>
-                    </div>
+            <div class="admin-sidebar__footer">
+                <div class="admin-sidebar__mini">
+                    <div class="admin-sidebar__mini-title">EDTTI Management</div>
+                    <a href="#"><i class="ri-question-line"></i> Help</a><a href="#"><i class="ri-book-open-line"></i> Docs</a>
                 </div>
-                
-                <div class="flex items-center space-x-2 md:space-x-3">
-                    <!-- Search -->
-                    <div class="hidden md:block">
-                        <input type="text" id="global-search" placeholder="Search... (Ctrl+K)" class="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent w-48 lg:w-64">
-                    </div>
-                    
-                    <!-- Mobile Search Button -->
-                    <button id="mobile-search-toggle" class="md:hidden text-gray-600 dark:text-gray-300 hover:text-primary p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-                        <i class="ri-search-line text-lg"></i>
-                    </button>
-                    
-                    <!-- Dark Mode Toggle -->
-                    <button onclick="toggleDarkMode()" class="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
-                        <i id="dark-mode-icon" class="ri-moon-line text-lg"></i>
-                    </button>
-                    
-                    <!-- Notifications -->
-                    <button class="relative text-gray-600 dark:text-gray-300 hover:text-primary p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg hidden sm:block">
-                        <i class="ri-notification-line text-lg"></i>
-                        <span class="absolute top-1 right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">3</span>
-                    </button>
-                    
-                    <!-- Profile Menu -->
-                    <div class="relative">
-                        <button onclick="toggleProfileMenu()" class="w-8 h-8 md:w-9 md:h-9 bg-primary rounded-full flex items-center justify-center text-white font-semibold hover:bg-secondary transition">
-                            <i class="ri-admin-line text-base md:text-lg"></i>
-                        </button>
-                        <div id="profile-menu" class="hidden absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl py-2 z-50 border border-gray-200 dark:border-gray-700">
-                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
-                                <i class="ri-user-line mr-2"></i>Profile
-                            </a>
-                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
-                                <i class="ri-settings-line mr-2"></i>Settings
-                            </a>
-                            <hr class="my-2 border-gray-200 dark:border-gray-700">
-                            <button onclick="logout()" class="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">
-                                <i class="ri-logout-box-line mr-2"></i>Logout
-                            </button>
-                        </div>
+                <div class="admin-userchip">
+                    <div class="admin-userchip__avatar" id="admin-avatar-initial">A</div>
+                    <div class="admin-userchip__meta">
+                        <div class="admin-userchip__name" id="admin-name">Admin</div>
+                        <div class="admin-userchip__role">Administrator</div>
                     </div>
                 </div>
             </div>
-        </header>
+            <!-- mobile off-canvas backdrop -->
+            <div class="admin-sidebar__backdrop" onclick="toggleSidebar()"></div>
+        </aside>
 
-        <!-- Mobile Search Modal -->
-        <div id="mobile-search-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden md:hidden">
-            <div class="bg-white dark:bg-gray-800 p-4">
-                <div class="flex items-center gap-2">
-                    <input type="text" id="mobile-search-input" placeholder="Search..." class="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
-                    <button onclick="closeMobileSearch()" class="text-gray-600 dark:text-gray-300 hover:text-primary p-2">
-                        <i class="ri-close-line text-xl"></i>
-                    </button>
+        <!-- Main column -->
+        <div class="admin-colmain">
+            <header class="admin-topbar">
+                <button class="admin-iconbtn lg:hidden" onclick="toggleSidebar()" aria-label="Open menu"><i class="ri-menu-line text-lg"></i></button>
+                <button class="admin-iconbtn hidden lg:inline-flex" onclick="toggleSidebar()" aria-label="Collapse sidebar" title="Collapse / expand"><i class="ri-menu-fold-line text-lg"></i></button>
+                <div class="admin-topbar__title"><i class="ri-dashboard-line"></i><span>Admin Dashboard</span></div>
+                <div class="admin-topbar__spacer"></div>
+
+                <div class="admin-search hidden md:flex">
+                    <i class="ri-search-line"></i>
+                    <input type="text" id="global-search" placeholder="Search students, trainers…">
+                    <kbd>Ctrl K</kbd>
+                </div>
+                <button id="mobile-search-toggle" class="admin-iconbtn md:hidden" aria-label="Search"><i class="ri-search-line text-lg"></i></button>
+
+                <button class="admin-iconbtn" onclick="toggleDarkMode()" aria-label="Toggle dark mode"><i id="dark-mode-icon" class="ri-moon-line text-lg"></i></button>
+                <button class="admin-iconbtn" aria-label="Notifications"><i class="ri-notification-3-line text-lg"></i><span class="dot"></span></button>
+
+                <div class="relative">
+                    <button class="admin-avatar" onclick="toggleProfileMenu()" aria-label="Account"><i class="ri-admin-line"></i></button>
+                    <div id="profile-menu" class="admin-menu hidden">
+                        <a href="#" onclick="event.preventDefault()"><i class="ri-user-line"></i> Profile</a>
+                        <button type="button" onclick="showSection('settings'); toggleProfileMenu();"><i class="ri-settings-line"></i> Settings</button>
+                        <hr>
+                        <button onclick="logout()" class="danger"><i class="ri-logout-box-line"></i> Logout</button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Mobile Search Modal -->
+            <div id="mobile-search-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden md:hidden">
+                <div class="p-4" style="background:var(--bg-surface)">
+                    <div class="flex items-center gap-2">
+                        <input type="text" id="mobile-search-input" placeholder="Search…" class="flex-1 px-3 py-2 text-sm rounded-lg" style="background:var(--bg-muted);border:1px solid var(--border-default);color:var(--text-primary)">
+                        <button onclick="closeMobileSearch()" class="admin-iconbtn"><i class="ri-close-line text-xl"></i></button>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Content Area: the router injects each tab's partial here -->
-        <main id="tab-root" class="p-3 md:p-4 lg:p-6"></main>
+            <!-- Content Area: the router injects each tab's partial here -->
+            <main id="tab-root" class="admin-main"></main>
+        </div>
     </div>
 
     <!-- Global elements -->

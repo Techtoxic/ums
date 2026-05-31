@@ -50,9 +50,18 @@ function calculateDashboardMetrics() {
     const studentsOwingEl = document.getElementById('students-owing-count');
     if (studentsOwingEl) studentsOwingEl.textContent = `${studentsOwing} students`;
 
-    const collectionRate = totalExpected > 0 ? Math.min(100, (tuitionRevenue / totalExpected) * 100).toFixed(1) : 0;
+    // Prefer the server-computed rate (consistent with /finance/analytics:
+    // (expected − outstanding)/expected, capped at 100%); fall back to a local calc.
+    const collectionRate = (totals.collectionRate != null)
+        ? Number(totals.collectionRate)
+        : (totalExpected > 0 ? Math.min(100, (tuitionRevenue / totalExpected) * 100) : 0);
+    const crText = `${Number(collectionRate).toFixed(1)}%`;
     const collectionRateEl = document.getElementById('collection-rate');
-    if (collectionRateEl) collectionRateEl.textContent = `${collectionRate}%`;
+    if (collectionRateEl) collectionRateEl.textContent = crText;
+    const crBig = document.getElementById('collection-rate-big');
+    if (crBig) crBig.textContent = crText;
+    const crBar = document.getElementById('collection-rate-bar');
+    if (crBar) crBar.style.width = `${Math.max(0, Math.min(100, Number(collectionRate)))}%`;
 }
 
 // Theme-aware chart colors.
@@ -64,63 +73,66 @@ function admGrid() { return admIsDark() ? 'rgba(148,163,184,0.15)' : 'rgba(100,1
 // CHARTS
 // ========================================
 
-function createEnrollmentChart() {
+let _admEnrollmentChart = null;
+function createEnrollmentChart(monthsCount) {
     const ctx = document.getElementById('enrollmentChart');
     if (!ctx) return;
+    const n = monthsCount || 6;
 
-    // Get enrollment data for last 6 months
     const months = [];
     const enrollmentData = [];
-    
-    for (let i = 5; i >= 0; i--) {
+    for (let i = n - 1; i >= 0; i--) {
         const date = new Date();
         date.setMonth(date.getMonth() - i);
-        const monthName = date.toLocaleDateString('en-US', { month: 'short' });
-        months.push(monthName);
-        
+        months.push(date.toLocaleDateString('en-US', { month: 'short', year: n > 6 ? '2-digit' : undefined }));
         const count = allStudents.filter(s => {
-            const createdDate = new Date(s.createdAt);
-            return createdDate.getMonth() === date.getMonth() && 
-                   createdDate.getFullYear() === date.getFullYear();
+            const d = new Date(s.createdAt);
+            return d.getMonth() === date.getMonth() && d.getFullYear() === date.getFullYear();
         }).length;
         enrollmentData.push(count);
     }
 
-    new Chart(ctx, {
+    // Maroon gradient fill.
+    const g = ctx.getContext('2d').createLinearGradient(0, 0, 0, 260);
+    g.addColorStop(0, 'rgba(122,12,12,0.28)');
+    g.addColorStop(1, 'rgba(122,12,12,0.02)');
+
+    if (_admEnrollmentChart) _admEnrollmentChart.destroy();
+    _admEnrollmentChart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: months,
             datasets: [{
                 label: 'New Students',
                 data: enrollmentData,
-                borderColor: '#7A0C0C',
-                backgroundColor: 'rgba(122, 12, 12, 0.1)',
+                borderColor: '#9C2727',
+                backgroundColor: g,
                 tension: 0.4,
-                fill: true
+                fill: true,
+                pointRadius: 3,
+                pointBackgroundColor: '#9C2727',
             }]
         },
         options: {
             responsive: true,
-            maintainAspectRatio: true,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
             scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        precision: 0,
-                        color: admTick()
-                    },
-                    grid: { color: admGrid() }
-                },
+                y: { beginAtZero: true, ticks: { precision: 0, color: admTick() }, grid: { color: admGrid() } },
                 x: { ticks: { color: admTick() }, grid: { display: false } }
             }
         }
     });
 }
+
+// Range toggle for the enrollment trend (3M / 6M / 1Y).
+window.admSetEnrollmentRange = function (monthsCount, btn) {
+    if (btn && btn.parentElement) {
+        btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    }
+    createEnrollmentChart(monthsCount);
+};
 
 function createRevenueChart() {
     const ctx = document.getElementById('revenueChart');
@@ -227,7 +239,7 @@ function createDepartmentChart() {
         },
         options: {
             responsive: true,
-            maintainAspectRatio: true,
+            maintainAspectRatio: false,
             plugins: {
                 legend: {
                     position: 'bottom',
@@ -324,18 +336,62 @@ function loadSystemAlerts() {
     }).join('');
 }
 
+// Greeting header: time-of-day + admin name.
+function admSetGreeting() {
+    const h = new Date().getHours();
+    const g = h < 12 ? 'Good morning' : (h < 17 ? 'Good afternoon' : 'Good evening');
+    const user = (window.AUTH && typeof window.AUTH.getUser === 'function') ? window.AUTH.getUser() : null;
+    const name = (user && user.name) || (document.getElementById('admin-name') || {}).textContent || 'Admin';
+    const gEl = document.getElementById('dash-greeting'); if (gEl) gEl.textContent = g;
+    const nEl = document.getElementById('dash-name'); if (nEl) nEl.textContent = name;
+}
+
+// Recent Payments table (newest first). payment.studentId is the admission
+// number (the /payments endpoint joins students), so resolve the name from it.
+function loadRecentPayments() {
+    const tbody = document.getElementById('recent-payments');
+    if (!tbody) return;
+    const nameByAdm = {};
+    (allStudents || []).forEach(s => { if (s.admissionNumber) nameByAdm[s.admissionNumber] = s.name; });
+    const modePill = { mpesa: 'pill--success', bank: 'pill--info', bursary: 'pill--warning' };
+    const modeLabel = { mpesa: 'M-Pesa', bank: 'Bank', bursary: 'Bursary' };
+
+    const rows = (allPayments || [])
+        .slice()
+        .sort((a, b) => new Date(b.paymentDate || b.createdAt || 0) - new Date(a.paymentDate || a.createdAt || 0))
+        .slice(0, 8);
+
+    if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:20px">No payments yet</td></tr>';
+        return;
+    }
+    tbody.innerHTML = rows.map(p => {
+        const d = new Date(p.paymentDate || p.createdAt || Date.now());
+        const date = isNaN(d) ? '—' : d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' });
+        const name = nameByAdm[p.studentId] || p.studentId || 'Unknown';
+        const mode = (p.paymentMode || '').toLowerCase();
+        return `
+        <tr>
+            <td>${escapeHtml(date)}</td>
+            <td class="td-strong">${escapeHtml(name)}</td>
+            <td><span class="pill ${modePill[mode] || 'pill--neutral'}">${escapeHtml(modeLabel[mode] || mode || 'N/A')}</span></td>
+            <td>${escapeHtml(p.referenceNumber || p.reference || '—')}</td>
+            <td class="td-strong" style="text-align:right">${formatCurrency(p.amount)}</td>
+        </tr>`;
+    }).join('');
+}
+
 window.AdminTabs.dashboard = {
-    // Render once. The monolith built these at bootstrap (loadSectionData has no
-    // 'dashboard' case, so switching back never re-rendered) and the cached pane
-    // keeps the charts; re-running createXChart() would hit Chart.js's
-    // "Canvas is already in use" error. Idempotent: subsequent calls no-op.
+    // Render once. The cached pane keeps the charts; re-running createXChart()
+    // would hit Chart.js's "Canvas is already in use" error. Idempotent.
     init() {
+        admSetGreeting();
         if (window.__adminDashRendered) return;
         window.__adminDashRendered = true;
         calculateDashboardMetrics();
-        createEnrollmentChart();
-        createRevenueChart();
+        createEnrollmentChart(6);
         createDepartmentChart();
+        loadRecentPayments();
         loadRecentActivity();
         loadSystemAlerts();
     }

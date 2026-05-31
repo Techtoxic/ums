@@ -45,10 +45,10 @@ async function adminSaveSetting(key, value, statusElId) {
         });
         const body = await res.json().catch(() => ({}));
         if (res.ok) {
-            if (statusEl) { statusEl.textContent = 'Saved ✓'; statusEl.className = 'text-[11px] text-green-600 dark:text-green-400 mt-1'; }
+            if (statusEl) { statusEl.textContent = 'Saved ✓'; statusEl.style.cssText = 'font-size:11px;color:var(--success);margin-top:8px;font-weight:600'; }
             showToast('Setting updated', 'success');
         } else {
-            if (statusEl) { statusEl.textContent = body.message || 'Update failed'; statusEl.className = 'text-[11px] text-red-600 dark:text-red-400 mt-1'; }
+            if (statusEl) { statusEl.textContent = body.message || 'Update failed'; statusEl.style.cssText = 'font-size:11px;color:var(--error);margin-top:8px;font-weight:600'; }
             showToast(body.message || 'Update failed', 'error');
         }
     } catch (e) {
