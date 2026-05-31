@@ -39,45 +39,21 @@ async function fetchStudentUnits(studentCourse) {
         console.log('Units data received:', data);
         
         if (data.success && data.units) {
-            // Calculate registration eligibility using the same method as dashboard
+            // Registration eligibility comes from the authoritative backend
+            // endpoint, which uses the finance-set DYNAMIC fee_threshold (a system
+            // setting, not hardcoded) and the per-module fee. No duplicated fee
+            // math / hardcoded threshold on the client.
+            // Response shape: { canRegister, outstandingBalance, feeThreshold, totalFees, paidAmount }
             let registrationEligibility = null;
             if (studentId) {
                 try {
-                    // Get payment data (same as dashboard)
-                    const payments = await fetchStudentPayments(studentId);
-                    
-                    // Get program cost using the same method as dashboard
-                    const courseKey = studentData.course;
-                    const programCost = courseKey ? await fetchProgramCost(courseKey) : (data.programCost || 100000);
-                    
-                    console.log('Units section balance calculation:', {
-                        courseKey,
-                        programCost,
-                        apiProgramCost: data.programCost,
-                        paymentsCount: payments.length
-                    });
-                    
-                    // Calculate balance using same method as dashboard. program_cost
-                    // is the ANNUAL fee; students are billed per module, so use the
-                    // single current-module fee (feePerModule, defined in portal-core).
-                    const totalPaid = payments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
-                    const totalFees = feePerModule(programCost);
-                    const outstandingBalance = totalFees - totalPaid;
-                    
-                    // Get fee threshold (default 50000)
-                    const feeThreshold = 50000; // You can make this configurable later
-                    
-                    registrationEligibility = {
-                        canRegister: outstandingBalance < feeThreshold,
-                        outstandingBalance: outstandingBalance,
-                        feeThreshold: feeThreshold,
-                        totalFees: totalFees,
-                        paidAmount: totalPaid
-                    };
-                    
-                    console.log('Registration eligibility (calculated locally):', registrationEligibility);
+                    const eligRes = await authFetch(`${API_BASE_URL}/students/${encodeURIComponent(studentId)}/can-register`);
+                    if (eligRes.ok) {
+                        registrationEligibility = await eligRes.json();
+                        console.log('Registration eligibility (from API):', registrationEligibility);
+                    }
                 } catch (error) {
-                    console.warn('Error calculating registration eligibility:', error);
+                    console.warn('Error fetching registration eligibility:', error);
                 }
             }
             

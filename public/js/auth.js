@@ -44,6 +44,21 @@
     }
 
     /**
+     * Pick the login page for the portal the user is currently in, by URL prefix.
+     * Used for auto-logout/session-expiry redirects so a student bounces to
+     * /student/login (not /admin/login), a trainer to /trainer/login, etc.
+     * Everything else (admin, finance, registrar, dean, deputy, ilo, cibec)
+     * shares /admin/login.
+     */
+    function loginPathForCurrentPortal() {
+        const p = (typeof window !== 'undefined' && window.location && window.location.pathname) || '';
+        if (p.startsWith('/student')) return '/student/login';
+        if (p.startsWith('/trainer')) return '/trainer/login';
+        if (p.startsWith('/hod'))     return '/hod/login';
+        return '/admin/login';
+    }
+
+    /**
      * Fade and remove the auth gate overlay. Called only after requireAuth()
      * confirms the user is authenticated. No-op if no gate element exists.
      *
@@ -171,9 +186,10 @@
                     if (data && (data.code === 'TOKEN_EXPIRED' || data.code === 'INVALID_TOKEN' || data.code === 'TOKEN_REVOKED' || data.code === 'NO_TOKEN')) {
                         cleanupLegacyLocalStorage();
                         this._user = null;
-                        // Don't loop if we're already on a login page.
+                        // Don't loop if we're already on a login page. Redirect to
+                        // THIS portal's login page, not always /admin/login.
                         if (!/\/(admin|trainer|hod|student)\/login/.test(window.location.pathname)) {
-                            window.location.href = '/admin/login';
+                            window.location.href = loginPathForCurrentPortal();
                         }
                         throw new Error('Session expired. Please login again.');
                     }
@@ -191,7 +207,7 @@
                         cleanupLegacyLocalStorage();
                         this._user = null;
                         if (!/\/(admin|trainer|hod|student)\/login/.test(window.location.pathname)) {
-                            window.location.href = '/admin/login';
+                            window.location.href = loginPathForCurrentPortal();
                         }
                         throw new Error('Security token expired. Please login again.');
                     }
@@ -215,12 +231,13 @@
          * Awaits /api/me. If no user, bounces to the given login page. Returns the user otherwise.
          * Pages should call this at the top of their initialization.
          */
-        async requireAuth(loginUrl = '/admin/login') {
+        async requireAuth(loginUrl = null) {
+            const target = loginUrl || loginPathForCurrentPortal();
             const user = await this.me();
             if (!user) {
                 cleanupLegacyLocalStorage();
                 if (!/\/(admin|trainer|hod|student)\/login/.test(window.location.pathname)) {
-                    window.location.href = loginUrl;
+                    window.location.href = target;
                 }
                 return null;
             }
