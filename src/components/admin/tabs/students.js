@@ -69,53 +69,48 @@ function renderAdminStudents() {
         phone: escapeHtml(s.phoneNumber || ''),
         course: escapeHtml(formatCourseName(s.course)),
         module: s.module || 1,
-        balCls: s.balance > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400',
+        owing: s.balance > 0,
         bal: formatCurrency(s.balance),
         id: escapeAttr(s._id),
     });
 
     container.innerHTML = `
-        <div class="flex items-center justify-between mb-2">
-            <p class="text-xs text-gray-500 dark:text-gray-400">Showing <span class="font-semibold text-gray-700 dark:text-gray-200">${rows.length}</span> of ${(allStudents || []).length} students</p>
-        </div>
-        <div class="hidden md:block">
-            <table class="w-full text-xs">
-                <thead class="bg-gray-50 dark:bg-gray-700">
-                    <tr>
-                        <th class="px-2 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Admission</th>
-                        <th class="px-2 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Name</th>
-                        <th class="px-2 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Course</th>
-                        <th class="px-2 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Module</th>
-                        <th class="px-2 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Balance</th>
-                        <th class="px-2 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                    ${rows.length === 0 ? `<tr><td colspan="6" class="px-2 py-6 text-center text-gray-400">No students match the current filters</td></tr>` : rows.map(s => { const c = cell(s); return `
-                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
-                            <td class="px-2 py-2 text-xs font-medium text-gray-900 dark:text-white">${c.adm}</td>
-                            <td class="px-2 py-2"><div><p class="text-xs font-semibold text-gray-900 dark:text-white">${c.name}</p><p class="text-xs text-gray-500 dark:text-gray-400">${c.phone}</p></div></td>
-                            <td class="px-2 py-2 text-xs text-gray-600 dark:text-gray-300">${c.course}</td>
-                            <td class="px-2 py-2"><span class="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-xs rounded-full">M${c.module}</span></td>
-                            <td class="px-2 py-2 text-xs font-semibold ${c.balCls}">${c.bal}</td>
-                            <td class="px-2 py-2"><button onclick="viewStudent('${c.id}')" class="text-primary hover:text-secondary transition"><i class="ri-eye-line text-base"></i></button></td>
+        <div class="adm-card">
+            <div class="adm-card__head">
+                <div class="adm-card__title"><i class="ri-graduation-cap-line"></i> Student List</div>
+                <span class="kpi__note">Showing ${rows.length} of ${(allStudents || []).length}</span>
+            </div>
+            <div class="adm-table-wrap">
+                <table class="adm-table">
+                    <thead>
+                        <tr>
+                            <th>Admission</th>
+                            <th>Name</th>
+                            <th>Course</th>
+                            <th>Module</th>
+                            <th>Balance</th>
+                            <th style="text-align:right">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows.length === 0 ? `<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:24px">No students match the current filters</td></tr>` : rows.map(s => { const c = cell(s); return `
+                        <tr>
+                            <td class="td-strong">${c.adm}</td>
+                            <td>
+                                <div class="td-strong">${c.name}</div>
+                                <div style="color:var(--text-muted);font-size:12px">${c.phone}</div>
+                            </td>
+                            <td>${c.course}</td>
+                            <td><span class="pill pill--info">M${c.module}</span></td>
+                            <td>
+                                <span class="pill ${c.owing ? 'pill--error' : 'pill--success'}">${c.owing ? 'Owing' : 'Cleared'}</span>
+                                <span class="td-strong" style="margin-left:6px">${c.bal}</span>
+                            </td>
+                            <td style="text-align:right"><button onclick="viewStudent('${c.id}')" class="adm-btn adm-btn--ghost adm-btn--sm"><i class="ri-eye-line"></i> View</button></td>
                         </tr>`; }).join('')}
-                </tbody>
-            </table>
-        </div>
-        <div class="md:hidden space-y-2">
-            ${rows.length === 0 ? `<p class="text-center text-gray-400 text-xs py-6">No students match the current filters</p>` : rows.map(s => { const c = cell(s); return `
-                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-2 border border-gray-200 dark:border-gray-600">
-                    <div class="flex justify-between items-start mb-1.5">
-                        <div class="flex-1 min-w-0"><p class="text-xs font-bold text-gray-900 dark:text-white truncate">${c.name}</p><p class="text-xs text-gray-600 dark:text-gray-400">${c.adm}</p></div>
-                        <button onclick="viewStudent('${c.id}')" class="ml-2 text-primary hover:text-secondary p-1"><i class="ri-eye-line text-sm"></i></button>
-                    </div>
-                    <div class="grid grid-cols-2 gap-1.5 text-xs">
-                        <div><span class="text-gray-500 dark:text-gray-400">Course:</span><p class="font-medium text-gray-900 dark:text-white truncate">${c.course}</p></div>
-                        <div><span class="text-gray-500 dark:text-gray-400">Module:</span><p class="font-medium text-gray-900 dark:text-white">M${c.module}</p></div>
-                        <div class="col-span-2"><span class="text-gray-500 dark:text-gray-400">Balance:</span><p class="font-bold ${c.balCls}">${c.bal}</p></div>
-                    </div>
-                </div>`; }).join('')}
+                    </tbody>
+                </table>
+            </div>
         </div>
     `;
 }

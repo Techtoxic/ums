@@ -184,6 +184,19 @@ body { font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI'
 .pill--info { color: var(--info); background: var(--info-bg); }
 .pill--neutral { color: var(--text-tertiary); background: var(--bg-muted); }
 
+/* form fields */
+.adm-label { display: block; font-size: 12.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; }
+.adm-input, .adm-select, .adm-textarea { width: 100%; background: var(--bg-base); border: 1px solid var(--border-default); border-radius: var(--radius); padding: 9px 11px; font-size: 13.5px; color: var(--text-primary); outline: none; transition: border-color var(--transition-fast), box-shadow var(--transition-fast); }
+.adm-input:focus, .adm-select:focus, .adm-textarea:focus { border-color: var(--maroon); box-shadow: 0 0 0 3px color-mix(in srgb, var(--maroon) 18%, transparent); }
+.adm-page-title { font-size: 22px; font-weight: 800; color: var(--text-primary); }
+
+/* modal */
+.adm-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 60; display: flex; align-items: center; justify-content: center; padding: 16px; }
+.adm-modal { background: var(--bg-surface-elevated); border: 1px solid var(--border-default); border-radius: var(--radius-lg); width: 100%; max-width: 520px; max-height: 90vh; overflow: auto; box-shadow: var(--shadow-lg); }
+.adm-modal__head { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px; border-bottom: 1px solid var(--border-default); }
+.adm-modal__title { font-size: 16px; font-weight: 700; color: var(--text-primary); }
+.adm-modal__body { padding: 18px; }
+
 /* progress bar */
 .adm-progress { height: 8px; border-radius: var(--radius-full); background: var(--bg-muted); overflow: hidden; }
 .adm-progress__fill { height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--maroon), var(--gold)); }

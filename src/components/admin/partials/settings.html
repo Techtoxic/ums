@@ -1,48 +1,65 @@
-                <div class="card">
-                    <div class="card__body">
-                    <h2 class="text-headline-sm text-gray-800 dark:text-white mb-1">System Settings</h2>
-                    <p class="text-xs text-gray-600 dark:text-gray-400 mb-4">Academic period and registration controls.</p>
+<div style="margin-bottom:20px">
+    <h1 class="adm-page-title"><i class="ri-settings-3-line"></i> System Settings</h1>
+    <p style="font-size:13px;color:var(--text-muted);margin-top:4px">Academic period and registration controls.</p>
+</div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl">
-                        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                            <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Academic Year</label>
-                            <p class="text-lg font-bold text-gray-800 dark:text-white" id="set-academic-year">—</p>
-                            <p class="text-[11px] text-gray-400 mt-1">Auto-calculated (Sep–Aug)</p>
-                        </div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4" style="max-width:880px">
+    <div class="adm-card">
+        <div class="adm-card__head">
+            <div class="adm-card__title"><i class="ri-calendar-line"></i> Academic Year</div>
+        </div>
+        <div class="adm-card__body">
+            <p style="font-size:22px;font-weight:800;color:var(--text-primary)" id="set-academic-year">—</p>
+            <p style="font-size:11px;color:var(--text-muted);margin-top:6px">Auto-calculated (Sep–Aug)</p>
+        </div>
+    </div>
 
-                        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                            <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Current Intake</label>
-                            <div class="flex gap-2">
-                                <select id="set-current-intake" class="flex-1 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded">
-                                    <option value="january">January</option>
-                                    <option value="may">May</option>
-                                    <option value="september">September</option>
-                                </select>
-                                <button onclick="adminSaveIntake()" class="bg-primary text-white px-3 py-1.5 text-xs rounded hover:bg-secondary transition">Update</button>
-                            </div>
-                            <p class="text-[11px] text-gray-400 mt-1" id="set-intake-status"></p>
-                        </div>
+    <div class="adm-card">
+        <div class="adm-card__head">
+            <div class="adm-card__title"><i class="ri-group-line"></i> Current Intake</div>
+        </div>
+        <div class="adm-card__body">
+            <label class="adm-label" for="set-current-intake">Intake period</label>
+            <div class="flex gap-2">
+                <select id="set-current-intake" class="adm-select" style="flex:1">
+                    <option value="january">January</option>
+                    <option value="may">May</option>
+                    <option value="september">September</option>
+                </select>
+                <button onclick="adminSaveIntake()" class="adm-btn adm-btn--primary">Update</button>
+            </div>
+            <p style="font-size:11px;color:var(--text-muted);margin-top:8px" id="set-intake-status"></p>
+        </div>
+    </div>
 
-                        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                            <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Fee Threshold (KES)</label>
-                            <div class="flex gap-2">
-                                <input type="number" id="set-fee-threshold" min="0" class="flex-1 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded">
-                                <button onclick="adminSaveThreshold()" class="bg-primary text-white px-3 py-1.5 text-xs rounded hover:bg-secondary transition">Update</button>
-                            </div>
-                            <p class="text-[11px] text-gray-400 mt-1" id="set-threshold-status">Minimum payment required before a student can register for units.</p>
-                        </div>
+    <div class="adm-card">
+        <div class="adm-card__head">
+            <div class="adm-card__title"><i class="ri-money-cny-circle-line"></i> Fee Threshold (KES)</div>
+        </div>
+        <div class="adm-card__body">
+            <label class="adm-label" for="set-fee-threshold">Minimum payment (KES)</label>
+            <div class="flex gap-2">
+                <input type="number" id="set-fee-threshold" min="0" class="adm-input" style="flex:1">
+                <button onclick="adminSaveThreshold()" class="adm-btn adm-btn--primary">Update</button>
+            </div>
+            <p style="font-size:11px;color:var(--text-muted);margin-top:8px" id="set-threshold-status">Minimum payment required before a student can register for units.</p>
+        </div>
+    </div>
 
-                        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                            <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Unit Registration</label>
-                            <div class="flex gap-2 items-center">
-                                <select id="set-registration-enabled" class="flex-1 px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded">
-                                    <option value="true">Enabled</option>
-                                    <option value="false">Disabled</option>
-                                </select>
-                                <button onclick="adminSaveRegistration()" class="bg-primary text-white px-3 py-1.5 text-xs rounded hover:bg-secondary transition">Update</button>
-                            </div>
-                            <p class="text-[11px] text-gray-400 mt-1" id="set-registration-status"></p>
-                        </div>
-                    </div>
-                    </div>
-                </div>
+    <div class="adm-card">
+        <div class="adm-card__head">
+            <div class="adm-card__title"><i class="ri-toggle-line"></i> Unit Registration</div>
+        </div>
+        <div class="adm-card__body">
+            <label class="adm-label" for="set-registration-enabled">Registration state</label>
+            <div class="flex gap-2">
+                <select id="set-registration-enabled" class="adm-select" style="flex:1">
+                    <option value="true">Enabled</option>
+                    <option value="false">Disabled</option>
+                </select>
+                <button onclick="adminSaveRegistration()" class="adm-btn adm-btn--primary">Update</button>
+            </div>
+            <p style="font-size:11px;color:var(--text-muted);margin-top:8px" id="set-registration-status"></p>
+        </div>
+    </div>
+</div>

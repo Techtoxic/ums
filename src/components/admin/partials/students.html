@@ -1,36 +1,28 @@
-                <div class="card">
-                    <div class="card__body">
-                    <!-- Header with buttons -->
-                    <div class="flex items-center justify-between gap-2 mb-2">
-                        <h2 class="text-sm font-bold text-gray-800 dark:text-white">Students</h2>
-                        <div class="flex gap-1">
-                            <button onclick="openAddStudentModal()" class="bg-primary text-white px-2 py-1 text-xs rounded hover:bg-secondary transition flex items-center gap-1">
-                                <i class="ri-user-add-line"></i><span class="hidden xs:inline">Add</span>
-                            </button>
-                            <button onclick="exportStudents()" class="bg-[#7A0C0C] hover:bg-[#5C0808] text-white px-2 py-1 text-xs rounded transition flex items-center gap-1">
-                                <i class="ri-file-excel-line"></i><span class="hidden xs:inline">Export</span>
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- Search and Filters -->
-                    <div class="mb-2 grid grid-cols-12 gap-1">
-                        <input type="text" id="student-search" placeholder="Search..." class="col-span-12 sm:col-span-6 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded focus:ring-1 focus:ring-primary">
-                        <select id="module-filter" class="col-span-6 sm:col-span-3 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded">
-                            <option value="">Module</option>
-                            <option value="1">M1</option>
-                            <option value="2">M2</option>
-                            <option value="3">M3</option>
-                            <option value="4">M4</option>
-                            <option value="5">M5</option>
-                            <option value="6">M6</option>
-                        </select>
-                        <select id="program-filter" class="col-span-6 sm:col-span-3 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded">
-                            <option value="">Program</option>
-                        </select>
-                    </div>
-                    
-                    <!-- Students Table -->
-                    <div id="students-table" class="overflow-x-auto"></div>
-                    </div>
-                </div>
+<!-- Header -->
+<div class="flex items-center justify-between gap-4 flex-wrap" style="margin-bottom:18px">
+    <h1 class="adm-page-title">Students</h1>
+    <div class="flex gap-2">
+        <button onclick="openAddStudentModal()" class="adm-btn adm-btn--primary"><i class="ri-user-add-line"></i> Add</button>
+        <button onclick="exportStudents()" class="adm-btn adm-btn--outline"><i class="ri-file-excel-line"></i> Export</button>
+    </div>
+</div>
+
+<!-- Filter bar -->
+<div class="grid grid-cols-1 sm:grid-cols-12 gap-3" style="margin-bottom:18px">
+    <input type="text" id="student-search" placeholder="Search name, admission, course…" class="adm-input sm:col-span-6">
+    <select id="module-filter" class="adm-select sm:col-span-3">
+        <option value="">All Modules</option>
+        <option value="1">M1</option>
+        <option value="2">M2</option>
+        <option value="3">M3</option>
+        <option value="4">M4</option>
+        <option value="5">M5</option>
+        <option value="6">M6</option>
+    </select>
+    <select id="program-filter" class="adm-select sm:col-span-3">
+        <option value="">All Programs</option>
+    </select>
+</div>
+
+<!-- Students table (rendered by students.js) -->
+<div id="students-table"></div>

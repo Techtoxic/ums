@@ -42,45 +42,44 @@ async function displayPrograms(searchTerm = '') {
         const totalUnits = Object.values(_adminUnitsByProgram || {}).reduce((s, arr) => s + arr.length, 0);
 
         container.innerHTML = `
-            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3" style="margin-bottom:18px">
                 <div>
-                    <h3 class="text-sm md:text-base font-bold text-gray-800 dark:text-white">All Programs (${filtered.length})</h3>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">${totalUnits} units across ${(allPrograms || []).length} programs</p>
+                    <h1 class="adm-page-title"><i class="ri-book-2-line"></i> Programs <span style="color:var(--text-muted);font-weight:700">(${filtered.length})</span></h1>
+                    <p class="kpi__note" style="margin-top:4px">${totalUnits} units across ${(allPrograms || []).length} programs</p>
                 </div>
-                <input type="text" id="program-search" placeholder="Search programs / code / department..." value="${escapeAttr(searchTerm)}"
-                    class="w-full sm:w-72 px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:ring-1 focus:ring-primary focus:border-primary">
+                <input type="text" id="program-search" class="adm-input" style="max-width:300px" placeholder="Search programs / code / department..." value="${escapeAttr(searchTerm)}">
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3" id="programs-grid">
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4" id="programs-grid">
                 ${filtered.length === 0 ? `
-                    <div class="col-span-full text-center py-8">
-                        <i class="ri-search-line text-3xl text-gray-400 mb-2"></i>
-                        <p class="text-xs text-gray-500">No programs found matching "${escapeHtml(searchTerm)}"</p>
+                    <div class="col-span-full" style="text-align:center;padding:40px 0;color:var(--text-muted)">
+                        <i class="ri-search-line" style="font-size:32px;display:block;margin-bottom:8px;color:var(--text-tertiary)"></i>
+                        <p style="font-size:13px">No programs found matching "${escapeHtml(searchTerm)}"</p>
                     </div>
                 ` : filtered.map(program => {
                     const units = (_adminUnitsByProgram[program.id] || []).slice().sort((a, b) => (a.code || '').localeCompare(b.code || ''));
                     return `
-                    <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3 hover:shadow-lg transition bg-white dark:bg-gray-800">
-                        <div class="flex items-start justify-between gap-2 mb-1">
-                            <h4 class="font-semibold text-xs text-gray-800 dark:text-white">${escapeHtml(program.name)}</h4>
-                            <span class="shrink-0 px-1.5 py-0.5 text-[10px] rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">${escapeHtml(program.code || '')}</span>
+                    <div class="adm-card"><div class="adm-card__body">
+                        <div class="flex items-start justify-between gap-2" style="margin-bottom:6px">
+                            <div class="td-strong" style="font-size:14px">${escapeHtml(program.name)}</div>
+                            <span class="pill pill--neutral" style="flex-shrink:0">${escapeHtml(program.code || '')}</span>
                         </div>
-                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-2">${escapeHtml(program.departmentName || '')}</p>
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-sm font-bold text-primary">${formatCurrency(program.programCost)}</span>
-                            <span class="text-[10px] text-gray-500 dark:text-gray-400">per module · ${units.length} units</span>
+                        <p class="kpi__note" style="margin-bottom:12px">${escapeHtml(program.departmentName || '')}</p>
+                        <div class="flex items-center justify-between" style="margin-bottom:10px">
+                            <span style="font-size:15px;font-weight:800;color:var(--maroon)">${formatCurrency(program.programCost)}</span>
+                            <span class="kpi__note">per module · ${units.length} units</span>
                         </div>
                         <details class="group">
-                            <summary class="cursor-pointer text-xs font-medium text-blue-600 dark:text-blue-400 select-none">View units (${units.length})</summary>
-                            <div class="mt-2 max-h-44 overflow-y-auto space-y-1">
-                                ${units.length === 0 ? `<p class="text-[11px] text-gray-400">No units recorded</p>` : units.map(u => `
-                                    <div class="text-[11px] bg-gray-50 dark:bg-gray-700/60 rounded px-2 py-1 flex items-center justify-between gap-2">
-                                        <span class="font-mono text-gray-500 dark:text-gray-400 shrink-0">${escapeHtml(u.code || '')}</span>
-                                        <span class="text-gray-700 dark:text-gray-200 text-right truncate">${escapeHtml(u.name || '')}</span>
+                            <summary class="adm-btn adm-btn--ghost adm-btn--sm" style="cursor:pointer;list-style:none;padding-left:0;padding-right:0">View units (${units.length})</summary>
+                            <div style="margin-top:10px;max-height:176px;overflow-y:auto;display:flex;flex-direction:column;gap:4px">
+                                ${units.length === 0 ? `<p class="kpi__note">No units recorded</p>` : units.map(u => `
+                                    <div class="flex items-center justify-between gap-2" style="background:var(--bg-muted);border-radius:var(--radius);padding:6px 10px">
+                                        <span style="font-family:monospace;color:var(--text-muted);flex-shrink:0;font-size:12px">${escapeHtml(u.code || '')}</span>
+                                        <span style="color:var(--text-secondary);text-align:right;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(u.name || '')}</span>
                                     </div>
                                 `).join('')}
                             </div>
                         </details>
-                    </div>`;
+                    </div></div>`;
                 }).join('')}
             </div>
         `;
@@ -97,7 +96,7 @@ async function displayPrograms(searchTerm = '') {
         }
     } catch (error) {
         console.error('Error displaying programs:', error);
-        container.innerHTML = '<p class="text-red-600 text-center py-8">Error loading programs</p>';
+        container.innerHTML = '<p style="text-align:center;color:var(--error);padding:32px 0">Error loading programs</p>';
     }
 }
 
