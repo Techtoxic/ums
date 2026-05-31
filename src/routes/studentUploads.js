@@ -6,6 +6,18 @@ const { upload, validateUploadBuffer, FILE_IMAGE_EXT_RE } = require('../utils/up
 const { uploadToS3, getPresignedUrl, deleteFromS3 } = require('../utils/s3Service');
 const { StudentUpload, Student, StudentUnitRegistration, AuditLog, User, Notification } = require('../db/models');
 
+// Staff roles allowed to view/manage ANY student's upload.
+const STAFF_UPLOAD_ROLES = ['admin', 'registrar', 'cibec'];
+
+// Ownership is decided ONLY from the verified token, never from req.query/body
+// (those are attacker-controlled — e.g. a tampered ?userId in Burp). upload.studentId
+// is the student UUID for current data, but may be a legacy admission number; match
+// either against the token identity so a student can reach only their own files.
+function isUploadOwner(req, upload) {
+    const owner = String(upload.studentId);
+    return owner === String(req.user.userId) || owner === String(req.user.admissionNumber);
+}
+
 // Upload student file (profile, KCSE, KCPE, assessment, practical)
 router.post('/student-uploads', verifyToken, authorize('admin', 'registrar', 'student', 'trainer'), upload.single('file'), async (req, res) => {
     try {
@@ -313,10 +325,10 @@ router.get('/student-uploads/:uploadId/download', verifyToken, authorize('admin'
         if (!upload) {
             return res.status(403).json({ message: 'Forbidden' });
         }
-        if (!['admin', 'registrar', 'cibec'].includes(req.user.role)) {
-            if (String(upload.studentId) !== String(req.user.admissionNumber)) {
-                return res.status(403).json({ message: 'Forbidden' });
-            }
+        // Owner-only for non-staff. Ownership comes from the token, so a tampered
+        // ?userId / changed uploadId in Burp cannot reach another student's file.
+        if (!STAFF_UPLOAD_ROLES.includes(req.user.role) && !isUploadOwner(req, upload)) {
+            return res.status(403).json({ message: 'Forbidden' });
         }
 
         // SEV-H-011: 15-min cap + safe Content-Disposition/Type enforced in s3Service.
@@ -365,10 +377,9 @@ router.delete('/student-uploads/:uploadId', verifyToken, authorize('admin', 'reg
         if (!upload) {
             return res.status(403).json({ message: 'Forbidden' });
         }
-        if (!['admin', 'registrar', 'cibec'].includes(req.user.role)) {
-            if (String(upload.studentId) !== String(req.user.admissionNumber)) {
-                return res.status(403).json({ message: 'Forbidden' });
-            }
+        // Owner-only for non-staff (token-based ownership; query is not trusted).
+        if (!STAFF_UPLOAD_ROLES.includes(req.user.role) && !isUploadOwner(req, upload)) {
+            return res.status(403).json({ message: 'Forbidden' });
         }
 
         // Delete from S3
