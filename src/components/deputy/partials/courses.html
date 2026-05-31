@@ -1,1 +1,21 @@
-            <!-- Courses will be loaded here -->
+<!-- Header -->
+<div class="flex items-center justify-between gap-4 flex-wrap" style="margin-bottom:18px">
+    <h1 class="adm-page-title"><i class="ri-book-2-line"></i> Courses</h1>
+</div>
+
+<!-- Filter bar -->
+<div class="grid grid-cols-1 sm:grid-cols-12 gap-3" style="margin-bottom:18px">
+    <select id="deputyCoursesDepartment" class="adm-select sm:col-span-4">
+        <option value="all">All Departments</option>
+        <option value="applied_science">Applied Science</option>
+        <option value="agriculture">Agriculture</option>
+        <option value="building_civil">Building &amp; Civil</option>
+        <option value="electromechanical">Electromechanical</option>
+        <option value="hospitality">Hospitality</option>
+        <option value="business_liberal">Business &amp; Liberal</option>
+        <option value="computing_informatics">Computing &amp; Informatics</option>
+    </select>
+</div>
+
+<!-- Courses grid (rendered by courses.js) -->
+<div id="coursesContent"></div>

@@ -6,8 +6,11 @@
     <link rel="apple-touch-icon" href="/public/img/favicon.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deputy Academics Dashboard - University Management System</title>
-    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Deputy Principal Dashboard - EDTTI</title>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.0.0/fonts/remixicon.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -18,88 +21,90 @@
 
     <!-- Frontend Config (Load First!) -->
     <script src="/public/js/config.js"></script>
-    
+
     <link rel="stylesheet" href="/public/css/deputy-portal.css">
     <script src="/public/js/auth.js"></script>
     <script src="/public/js/catalog.js"></script>
-</head>
-<body class="text-slate-800 dark:text-slate-200">
-    <div class="dashboard-shell">
-        <!-- Sidebar backdrop for mobile -->
-        <div class="dashboard-sidebar__backdrop" id="sbBackdrop" onclick="closeSidebar()"></div>
 
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: { extend: { colors: { primary: '#7A0C0C', secondary: '#8B2A2A' } } }
+        }
+    </script>
+    <!-- Reuse the admin component CSS (shared shadcn-style primitives) -->
+    <link rel="stylesheet" href="/public/css/admin-portal.css">
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 transition-colors duration-200 text-slate-800 dark:text-slate-200">
+
+    <!-- ── App shell: wide collapsible sidebar + main column ──────────────── -->
+    <div id="deputy-shell" class="admin-shell">
         <!-- Sidebar -->
-        <aside class="dashboard-sidebar" id="sidebar">
-            <div class="dashboard-sidebar__logo">
-                <i class="ri-graduation-cap-line"></i>
-                <span>EDTTI</span>
+        <aside id="sidebar" class="admin-sidebar">
+            <div class="admin-sidebar__brand">
+                <img src="/public/img/logo.png" alt="EDTTI" onerror="this.replaceWith(Object.assign(document.createElement('i'),{className:'ri-shield-star-line',style:'font-size:28px;color:var(--maroon)'}))">
+                <div class="admin-sidebar__brand-text">EDTTI<small>Deputy Principal</small></div>
             </div>
-            <nav class="dashboard-sidebar__nav">
-                <a href="/deputy/dashboard" id="nav-dashboard" class="nav-link active">
-                    <i class="ri-dashboard-line"></i><span>Dashboard</span>
-                </a>
-                <a href="/deputy/students" id="nav-students" class="nav-link">
-                    <i class="ri-team-line"></i><span>Students</span>
-                </a>
-                <a href="/deputy/trainers" id="nav-trainers" class="nav-link">
-                    <i class="ri-user-star-line"></i><span>Trainers</span>
-                </a>
-                <a href="/deputy/courses" id="nav-courses" class="nav-link">
-                    <i class="ri-book-open-line"></i><span>Courses</span>
-                </a>
-                <a href="/deputy/units" id="nav-units" class="nav-link">
-                    <i class="ri-file-list-3-line"></i><span>Units</span>
-                </a>
-                <a href="/deputy/tools" id="nav-tools" class="nav-link">
-                    <i class="ri-tools-line"></i><span>Tools of Trade</span>
-                </a>
-                <a href="/deputy/notifications" id="nav-notifications" class="nav-link">
-                    <i class="ri-notification-3-line"></i><span>Notifications</span>
-                </a>
+
+            <nav class="admin-sidebar__nav">
+                <div class="admin-sidebar__label">Portal</div>
+                <a href="/deputy/dashboard" id="nav-dashboard" data-section="dashboard" title="Dashboard" class="nav-link active"><i class="ri-dashboard-line"></i><span>Dashboard</span></a>
+                <a href="/deputy/students"  id="nav-students"  data-section="students"  title="Students"  class="nav-link"><i class="ri-graduation-cap-line"></i><span>Students</span></a>
+                <a href="/deputy/trainers"  id="nav-trainers"  data-section="trainers"  title="Trainers"  class="nav-link"><i class="ri-user-star-line"></i><span>Trainers</span></a>
+                <a href="/deputy/courses"   id="nav-courses"   data-section="courses"   title="Courses"   class="nav-link"><i class="ri-book-2-line"></i><span>Courses</span></a>
+                <a href="/deputy/units"     id="nav-units"     data-section="units"     title="Units"     class="nav-link"><i class="ri-file-list-3-line"></i><span>Units</span></a>
+                <a href="/deputy/tools"     id="nav-tools"     data-section="tools"     title="Tools of Trade" class="nav-link"><i class="ri-tools-line"></i><span>Tools of Trade</span></a>
+                <div class="admin-sidebar__label">System</div>
+                <a href="/deputy/notifications" id="nav-notifications" data-section="notifications" title="Notifications" class="nav-link"><i class="ri-notification-3-line"></i><span>Notifications</span></a>
             </nav>
-            <div class="dashboard-sidebar__profile">
-                <div class="dashboard-sidebar__avatar" id="userAvatar">D</div>
-                <div class="dashboard-sidebar__profile-text">
-                    <div class="font-semibold text-body-sm" id="userName">Deputy</div>
-                    <div class="text-body-sm" style="color:var(--text-muted)">Deputy Academics</div>
+
+            <div class="admin-sidebar__footer">
+                <div class="admin-sidebar__mini">
+                    <div class="admin-sidebar__mini-title">EDTTI Management</div>
+                    <a href="#"><i class="ri-question-line"></i> Help</a><a href="#"><i class="ri-book-open-line"></i> Docs</a>
+                </div>
+                <div class="admin-userchip">
+                    <div class="admin-userchip__avatar" id="userAvatar">D</div>
+                    <div class="admin-userchip__meta">
+                        <div class="admin-userchip__name" id="userName">Deputy</div>
+                        <div class="admin-userchip__role">Deputy Principal</div>
+                    </div>
                 </div>
             </div>
+            <!-- mobile off-canvas backdrop -->
+            <div class="admin-sidebar__backdrop" id="sbBackdrop" onclick="toggleSidebar()"></div>
         </aside>
 
-        <!-- Main column: topbar + content -->
-        <div>
-            <!-- Topbar -->
-            <header class="dashboard-topbar">
-                <button class="btn btn--ghost btn--icon lg:hidden" onclick="openSidebar()" aria-label="Open menu">
-                    <i class="ri-menu-line"></i>
-                </button>
-                <div class="dashboard-topbar__title">Deputy Academics Dashboard</div>
-                <div class="dashboard-topbar__actions">
-                    <button data-theme-toggle class="theme-toggle" aria-label="Toggle dark mode">
-                        <i class="ri-sun-line theme-icon-light"></i>
-                        <i class="ri-moon-line theme-icon-dark"></i>
-                    </button>
-                    <button id="logoutBtn" class="btn btn--danger btn--icon" aria-label="Logout">
-                        <i class="ri-logout-box-line"></i>
-                    </button>
+        <!-- Main column -->
+        <div class="admin-colmain">
+            <header class="admin-topbar">
+                <button class="admin-iconbtn lg:hidden" onclick="toggleSidebar()" aria-label="Open menu"><i class="ri-menu-line text-lg"></i></button>
+                <button class="admin-iconbtn hidden lg:inline-flex" onclick="toggleSidebar()" aria-label="Collapse sidebar" title="Collapse / expand"><i class="ri-menu-fold-line text-lg"></i></button>
+                <div class="admin-topbar__title"><i class="ri-dashboard-line"></i><span id="pageTitle">Dashboard Overview</span></div>
+                <span id="academic-year-chip" class="pill pill--neutral hidden" style="margin-left:2px" title="Current academic year"></span>
+                <div class="admin-topbar__spacer"></div>
+
+                <button class="admin-iconbtn" data-theme-toggle onclick="toggleDarkMode()" aria-label="Toggle dark mode"><i id="dark-mode-icon" class="ri-moon-line text-lg"></i></button>
+                <button class="admin-iconbtn" onclick="showSection('notifications')" aria-label="Notifications"><i class="ri-notification-3-line text-lg"></i><span class="dot"></span></button>
+
+                <div class="relative">
+                    <button class="admin-avatar" onclick="toggleProfileMenu()" aria-label="Account"><i class="ri-user-line"></i></button>
+                    <div id="profile-menu" class="admin-menu hidden">
+                        <a href="#" onclick="event.preventDefault()"><i class="ri-user-line"></i> Profile</a>
+                        <button type="button" onclick="showSection('notifications'); toggleProfileMenu();"><i class="ri-notification-3-line"></i> Notifications</button>
+                        <hr>
+                        <button id="logoutBtn" onclick="logout()" class="danger"><i class="ri-logout-box-line"></i> Logout</button>
+                    </div>
                 </div>
             </header>
 
-            <!-- Main Content -->
-            <main class="dashboard-main">
-        <!-- Page Header -->
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-            <div>
-                <h1 class="text-2xl font-bold" id="pageTitle">Dashboard Overview</h1>
-                <p class="text-slate-500 dark:text-slate-400">Welcome back, <span id="welcomeName">Deputy</span>!</p>
-            </div>
+            <!-- Content Area: the router injects each tab's partial here -->
+            <main id="tab-root" class="admin-main"></main>
         </div>
+    </div>
 
-                <!-- Content area: the router injects each tab's partial here -->
-                <div id="tab-root"></div>
-            </main>
-        </div>
-    </div><!-- /.dashboard-shell -->
+    <!-- Global elements -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
 
     <!-- Scripts -->
     <script src="/src/components/deputy/portal-core.js"></script>

@@ -1,58 +1,82 @@
-// tabs/courses.js — deputy course management.
+// tabs/courses.js — deputy course management: adm-card grid grouped by
+// department, each course a tile with a code pill. Adds a department filter.
 window.DeputyTabs = window.DeputyTabs || {};
 
-// (verbatim from the monolith inline scripts)
-        // Load courses data
-        async function loadCoursesData() {
-            try {
-                const response = await window.AUTH.fetch(`${API_BASE_URL}/courses`);
-                if (!response.ok) {
-                    throw new Error('Failed to fetch courses');
-                }
-                
-                const courses = await response.json();
-                displayCourses(courses);
-            } catch (error) {
-                console.error('Error loading courses:', error);
-            }
+let _deputyCoursesCache = [];
+
+// Load courses data (once), then render with the active filter.
+async function loadCoursesData() {
+    try {
+        const response = await window.AUTH.fetch(`${API_BASE_URL}/courses`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch courses');
         }
 
-        // Display courses
-        function displayCourses(courses) {
-            const content = document.getElementById('content-courses');
-            if (!content) return;
+        _deputyCoursesCache = await response.json() || [];
+        displayCourses();
+    } catch (error) {
+        console.error('Error loading courses:', error);
+    }
+}
 
-            const coursesByDept = {};
-            courses.forEach(course => {
-                if (!coursesByDept[course.department]) {
-                    coursesByDept[course.department] = [];
-                }
-                coursesByDept[course.department].push(course);
-            });
+// Display courses grouped by department, applying the dept filter.
+function displayCourses() {
+    const content = document.getElementById('coursesContent');
+    if (!content) return;
 
-            content.innerHTML = `
-                <div class="space-y-6">
-                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-                        <h2 class="text-xl font-semibold mb-6">All Courses by Department</h2>
-                        ${Object.keys(coursesByDept).map(dept => `
-                            <div class="mb-8">
-                                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 capitalize">${escapeHtml(dept.replace('_', ' '))}</h3>
-                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    ${coursesByDept[dept].map(course => `
-                                        <div class="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-primary/50 transition-colors">
-                                            <h4 class="font-medium text-gray-900 dark:text-white">${escapeHtml(course.name)}</h4>
-                                            <p class="text-sm text-gray-500 dark:text-gray-400">Level ${escapeHtml(course.level)}</p>
-                                            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">${escapeHtml(course.code)}</p>
-                                        </div>
-                                    `).join('')}
-                                </div>
+    const deptFilter = (document.getElementById('deputyCoursesDepartment') || {}).value || 'all';
+    const fmtDept = (window.formatDepartmentName)
+        ? window.formatDepartmentName
+        : (window.Catalog ? (c) => window.Catalog.departmentName(c) : (c) => (c || '').replace(/_/g, ' '));
+
+    const courses = (_deputyCoursesCache || []).filter(c => deptFilter === 'all' || c.department === deptFilter);
+
+    const coursesByDept = {};
+    courses.forEach(course => {
+        const dept = course.department || 'unknown';
+        if (!coursesByDept[dept]) coursesByDept[dept] = [];
+        coursesByDept[dept].push(course);
+    });
+
+    const deptKeys = Object.keys(coursesByDept);
+    if (deptKeys.length === 0) {
+        content.innerHTML = `
+            <div class="adm-card"><div class="adm-card__body" style="text-align:center;padding:40px 0;color:var(--text-muted)">
+                <i class="ri-book-2-line" style="font-size:32px;display:block;margin-bottom:8px;color:var(--text-tertiary)"></i>
+                <p style="font-size:13px">No courses found</p>
+            </div></div>`;
+        return;
+    }
+
+    content.innerHTML = deptKeys.map(dept => `
+        <div class="adm-card" style="margin-bottom:16px">
+            <div class="adm-card__head">
+                <div class="adm-card__title"><i class="ri-building-line"></i> ${escapeHtml(fmtDept(dept) || dept)}</div>
+                <span class="kpi__note">${coursesByDept[dept].length} course${coursesByDept[dept].length === 1 ? '' : 's'}</span>
+            </div>
+            <div class="adm-card__body">
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    ${coursesByDept[dept].map(course => `
+                        <div class="adm-card"><div class="adm-card__body">
+                            <div class="flex items-start justify-between gap-2" style="margin-bottom:6px">
+                                <div class="td-strong" style="font-size:14px">${escapeHtml(course.name)}</div>
+                                <span class="pill pill--neutral" style="flex-shrink:0">${escapeHtml(course.code || '')}</span>
                             </div>
-                        `).join('')}
-                    </div>
+                            <p class="kpi__note">Level ${escapeHtml(String(course.level || ''))}</p>
+                        </div></div>
+                    `).join('')}
                 </div>
-            `;
-        }
+            </div>
+        </div>
+    `).join('');
+}
 
 window.DeputyTabs.courses = {
-    init() { loadCoursesData(); }
+    init() {
+        loadCoursesData();
+        if (window.__deputyCoursesWired) return;
+        window.__deputyCoursesWired = true;
+        const deptEl = document.getElementById('deputyCoursesDepartment');
+        if (deptEl) deptEl.addEventListener('change', displayCourses);
+    }
 };

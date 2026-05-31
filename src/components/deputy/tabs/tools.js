@@ -6,14 +6,18 @@ window.DeputyTabs = window.DeputyTabs || {};
 // (verbatim from the monolith inline scripts)
         // Tools of Trade Modal Functions
         function openToolRequestModal() {
-            document.getElementById('toolRequestModal').classList.remove('hidden');
-            document.getElementById('toolRequestModal').classList.add('flex');
+            const m = document.getElementById('toolRequestModal');
+            m.classList.remove('hidden');
+            m.classList.add('flex');
+            m.style.display = 'flex'; // ensure visibility regardless of class cascade
             document.body.classList.add('menu-open');
         }
 
         function closeToolRequestModal() {
-            document.getElementById('toolRequestModal').classList.add('hidden');
-            document.getElementById('toolRequestModal').classList.remove('flex');
+            const m = document.getElementById('toolRequestModal');
+            m.classList.add('hidden');
+            m.classList.remove('flex');
+            m.style.display = 'none';
             document.body.classList.remove('menu-open');
         }
 
@@ -62,10 +66,10 @@ window.DeputyTabs = window.DeputyTabs || {};
 
             if (tools.length === 0) {
                 toolsContainer.innerHTML = `
-                    <div class="col-span-full text-center py-8">
-                        <i class="ri-tools-line text-4xl text-gray-400 mb-4"></i>
-                        <p class="text-gray-500">No tools of trade submitted yet</p>
-                    </div>`;
+                    <div class="adm-card" style="grid-column:1/-1"><div class="adm-card__body" style="text-align:center;padding:32px 0;color:var(--text-muted)">
+                        <i class="ri-tools-line" style="font-size:32px;display:block;margin-bottom:8px;color:var(--text-tertiary)"></i>
+                        <p style="font-size:13px">No tools of trade submitted yet</p>
+                    </div></div>`;
                 return;
             }
 
@@ -85,21 +89,19 @@ window.DeputyTabs = window.DeputyTabs || {};
                 const submittedAt = tool.createdAt ? new Date(tool.createdAt).toLocaleDateString() : 'N/A';
 
                 const toolCard = `
-                    <div class="p-4 border border-slate-200 dark:border-gray-700 rounded-lg hover:border-primary/50 transition-colors">
-                        <div class="flex items-center justify-between mb-2">
-                            <h4 class="font-medium">${escapeHtml(toolTypeNames[tool.toolType] || tool.toolType)}</h4>
-                            <span class="px-3 py-1 rounded-full text-xs ${statusClass}">${escapeHtml((tool.status || '').replace('_', ' ').toUpperCase())}</span>
+                    <div class="adm-card"><div class="adm-card__body">
+                        <div class="flex items-center justify-between gap-2" style="margin-bottom:8px">
+                            <h4 class="td-strong" style="font-size:14px">${escapeHtml(toolTypeNames[tool.toolType] || tool.toolType)}</h4>
+                            <span class="pill ${statusClass}">${escapeHtml((tool.status || '').replace('_', ' ').toUpperCase())}</span>
                         </div>
-                        <p class="text-sm text-slate-500 dark:text-slate-400 mb-2">${escapeHtml(trainerName)}${trainerDepartment ? ` — ${escapeHtml(trainerDepartment)}` : ''}</p>
-                        <p class="text-xs text-slate-400 dark:text-slate-500 mb-3">Submitted: ${submittedAt}</p>
-                        <div class="flex items-center gap-2">
-                            <button onclick="reviewTool('${escapeAttr(tool.id)}')" class="text-sm text-primary hover:text-secondary transition-colors">Review</button>
-                            <span class="text-slate-300 dark:text-slate-600">|</span>
-                            <button onclick="downloadTool('${escapeAttr(tool.id)}')" class="text-sm text-slate-500 hover:text-slate-600 transition-colors">Download</button>
-                            <span class="text-slate-300 dark:text-slate-600">|</span>
-                            <button onclick="deleteToolDeputy('${escapeAttr(tool.id)}')" class="text-sm text-red-500 hover:text-red-700 transition-colors">Delete</button>
+                        <p style="color:var(--text-secondary);font-size:13px;margin-bottom:2px">${escapeHtml(trainerName)}${trainerDepartment ? ` — ${escapeHtml(trainerDepartment)}` : ''}</p>
+                        <p class="kpi__note" style="margin-bottom:12px">Submitted: ${escapeHtml(submittedAt)}</p>
+                        <div class="flex items-center" style="gap:6px">
+                            <button onclick="reviewTool('${escapeAttr(tool.id)}')" class="adm-btn adm-btn--outline adm-btn--sm"><i class="ri-eye-line"></i> Review</button>
+                            <button onclick="downloadTool('${escapeAttr(tool.id)}')" class="adm-btn adm-btn--ghost adm-btn--sm"><i class="ri-download-line"></i></button>
+                            <button onclick="deleteToolDeputy('${escapeAttr(tool.id)}')" class="adm-btn adm-btn--ghost adm-btn--sm" style="color:var(--error,#dc2626)"><i class="ri-delete-bin-line"></i></button>
                         </div>
-                    </div>
+                    </div></div>
                 `;
                 toolsContainer.insertAdjacentHTML('beforeend', toolCard);
             });
@@ -107,12 +109,13 @@ window.DeputyTabs = window.DeputyTabs || {};
 
         function getStatusClass(status) {
             const statusClasses = {
-                'submitted': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-                'approved': 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-                'rejected': 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-                'needs_revision': 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+                'submitted': 'pill--info',
+                'reviewed': 'pill--success',
+                'approved': 'pill--success',
+                'rejected': 'pill--error',
+                'needs_revision': 'pill--warning'
             };
-            return statusClasses[status] || 'bg-slate-100 text-slate-600';
+            return statusClasses[status] || 'pill--neutral';
         }
 
         async function handleToolRequest(event) {
@@ -257,88 +260,79 @@ window.DeputyTabs = window.DeputyTabs || {};
 
         // Show tool review modal
         function showToolReviewModal(tool) {
-            // Create review modal
+            // Create review modal (admin adm-modal styling).
             const modal = document.createElement('div');
-            modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50';
+            modal.id = 'toolReviewModal';
+            modal.className = 'adm-modal-overlay';
             modal.innerHTML = `
-                <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 w-full max-w-2xl mx-4 shadow-2xl max-h-[80vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-semibold">Review Tool of Trade</h3>
-                        <button onclick="closeReviewModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-                            <i class="ri-close-line text-xl"></i>
-                        </button>
+                <div class="adm-modal" style="max-width:680px">
+                    <div class="adm-modal__head">
+                        <div class="adm-modal__title"><i class="ri-eye-line"></i> Review Tool of Trade</div>
+                        <button onclick="closeReviewModal()" class="admin-iconbtn" aria-label="Close"><i class="ri-close-line text-xl"></i></button>
                     </div>
-                    
-                    <div class="space-y-4 max-h-[60vh] overflow-y-auto">
+                    <div class="adm-modal__body" style="display:flex;flex-direction:column;gap:16px">
                         <!-- Tool Info -->
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div>
-                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Tool Type</label>
-                                <p class="text-sm text-gray-900 dark:text-white capitalize">${escapeHtml(tool.toolType.replace('_', ' '))}</p>
+                                <label class="adm-label">Tool Type</label>
+                                <p class="td-strong" style="text-transform:capitalize">${escapeHtml((tool.toolType || '').replace('_', ' '))}</p>
                             </div>
                             <div>
-                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">File Name</label>
-                                <p class="text-sm text-gray-900 dark:text-white truncate">${escapeHtml(tool.originalFileName)}</p>
+                                <label class="adm-label">File Name</label>
+                                <p class="td-strong" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(tool.originalFileName || '')}</p>
                             </div>
                             <div>
-                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">File Size</label>
-                                <p class="text-sm text-gray-900 dark:text-white">${formatFileSize(tool.fileSize)}</p>
+                                <label class="adm-label">File Size</label>
+                                <p class="td-strong">${escapeHtml(formatFileSize(tool.fileSize || 0))}</p>
                             </div>
                             <div>
-                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
-                                <span class="px-2 py-1 rounded-full text-xs font-medium ${getStatusClass(tool.status)}">${escapeHtml(tool.status.replace('_', ' '))}</span>
+                                <label class="adm-label">Status</label>
+                                <div><span class="pill ${getStatusClass(tool.status)}">${escapeHtml((tool.status || '').replace('_', ' '))}</span></div>
                             </div>
                         </div>
 
                         <!-- File Preview -->
                         <div>
-                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">File Preview</label>
-                            <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-gray-50 dark:bg-gray-700">
-                                <div class="text-center">
-                                    <i class="ri-file-pdf-line text-2xl text-red-500 mb-1"></i>
-                                    <p class="text-xs text-gray-600 dark:text-gray-400">PDF Preview</p>
-                                    <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">Click download to view full content</p>
-                                </div>
-                            </div>
+                            <label class="adm-label">File Preview</label>
+                            <div class="adm-card"><div class="adm-card__body" style="text-align:center">
+                                <i class="ri-file-pdf-line" style="font-size:26px;color:#dc2626"></i>
+                                <p class="kpi__note" style="margin-top:4px">PDF Preview</p>
+                                <p class="kpi__note">Click download to view full content</p>
+                            </div></div>
                         </div>
 
                         <!-- Review Actions -->
-                        <div class="flex flex-col space-y-3">
+                        <div style="display:flex;flex-direction:column;gap:12px">
                             <div>
-                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Review Status</label>
-                                <select id="reviewStatus" class="w-full px-2 py-1 text-sm border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white">
+                                <label class="adm-label">Review Status</label>
+                                <select id="reviewStatus" class="adm-select">
                                     <option value="">Select Status...</option>
                                     <option value="reviewed">Reviewed</option>
                                     <option value="rejected">Rejected</option>
                                 </select>
                             </div>
-                            
                             <div>
-                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Feedback</label>
-                                <textarea id="reviewFeedback" rows="2" class="w-full px-2 py-1 text-sm border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white" placeholder="Enter your feedback..."></textarea>
+                                <label class="adm-label">Feedback</label>
+                                <textarea id="reviewFeedback" rows="2" class="adm-textarea" placeholder="Enter your feedback..."></textarea>
                             </div>
                         </div>
 
                         <!-- Action Buttons -->
-                        <div class="flex justify-end space-x-2">
-                            <button onclick="closeReviewModal()" class="px-3 py-1 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">Cancel</button>
-                            <button onclick="downloadTool('${escapeAttr(tool.id)}')" class="px-3 py-1 text-sm bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors">
-                                <i class="ri-download-line mr-1"></i>Download
-                            </button>
-                            <button onclick="updateToolStatus('${escapeAttr(tool.id)}')" class="px-3 py-1 text-sm bg-primary text-white rounded-lg hover:bg-secondary transition-colors">
-                                <i class="ri-check-line mr-1"></i>Update Status
-                            </button>
+                        <div class="flex justify-end" style="gap:8px">
+                            <button onclick="closeReviewModal()" class="adm-btn adm-btn--ghost">Cancel</button>
+                            <button onclick="downloadTool('${escapeAttr(tool.id)}')" class="adm-btn adm-btn--outline"><i class="ri-download-line"></i> Download</button>
+                            <button onclick="updateToolStatus('${escapeAttr(tool.id)}')" class="adm-btn adm-btn--primary"><i class="ri-check-line"></i> Update Status</button>
                         </div>
                     </div>
                 </div>
             `;
-            
+
             document.body.appendChild(modal);
         }
 
         // Close review modal
         function closeReviewModal() {
-            const modal = document.querySelector('.fixed.inset-0.bg-black\\/50');
+            const modal = document.getElementById('toolReviewModal');
             if (modal) {
                 modal.remove();
             }

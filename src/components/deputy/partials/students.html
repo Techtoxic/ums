@@ -1,58 +1,58 @@
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-                <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-6">
-                    <h2 class="text-xl font-semibold">Student Overview</h2>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 w-full lg:w-auto">
-                        <div class="relative">
-                            <input id="deputyStudentsSearch" type="text" placeholder="Search students..." class="search-input pl-10 pr-4 py-2 w-full">
-                            <i class="ri-search-line absolute left-3 top-3 text-slate-400"></i>
-                        </div>
-                        <select id="deputyStudentsDepartment" class="search-input px-3 py-2">
-                            <option value="all">All Departments</option>
-                            <option value="applied_science">Applied Science</option>
-                            <option value="agriculture">Agriculture</option>
-                            <option value="building_civil">Building & Civil</option>
-                            <option value="electromechanical">Electromechanical</option>
-                            <option value="hospitality">Hospitality</option>
-                            <option value="business_liberal">Business & Liberal</option>
-                            <option value="computing_informatics">Computing & Informatics</option>
-                        </select>
-                        <select id="deputyStudentsModule" class="search-input px-3 py-2">
-                            <option value="all">All Modules</option>
-                            <option value="1">Module 1</option>
-                            <option value="2">Module 2</option>
-                            <option value="3">Module 3</option>
-                            <option value="4">Module 4</option>
-                            <option value="5">Module 5</option>
-                            <option value="6">Module 6</option>
-                        </select>
-                        <select id="deputyStudentsIntake" class="search-input px-3 py-2">
-                            <option value="all">All Intakes</option>
-                            <option value="january">January</option>
-                            <option value="may">May</option>
-                            <option value="september">September</option>
-                        </select>
-                    </div>
-                </div>
+<!-- Header -->
+<div class="flex items-center justify-between gap-4 flex-wrap" style="margin-bottom:18px">
+    <h1 class="adm-page-title"><i class="ri-graduation-cap-line"></i> Students</h1>
+</div>
 
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-slate-200 dark:divide-gray-700">
-                        <thead>
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Student</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Course</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Admission Type</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Module</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="studentsTableBody" class="divide-y divide-slate-200 dark:divide-gray-700">
-                            <!-- Students will be loaded here -->
-                        </tbody>
-                    </table>
-                </div>
+<!-- Filter bar -->
+<div class="grid grid-cols-1 sm:grid-cols-12 gap-3" style="margin-bottom:18px">
+    <input id="deputyStudentsSearch" type="text" placeholder="Search name, admission…" class="adm-input sm:col-span-4">
+    <select id="deputyStudentsDepartment" class="adm-select sm:col-span-3">
+        <option value="all">All Departments</option>
+        <option value="applied_science">Applied Science</option>
+        <option value="agriculture">Agriculture</option>
+        <option value="building_civil">Building &amp; Civil</option>
+        <option value="electromechanical">Electromechanical</option>
+        <option value="hospitality">Hospitality</option>
+        <option value="business_liberal">Business &amp; Liberal</option>
+        <option value="computing_informatics">Computing &amp; Informatics</option>
+    </select>
+    <select id="deputyStudentsModule" class="adm-select sm:col-span-3">
+        <option value="all">All Modules</option>
+        <option value="1">Module 1</option>
+        <option value="2">Module 2</option>
+        <option value="3">Module 3</option>
+        <option value="4">Module 4</option>
+        <option value="5">Module 5</option>
+        <option value="6">Module 6</option>
+    </select>
+    <select id="deputyStudentsIntake" class="adm-select sm:col-span-2">
+        <option value="all">All Intakes</option>
+        <option value="january">January</option>
+        <option value="may">May</option>
+        <option value="september">September</option>
+    </select>
+</div>
 
-                <!-- Pagination -->
-                <div id="studentsPagination" class="mt-6">
-                    <!-- Pagination controls will be loaded here -->
-                </div>
-            </div>
+<!-- Students table -->
+<div class="adm-card">
+    <div class="adm-card__head">
+        <div class="adm-card__title"><i class="ri-team-line"></i> Student Overview</div>
+    </div>
+    <div class="adm-table-wrap">
+        <table class="adm-table">
+            <thead>
+                <tr>
+                    <th>Student</th>
+                    <th>Course</th>
+                    <th>Admission Type</th>
+                    <th>Module</th>
+                    <th style="text-align:right">Status</th>
+                </tr>
+            </thead>
+            <tbody id="studentsTableBody">
+                <!-- Students will be loaded here -->
+            </tbody>
+        </table>
+    </div>
+    <div id="studentsPagination" class="adm-card__body"></div>
+</div>

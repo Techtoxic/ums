@@ -64,7 +64,7 @@ function displayStudents(students = null) {
     if (list.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="5" class="px-6 py-4 text-center text-gray-500">
+                <td colspan="5" style="text-align:center;color:var(--text-muted);padding:24px">
                     No students found
                 </td>
             </tr>
@@ -75,43 +75,29 @@ function displayStudents(students = null) {
     tbody.innerHTML = list.map(student => {
         const courseDisplay = student.courseName || student.course || '';
         const departmentDisplay = student.departmentName || student.department || '';
+        const initial = escapeHtml((student.name || '?').trim().charAt(0).toUpperCase() || '?');
+        const isKuccps = student.admissionType === 'KUCCPS';
         return `
-        <tr class="hover:bg-slate-50 dark:hover:bg-gray-700/50">
-            <td class="px-6 py-4 whitespace-nowrap">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0 h-10 w-10">
-                        <div class="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                            <i class="ri-user-line text-primary"></i>
-                        </div>
-                    </div>
-                    <div class="ml-4">
-                        <div class="text-sm font-medium">${escapeHtml(student.name)}</div>
-                        <div class="text-sm text-slate-500 dark:text-slate-400">${escapeHtml(student.admissionNumber)}</div>
+        <tr>
+            <td>
+                <div style="display:flex;align-items:center;gap:12px">
+                    <div style="width:38px;height:38px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;color:var(--maroon);background:color-mix(in srgb, var(--maroon) 12%, transparent)">${initial}</div>
+                    <div style="min-width:0">
+                        <div class="td-strong">${escapeHtml(student.name)}</div>
+                        <div style="color:var(--text-muted);font-size:12px">${escapeHtml(student.admissionNumber)}</div>
                     </div>
                 </div>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm">${escapeHtml(courseDisplay)}</div>
-                <div class="text-sm text-slate-500 dark:text-slate-400">${escapeHtml(departmentDisplay)}</div>
+            <td>
+                <div class="td-strong">${escapeHtml(courseDisplay)}</div>
+                <div style="color:var(--text-muted);font-size:12px">${escapeHtml(departmentDisplay)}</div>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                    student.admissionType === 'KUCCPS'
-                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                        : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                }">
-                    ${student.admissionType === 'KUCCPS' ? 'KUCCPS' : 'Walk-in'}
-                </span>
+            <td><span class="pill ${isKuccps ? 'pill--info' : 'pill--success'}">${isKuccps ? 'KUCCPS' : 'Walk-in'}</span></td>
+            <td>
+                <div class="td-strong">Module ${escapeHtml(String(student.module || ''))}</div>
+                <div style="color:var(--text-muted);font-size:12px">${escapeHtml(student.intake || '')} ${escapeHtml(String(student.intakeYear || ''))}</div>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm">Module ${student.module}</div>
-                <div class="text-sm text-slate-500 dark:text-slate-400">${escapeHtml(student.intake || '')} ${escapeHtml(String(student.intakeYear || ''))}</div>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-success/10 text-success">
-                    Active
-                </span>
-            </td>
+            <td style="text-align:right"><span class="pill pill--success">Active</span></td>
         </tr>
     `;
     }).join('');
@@ -138,14 +124,14 @@ function updatePagination(type) {
     const endIndex = Math.min(currentPage * pagination.itemsPerPage, pagination.totalItems);
 
     let paginationHTML = `
-        <div class="flex items-center justify-between">
-            <div class="text-sm text-gray-700 dark:text-gray-300">
-                Showing ${startIndex} to ${endIndex} of ${pagination.totalItems} results · Page ${currentPage} of ${totalPages}
+        <div class="flex items-center justify-between gap-3 flex-wrap">
+            <div class="kpi__note">
+                Showing ${startIndex}–${endIndex} of ${pagination.totalItems} · Page ${currentPage} of ${totalPages}
             </div>
-            <div class="flex items-center space-x-2">
-                <button onclick="changePage('${type}', 'prev')" ${currentPage === 1 ? 'disabled' : ''}
-                        class="px-3 py-1 text-sm border rounded-lg ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50 dark:hover:bg-gray-700'}">
-                    Previous
+            <div class="flex items-center" style="gap:6px">
+                <button onclick="changePage('${escapeAttr(type)}', 'prev')" ${currentPage === 1 ? 'disabled' : ''}
+                        class="adm-btn adm-btn--outline adm-btn--sm" ${currentPage === 1 ? 'style="opacity:.5;cursor:not-allowed"' : ''}>
+                    <i class="ri-arrow-left-s-line"></i> Prev
                 </button>
     `;
 
@@ -159,16 +145,16 @@ function updatePagination(type) {
     for (let i = startPage; i <= endPage; i++) {
         paginationHTML += `
             <button onclick="changePage('${escapeAttr(type)}', ${i})"
-                    class="px-3 py-1 text-sm border rounded-lg ${i === currentPage ? 'bg-primary text-white border-primary' : 'hover:bg-gray-50 dark:hover:bg-gray-700'}">
+                    class="adm-btn adm-btn--sm ${i === currentPage ? 'adm-btn--primary' : 'adm-btn--ghost'}">
                 ${i}
             </button>
         `;
     }
 
     paginationHTML += `
-                <button onclick="changePage('${type}', 'next')" ${currentPage >= totalPages ? 'disabled' : ''}
-                        class="px-3 py-1 text-sm border rounded-lg ${currentPage >= totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50 dark:hover:bg-gray-700'}">
-                    Next
+                <button onclick="changePage('${escapeAttr(type)}', 'next')" ${currentPage >= totalPages ? 'disabled' : ''}
+                        class="adm-btn adm-btn--outline adm-btn--sm" ${currentPage >= totalPages ? 'style="opacity:.5;cursor:not-allowed"' : ''}>
+                    Next <i class="ri-arrow-right-s-line"></i>
                 </button>
             </div>
         </div>

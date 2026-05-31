@@ -1,9 +1,9 @@
 // portal-core.js — shared base + bootstrap for the deputy portal SPA.
 //
-// Folds in API_BASE_URL, the shared toast util, the mobile sidebar helpers, and
-// the sidebar-collapse / resize / mobile-menu shell wiring. Verbatim moves except
-// the DOMContentLoaded bootstrap at the bottom (loads identity, then starts the
-// router). switchTab() is replaced by portal-router.js.
+// Rebuilt to reuse the admin component CSS/shell. Provides API_BASE_URL, the
+// shared toast util, the admin-style sidebar collapse / off-canvas toggle, dark
+// mode, profile menu, logout, showSection() alias, the academic-year chip, and
+// the DOMContentLoaded bootstrap (loads identity, then starts the router).
 //
 // Load order: dashboard-theme.js -> config.js -> auth.js -> portal-core.js ->
 // portal-router.js -> tab modules.
@@ -24,9 +24,9 @@
                     <span>${escapeHtml(message)}</span>
                 </div>
             `;
-            
+
             document.body.appendChild(toast);
-            
+
             setTimeout(() => {
                 toast.classList.add('opacity-0');
                 setTimeout(() => toast.remove(), 300);
@@ -48,87 +48,120 @@
             }
         }
 
-// ---- mobile sidebar helpers (verbatim) ----
-        // Mobile sidebar helpers — design-system pattern (.dashboard-sidebar.open
-        // + .dashboard-sidebar__backdrop.show). Theme toggling is handled by the
-        // [data-theme-toggle] button auto-wired in /public/js/dashboard-theme.js,
-        // so the old themeToggle listener is gone.
-        function openSidebar() {
-            const sb = document.getElementById('sidebar');
-            const bd = document.getElementById('sbBackdrop');
-            if (sb) sb.classList.add('open');
-            if (bd) bd.classList.add('show');
-        }
-        function closeSidebar() {
-            const sb = document.getElementById('sidebar');
-            const bd = document.getElementById('sbBackdrop');
-            if (sb) sb.classList.remove('open');
-            if (bd) bd.classList.remove('show');
-        }
+// ---- dark mode ----
+// dashboard-theme.js auto-wires [data-theme-toggle], but admin-style markup also
+// calls toggleDarkMode() inline and shows a #dark-mode-icon, so keep both in sync.
+function toggleDarkMode() {
+    const html = document.documentElement;
+    const icon = document.getElementById('dark-mode-icon');
+    if (html.classList.contains('dark')) {
+        html.classList.remove('dark');
+        localStorage.setItem('darkMode', 'false');
+        if (icon) icon.className = 'ri-moon-line text-lg';
+    } else {
+        html.classList.add('dark');
+        localStorage.setItem('darkMode', 'true');
+        if (icon) icon.className = 'ri-sun-line text-lg';
+    }
+}
 
-// ---- sidebar collapse + responsive shell wiring (verbatim top-level block) ----
-        // Sidebar collapse functionality
-        let sidebarCollapsed = false;
-        const toggleSidebar = document.getElementById('toggleSidebar');
-        const sidebar = document.getElementById('sidebar');
-        const mainContent = document.querySelector('main');
+function initDarkMode() {
+    const icon = document.getElementById('dark-mode-icon');
+    if (document.documentElement.classList.contains('dark') || localStorage.getItem('darkMode') === 'true') {
+        document.documentElement.classList.add('dark');
+        if (icon) icon.className = 'ri-sun-line text-lg';
+    }
+}
+document.addEventListener('DOMContentLoaded', initDarkMode);
 
-        if (toggleSidebar && sidebar) {
-            toggleSidebar.addEventListener('click', () => {
-                sidebarCollapsed = !sidebarCollapsed;
-                
-                if (sidebarCollapsed) {
-                    sidebar.classList.add('w-16');
-                    sidebar.classList.remove('w-64');
-                    toggleSidebar.innerHTML = '<i class="ri-menu-unfold-line text-xl text-slate-600 dark:text-slate-300"></i>';
-                    
-                    // Hide text in navigation items
-                    const navSpans = sidebar.querySelectorAll('nav span');
-                    navSpans.forEach(span => span.classList.add('hidden'));
-                } else {
-                    sidebar.classList.remove('w-16');
-                    sidebar.classList.add('w-64');
-                    toggleSidebar.innerHTML = '<i class="ri-menu-fold-line text-xl text-slate-600 dark:text-slate-300"></i>';
-                    
-                    // Show text in navigation items
-                    const navSpans = sidebar.querySelectorAll('nav span');
-                    navSpans.forEach(span => span.classList.remove('hidden'));
-                }
-            });
+// ---- sidebar (admin-parity) ----
+// One toggle for both modes: on mobile (<1024) it slides the off-canvas sidebar
+// in/out; on desktop it collapses the wide sidebar to an icon rail and persists
+// that choice. Styling is driven by classes on #deputy-shell (admin-portal.css).
+function toggleSidebar() {
+    const shell = document.getElementById('deputy-shell');
+    if (!shell) return;
+    if (window.innerWidth < 1024) {
+        shell.classList.toggle('sidebar-open');
+    } else {
+        const collapsed = shell.classList.toggle('sidebar-collapsed');
+        try { localStorage.setItem('deputy-sidebar-collapsed', collapsed ? '1' : '0'); } catch (e) { /* ignore */ }
+    }
+}
+
+// Restore the persisted desktop collapse state on load.
+function applySidebarState() {
+    const shell = document.getElementById('deputy-shell');
+    if (shell && localStorage.getItem('deputy-sidebar-collapsed') === '1') {
+        shell.classList.add('sidebar-collapsed');
+    }
+}
+document.addEventListener('DOMContentLoaded', applySidebarState);
+
+// Legacy off-canvas helpers kept as thin aliases (the router calls closeSidebar()).
+function openSidebar() {
+    const shell = document.getElementById('deputy-shell');
+    if (shell) shell.classList.add('sidebar-open');
+}
+function closeSidebar() {
+    const shell = document.getElementById('deputy-shell');
+    if (shell) shell.classList.remove('sidebar-open');
+}
+
+// ---- profile menu ----
+function toggleProfileMenu() {
+    const menu = document.getElementById('profile-menu');
+    if (menu) menu.classList.toggle('hidden');
+}
+document.addEventListener('click', function (e) {
+    const menu = document.getElementById('profile-menu');
+    const button = menu ? menu.previousElementSibling : null;
+    if (menu && !menu.contains(e.target) && !(button && button.contains(e.target))) {
+        menu.classList.add('hidden');
+    }
+});
+
+// ---- logout ----
+async function logout() {
+    if (confirm('Are you sure you want to logout?')) {
+        await window.AUTH.logout({ role: 'admin' });
+    }
+}
+
+// ---- showSection alias (router navigate) ----
+function showSection(tab) {
+    if (window.DeputyRouter) window.DeputyRouter.navigate(tab);
+}
+
+// ---- academic-year chip ----
+async function loadAcademicYearChip() {
+    const chip = document.getElementById('academic-year-chip');
+    if (!chip) return;
+    try {
+        const res = await window.AUTH.fetch(`${API_BASE_URL}/system-settings/current_academic_year`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const value = data && (data.value || data.current_academic_year);
+        if (value) {
+            chip.textContent = `AY ${value}`;
+            chip.classList.remove('hidden');
         }
+    } catch (e) { /* best-effort: leave hidden */ }
+}
 
-        // Mobile responsive behavior
-        function handleResize() {
-            if (window.innerWidth < 1024) {
-                // Mobile: sidebar should be hidden by default
-                sidebar.classList.add('-translate-x-full');
-                sidebar.classList.remove('w-16');
-                sidebar.classList.add('w-64');
-            } else {
-                // Desktop: show sidebar
-                sidebar.classList.remove('-translate-x-full');
-            }
-        }
-
-        // Handle window resize
-        window.addEventListener('resize', handleResize);
-        
-        // Initialize on load
-        handleResize();
-
-        // Mobile menu functionality
-        const mobileMenuBtn = document.getElementById('menuBtn');
-        if (mobileMenuBtn && sidebar) {
-            mobileMenuBtn.addEventListener('click', () => {
-                sidebar.classList.toggle('-translate-x-full');
-                document.body.classList.toggle('menu-open');
-            });
-        }
+// ---- global exposures for inline onclick= handlers ----
+window.toggleSidebar = toggleSidebar;
+window.openSidebar = openSidebar;
+window.closeSidebar = closeSidebar;
+window.toggleProfileMenu = toggleProfileMenu;
+window.toggleDarkMode = toggleDarkMode;
+window.logout = logout;
+window.showSection = showSection;
 
 // ---- bootstrap (new): identity + logout, then start the router ----
 document.addEventListener('DOMContentLoaded', async () => {
     // Cookie-based auth: requireAuth bounces to /admin/login on no/expired session
-    // and populates the sidebar profile + welcome line from /api/me.
+    // and populates the sidebar profile from /api/me.
     if (window.AUTH && typeof window.AUTH.requireAuth === 'function') {
         const user = await window.AUTH.requireAuth('/admin/login');
         if (user && user.name) {
@@ -144,10 +177,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Load the shared programs/departments catalog once before tabs render.
     if (window.Catalog) { await window.Catalog.ready(); }
 
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn && window.AUTH && typeof window.AUTH.logout === 'function') {
-        logoutBtn.addEventListener('click', () => window.AUTH.logout({ role: 'admin' }));
-    }
+    // Academic-year chip in the topbar (best-effort; deputy is authorized).
+    loadAcademicYearChip();
 
     if (window.DeputyRouter) window.DeputyRouter.start();
 });

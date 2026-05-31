@@ -1,73 +1,69 @@
-            <!-- Quick Stats — design-system stat cards. IDs preserved so the
-                 existing loadDashboardStats() data-population keeps working;
-                 "Loading..." default text retained (the data layer is a
-                 separate backend concern, out of scope here). -->
-            <div class="stat-cards-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-6)">
-                <div class="stat-card">
-                    <div class="stat-card__top"><div class="stat-card__icon"><i class="ri-team-line"></i></div></div>
-                    <div class="stat-card__label">Active Students</div>
-                    <div class="stat-card__value" id="totalStudents">Loading...</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-card__top"><div class="stat-card__icon"><i class="ri-user-star-line"></i></div></div>
-                    <div class="stat-card__label">Active Trainers</div>
-                    <div class="stat-card__value" id="totalTrainers">Loading...</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-card__top"><div class="stat-card__icon"><i class="ri-book-open-line"></i></div></div>
-                    <div class="stat-card__label">Total Courses</div>
-                    <div class="stat-card__value" id="totalCourses">Loading...</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-card__top"><div class="stat-card__icon"><i class="ri-file-list-3-line"></i></div></div>
-                    <div class="stat-card__label">Total Units</div>
-                    <div class="stat-card__value" id="totalUnits">Loading...</div>
-                </div>
-                <div class="stat-card stat-card--warning">
-                    <div class="stat-card__top"><div class="stat-card__icon"><i class="ri-time-line"></i></div></div>
-                    <div class="stat-card__label">Pending Tools</div>
-                    <div class="stat-card__value" id="pendingTools">Loading...</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-card__top"><div class="stat-card__icon"><i class="ri-checkbox-circle-line"></i></div></div>
-                    <div class="stat-card__label">Total Tools</div>
-                    <div class="stat-card__value" id="totalTools">Loading...</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-card__top"><div class="stat-card__icon"><i class="ri-building-line"></i></div></div>
-                    <div class="stat-card__label">Departments</div>
-                    <div class="stat-card__value" id="totalDepartments">Loading...</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-card__top"><div class="stat-card__icon"><i class="ri-notification-3-line"></i></div></div>
-                    <div class="stat-card__label">Notifications</div>
-                    <div class="stat-card__value" id="totalNotifications">Loading...</div>
-                </div>
-            </div>
+<!-- Deputy Dashboard tab — KPIs + theme-aware charts.
+     Data ids preserved for tabs/dashboard.js: totalStudents, totalTrainers,
+     totalCourses, totalUnits, pendingTools, totalTools, totalDepartments,
+     totalNotifications, studentsByDeptChart, toolsStatusChart. -->
 
-            <!-- Department Overview -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- Students by Department -->
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="text-lg font-semibold">Students by Department</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="h-64">
-                            <canvas id="studentsByDeptChart" class="w-full h-full"></canvas>
-                        </div>
-                    </div>
-                </div>
+<!-- Welcome -->
+<div class="flex items-center justify-between gap-4 flex-wrap" style="margin-bottom:20px">
+    <div>
+        <h1 style="font-size:24px;font-weight:800;color:var(--text-primary);line-height:1.2"><span id="dash-greeting">Welcome back</span>, <span id="welcomeName">Deputy</span> 👋</h1>
+        <p style="color:var(--text-muted);font-size:13.5px;margin-top:4px">Here's an overview of academics at EDTTI.</p>
+    </div>
+    <button class="adm-btn adm-btn--primary" onclick="showSection('tools')"><i class="ri-tools-line"></i> Tools of Trade</button>
+</div>
 
-                <!-- Tools Status Overview -->
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="text-lg font-semibold">Tools Status Overview</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="h-64">
-                            <canvas id="toolsStatusChart" class="w-full h-full"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
+<!-- KPI cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4" style="margin-bottom:18px">
+    <div class="kpi">
+        <div class="kpi__top"><span class="kpi__icon"><i class="ri-graduation-cap-line"></i></span><span class="kpi__label">Active Students</span></div>
+        <div class="kpi__value" id="totalStudents">—</div>
+        <div class="kpi__foot"><span class="kpi__note">enrolled</span></div>
+    </div>
+    <div class="kpi">
+        <div class="kpi__top"><span class="kpi__icon"><i class="ri-user-star-line"></i></span><span class="kpi__label">Active Trainers</span></div>
+        <div class="kpi__value" id="totalTrainers">—</div>
+        <div class="kpi__foot"><span class="kpi__note">across all departments</span></div>
+    </div>
+    <div class="kpi">
+        <div class="kpi__top"><span class="kpi__icon"><i class="ri-book-2-line"></i></span><span class="kpi__label">Total Courses</span></div>
+        <div class="kpi__value" id="totalCourses">—</div>
+        <div class="kpi__foot"><span class="kpi__note">offered</span></div>
+    </div>
+    <div class="kpi">
+        <div class="kpi__top"><span class="kpi__icon"><i class="ri-file-list-3-line"></i></span><span class="kpi__label">Total Units</span></div>
+        <div class="kpi__value" id="totalUnits">—</div>
+        <div class="kpi__foot"><span class="kpi__note">across all courses</span></div>
+    </div>
+    <div class="kpi">
+        <div class="kpi__top"><span class="kpi__icon kpi__icon--gold"><i class="ri-time-line"></i></span><span class="kpi__label">Pending Tools</span></div>
+        <div class="kpi__value" id="pendingTools">—</div>
+        <div class="kpi__foot"><span class="kpi__note">awaiting review</span></div>
+    </div>
+    <div class="kpi">
+        <div class="kpi__top"><span class="kpi__icon"><i class="ri-checkbox-circle-line"></i></span><span class="kpi__label">Total Tools</span></div>
+        <div class="kpi__value" id="totalTools">—</div>
+        <div class="kpi__foot"><span class="kpi__note">submitted</span></div>
+    </div>
+    <div class="kpi">
+        <div class="kpi__top"><span class="kpi__icon"><i class="ri-building-line"></i></span><span class="kpi__label">Departments</span></div>
+        <div class="kpi__value" id="totalDepartments">—</div>
+        <div class="kpi__foot"><span class="kpi__note">academic units</span></div>
+    </div>
+    <div class="kpi">
+        <div class="kpi__top"><span class="kpi__icon"><i class="ri-notification-3-line"></i></span><span class="kpi__label">Notifications</span></div>
+        <div class="kpi__value" id="totalNotifications">—</div>
+        <div class="kpi__foot"><span class="kpi__note">system messages</span></div>
+    </div>
+</div>
+
+<!-- Charts row -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div class="adm-card">
+        <div class="adm-card__head"><div class="adm-card__title"><i class="ri-bar-chart-horizontal-line"></i> Students by Department</div></div>
+        <div class="adm-card__body"><div class="adm-chart" style="height:300px"><canvas id="studentsByDeptChart"></canvas></div></div>
+    </div>
+    <div class="adm-card">
+        <div class="adm-card__head"><div class="adm-card__title"><i class="ri-bar-chart-2-line"></i> Tools Status Overview</div></div>
+        <div class="adm-card__body"><div class="adm-chart" style="height:300px"><canvas id="toolsStatusChart"></canvas></div></div>
+    </div>
+</div>

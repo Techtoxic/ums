@@ -64,9 +64,12 @@ window.DeputyRouter = (function () {
         if (!VALID_TABS.includes(tab)) tab = DEFAULT_TAB;
         const pane = await ensurePane(tab);
 
-        // Visibility: same mechanism as switchTab() — toggle .hidden on the panes.
-        Object.keys(panes).forEach(t => panes[t].classList.add('hidden'));
+        // Visibility: toggle both .hidden (legacy) and .active. admin-portal.css
+        // hides .content-section by default and only shows .content-section.active,
+        // so the active class is what actually reveals the pane.
+        Object.keys(panes).forEach(t => { panes[t].classList.add('hidden'); panes[t].classList.remove('active'); });
         pane.classList.remove('hidden');
+        pane.classList.add('active');
 
         // Active nav link (switchTab() toggled the .active class).
         document.querySelectorAll('.nav-link').forEach(item => item.classList.remove('active'));

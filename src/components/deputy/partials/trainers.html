@@ -1,31 +1,43 @@
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-                    <h2 class="text-xl font-semibold">Trainers & Courses</h2>
-                    <div class="flex flex-col sm:flex-row gap-4">
-                        <div class="relative">
-                            <input type="text" placeholder="Search trainers..." class="search-input pl-10 pr-4 py-2 w-full">
-                            <i class="ri-search-line absolute left-3 top-3 text-slate-400"></i>
-                        </div>
-                        <button class="btn-primary whitespace-nowrap">
-                            <i class="ri-filter-line mr-2"></i>Filter
-                        </button>
-                    </div>
-                </div>
+<!-- Header -->
+<div class="flex items-center justify-between gap-4 flex-wrap" style="margin-bottom:18px">
+    <h1 class="adm-page-title"><i class="ri-user-star-line"></i> Trainers</h1>
+</div>
 
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-slate-200 dark:divide-gray-700">
-                        <thead>
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Trainer</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Department</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Assigned Units</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Students</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="trainersTableBody" class="divide-y divide-slate-200 dark:divide-gray-700">
-                            <!-- Trainers will be loaded here -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+<!-- Filter bar -->
+<div class="grid grid-cols-1 sm:grid-cols-12 gap-3" style="margin-bottom:18px">
+    <input id="deputyTrainersSearch" type="text" placeholder="Search name or email…" class="adm-input sm:col-span-7">
+    <select id="deputyTrainersDepartment" class="adm-select sm:col-span-5">
+        <option value="all">All Departments</option>
+        <option value="applied_science">Applied Science</option>
+        <option value="agriculture">Agriculture</option>
+        <option value="building_civil">Building &amp; Civil</option>
+        <option value="electromechanical">Electromechanical</option>
+        <option value="hospitality">Hospitality</option>
+        <option value="business_liberal">Business &amp; Liberal</option>
+        <option value="computing_informatics">Computing &amp; Informatics</option>
+    </select>
+</div>
+
+<!-- Trainers table -->
+<div class="adm-card">
+    <div class="adm-card__head">
+        <div class="adm-card__title"><i class="ri-user-star-line"></i> Trainer List</div>
+    </div>
+    <div class="adm-table-wrap">
+        <table class="adm-table">
+            <thead>
+                <tr>
+                    <th>Trainer</th>
+                    <th>Department</th>
+                    <th>Units Assigned</th>
+                    <th>Students Enrolled</th>
+                    <th style="text-align:right">Status</th>
+                </tr>
+            </thead>
+            <tbody id="trainersTableBody">
+                <!-- Trainers will be loaded here -->
+            </tbody>
+        </table>
+    </div>
+    <div id="trainersPagination" class="adm-card__body"></div>
+</div>

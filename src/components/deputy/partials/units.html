@@ -1,1 +1,20 @@
-            <!-- Units will be loaded here -->
+<!-- Header -->
+<div class="flex items-center justify-between gap-4 flex-wrap" style="margin-bottom:18px">
+    <h1 class="adm-page-title"><i class="ri-file-list-3-line"></i> Units</h1>
+</div>
+
+<!-- Filter bar -->
+<div class="grid grid-cols-1 sm:grid-cols-12 gap-3" style="margin-bottom:18px">
+    <select id="deputyUnitsCourse" class="adm-select sm:col-span-6">
+        <option value="all">All Courses</option>
+    </select>
+    <select id="deputyUnitsLevel" class="adm-select sm:col-span-6">
+        <option value="all">All Levels</option>
+    </select>
+</div>
+
+<!-- Units grid (rendered by units.js) -->
+<div id="unitsContent"></div>
+
+<!-- Pagination -->
+<div id="unitsPagination" style="margin-top:16px"></div>

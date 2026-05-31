@@ -3,6 +3,25 @@
 // re-creating, so revisiting is safe without a render-once guard.
 window.DeputyTabs = window.DeputyTabs || {};
 
+// Theme-aware chart colors (admin parity).
+function admIsDark() { return document.documentElement.classList.contains('dark'); }
+function admTick() { return admIsDark() ? '#CBD5E1' : '#475569'; }
+function admGrid() { return admIsDark() ? 'rgba(148,163,184,0.15)' : 'rgba(100,116,139,0.12)'; }
+
+// Greeting header: time-of-day.
+function deputySetGreeting() {
+    const h = new Date().getHours();
+    const g = h < 12 ? 'Good morning' : (h < 17 ? 'Good afternoon' : 'Good evening');
+    const gEl = document.getElementById('dash-greeting');
+    if (gEl) gEl.textContent = g;
+    // The welcome name lives in the dashboard partial (injected after bootstrap),
+    // so populate it here from the sidebar name / auth user.
+    const user = (window.AUTH && typeof window.AUTH.getUser === 'function') ? window.AUTH.getUser() : null;
+    const name = (user && user.name) || (document.getElementById('userName') || {}).textContent || 'Deputy';
+    const nEl = document.getElementById('welcomeName');
+    if (nEl) nEl.textContent = name;
+}
+
 // (verbatim from the monolith inline scripts)
         // Load dashboard stats
         async function loadDashboardStats() {
@@ -86,38 +105,65 @@ window.DeputyTabs = window.DeputyTabs || {};
                         const dept = student.department || 'unknown';
                         studentsByDept[dept] = (studentsByDept[dept] || 0) + 1;
                     });
-                    
+
                     const ctx1 = document.getElementById('studentsByDeptChart');
                     if (ctx1 && typeof Chart !== 'undefined') {
                         // Clear any existing chart
                         if (window.studentsChart) {
                             window.studentsChart.destroy();
                         }
-                        
+
+                        // Sort departments by headcount (descending) — a horizontal
+                        // bar reads far better than a doughnut for long labels and
+                        // needs no legend (admin createDepartmentChart approach).
+                        const fmt = (window.formatDepartmentName)
+                            ? window.formatDepartmentName
+                            : (window.Catalog ? (c) => window.Catalog.departmentName(c) : (c) => c);
+                        const pairs = Object.entries(studentsByDept)
+                            .map(([k, v]) => ({ label: fmt(k) || k, value: v }))
+                            .sort((a, b) => b.value - a.value);
+                        const labels = pairs.map(p => p.label);
+                        const data = pairs.map(p => p.value);
+                        const total = data.reduce((a, b) => a + b, 0) || 1;
+
+                        // Maroon→gold horizontal gradient so the bars carry the brand.
+                        const c = ctx1.getContext('2d');
+                        const grad = c.createLinearGradient(0, 0, ctx1.width || 360, 0);
+                        grad.addColorStop(0, '#7A0C0C');
+                        grad.addColorStop(1, '#D4A017');
+
                         window.studentsChart = new Chart(ctx1, {
-                            type: 'doughnut',
+                            type: 'bar',
                             data: {
-                                labels: Object.keys(studentsByDept),
+                                labels: labels,
                                 datasets: [{
-                                    data: Object.values(studentsByDept),
-                                    backgroundColor: [
-                                        '#7A0C0C',
-                                        '#8B2A2A',
-                                        '#10b981',
-                                        '#f59e0b',
-                                        '#ef4444',
-                                        '#6366f1',
-                                        '#8b5cf6'
-                                    ]
+                                    data: data,
+                                    backgroundColor: grad,
+                                    borderRadius: 6,
+                                    borderSkipped: false,
+                                    barThickness: 'flex',
+                                    maxBarThickness: 26,
                                 }]
                             },
                             options: {
+                                indexAxis: 'y',
                                 responsive: true,
                                 maintainAspectRatio: false,
                                 plugins: {
-                                    legend: {
-                                        position: 'bottom'
+                                    legend: { display: false },
+                                    tooltip: {
+                                        callbacks: {
+                                            label: function (context) {
+                                                const value = context.parsed.x || 0;
+                                                const pct = ((value / total) * 100).toFixed(1);
+                                                return `${value} student${value === 1 ? '' : 's'} (${pct}%)`;
+                                            }
+                                        }
                                     }
+                                },
+                                scales: {
+                                    x: { beginAtZero: true, ticks: { precision: 0, color: admTick() }, grid: { color: admGrid() } },
+                                    y: { ticks: { color: admTick(), font: { size: 12 } }, grid: { display: false } }
                                 }
                             }
                         });
@@ -144,11 +190,14 @@ window.DeputyTabs = window.DeputyTabs || {};
                         window.toolsChart = new Chart(ctx2, {
                             type: 'bar',
                             data: {
-                                labels: Object.keys(statusCounts),
+                                labels: Object.keys(statusCounts).map(s => s.replace('_', ' ')),
                                 datasets: [{
                                     label: 'Tools',
                                     data: Object.values(statusCounts),
-                                    backgroundColor: '#7A0C0C'
+                                    backgroundColor: '#7A0C0C',
+                                    borderRadius: 6,
+                                    borderSkipped: false,
+                                    maxBarThickness: 48,
                                 }]
                             },
                             options: {
@@ -160,9 +209,8 @@ window.DeputyTabs = window.DeputyTabs || {};
                                     }
                                 },
                                 scales: {
-                                    y: {
-                                        beginAtZero: true
-                                    }
+                                    y: { beginAtZero: true, ticks: { precision: 0, color: admTick() }, grid: { color: admGrid() } },
+                                    x: { ticks: { color: admTick() }, grid: { display: false } }
                                 }
                             }
                         });
@@ -184,5 +232,5 @@ window.DeputyTabs = window.DeputyTabs || {};
         }
 
 window.DeputyTabs.dashboard = {
-    init() { loadDashboardStats(); }
+    init() { deputySetGreeting(); loadDashboardStats(); }
 };

@@ -22,21 +22,31 @@ window.DeputyTabs = window.DeputyTabs || {};
             const content = document.getElementById('content-notifications');
             if (!content) return;
 
-            content.innerHTML = `
-                <div class="space-y-6">
-                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-                        <h2 class="text-xl font-semibold mb-6">System Notifications</h2>
-                        <div class="space-y-4">
-                            ${notifications.map(notification => `
-                                <div class="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
-                                    <h4 class="font-medium text-gray-900 dark:text-white">${escapeHtml(notification.title)}</h4>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">${escapeHtml(notification.message)}</p>
-                                    <p class="text-xs text-gray-500 dark:text-gray-500 mt-2">${new Date(notification.createdAt).toLocaleDateString()}</p>
-                                </div>
-                            `).join('')}
+            const list = Array.isArray(notifications) ? notifications : [];
+            const rows = list.length === 0
+                ? `<div class="adm-card"><div class="adm-card__body" style="text-align:center;padding:40px 0;color:var(--text-muted)">
+                        <i class="ri-notification-off-line" style="font-size:32px;display:block;margin-bottom:8px;color:var(--text-tertiary)"></i>
+                        <p style="font-size:13px">No notifications</p>
+                   </div></div>`
+                : list.map(notification => `
+                    <div class="adm-card" style="margin-bottom:12px"><div class="adm-card__body">
+                        <div style="display:flex;align-items:flex-start;gap:12px">
+                            <span class="kpi__icon" style="flex-shrink:0"><i class="ri-notification-3-line"></i></span>
+                            <div style="min-width:0;flex:1">
+                                <div class="td-strong" style="font-size:14px">${escapeHtml(notification.title || 'Notification')}</div>
+                                <p style="color:var(--text-secondary);font-size:13px;margin-top:2px">${escapeHtml(notification.message || '')}</p>
+                                <p class="kpi__note" style="margin-top:6px">${notification.createdAt ? new Date(notification.createdAt).toLocaleString() : ''}</p>
+                            </div>
                         </div>
-                    </div>
+                    </div></div>
+                `).join('');
+
+            content.innerHTML = `
+                <div class="flex items-center justify-between gap-4 flex-wrap" style="margin-bottom:18px">
+                    <h1 class="adm-page-title"><i class="ri-notification-3-line"></i> Notifications</h1>
+                    <span class="kpi__note">${list.length} message${list.length === 1 ? '' : 's'}</span>
                 </div>
+                ${rows}
             `;
         }
 

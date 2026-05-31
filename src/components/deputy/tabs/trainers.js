@@ -1,116 +1,157 @@
-// tabs/trainers.js — deputy trainer management: table.
+// tabs/trainers.js — deputy trainer management: adm-table with department
+// filter + client-side pagination (~20/page). Pagination/changePage helpers
+// are shared with students.js (window.changePage / updatePagination).
 window.DeputyTabs = window.DeputyTabs || {};
 
-// (verbatim from the monolith inline scripts)
-        // Load trainers data
-        async function loadTrainersData() {
-            try {
-                const response = await window.AUTH.fetch(`${API_BASE_URL}/trainers/all-departments`);
-                if (!response.ok) {
-                    throw new Error('Failed to fetch trainers data');
-                }
-                
-                const data = await response.json();
-                const trainers = data.trainers || [];
-                
-                // Load additional data for each trainer
-                const trainersWithData = await Promise.all(trainers.map(async (trainer) => {
-                    try {
-                        // Get students for this trainer
-                        const studentsResponse = await window.AUTH.fetch(`${API_BASE_URL}/trainers/${trainer._id}/students`);
-                        let studentCount = 0;
-                        if (studentsResponse.ok) {
-                            const studentsData = await studentsResponse.json();
-                            studentCount = Object.values(studentsData.students || {}).flat().length;
-                        }
-                        
-                        // Get assignments for this trainer
-                        const assignmentsResponse = await window.AUTH.fetch(`${API_BASE_URL}/trainers/${trainer._id}/assignments`);
-                        let assignedUnits = 0;
-                        if (assignmentsResponse.ok) {
-                            const assignmentsData = await assignmentsResponse.json();
-                            assignedUnits = assignmentsData.assignments?.length || 0;
-                        }
-                        
-                        return {
-                            ...trainer,
-                            studentCount,
-                            assignedUnits
-                        };
-                    } catch (error) {
-                        console.error(`Error loading data for trainer ${trainer._id}:`, error);
-                        return {
-                            ...trainer,
-                            studentCount: 0,
-                            assignedUnits: 0
-                        };
-                    }
-                }));
-                
-                displayTrainers(trainersWithData);
-            } catch (error) {
-                console.error('Error loading trainers data:', error);
-                document.getElementById('trainersTableBody').innerHTML = `
-                    <tr>
-                        <td colspan="5" class="px-6 py-4 text-center text-gray-500">
-                            Error loading trainers: ${error.message}
-                        </td>
-                    </tr>
-                `;
-            }
+const DEPUTY_TRAINERS_PAGE_SIZE = 20;
+
+// Shared with students.js's updatePagination()/changePage() (which reference
+// the global `trainersPagination`). All trainers are fetched once, then
+// filtered + paginated client-side.
+var trainersPagination = {
+    currentPage: 1,
+    itemsPerPage: DEPUTY_TRAINERS_PAGE_SIZE,
+    totalItems: 0,
+    totalPages: 1,
+    all: [],        // every trainer (with enriched counts)
+    filtered: [],   // after applying the dept/search filters
+    filters: { search: '', department: 'all' },
+};
+
+// Load trainers data (once) + per-trainer counts, then render page 1.
+async function loadTrainersData() {
+    try {
+        const response = await window.AUTH.fetch(`${API_BASE_URL}/trainers/all-departments`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch trainers data');
         }
 
-        // Display trainers in table
-        function displayTrainers(trainers) {
-            const tbody = document.getElementById('trainersTableBody');
-            
-            if (trainers.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="5" class="px-6 py-4 text-center text-gray-500">
-                            No trainers found
-                        </td>
-                    </tr>
-                `;
-                return;
-            }
+        const data = await response.json();
+        const trainers = data.trainers || [];
 
-            tbody.innerHTML = trainers.map(trainer => `
-                <tr class="hover:bg-slate-50 dark:hover:bg-gray-700/50">
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0 h-10 w-10">
-                                <div class="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                                    <i class="ri-user-line text-primary"></i>
-                                </div>
-                            </div>
-                            <div class="ml-4">
-                                <div class="text-sm font-medium">${escapeHtml(trainer.name)}</div>
-                                <div class="text-sm text-slate-500 dark:text-slate-400">${escapeHtml(trainer.email)}</div>
-                            </div>
-                        </div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <div class="text-sm">${escapeHtml(trainer.department)}</div>
-                        <div class="text-sm text-slate-500 dark:text-slate-400">${escapeHtml(trainer.role)}</div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <div class="text-sm">${trainer.assignedUnits || 0}</div>
-                        <div class="text-sm text-slate-500 dark:text-slate-400">Units assigned</div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <div class="text-sm">${trainer.studentCount || 0}</div>
-                        <div class="text-sm text-slate-500 dark:text-slate-400">Students enrolled</div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-success/10 text-success">
-                            Active
-                        </span>
+        // Load additional data for each trainer
+        const trainersWithData = await Promise.all(trainers.map(async (trainer) => {
+            try {
+                // Get students for this trainer
+                const studentsResponse = await window.AUTH.fetch(`${API_BASE_URL}/trainers/${trainer._id}/students`);
+                let studentCount = 0;
+                if (studentsResponse.ok) {
+                    const studentsData = await studentsResponse.json();
+                    studentCount = Object.values(studentsData.students || {}).flat().length;
+                }
+
+                // Get assignments for this trainer
+                const assignmentsResponse = await window.AUTH.fetch(`${API_BASE_URL}/trainers/${trainer._id}/assignments`);
+                let assignedUnits = 0;
+                if (assignmentsResponse.ok) {
+                    const assignmentsData = await assignmentsResponse.json();
+                    assignedUnits = assignmentsData.assignments?.length || 0;
+                }
+
+                return { ...trainer, studentCount, assignedUnits };
+            } catch (error) {
+                console.error(`Error loading data for trainer ${trainer._id}:`, error);
+                return { ...trainer, studentCount: 0, assignedUnits: 0 };
+            }
+        }));
+
+        trainersPagination.all = trainersWithData;
+        trainersPagination.currentPage = 1;
+        applyTrainerFilters();
+    } catch (error) {
+        console.error('Error loading trainers data:', error);
+        const tbody = document.getElementById('trainersTableBody');
+        if (tbody) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" style="text-align:center;color:var(--text-muted);padding:24px">
+                        Error loading trainers: ${escapeHtml(error.message)}
                     </td>
                 </tr>
-            `).join('');
+            `;
         }
+    }
+}
+
+// Re-filter from the cached list, reset to page 1, re-render.
+function applyTrainerFilters() {
+    const { search, department } = trainersPagination.filters;
+    const q = (search || '').trim().toLowerCase();
+    trainersPagination.filtered = (trainersPagination.all || []).filter(t => {
+        if (department && department !== 'all' && t.department !== department) return false;
+        if (q) {
+            const hay = `${t.name || ''} ${t.email || ''}`.toLowerCase();
+            if (!hay.includes(q)) return false;
+        }
+        return true;
+    });
+    trainersPagination.totalItems = trainersPagination.filtered.length;
+    trainersPagination.totalPages = Math.max(1, Math.ceil(trainersPagination.totalItems / trainersPagination.itemsPerPage));
+    if (trainersPagination.currentPage > trainersPagination.totalPages) trainersPagination.currentPage = trainersPagination.totalPages;
+    displayTrainers();
+    if (typeof updatePagination === 'function') updatePagination('trainers');
+}
+
+// Render the current page of the filtered trainers into the adm-table.
+function displayTrainers() {
+    const tbody = document.getElementById('trainersTableBody');
+    if (!tbody) return;
+
+    const list = trainersPagination.filtered || [];
+    if (list.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" style="text-align:center;color:var(--text-muted);padding:24px">
+                    No trainers found
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    const start = (trainersPagination.currentPage - 1) * trainersPagination.itemsPerPage;
+    const pageRows = list.slice(start, start + trainersPagination.itemsPerPage);
+    const fmtDept = (window.formatDepartmentName)
+        ? window.formatDepartmentName
+        : (window.Catalog ? (c) => window.Catalog.departmentName(c) : (c) => c);
+
+    tbody.innerHTML = pageRows.map(trainer => {
+        const initial = escapeHtml((trainer.name || '?').trim().charAt(0).toUpperCase() || '?');
+        const units = Number(trainer.assignedUnits || 0);
+        const students = Number(trainer.studentCount || 0);
+        return `
+            <tr>
+                <td>
+                    <div style="display:flex;align-items:center;gap:12px">
+                        <div style="width:38px;height:38px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;color:var(--maroon);background:color-mix(in srgb, var(--maroon) 12%, transparent)">${initial}</div>
+                        <div style="min-width:0">
+                            <div class="td-strong">${escapeHtml(trainer.name)}</div>
+                            <div style="color:var(--text-muted);font-size:12px">${escapeHtml(trainer.email || '')}</div>
+                        </div>
+                    </div>
+                </td>
+                <td>${escapeHtml(fmtDept(trainer.department) || trainer.department || '')}</td>
+                <td><span class="pill pill--info">${units} unit${units === 1 ? '' : 's'}</span></td>
+                <td><span class="pill pill--neutral">${students} student${students === 1 ? '' : 's'}</span></td>
+                <td style="text-align:right"><span class="pill pill--success">Active</span></td>
+            </tr>
+        `;
+    }).join('');
+}
 
 window.DeputyTabs.trainers = {
-    init() { loadTrainersData(); }
+    init() {
+        loadTrainersData();
+        if (window.__deputyTrainersWired) return;
+        window.__deputyTrainersWired = true;
+        const searchEl = document.getElementById('deputyTrainersSearch');
+        const deptEl = document.getElementById('deputyTrainersDepartment');
+        let t;
+        if (searchEl) searchEl.addEventListener('input', (e) => {
+            clearTimeout(t);
+            const v = e.target.value;
+            t = setTimeout(() => { trainersPagination.filters.search = v; trainersPagination.currentPage = 1; applyTrainerFilters(); }, 250);
+        });
+        if (deptEl) deptEl.addEventListener('change', (e) => { trainersPagination.filters.department = e.target.value; trainersPagination.currentPage = 1; applyTrainerFilters(); });
+    }
 };
