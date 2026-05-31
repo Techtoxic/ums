@@ -40,6 +40,12 @@
             }
         }
     </script>
+    <style>
+        /* Desktop-only sidebar collapse toggle (mobile uses the off-canvas menu).
+           The shell becomes a fixed rail at >=1024px (see dashboard-styles.css). */
+        .sidebar-collapse-toggle { display: none; }
+        @media (min-width: 1024px) { .sidebar-collapse-toggle { display: inline-flex; } }
+    </style>
     <script src="/public/js/auth.js"></script>
     <script src="/public/js/catalog.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -86,12 +92,32 @@
                 </div>
             </div>
         </aside>
+        <script>
+            // Collapsible sidebar. Finance tabs are full-page navigations, so the
+            // collapsed state is persisted in localStorage and applied here during
+            // parse (right after the <aside>) to avoid a flash of the wide sidebar.
+            (function () {
+                var KEY = 'finance-sidebar-collapsed';
+                var sb = document.getElementById('sidebar');
+                if (sb && localStorage.getItem(KEY) === '1') sb.classList.add('collapsed');
+                window.toggleFinanceSidebar = function () {
+                    var el = document.getElementById('sidebar');
+                    if (!el) return;
+                    var collapsed = el.classList.toggle('collapsed');
+                    try { localStorage.setItem(KEY, collapsed ? '1' : '0'); } catch (e) { /* ignore */ }
+                };
+            })();
+        </script>
 
         <!-- Main column: topbar + content -->
         <div>
             <header class="dashboard-topbar">
                 <button class="btn btn--ghost btn--icon lg:hidden" onclick="openSidebar()" aria-label="Open menu">
                     <i class="ri-menu-line"></i>
+                </button>
+                <!-- Desktop sidebar collapse toggle (persists across tabs). -->
+                <button class="btn btn--ghost btn--icon sidebar-collapse-toggle" onclick="toggleFinanceSidebar()" aria-label="Collapse sidebar" title="Collapse / expand sidebar">
+                    <i class="ri-menu-fold-line"></i>
                 </button>
                 <div class="dashboard-topbar__title">Finance Dashboard</div>
                 <div class="dashboard-topbar__actions">

@@ -88,7 +88,7 @@ async function loadStudents() {
         displayStudents(students, programs, payments);
     } catch (error) {
         console.error('Error loading data:', error);
-        studentTable.innerHTML = `<tr><td colspan="6" class="px-6 py-4 text-center text-red-500">Error loading student data. ${escapeHtml(error.message)}</td></tr>`;
+        studentTable.innerHTML = `<tr><td colspan="10" class="px-6 py-4 text-center text-red-500">Error loading student data. ${escapeHtml(error.message)}</td></tr>`;
     }
 }
 
@@ -98,7 +98,7 @@ function displayStudents(students, programs, payments) {
     filteredStudents = [...students];
     
     if (!students.length) {
-        studentTable.innerHTML = '<tr><td colspan="8" class="px-3 py-3 text-center text-sm">No students found</td></tr>';
+        studentTable.innerHTML = '<tr><td colspan="10" class="px-3 py-3 text-center text-sm">No students found</td></tr>';
         updateStudentCount(0);
         return;
     }
@@ -119,11 +119,15 @@ function renderStudentTable(students, programs, payments) {
         const program = window.Catalog
             ? window.Catalog.programByCode(student.course)
             : programs.find(p => String(p.code || '').toUpperCase() === String(student.course || '').toUpperCase());
-        const programCost = program ? program.programCost : 67189; // Default to standard cost
-        
-        // Calculate total fees based on year of study (programCost is per year)
+        const programCost = program ? program.programCost : 67189; // annual program cost
+
+        // Billing is PER MODULE: a year (program cost) is 3 modules, so each module
+        // costs ceil(programCost/3) (=22,397). "Total billed to date" = per-module
+        // fee × current module — consistent with the analytics endpoint and the
+        // student portal. (Was annual cost × module, which over-billed ~3x.)
         const moduleOfStudy = student.module || 1;
-        const totalFees = programCost * moduleOfStudy;
+        const perModuleFee = Math.ceil(Number(programCost || 0) / 3);
+        const totalFees = perModuleFee * moduleOfStudy;
         
         // Calculate total paid
         const studentPayments = payments.filter(payment => payment.studentId === student.admissionNumber);
@@ -147,16 +151,16 @@ function renderStudentTable(students, programs, payments) {
             (student.intake.charAt(0).toUpperCase() + student.intake.slice(1) + ' ' + (student.intakeYear || '')) : 'N/A';
             
         row.innerHTML = `
-            <td class="px-3 py-2 text-sm">${escapeHtml(student.admissionNumber || 'N/A')}</td>
-            <td class="px-3 py-2 text-sm">${escapeHtml(student.name || 'N/A')}</td>
-            <td class="px-3 py-2 text-sm">${escapeHtml(formatCourseName(student.course))}</td>
-            <td class="px-3 py-2 text-sm">${escapeHtml(departmentName)}</td>
-            <td class="px-3 py-2 text-sm">Module ${student.module || 'N/A'}</td>
-            <td class="px-3 py-2 text-sm">${escapeHtml(intakeText)}</td>
-            <td class="px-3 py-2 text-sm font-semibold">${formatCurrency(totalFees)}</td>
-            <td class="px-3 py-2 text-sm">${formatCurrency(totalPaid)}</td>
-            <td class="px-3 py-2 text-sm ${balance > 0 ? 'text-red-600' : 'text-green-600'} font-semibold">${formatCurrency(balance)}</td>
-            <td class="px-3 py-2 text-sm">
+            <td class="px-2 py-2 text-sm">${escapeHtml(student.admissionNumber || 'N/A')}</td>
+            <td class="px-2 py-2 text-sm">${escapeHtml(student.name || 'N/A')}</td>
+            <td class="px-2 py-2 text-sm">${escapeHtml(formatCourseName(student.course))}</td>
+            <td class="px-2 py-2 text-sm hidden xl:table-cell">${escapeHtml(departmentName)}</td>
+            <td class="px-2 py-2 text-sm hidden lg:table-cell">Module ${student.module || 'N/A'}</td>
+            <td class="px-2 py-2 text-sm hidden xl:table-cell">${escapeHtml(intakeText)}</td>
+            <td class="px-2 py-2 text-sm font-semibold">${formatCurrency(totalFees)}</td>
+            <td class="px-2 py-2 text-sm">${formatCurrency(totalPaid)}</td>
+            <td class="px-2 py-2 text-sm ${balance > 0 ? 'text-red-600' : 'text-green-600'} font-semibold">${formatCurrency(balance)}</td>
+            <td class="px-2 py-2 text-sm">
                 <div class="flex space-x-1">
                     <button 
                         class="add-payment-btn bg-primary text-white px-2 py-1 rounded hover:bg-secondary transition-colors text-xs"
