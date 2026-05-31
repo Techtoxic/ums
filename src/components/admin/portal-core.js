@@ -302,6 +302,18 @@ function showToast(message, type = 'info') {
     }, 3000);
 }
 
+// Shared client-side pagination footer. Renders Prev / "Page x of n" / Next;
+// the buttons call a global navigation function (fnName) with the target page.
+// Returns '' when there is only one page so it stays out of the way.
+function admPaginationFooter(page, totalPages, fnName) {
+    if (totalPages <= 1) return '';
+    return `<div style="display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:14px 2px 2px">
+        <button class="adm-btn adm-btn--outline adm-btn--sm" ${page <= 1 ? 'disabled' : ''} onclick="${fnName}(${page - 1})"><i class="ri-arrow-left-s-line"></i> Prev</button>
+        <span class="kpi__note">Page ${page} of ${totalPages}</span>
+        <button class="adm-btn adm-btn--outline adm-btn--sm" ${page >= totalPages ? 'disabled' : ''} onclick="${fnName}(${page + 1})">Next <i class="ri-arrow-right-s-line"></i></button>
+    </div>`;
+}
+
 function handleGlobalSearch(e) {
     const query = e.target.value.toLowerCase();
     if (query.length < 2) return;
@@ -358,6 +370,22 @@ window.logout = logout;
 window.openMobileSearch = openMobileSearch;
 window.closeMobileSearch = closeMobileSearch;
 
+// Fetch + show the current academic year in the topbar chip.
+async function loadAcademicYearChip() {
+    const chip = document.getElementById('academic-year-chip');
+    if (!chip) return;
+    try {
+        const res = await authFetch(`${API_BASE}/system-settings/current_academic_year`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const value = data && (data.value || data.current_academic_year);
+        if (value) {
+            chip.textContent = `AY ${value}`;
+            chip.classList.remove('hidden');
+        }
+    } catch (e) { /* best-effort: leave hidden */ }
+}
+
 // ---- bootstrap (new): identity + load all data once, then start the router ----
 document.addEventListener('DOMContentLoaded', async function () {
     // Cookie-based auth: requireAuth bounces to /admin/login if no valid session.
@@ -372,6 +400,11 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     // Load the shared course/department catalog before any tab renders (Rule 7).
     if (window.Catalog) { await window.Catalog.ready(); }
+
+    // Academic-year chip in the topbar (current_academic_year is computed
+    // server-side; admin is authorized to read it). Best-effort — stays hidden
+    // if the lookup fails.
+    loadAcademicYearChip();
 
     const adminNameEl = document.getElementById('admin-name');
     if (adminNameEl) adminNameEl.textContent = admin.name || 'Administrator';

@@ -3,13 +3,17 @@ window.AdminTabs = window.AdminTabs || {};
 
 // (verbatim from adminDashboard.js)
 let _adminTrainersWired = false;
+let _admTrainersPage = 1;
+const ADM_TRAINERS_PER_PAGE = 15;
+
+function adminTrainersFilterChanged() { _admTrainersPage = 1; renderAdminTrainers(); }
 
 function wireAdminTrainerFilters() {
     if (_adminTrainersWired) return;
     const search = document.getElementById('trainer-search');
     const dept = document.getElementById('trainer-dept-filter');
-    if (search) search.addEventListener('input', renderAdminTrainers);
-    if (dept) dept.addEventListener('change', renderAdminTrainers);
+    if (search) search.addEventListener('input', adminTrainersFilterChanged);
+    if (dept) dept.addEventListener('change', adminTrainersFilterChanged);
     _adminTrainersWired = true;
 }
 
@@ -29,7 +33,16 @@ function renderAdminTrainers() {
         return true;
     });
 
-    const rowsHtml = list.map(trainer => {
+    const totalFiltered = list.length;
+    const totalPages = Math.max(1, Math.ceil(totalFiltered / ADM_TRAINERS_PER_PAGE));
+    if (_admTrainersPage > totalPages) _admTrainersPage = totalPages;
+    if (_admTrainersPage < 1) _admTrainersPage = 1;
+    const startIdx = (_admTrainersPage - 1) * ADM_TRAINERS_PER_PAGE;
+    const pageList = list.slice(startIdx, startIdx + ADM_TRAINERS_PER_PAGE);
+    const shownFrom = totalFiltered === 0 ? 0 : startIdx + 1;
+    const shownTo = startIdx + pageList.length;
+
+    const rowsHtml = pageList.map(trainer => {
         const isActive = trainer.isActive !== false; // endpoint may omit the flag
         const initial = escapeHtml((trainer.name || '?').trim().charAt(0).toUpperCase() || '?');
         const units = Number(trainer.unitsAssigned || 0);
@@ -57,7 +70,7 @@ function renderAdminTrainers() {
         <div class="adm-card">
             <div class="adm-card__head">
                 <div class="adm-card__title"><i class="ri-user-star-line"></i> Trainer List</div>
-                <span class="kpi__note">Showing ${list.length} of ${(allTrainers || []).length}</span>
+                <span class="kpi__note">Showing ${shownFrom}–${shownTo} of ${totalFiltered}</span>
             </div>
             <div class="adm-table-wrap">
                 <table class="adm-table">
@@ -76,8 +89,12 @@ function renderAdminTrainers() {
                     </tbody>
                 </table>
             </div>
+            ${admPaginationFooter(_admTrainersPage, totalPages, 'admTrainersSetPage')}
         </div>`;
 }
+
+function admTrainersSetPage(p) { _admTrainersPage = p; renderAdminTrainers(); }
+window.admTrainersSetPage = admTrainersSetPage;
 
 async function displayTrainers() {
     const container = document.getElementById('trainers-list');

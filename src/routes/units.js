@@ -198,23 +198,47 @@ router.get('/units/department/:department', verifyToken, authorize('admin', 'reg
     }
 });
 
-// Get all units (for admin use with pagination)
+// Get all units (admin/deputy catalog view). Sourced from Drizzle and joined to
+// programs so each unit carries its course code/name + level. Field names are
+// shaped to what the portals render (unitCode/unitName/courseCode/courseName/
+// module/level) — the old Mongoose-shim version returned raw columns (code/name)
+// and sorted by non-existent fields, which surfaced "undefined" course headers
+// and "0 Credit Hours" (there is no credit-hours column; module is shown instead).
 router.get('/units', verifyToken, authorize('admin', 'registrar', 'hod', 'deputy'), async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 50;
+        const limit = Math.min(parseInt(req.query.limit) || 1000, 2000);
         const skip = (page - 1) * limit;
 
-        const units = await Unit.find({ isActive: true })
-            .sort({ courseCode: 1, unitCode: 1 })
-            .skip(skip)
-            .limit(limit);
+        const baseWhere = isNull(schema.units.deleted_at);
 
-        const total = await Unit.countDocuments({ isActive: true });
+        const rows = await db
+            .select({
+                id: schema.units.id,
+                unitCode: schema.units.code,
+                unitName: schema.units.name,
+                module: schema.units.module,
+                level: schema.units.year,
+                isCommon: schema.units.is_common,
+                courseCode: schema.programs.code,
+                courseName: schema.programs.name,
+            })
+            .from(schema.units)
+            .leftJoin(schema.programs, eq(schema.programs.id, schema.units.program_id))
+            .where(baseWhere)
+            .orderBy(schema.programs.code, schema.units.module, schema.units.code)
+            .limit(limit)
+            .offset(skip);
+
+        const totalRows = await db
+            .select({ c: schema.units.id })
+            .from(schema.units)
+            .where(baseWhere);
+        const total = totalRows.length;
 
         res.json({
             success: true,
-            units: units,
+            units: rows,
             pagination: {
                 currentPage: page,
                 totalPages: Math.ceil(total / limit),

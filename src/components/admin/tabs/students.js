@@ -5,6 +5,8 @@
 window.AdminTabs = window.AdminTabs || {};
 
 let _adminStudentsWired = false;
+let _admStudentsPage = 1;
+const ADM_STUDENTS_PER_PAGE = 15;
 
 function getAdminStudentFilters() {
     return {
@@ -42,14 +44,17 @@ function populateAdminProgramFilter() {
     sel.dataset.filled = '1';
 }
 
+// Filter changes reset to the first page before re-rendering.
+function adminStudentsFilterChanged() { _admStudentsPage = 1; renderAdminStudents(); }
+
 function wireAdminStudentFilters() {
     if (_adminStudentsWired) return;
     const search = document.getElementById('student-search');
     const moduleF = document.getElementById('module-filter');
     const programF = document.getElementById('program-filter');
-    if (search) search.addEventListener('input', renderAdminStudents);
-    if (moduleF) moduleF.addEventListener('change', renderAdminStudents);
-    if (programF) programF.addEventListener('change', renderAdminStudents);
+    if (search) search.addEventListener('input', adminStudentsFilterChanged);
+    if (moduleF) moduleF.addEventListener('change', adminStudentsFilterChanged);
+    if (programF) programF.addEventListener('change', adminStudentsFilterChanged);
     _adminStudentsWired = true;
 }
 
@@ -57,11 +62,21 @@ function renderAdminStudents() {
     const container = document.getElementById('students-table');
     if (!container) return;
 
-    const rows = applyAdminStudentFilters(allStudents || []).map(student => {
+    const allRows = applyAdminStudentFilters(allStudents || []).map(student => {
         const balance = adminStudentBalance(student);
         const paid = adminStudentPaid(student);
         return { ...student, balance, paid };
     });
+
+    // Client-side pagination over the filtered set.
+    const totalFiltered = allRows.length;
+    const totalPages = Math.max(1, Math.ceil(totalFiltered / ADM_STUDENTS_PER_PAGE));
+    if (_admStudentsPage > totalPages) _admStudentsPage = totalPages;
+    if (_admStudentsPage < 1) _admStudentsPage = 1;
+    const startIdx = (_admStudentsPage - 1) * ADM_STUDENTS_PER_PAGE;
+    const rows = allRows.slice(startIdx, startIdx + ADM_STUDENTS_PER_PAGE);
+    const shownFrom = totalFiltered === 0 ? 0 : startIdx + 1;
+    const shownTo = startIdx + rows.length;
 
     const cell = (s) => ({
         adm: escapeHtml(s.admissionNumber || 'N/A'),
@@ -78,7 +93,7 @@ function renderAdminStudents() {
         <div class="adm-card">
             <div class="adm-card__head">
                 <div class="adm-card__title"><i class="ri-graduation-cap-line"></i> Student List</div>
-                <span class="kpi__note">Showing ${rows.length} of ${(allStudents || []).length}</span>
+                <span class="kpi__note">Showing ${shownFrom}–${shownTo} of ${totalFiltered}</span>
             </div>
             <div class="adm-table-wrap">
                 <table class="adm-table">
@@ -111,9 +126,13 @@ function renderAdminStudents() {
                     </tbody>
                 </table>
             </div>
+            ${admPaginationFooter(_admStudentsPage, totalPages, 'admStudentsSetPage')}
         </div>
     `;
 }
+
+function admStudentsSetPage(p) { _admStudentsPage = p; renderAdminStudents(); }
+window.admStudentsSetPage = admStudentsSetPage;
 
 async function displayStudents() {
     const container = document.getElementById('students-table');
