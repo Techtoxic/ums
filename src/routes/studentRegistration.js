@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { verifyToken, authorize, verifyOwnership } = require('../middleware/auth');
 const { toMoneyNumber } = require('../utils/formatters');
+const { getFeePerModule } = require('../utils/studentHelpers');
 const { Student, Payment, Program, Unit, CommonUnit, SystemSettings, StudentUnitRegistration } = require('../db/models');
 
 // Check if student can register (fee threshold check) - MUST be before /:id route
@@ -26,7 +27,10 @@ router.get('/students/:studentId/can-register', verifyToken, authorize('admin', 
         // Program cost is looked up directly from the DB by course CODE
         // (student.course holds the program code, e.g. 'AC6'). No hardcoded map.
         const program = student.course ? await Program.findOne({ code: String(student.course).toUpperCase() }) : null;
-        const totalFees = program ? toMoneyNumber(program.programCost) : 67189; // SEV-H-016: numeric for comparison
+        // Students are billed per module: gate on the current module's fee
+        // (annual program_cost / 3, rounded up), matching the student portal.
+        const annualCost = program ? toMoneyNumber(program.programCost) : 67189;
+        const totalFees = getFeePerModule(annualCost); // SEV-H-016: numeric for comparison
 
         const outstandingBalance = totalFees - paidAmount;
         const canRegister = outstandingBalance < feeThreshold;
@@ -89,7 +93,10 @@ router.post('/students/register-units', verifyToken, authorize('admin', 'registr
         // Program cost is looked up directly from the DB by course CODE
         // (student.course holds the program code, e.g. 'AC6'). No hardcoded map.
         const program = student.course ? await Program.findOne({ code: String(student.course).toUpperCase() }) : null;
-        const totalFees = program ? toMoneyNumber(program.programCost) : 67189; // SEV-H-016: numeric for comparison
+        // Students are billed per module: gate on the current module's fee
+        // (annual program_cost / 3, rounded up), matching the student portal.
+        const annualCost = program ? toMoneyNumber(program.programCost) : 67189;
+        const totalFees = getFeePerModule(annualCost); // SEV-H-016: numeric for comparison
 
         const outstandingBalance = totalFees - paidAmount;
 

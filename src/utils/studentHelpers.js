@@ -40,6 +40,17 @@ function isEligibleToApply(level, moduleOfStudy) {
     return moduleOfStudy === (level - 3);
 }
 
+// Fees: programs.program_cost is the ANNUAL fee. An academic year is split into
+// MODULES_PER_YEAR modules and students are billed PER MODULE, so the fee that
+// matters for a student's current module is the annual cost / 3, rounded UP to
+// whole KES (67189/3 -> 22397). Mirrors feePerModule() in the student portal JS.
+const MODULES_PER_YEAR = 3;
+function getFeePerModule(annualCost) {
+    const annual = Number(annualCost || 0);
+    if (!annual || annual <= 0) return 0;
+    return Math.ceil(annual / MODULES_PER_YEAR);
+}
+
 // Max modules per level — used by promotion logic on both backend + frontend.
 const MAX_MODULE_BY_LEVEL = Object.freeze({
     3: 1,
@@ -112,6 +123,8 @@ module.exports = {
     generateStudentInitialPassword,
     generateIntakeCode,
     isEligibleToApply,
+    MODULES_PER_YEAR,
+    getFeePerModule,
     MAX_MODULE_BY_LEVEL,
     getMaxModuleForLevel,
     extractLevelFromCourse,
