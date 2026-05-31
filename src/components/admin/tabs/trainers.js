@@ -29,36 +29,54 @@ function renderAdminTrainers() {
         return true;
     });
 
-    if (list.length === 0) {
-        container.innerHTML = '<p class="col-span-full" style="text-align:center;color:var(--text-muted);font-size:13px;padding:24px">No trainers match the current filters</p>';
-        return;
-    }
-
-    container.innerHTML = list.map(trainer => {
+    const rowsHtml = list.map(trainer => {
         const isActive = trainer.isActive !== false; // endpoint may omit the flag
         const initial = escapeHtml((trainer.name || '?').trim().charAt(0).toUpperCase() || '?');
+        const units = Number(trainer.unitsAssigned || 0);
+        const students = Number(trainer.studentsAssigned || 0);
         return `
-            <div class="adm-card">
-                <div class="adm-card__body">
-                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
-                        <div style="width:44px;height:44px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;color:var(--maroon);background:color-mix(in srgb, var(--maroon) 12%, transparent)">${initial}</div>
+            <tr>
+                <td>
+                    <div style="display:flex;align-items:center;gap:12px">
+                        <div style="width:38px;height:38px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;color:var(--maroon);background:color-mix(in srgb, var(--maroon) 12%, transparent)">${initial}</div>
                         <div style="min-width:0">
-                            <div class="td-strong" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(trainer.name)}</div>
-                            <div style="color:var(--text-muted);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(trainer.email || '')}</div>
+                            <div class="td-strong">${escapeHtml(trainer.name)}</div>
+                            <div style="color:var(--text-muted);font-size:12px">${escapeHtml(trainer.email || '')}</div>
                         </div>
                     </div>
-                    <div style="display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--text-secondary)">
-                        ${trainer.phoneNumber || trainer.phone ? `<div><i class="ri-phone-line" style="color:var(--text-muted);margin-right:8px"></i>${escapeHtml(trainer.phoneNumber || trainer.phone)}</div>` : ''}
-                        <div><i class="ri-building-line" style="color:var(--text-muted);margin-right:8px"></i>${escapeHtml(formatDepartmentName(trainer.department))}</div>
-                        ${trainer.specialization ? `<div><i class="ri-star-line" style="color:var(--text-muted);margin-right:8px"></i>${escapeHtml(trainer.specialization)}</div>` : ''}
-                    </div>
-                    <div style="margin-top:14px">
-                        <span class="pill ${isActive ? 'pill--success' : 'pill--neutral'}">${isActive ? 'Active' : 'Inactive'}</span>
-                    </div>
-                </div>
-            </div>
-        `;
+                </td>
+                <td>${escapeHtml(formatDepartmentName(trainer.department))}</td>
+                <td>${escapeHtml(trainer.phoneNumber || trainer.phone || '—')}</td>
+                <td><span class="pill pill--info">${units} unit${units === 1 ? '' : 's'}</span></td>
+                <td><span class="pill pill--neutral">${students} student${students === 1 ? '' : 's'}</span></td>
+                <td style="text-align:right"><span class="pill ${isActive ? 'pill--success' : 'pill--neutral'}">${isActive ? 'Active' : 'Inactive'}</span></td>
+            </tr>`;
     }).join('');
+
+    container.innerHTML = `
+        <div class="adm-card">
+            <div class="adm-card__head">
+                <div class="adm-card__title"><i class="ri-user-star-line"></i> Trainer List</div>
+                <span class="kpi__note">Showing ${list.length} of ${(allTrainers || []).length}</span>
+            </div>
+            <div class="adm-table-wrap">
+                <table class="adm-table">
+                    <thead>
+                        <tr>
+                            <th>Trainer</th>
+                            <th>Department</th>
+                            <th>Phone</th>
+                            <th>Units Assigned</th>
+                            <th>Students Assigned</th>
+                            <th style="text-align:right">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${list.length === 0 ? `<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:24px">No trainers match the current filters</td></tr>` : rowsHtml}
+                    </tbody>
+                </table>
+            </div>
+        </div>`;
 }
 
 async function displayTrainers() {
@@ -110,19 +128,7 @@ function openAddTrainerModal() {
                             <option value="">Select Department</option>
                         </select>
                     </div>
-                    <div>
-                        <label class="adm-label">Specialization</label>
-                        <input type="text" name="specialization" placeholder="e.g., Chemistry, Mathematics" class="adm-input">
-                    </div>
-                    <div>
-                        <label class="adm-label">Qualifications</label>
-                        <textarea name="qualifications" rows="3" placeholder="e.g., MSc Chemistry, BSc Education" class="adm-textarea"></textarea>
-                    </div>
-                    <div>
-                        <label class="adm-label">Default Password</label>
-                        <input type="text" name="password" value="trainer123" readonly class="adm-input">
-                        <p class="kpi__note" style="margin-top:6px">Default password: trainer123 (can be changed after first login)</p>
-                    </div>
+                    <p class="kpi__note">The trainer signs in with the default password <strong>trainer123</strong> and is prompted to change it on first login.</p>
                     <div style="display:flex;align-items:center;justify-content:flex-end;gap:10px;padding-top:8px;border-top:1px solid var(--border-default)">
                         <button type="button" onclick="closeAddTrainerModal()" class="adm-btn adm-btn--outline">Cancel</button>
                         <button type="submit" class="adm-btn adm-btn--primary"><i class="ri-save-line"></i> Add Trainer</button>
@@ -159,39 +165,30 @@ async function handleAddTrainer(e) {
     const trainerData = {
         name: formData.get('name'),
         email: formData.get('email'),
-        phone: formData.get('phone'),
+        phone: formData.get('phone') || null,
         department: formData.get('department'),
-        specialization: formData.get('specialization'),
-        qualifications: formData.get('qualifications'),
-        password: formData.get('password') || 'trainer123',
-        isActive: true
     };
 
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.innerHTML = '<i class="ri-loader-4-line"></i> Adding…'; }
     try {
-        showToast('Adding trainer...', 'info');
-        
         const response = await authFetch(`${API_BASE}/trainers`, {
             method: 'POST',
             body: JSON.stringify(trainerData)
         });
+        const body = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(body.message || 'Failed to add trainer');
 
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || 'Failed to add trainer');
-        }
-
-        const result = await response.json();
         showToast('Trainer added successfully!', 'success');
-        
         closeAddTrainerModal();
-        
-        // Reload trainers
+
+        // Reload trainers + re-render the list.
         await loadTrainers();
-        await displayTrainers();
-        
+        renderAdminTrainers();
     } catch (error) {
         console.error('Error adding trainer:', error);
         showToast(error.message || 'Failed to add trainer', 'error');
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = '<i class="ri-save-line"></i> Add Trainer'; }
     }
 }
 

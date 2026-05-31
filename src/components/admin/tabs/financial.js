@@ -24,7 +24,13 @@ async function displayFinancial() {
         const totalOutstanding = fin.reduce((sum, f) => sum + Math.max(0, Number(f.balance) || 0), 0);
         const studentsOwing = fin.filter(f => (Number(f.balance) || 0) > 0).length;
         const expected = Number(totals.expectedRevenue || 0);
-        const collectionRate = expected > 0 ? Math.min(100, Math.round((tuitionRevenue / expected) * 100)) : 0;
+        // Collection rate = (expected − outstanding) / expected, capped at 100% —
+        // identical to the dashboard. Prefer the server value (totals.collectionRate),
+        // fall back to the same formula locally. The old (tuition / expected) form
+        // wrongly read 100% because cumulative tuition can exceed expected-to-date.
+        const collectionRate = (totals.collectionRate != null)
+            ? Math.round(Number(totals.collectionRate))
+            : (expected > 0 ? Math.min(100, Math.round(((expected - totalOutstanding) / expected) * 100)) : 0);
 
         const modePill = { mpesa: 'pill--success', bank: 'pill--info', bursary: 'pill--warning' };
         const modeLabel = { mpesa: 'M-Pesa', bank: 'Bank', bursary: 'Bursary' };

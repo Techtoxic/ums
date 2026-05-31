@@ -383,4 +383,69 @@ router.get('/trainers/:trainerId/students', verifyToken, authorize('admin', 'hod
     }
 });
 
+// Create a trainer (admin only). A trainer profile is intentionally minimal:
+// name, department, phone, email. The account is seeded with a known default
+// password and flagged is_first_login so the trainer is forced to set their own
+// password (and verify email) on first sign-in.
+const bcrypt = require('bcryptjs');
+const DEFAULT_TRAINER_PASSWORD = 'trainer123';
+router.post('/trainers', verifyToken, authorize('admin'), async (req, res) => {
+    try {
+        const name = (req.body.name || '').trim();
+        const email = (req.body.email || '').trim().toLowerCase();
+        const department = (req.body.department || '').trim() || null;
+        let phone = (req.body.phone || '').trim() || null;
+
+        if (!name || !email) {
+            return res.status(400).json({ message: 'Name and email are required' });
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            return res.status(400).json({ message: 'Please provide a valid email address' });
+        }
+
+        // Email must be unique across all users (any role).
+        const existing = await userService.findByEmail(email);
+        if (existing) {
+            return res.status(409).json({ message: 'A user with that email already exists' });
+        }
+
+        const passwordHash = await bcrypt.hash(DEFAULT_TRAINER_PASSWORD, 12);
+        const now = new Date();
+        const rows = await db
+            .insert(schema.users)
+            .values({
+                role: 'trainer',
+                name,
+                email,
+                password: passwordHash,
+                department,
+                phone,
+                is_active: true,
+                is_first_login: true,
+                must_update_password: true,
+                created_at: now,
+                updated_at: now,
+            })
+            .returning({
+                id: schema.users.id,
+                name: schema.users.name,
+                email: schema.users.email,
+                department: schema.users.department,
+                phone: schema.users.phone,
+            });
+
+        const trainer = rows[0];
+        console.log(`Admin created trainer: ${trainer.name} (${trainer.email})`);
+        res.status(201).json({
+            success: true,
+            message: 'Trainer added successfully',
+            trainer,
+            defaultPassword: DEFAULT_TRAINER_PASSWORD,
+        });
+    } catch (error) {
+        console.error('Error creating trainer:', error);
+        res.status(500).json({ message: 'Internal server error while creating trainer' });
+    }
+});
+
 module.exports = router;

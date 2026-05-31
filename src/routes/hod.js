@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { db, schema } = require('../db');
-const { eq, and, isNull } = require('drizzle-orm');
+const { eq, and, isNull, sql } = require('drizzle-orm');
 const { verifyToken, authorize, verifyOwnership, signToken, setAuthCookie, setCsrfCookie, generateCsrfToken } = require('../middleware/auth');
 const { authLimiter } = require('../middleware/rateLimiters');
 const { isValidId } = require('../utils/validators');
@@ -29,6 +29,44 @@ router.get('/trainers/all-departments', verifyToken, authorize('admin', 'hod', '
                 eq(schema.users.is_active, true),
             ))
             .orderBy(schema.users.department, schema.users.name);
+
+        // Enrich each trainer with two counts the admin/deputy lists show:
+        //   unitsAssigned   = rows in trainer_assignments for the trainer
+        //   studentsAssigned = distinct students registered in those units
+        // Computed in two grouped queries (cheap) and merged in memory, so the
+        // list view doesn't make an N+1 fan-out of per-trainer requests.
+        let unitCounts = [];
+        let studentCounts = [];
+        try {
+            unitCounts = await db
+                .select({
+                    trainerId: schema.trainerAssignments.trainer_id,
+                    c: sql`count(*)::int`,
+                })
+                .from(schema.trainerAssignments)
+                .groupBy(schema.trainerAssignments.trainer_id);
+
+            studentCounts = await db
+                .select({
+                    trainerId: schema.trainerAssignments.trainer_id,
+                    c: sql`count(distinct ${schema.unitRegistrations.student_id})::int`,
+                })
+                .from(schema.trainerAssignments)
+                .innerJoin(
+                    schema.unitRegistrations,
+                    eq(schema.unitRegistrations.unit_id, schema.trainerAssignments.unit_id),
+                )
+                .groupBy(schema.trainerAssignments.trainer_id);
+        } catch (countErr) {
+            // Counts are best-effort; never fail the whole list because of them.
+            console.error('Trainer count enrichment failed:', countErr.message);
+        }
+        const unitsById = Object.fromEntries(unitCounts.map(r => [r.trainerId, r.c]));
+        const studentsById = Object.fromEntries(studentCounts.map(r => [r.trainerId, r.c]));
+        trainers.forEach(t => {
+            t.unitsAssigned = unitsById[t.id] || 0;
+            t.studentsAssigned = studentsById[t.id] || 0;
+        });
 
         // Group by department. Trainers with no department land under 'Unassigned'.
         const trainersByDepartment = trainers.reduce((acc, trainer) => {

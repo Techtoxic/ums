@@ -194,11 +194,12 @@ function createRevenueChart() {
     });
 }
 
+let _admDepartmentChart = null;
 function createDepartmentChart() {
     const ctx = document.getElementById('departmentChart');
     if (!ctx) return;
 
-    // Count students by department
+    // Count students by department.
     const departments = {
         'applied_science': 0,
         'agriculture': 0,
@@ -208,60 +209,61 @@ function createDepartmentChart() {
         'business_liberal': 0,
         'computing_informatics': 0
     };
-
     allStudents.forEach(student => {
         if (student.department && departments.hasOwnProperty(student.department)) {
             departments[student.department]++;
         }
     });
 
-    const labels = Object.keys(departments).map(dept => formatDepartmentName(dept));
-    const data = Object.values(departments);
+    // Sort departments by headcount (descending) so the busiest sits on top —
+    // a horizontal bar reads far better than a doughnut for 7 long labels and
+    // needs no colour legend (which was hard to read in light mode).
+    const pairs = Object.entries(departments)
+        .map(([k, v]) => ({ label: formatDepartmentName(k), value: v }))
+        .sort((a, b) => b.value - a.value);
+    const labels = pairs.map(p => p.label);
+    const data = pairs.map(p => p.value);
+    const total = data.reduce((a, b) => a + b, 0) || 1;
 
-    new Chart(ctx, {
-        type: 'doughnut',
+    // Maroon→gold horizontal gradient so the bars carry the brand.
+    const c = ctx.getContext('2d');
+    const grad = c.createLinearGradient(0, 0, ctx.width || 360, 0);
+    grad.addColorStop(0, '#7A0C0C');
+    grad.addColorStop(1, '#D4A017');
+
+    if (_admDepartmentChart) _admDepartmentChart.destroy();
+    _admDepartmentChart = new Chart(ctx, {
+        type: 'bar',
         data: {
             labels: labels,
             datasets: [{
                 data: data,
-                backgroundColor: [
-                    '#7A0C0C',  // Applied Science (maroon)
-                    '#8B2A2A',  // Agriculture
-                    '#3b82f6',  // Building & Civil (blue)
-                    '#10b981',  // Electromechanical (green)
-                    '#f59e0b',  // Hospitality (yellow)
-                    '#8b5cf6',  // Business & Liberal (purple)
-                    '#ec4899'   // Computing & Informatics (pink)
-                ],
-                borderWidth: 2,
-                borderColor: admIsDark() ? '#1F2937' : '#fff'
+                backgroundColor: grad,
+                borderRadius: 6,
+                borderSkipped: false,
+                barThickness: 'flex',
+                maxBarThickness: 26,
             }]
         },
         options: {
+            indexAxis: 'y',
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: {
-                        padding: 15,
-                        color: admTick(),
-                        font: {
-                            size: 11
-                        }
-                    }
-                },
+                legend: { display: false },
                 tooltip: {
                     callbacks: {
-                        label: function(context) {
-                            const label = context.label || '';
-                            const value = context.parsed || 0;
-                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            const percentage = ((value / total) * 100).toFixed(1);
-                            return `${label}: ${value} (${percentage}%)`;
+                        label: function (context) {
+                            const value = context.parsed.x || 0;
+                            const pct = ((value / total) * 100).toFixed(1);
+                            return `${value} student${value === 1 ? '' : 's'} (${pct}%)`;
                         }
                     }
                 }
+            },
+            scales: {
+                x: { beginAtZero: true, ticks: { precision: 0, color: admTick() }, grid: { color: admGrid() } },
+                y: { ticks: { color: admTick(), font: { size: 12 } }, grid: { display: false } }
             }
         }
     });
