@@ -56,6 +56,39 @@
         .filter-chip:hover {
             transform: scale(1.05);
         }
+        /* Tab bar — maroon active underline on the existing palette. */
+        .cbet-tab {
+            position: relative;
+            padding: 12px 18px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary, #64748b);
+            border-bottom: 3px solid transparent;
+            transition: color .15s ease, border-color .15s ease;
+            white-space: nowrap;
+        }
+        .cbet-tab:hover { color: #7A0C0C; }
+        html.dark .cbet-tab:hover { color: #fca5a5; }
+        .cbet-tab.active {
+            color: #7A0C0C;
+            border-bottom-color: #7A0C0C;
+        }
+        html.dark .cbet-tab.active {
+            color: #fca5a5;
+            border-bottom-color: #fca5a5;
+        }
+        /* Tree rows */
+        .tree-node-row {
+            transition: background-color .12s ease;
+        }
+        .tree-node-row:hover {
+            background-color: rgba(122, 12, 12, 0.06);
+        }
+        html.dark .tree-node-row:hover {
+            background-color: rgba(252, 165, 165, 0.08);
+        }
+        .tree-chevron { transition: transform .15s ease; }
+        .tree-chevron.open { transform: rotate(90deg); }
     </style>
     <script src="/public/js/auth.js"></script>
     <script src="/public/js/catalog.js"></script>
@@ -144,6 +177,126 @@
             </div>
         </div>
 
+        <!-- Tab Bar -->
+        <div class="border-b border-gray-200 dark:border-gray-700 mb-6">
+            <nav class="flex items-center -mb-px overflow-x-auto" aria-label="Tabs">
+                <button id="tabbtn-browse" class="cbet-tab active" data-tab="browse">
+                    <i class="ri-node-tree mr-2"></i>Browse
+                </button>
+                <button id="tabbtn-completeness" class="cbet-tab" data-tab="completeness">
+                    <i class="ri-grid-line mr-2"></i>Completeness
+                </button>
+                <button id="tabbtn-search" class="cbet-tab" data-tab="search">
+                    <i class="ri-search-line mr-2"></i>Search
+                </button>
+            </nav>
+        </div>
+
+        <!-- ============ BROWSE PANEL ============ -->
+        <div id="tab-browse">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Tree column -->
+                <div class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl shadow-md p-4">
+                    <div class="flex items-center justify-between mb-3 px-2">
+                        <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
+                            <i class="ri-node-tree mr-2 text-primary"></i>
+                            Evidence Browser
+                        </h2>
+                        <button id="tree-reload-btn" class="text-sm text-primary hover:text-secondary dark:text-red-300 dark:hover:text-red-200 font-medium">
+                            <i class="ri-refresh-line mr-1"></i>Reload
+                        </button>
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 px-2 mb-3">Course → Intake → Module → Unit → Student → Assessment slot. Click a file leaf to open the document.</p>
+                    <div id="cbet-tree" class="text-sm"></div>
+                </div>
+                <!-- Detail / breadcrumb column -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-5">
+                    <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center mb-3">
+                        <i class="ri-information-line mr-2 text-primary"></i>
+                        Selection
+                    </h3>
+                    <div id="cbet-detail" class="text-sm text-gray-500 dark:text-gray-400">
+                        Select a node in the tree to see its path here.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============ COMPLETENESS PANEL ============ -->
+        <div id="tab-completeness" class="hidden">
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-6">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center mb-4">
+                    <i class="ri-grid-line mr-2 text-primary"></i>
+                    Completeness Matrix
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Unit</label>
+                        <select id="completeness-unit" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                            <option value="">Select a unit…</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Intake Year</label>
+                        <select id="completeness-intake" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                            <option value="">All Intakes</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Academic Year</label>
+                        <select id="completeness-acadyear" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                            <option value="">All Years</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Semester</label>
+                        <select id="completeness-semester" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                            <option value="">All Semesters</option>
+                        </select>
+                    </div>
+                    <div class="flex items-end">
+                        <button id="completeness-load" class="w-full px-6 py-2 bg-primary hover:bg-secondary text-white rounded-lg font-medium transition-colors">
+                            <i class="ri-table-line mr-2"></i>Load Matrix
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Matrix summary -->
+            <div id="completeness-summary" class="hidden bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-6">
+                <div class="flex items-center justify-between flex-wrap gap-4">
+                    <div>
+                        <h3 id="completeness-unit-name" class="text-lg font-bold text-gray-900 dark:text-gray-100">-</h3>
+                        <p id="completeness-fraction" class="text-sm text-gray-500 dark:text-gray-400 mt-1">-</p>
+                    </div>
+                    <div class="text-right">
+                        <div id="completeness-percent" class="text-4xl font-extrabold text-primary dark:text-red-300">-</div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Complete</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Matrix loading -->
+            <div id="completeness-loading" class="hidden text-center py-12">
+                <i class="ri-loader-4-line text-4xl text-primary animate-spin mb-4"></i>
+                <p class="text-gray-600 dark:text-gray-400">Loading matrix…</p>
+            </div>
+
+            <!-- Matrix empty -->
+            <div id="completeness-empty" class="hidden text-center py-12 bg-white dark:bg-gray-800 rounded-xl shadow-md">
+                <i class="ri-table-line text-6xl text-gray-300 mb-4"></i>
+                <p class="text-gray-600 dark:text-gray-400 text-lg">No matrix to show</p>
+                <p class="text-gray-500 dark:text-gray-400 text-sm mt-2">Pick a unit and click “Load Matrix”.</p>
+            </div>
+
+            <!-- Matrix table -->
+            <div id="completeness-table-wrap" class="hidden bg-white dark:bg-gray-800 rounded-xl shadow-md p-2 overflow-x-auto">
+                <table id="completeness-table" class="min-w-full text-sm"></table>
+            </div>
+        </div>
+
+        <!-- ============ SEARCH PANEL ============ -->
+        <div id="tab-search" class="hidden">
         <!-- Filters Section -->
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-8">
             <div class="flex items-center justify-between mb-4">
@@ -276,6 +429,8 @@
                 </div>
             </div>
         </div>
+        </div>
+        <!-- ============ END SEARCH PANEL ============ -->
     </main>
 
     <!-- Student Details Modal -->

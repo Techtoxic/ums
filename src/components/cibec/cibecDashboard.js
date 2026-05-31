@@ -63,17 +63,37 @@ async function initializeDashboard() {
 
     // Load statistics
     await loadStatistics();
-    
-    // Load all uploads
+
+    // Load all uploads (powers the Search tab)
     await loadUploads();
-    
+
     // Setup event listeners
     setupEventListeners();
 
     // Academic-year chip in the topbar (best-effort; stays hidden on failure).
     loadAcademicYearChip();
 
+    // Browse tab is the default view: load the tree root (level=course).
+    loadTreeRoot();
+
+    // Completeness tab: populate its filter dropdowns (best-effort).
+    populateCompletenessFilters();
+
     console.log('Dashboard initialized');
+}
+
+// ===================================================================
+// TAB SWITCHING
+// ===================================================================
+const CBET_TABS = ['browse', 'completeness', 'search'];
+function switchTab(tab) {
+    if (!CBET_TABS.includes(tab)) return;
+    CBET_TABS.forEach(t => {
+        const panel = document.getElementById('tab-' + t);
+        const btn = document.getElementById('tabbtn-' + t);
+        if (panel) panel.classList.toggle('hidden', t !== tab);
+        if (btn) btn.classList.toggle('active', t === tab);
+    });
 }
 
 // Load statistics
@@ -87,10 +107,11 @@ async function loadStatistics() {
         // Update stat cards
         document.getElementById('stat-total').textContent = data.statistics.totalUploads || 0;
         
+        // API now returns byType entries keyed as `.key` (was `._id` pre-V2).
         const byType = data.statistics.byType || [];
-        const assessments = byType.find(t => t._id === 'assessment')?.count || 0;
-        const practicals = byType.find(t => t._id === 'practical')?.count || 0;
-        const profiles = byType.filter(t => ['profile_photo', 'kcse_results', 'kcpe_results'].includes(t._id))
+        const assessments = byType.find(t => t.key === 'assessment')?.count || 0;
+        const practicals = byType.find(t => t.key === 'practical')?.count || 0;
+        const profiles = byType.filter(t => ['profile_photo', 'kcse_results', 'kcpe_results'].includes(t.key))
             .reduce((sum, t) => sum + t.count, 0);
         
         document.getElementById('stat-assessments').textContent = assessments;
@@ -432,6 +453,371 @@ function setupEventListeners() {
     
     // Export button
     document.getElementById('export-btn').addEventListener('click', exportToExcel);
+
+    // Tab bar
+    CBET_TABS.forEach(t => {
+        const btn = document.getElementById('tabbtn-' + t);
+        if (btn) btn.addEventListener('click', () => switchTab(t));
+    });
+
+    // Browse: reload tree root
+    const treeReload = document.getElementById('tree-reload-btn');
+    if (treeReload) treeReload.addEventListener('click', loadTreeRoot);
+
+    // Completeness: load matrix
+    const compLoad = document.getElementById('completeness-load');
+    if (compLoad) compLoad.addEventListener('click', loadCompleteness);
+}
+
+// ===================================================================
+// BROWSE — lazy tree browser
+// ===================================================================
+// The tree spine is fixed: course → intake → module → unit → student → slot.
+// To fetch the children of a node we call /cibec/tree with level = the CHILD
+// level and ALL accumulated ancestor branch params. Each rendered node stores
+// the branch-param object that should be passed to its children (its own
+// ancestors + the param it contributes) so expansion accumulates naturally.
+const TREE_CHILD_LEVEL = {
+    course: 'intake',
+    intake: 'module',
+    module: 'unit',
+    unit: 'student',
+    student: 'slot'
+};
+const TREE_ICONS = {
+    course: 'ri-graduation-cap-line',
+    intake: 'ri-calendar-line',
+    module: 'ri-stack-line',
+    unit: 'ri-book-2-line',
+    student: 'ri-user-line',
+    slot: 'ri-file-line'
+};
+
+// Given a node and the branch params used to FETCH it, compute the branch
+// params to fetch ITS children (accumulate the param this node contributes).
+function childBranchParams(node, parentParams) {
+    const params = Object.assign({}, parentParams);
+    switch (node.level) {
+        case 'course':  params.course = node.key; break;
+        case 'intake':  params.intakeYear = node.intakeYear; break;
+        case 'module':  params.module = node.key; break;
+        case 'unit':    params.unitId = node.unitId; break;
+        case 'student': params.admissionNumber = node.admissionNumber; break;
+    }
+    return params;
+}
+
+// Fetch children at a given level with accumulated branch params.
+async function loadTreeChildren(level, branchParams) {
+    const qs = new URLSearchParams();
+    qs.append('level', level);
+    Object.keys(branchParams || {}).forEach(k => {
+        if (branchParams[k] !== undefined && branchParams[k] !== null && branchParams[k] !== '') {
+            qs.append(k, branchParams[k]);
+        }
+    });
+    const res = await authFetch(`${API_BASE}/cibec/tree?${qs}`);
+    if (!res.ok) throw new Error('Failed to load tree');
+    const data = await res.json();
+    return data.nodes || [];
+}
+
+// Load the root (level=course) into #cbet-tree.
+async function loadTreeRoot() {
+    const root = document.getElementById('cbet-tree');
+    if (!root) return;
+    root.innerHTML = `<div class="flex items-center text-gray-500 dark:text-gray-400 px-2 py-3">
+        <i class="ri-loader-4-line animate-spin mr-2"></i>Loading…</div>`;
+    try {
+        const nodes = await loadTreeChildren('course', {});
+        root.innerHTML = '';
+        if (nodes.length === 0) {
+            root.innerHTML = `<p class="text-gray-500 dark:text-gray-400 px-2 py-3">No courses found.</p>`;
+            return;
+        }
+        nodes.forEach(n => root.appendChild(renderTreeNode(n, {})));
+    } catch (e) {
+        console.error('Error loading tree root:', e);
+        root.innerHTML = `<p class="text-danger px-2 py-3">Failed to load tree.</p>`;
+        showToast('Failed to load tree', 'error');
+    }
+}
+
+// Build a single tree-node row (and its lazy child container). `fetchParams`
+// are the branch params that were used to fetch THIS node (i.e. its parent's
+// child-params); we keep them so we can compute this node's own child params.
+function renderTreeNode(node, fetchParams, depth = 0) {
+    const wrap = document.createElement('div');
+
+    const isLeaf = !node.hasChildren || node.level === 'slot';
+    const icon = TREE_ICONS[node.level] || 'ri-circle-line';
+
+    const row = document.createElement('div');
+    row.className = 'tree-node-row flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer select-none';
+    row.style.paddingLeft = (8 + depth * 18) + 'px';
+
+    const chevronHtml = isLeaf
+        ? `<span class="inline-block w-4"></span>`
+        : `<i class="tree-chevron ri-arrow-right-s-line text-gray-400 dark:text-gray-500"></i>`;
+
+    const countHtml = (typeof node.count === 'number')
+        ? `<span class="ml-auto px-2 py-0.5 text-xs rounded-full bg-primary/10 text-primary dark:bg-primary/25 dark:text-red-200">${node.count}</span>`
+        : '';
+
+    row.innerHTML = `
+        ${chevronHtml}
+        <i class="${icon} text-primary dark:text-red-300"></i>
+        <span class="text-gray-800 dark:text-gray-100 truncate">${escapeHtml(node.label || node.key || '')}</span>
+        ${countHtml}
+    `;
+    wrap.appendChild(row);
+
+    // Lazy child container.
+    const childBox = document.createElement('div');
+    childBox.className = 'tree-children';
+    childBox.style.display = 'none';
+    wrap.appendChild(childBox);
+
+    if (isLeaf) {
+        // Slot leaf → open the document.
+        row.addEventListener('click', () => {
+            updateTreeDetail(node, fetchParams);
+            if (node.uploadId) {
+                viewFile(node.uploadId);
+            } else {
+                showToast('No file attached to this slot', 'warning');
+            }
+        });
+        return wrap;
+    }
+
+    let loaded = false; // cache: children fetched once
+    let open = false;
+    const chevron = row.querySelector('.tree-chevron');
+
+    row.addEventListener('click', async () => {
+        updateTreeDetail(node, fetchParams);
+        open = !open;
+        if (chevron) chevron.classList.toggle('open', open);
+        childBox.style.display = open ? 'block' : 'none';
+        if (open && !loaded) {
+            loaded = true;
+            childBox.innerHTML = `<div class="flex items-center text-gray-500 dark:text-gray-400 py-2" style="padding-left:${8 + (depth + 1) * 18}px">
+                <i class="ri-loader-4-line animate-spin mr-2"></i>Loading…</div>`;
+            try {
+                const childLevel = TREE_CHILD_LEVEL[node.level];
+                const params = childBranchParams(node, fetchParams);
+                const children = await loadTreeChildren(childLevel, params);
+                childBox.innerHTML = '';
+                if (children.length === 0) {
+                    childBox.innerHTML = `<p class="text-gray-400 dark:text-gray-500 py-1.5" style="padding-left:${8 + (depth + 1) * 18}px">— empty —</p>`;
+                } else {
+                    children.forEach(c => childBox.appendChild(renderTreeNode(c, params, depth + 1)));
+                }
+            } catch (e) {
+                loaded = false; // allow retry
+                console.error('Error expanding node:', e);
+                childBox.innerHTML = `<p class="text-danger py-1.5" style="padding-left:${8 + (depth + 1) * 18}px">Failed to load.</p>`;
+            }
+        }
+    });
+
+    return wrap;
+}
+
+// Contextual breadcrumb / hint in the right detail column.
+function updateTreeDetail(node, fetchParams) {
+    const detail = document.getElementById('cbet-detail');
+    if (!detail) return;
+    const crumbs = [];
+    if (fetchParams.course) crumbs.push(`<span class="text-gray-500 dark:text-gray-400">${escapeHtml(courseName(fetchParams.course))}</span>`);
+    if (fetchParams.intakeYear) crumbs.push(`<span class="text-gray-500 dark:text-gray-400">Intake ${escapeHtml(String(fetchParams.intakeYear))}</span>`);
+    if (fetchParams.module) crumbs.push(`<span class="text-gray-500 dark:text-gray-400">Module ${escapeHtml(String(fetchParams.module))}</span>`);
+    if (fetchParams.unitId) crumbs.push(`<span class="text-gray-500 dark:text-gray-400">Unit</span>`);
+    if (fetchParams.admissionNumber) crumbs.push(`<span class="text-gray-500 dark:text-gray-400">${escapeHtml(String(fetchParams.admissionNumber))}</span>`);
+
+    const breadcrumb = crumbs.length
+        ? `<div class="flex flex-wrap items-center gap-1 text-xs mb-3">${crumbs.join('<span class="text-gray-300 dark:text-gray-600">/</span>')}</div>`
+        : '';
+
+    let body = `
+        <div class="flex items-center gap-2 mb-1">
+            <i class="${TREE_ICONS[node.level] || 'ri-circle-line'} text-primary dark:text-red-300"></i>
+            <span class="font-semibold text-gray-900 dark:text-gray-100">${escapeHtml(node.label || node.key || '')}</span>
+        </div>
+        <p class="text-xs text-gray-500 dark:text-gray-400 capitalize">${escapeHtml(node.level)}${typeof node.count === 'number' ? ' · ' + node.count + ' item' + (node.count === 1 ? '' : 's') : ''}</p>
+    `;
+
+    if (node.level === 'slot') {
+        body += `
+            <div class="mt-3 text-sm">
+                ${node.fileName ? `<p class="text-gray-700 dark:text-gray-300 break-all"><i class="ri-file-line mr-1"></i>${escapeHtml(node.fileName)}</p>` : ''}
+                ${node.uploadType ? `<p class="text-gray-500 dark:text-gray-400 mt-1">${escapeHtml(node.uploadType)}</p>` : ''}
+                ${node.version ? `<p class="text-amber-600 dark:text-amber-400 mt-1"><i class="ri-refresh-line mr-1"></i>v${escapeHtml(String(node.version))}</p>` : ''}
+                ${node.uploadId ? `<button onclick="viewFile('${escapeAttr(node.uploadId)}')" class="mt-3 px-4 py-2 bg-primary hover:bg-secondary text-white rounded-lg text-sm font-medium transition-colors"><i class="ri-eye-line mr-1"></i>Open document</button>` : ''}
+            </div>`;
+    }
+
+    detail.innerHTML = breadcrumb + body;
+}
+
+// ===================================================================
+// COMPLETENESS MATRIX
+// ===================================================================
+async function populateCompletenessFilters() {
+    try {
+        const res = await authFetch(`${API_BASE}/cibec/filters`);
+        if (!res.ok) throw new Error('Failed to load filters');
+        const data = await res.json();
+        const f = (data && data.filters) || {};
+
+        const unitSel = document.getElementById('completeness-unit');
+        if (unitSel && Array.isArray(f.units)) {
+            f.units.forEach(u => {
+                const opt = document.createElement('option');
+                opt.value = u.unitId;
+                opt.textContent = `${u.code} · ${u.name}`;
+                unitSel.appendChild(opt);
+            });
+        }
+
+        const intakeSel = document.getElementById('completeness-intake');
+        if (intakeSel && Array.isArray(f.intakes)) {
+            f.intakes.forEach(i => {
+                const opt = document.createElement('option');
+                opt.value = i.intakeYear;
+                opt.textContent = i.intake ? `${i.intakeYear} (${i.intake})` : String(i.intakeYear);
+                intakeSel.appendChild(opt);
+            });
+        }
+
+        const aySel = document.getElementById('completeness-acadyear');
+        if (aySel && Array.isArray(f.academicYears)) {
+            f.academicYears.forEach(y => {
+                const opt = document.createElement('option');
+                opt.value = y;
+                opt.textContent = y;
+                aySel.appendChild(opt);
+            });
+        }
+
+        const semSel = document.getElementById('completeness-semester');
+        if (semSel && Array.isArray(f.semesters)) {
+            f.semesters.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s;
+                opt.textContent = s;
+                semSel.appendChild(opt);
+            });
+        }
+    } catch (e) {
+        console.error('Error populating completeness filters:', e);
+    }
+}
+
+async function loadCompleteness() {
+    const unitId = document.getElementById('completeness-unit').value;
+    if (!unitId) {
+        showToast('Please select a unit', 'warning');
+        return;
+    }
+    const intakeYear = document.getElementById('completeness-intake').value;
+    const academicYear = document.getElementById('completeness-acadyear').value;
+    const semester = document.getElementById('completeness-semester').value;
+
+    const loading = document.getElementById('completeness-loading');
+    const empty = document.getElementById('completeness-empty');
+    const summary = document.getElementById('completeness-summary');
+    const tableWrap = document.getElementById('completeness-table-wrap');
+
+    summary.classList.add('hidden');
+    empty.classList.add('hidden');
+    tableWrap.classList.add('hidden');
+    loading.classList.remove('hidden');
+
+    try {
+        const qs = new URLSearchParams();
+        qs.append('unitId', unitId);
+        if (intakeYear) qs.append('intakeYear', intakeYear);
+        if (academicYear) qs.append('academicYear', academicYear);
+        if (semester) qs.append('semester', semester);
+
+        const res = await authFetch(`${API_BASE}/cibec/completeness?${qs}`);
+        if (!res.ok) throw new Error('Failed to load completeness');
+        const data = await res.json();
+        loading.classList.add('hidden');
+        renderCompletenessMatrix(data);
+    } catch (e) {
+        console.error('Error loading completeness:', e);
+        loading.classList.add('hidden');
+        showToast('Failed to load matrix', 'error');
+    }
+}
+
+function renderCompletenessMatrix(data) {
+    const summary = document.getElementById('completeness-summary');
+    const empty = document.getElementById('completeness-empty');
+    const tableWrap = document.getElementById('completeness-table-wrap');
+    const table = document.getElementById('completeness-table');
+
+    const unit = data.unit || {};
+    const slots = data.slots || [];
+    const students = data.students || [];
+    const completion = data.completion || { present: 0, total: 0, percent: 0 };
+
+    // Summary header.
+    document.getElementById('completeness-unit-name').textContent =
+        (unit.code ? unit.code + ' · ' : '') + (unit.name || '') + (unit.isCommon ? ' (common)' : '');
+    document.getElementById('completeness-fraction').textContent =
+        `${completion.present} of ${completion.total} expected documents present`;
+    document.getElementById('completeness-percent').textContent = `${completion.percent != null ? completion.percent : 0}%`;
+    summary.classList.remove('hidden');
+
+    if (students.length === 0) {
+        tableWrap.classList.add('hidden');
+        empty.classList.remove('hidden');
+        empty.querySelector('p').textContent = 'No students in this roster';
+        return;
+    }
+    empty.classList.add('hidden');
+
+    // Header row.
+    const headCells = [`<th class="text-left px-3 py-2 sticky left-0 bg-white dark:bg-gray-800 z-10 border-b border-gray-200 dark:border-gray-700">Student</th>`];
+    slots.forEach(s => {
+        headCells.push(`<th class="px-3 py-2 text-center border-b border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 whitespace-nowrap">${escapeHtml(s.label || s.key)}</th>`);
+    });
+
+    // Body rows.
+    const bodyRows = students.map(stu => {
+        const cells = slots.map(s => {
+            const cell = (stu.cells && stu.cells[s.key]) || { present: false };
+            if (cell.present) {
+                const verHint = cell.version ? ` title="v${escapeAttr(String(cell.version))}"` : '';
+                const verLabel = cell.version ? `<span class="block text-[10px] text-gray-400 dark:text-gray-500">v${escapeHtml(String(cell.version))}</span>` : '';
+                const click = cell.uploadId ? `onclick="viewFile('${escapeAttr(cell.uploadId)}')"` : '';
+                return `<td class="px-3 py-2 text-center border-b border-gray-100 dark:border-gray-700/50">
+                    <button ${click}${verHint} class="inline-flex flex-col items-center text-success hover:opacity-80 transition-opacity">
+                        <i class="ri-checkbox-circle-fill text-xl"></i>${verLabel}
+                    </button>
+                </td>`;
+            }
+            return `<td class="px-3 py-2 text-center border-b border-gray-100 dark:border-gray-700/50">
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">
+                    <i class="ri-close-circle-line"></i>Missing
+                </span>
+            </td>`;
+        }).join('');
+        return `<tr>
+            <td class="px-3 py-2 sticky left-0 bg-white dark:bg-gray-800 z-10 border-b border-gray-100 dark:border-gray-700/50">
+                <div class="font-medium text-gray-900 dark:text-gray-100">${escapeHtml(stu.admissionNumber || '')}</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">${escapeHtml(stu.name || '')}</div>
+            </td>
+            ${cells}
+        </tr>`;
+    }).join('');
+
+    table.innerHTML = `<thead><tr>${headCells.join('')}</tr></thead><tbody>${bodyRows}</tbody>`;
+    tableWrap.classList.remove('hidden');
 }
 
 // Apply filters
