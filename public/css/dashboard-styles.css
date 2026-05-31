@@ -314,6 +314,12 @@ a { color: inherit; text-decoration: none; }
     width: 100%;
     max-width: 1600px;
     margin: 0 auto;
+    /* Grid item in the `1fr` track: without min-width:0 its min-width defaults to
+       `auto` (the widest child's intrinsic size), so a wide table expands the
+       track past the viewport and the PAGE gets a horizontal scrollbar instead of
+       the table's own overflow-x-auto wrapper scrolling. min-width:0 lets the
+       column shrink so inner scroll containers handle overflow locally. */
+    min-width: 0;
 }
 
 /* D5. Theme toggle ------------------------------------------------------ */
