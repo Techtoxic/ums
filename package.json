@@ -15,7 +15,8 @@
     "db:push": "drizzle-kit push",
     "db:seed": "node drizzle/seed.js",
     "db:studio": "drizzle-kit studio",
-    "db:reset": "node drizzle/reset.js"
+    "db:reset": "node drizzle/reset.js",
+    "db:backfill-cbet": "node drizzle/backfill_cbet_integrity.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.705.0",
