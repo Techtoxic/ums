@@ -4,6 +4,7 @@ const { db, schema } = require('../db');
 const { eq, and, sql, desc, isNull } = require('drizzle-orm');
 const { verifyToken, authorize } = require('../middleware/auth');
 const { toMoneyNumber } = require('../utils/formatters');
+const { getFeePerModule } = require('../utils/studentHelpers');
 const { getCourseCode, getCourseDisplayName, getDepartmentDisplayName } = require('../utils/courseCodes');
 
 // ---------------------------------------------------------------------------
@@ -25,6 +26,16 @@ function buildCostResolver(programs) {
         if (code && byCode.has(code.toLowerCase())) return byCode.get(code.toLowerCase());
         return 0;
     };
+}
+
+// Expected tuition a student should have paid TO DATE. Billing is per module
+// (annual program cost / 3, rounded up — KES 22,397); a "year" is 3 modules.
+// A student in module N has been billed for N modules, so expected = perModule
+// fee × current module. The module never exceeds the level's cap (L3=1, L4=2,
+// L5=4, L6=6 — enforced by promotion), so this is naturally bounded by the
+// programme's total module count.
+function expectedToDate(annualCost, moduleNo) {
+    return getFeePerModule(annualCost) * (Number(moduleNo) || 1);
 }
 
 // ===========================================================================
@@ -155,14 +166,18 @@ router.get('/finance/analytics', verifyToken, authorize('admin', 'finance'), asy
         // Per-student expected (program cost x module, matching the student portal)
         // and the department roll-up.
         let expectedRevenue = 0;
+        let totalOutstanding = 0;
         let fullyPaid = 0;
         let withBalance = 0;
         const deptMap = {};
         for (const s of students) {
-            const cost = costOf(s.course) * (Number(s.module) || 1);
+            const cost = expectedToDate(costOf(s.course), s.module);
             const paid = paidByStudent.get(s.id) || 0;
             expectedRevenue += cost;
             const bal = cost - paid;
+            // Outstanding is summed PER STUDENT (clamped at 0). Never net the whole
+            // cohort, or one overpayer (e.g. a large bursary) cancels others' debts.
+            totalOutstanding += Math.max(0, bal);
             if (cost > 0 && paid >= cost) fullyPaid++;
             else if (bal > 0) withBalance++;
 
@@ -195,7 +210,12 @@ router.get('/finance/analytics', verifyToken, authorize('admin', 'finance'), asy
         }
 
         const totalRevenue = tuitionRevenue + otherRevenue;
-        const collectionRate = expectedRevenue > 0 ? Number(((tuitionRevenue / expectedRevenue) * 100).toFixed(1)) : 0;
+        // Collection rate = share of expected tuition actually covered, capped at
+        // 100%. (expected − outstanding) is the amount applied toward expected, so
+        // overpayments/bursaries can't push it above 100%.
+        const collectionRate = expectedRevenue > 0
+            ? Number((((expectedRevenue - totalOutstanding) / expectedRevenue) * 100).toFixed(1))
+            : 0;
 
         res.json({
             totals: {
@@ -203,7 +223,7 @@ router.get('/finance/analytics', verifyToken, authorize('admin', 'finance'), asy
                 otherRevenue,
                 totalRevenue,
                 expectedRevenue,
-                outstandingBalance: Math.max(0, expectedRevenue - tuitionRevenue),
+                outstandingBalance: totalOutstanding,
                 collectionRate,
                 studentsTotal: students.length,
                 fullyPaid,
@@ -252,7 +272,7 @@ router.get('/finance/reports/students', verifyToken, authorize('admin', 'finance
         }
 
         const rows = students.map((s) => {
-            const expected = costOf(s.course) * (Number(s.module) || 1);
+            const expected = expectedToDate(costOf(s.course), s.module);
             const paid = paidByStudent.get(s.id) || 0;
             const balance = Math.max(0, expected - paid);
             return {
