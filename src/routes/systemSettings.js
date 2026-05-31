@@ -99,7 +99,7 @@ router.get('/system-settings', verifyToken, authorize('admin', 'registrar', 'stu
 });
 
 // Get a specific system setting
-router.get('/system-settings/:key', verifyToken, authorize('admin', 'registrar', 'finance', 'dean', 'deputy', 'cibec', 'ilo', 'student'), async (req, res) => {
+router.get('/system-settings/:key', verifyToken, authorize('admin', 'registrar', 'finance', 'dean', 'deputy', 'cibec', 'ilo', 'student', 'hod', 'trainer'), async (req, res) => {
     try {
         const { key } = req.params;
         if (key === 'current_academic_year') {
