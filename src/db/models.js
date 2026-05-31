@@ -696,6 +696,8 @@ StudentUpload.getCIBECUploads = async function getCIBECUploads(filters = {}) {
         eqInt(u.semester, filters.semester);
         eqText(u.status, filters.status);
         eqText(u.admission_number, filters.admissionNumber);
+        eqText(u.intake, filters.intake);
+        eqInt(u.intake_year, filters.intakeYear);
         if (filters.studentId) {
             const val = String(filters.studentId);
             conds.push(_isUuid(val) ? eq(u.student_id, val) : eq(u.admission_number, val));
