@@ -57,10 +57,11 @@ async function fetchStudentUnits(studentCourse) {
                         paymentsCount: payments.length
                     });
                     
-                    // Calculate balance using same method as dashboard
+                    // Calculate balance using same method as dashboard. program_cost
+                    // is the ANNUAL fee; students are billed per module, so use the
+                    // single current-module fee (feePerModule, defined in portal-core).
                     const totalPaid = payments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
-                    const moduleOfStudy = studentData.module || 1;
-                    const totalFees = programCost * moduleOfStudy;
+                    const totalFees = feePerModule(programCost);
                     const outstandingBalance = totalFees - totalPaid;
                     
                     // Get fee threshold (default 50000)

@@ -318,11 +318,21 @@ function updateStudentInfo(data) {
     console.log('Full studentInfo:', studentInfo);
 }
 
+// Fees: program_cost in the DB is the ANNUAL fee. An academic year is split
+// into MODULES_PER_YEAR modules and students are billed PER MODULE, so a student
+// only ever sees the fee for one module (their current one) — never the annual
+// figure and never annual * module. Rounded UP to whole KES (67189/3 -> 22397).
+const MODULES_PER_YEAR = 3;
+function feePerModule(annualCost) {
+    const annual = Number(annualCost || 0);
+    if (!annual || annual <= 0) return 0;
+    return Math.ceil(annual / MODULES_PER_YEAR);
+}
+
 // Update program cost in the UI
 function updateProgramCost(cost) {
-    // Calculate total fees based on module of study
-    const moduleOfStudy = studentData.module || 1;
-    const totalFees = cost ? (cost * moduleOfStudy) : 0;
+    // Student sees the per-module fee for the module they're currently in.
+    const totalFees = feePerModule(cost);
     const formattedCost = totalFees ? formatCurrency(totalFees) : 'Not Available';
     
     document.querySelectorAll('.program-cost').forEach(el => {
@@ -339,17 +349,16 @@ async function updateFinancialInfo(programCost, payments) {
     // Calculate total paid
     const totalPaid = payments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
     
-    // Calculate total fees based on module of study (programCost is per module)
-    const moduleOfStudy = studentData.module || 1;
-    const totalFees = (programCost || 0) * moduleOfStudy;
-    
-    // Calculate balance (total fees - total paid)
+    // Student is billed per module — show the single current-module fee, not the
+    // annual figure and not annual * module.
+    const totalFees = feePerModule(programCost);
+
+    // Calculate balance (module fee - total paid)
     const balance = totalFees - totalPaid;
-    
+
     console.log('Dashboard balance calculation:', {
-        programCost,
-        moduleOfStudy,
-        totalFees,
+        annualProgramCost: programCost,
+        moduleFee: totalFees,
         totalPaid,
         balance,
         paymentsCount: payments.length
