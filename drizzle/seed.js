@@ -103,11 +103,13 @@ const COMMON_UNIT_NAMES = new Set([
     'APPLY WORK ETHICS PRACTICES',
     'APPLY WORKPLACE ETHICS AND PRACTICES',
 ]);
+// code is blank — the system has no real unit codes; common units belong to no
+// single program so there is no program code to show either.
 const CANONICAL_COMMON_UNITS = [
-    { code: 'CU-COM', name: 'APPLY COMMUNICATION SKILLS' },
-    { code: 'CU-DIG', name: 'APPLY DIGITAL LITERACY' },
-    { code: 'CU-ENT', name: 'APPLY ENTREPRENEURIAL SKILLS' },
-    { code: 'CU-ETH', name: 'APPLY WORK ETHICS AND PRACTICES' },
+    { code: '', name: 'APPLY COMMUNICATION SKILLS' },
+    { code: '', name: 'APPLY DIGITAL LITERACY' },
+    { code: '', name: 'APPLY ENTREPRENEURIAL SKILLS' },
+    { code: '', name: 'APPLY WORK ETHICS AND PRACTICES' },
 ];
 const normUnitName = (s) => String(s || '').trim().replace(/\s+/g, ' ').toUpperCase();
 

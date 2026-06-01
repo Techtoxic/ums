@@ -91,7 +91,7 @@ function displayAssignments() {
         <table class="min-w-full text-sm">
             <thead class="border-b border-gray-200 dark:border-gray-700">
                 <tr>
-                    <th class="${headCell}">Unit Code</th>
+                    <th class="${headCell}">Program Code</th>
                     <th class="${headCell}">Unit Name</th>
                     <th class="${headCell}">Course</th>
                     <th class="${headCell}">Module</th>

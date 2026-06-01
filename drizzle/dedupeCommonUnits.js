@@ -19,11 +19,13 @@ const { units, trainerAssignments, commonUnitAssignments, unitRegistrations, stu
 const DRY = process.argv.includes('--dry');
 
 // Canonical common units. `names` lists every spelling variant to fold together.
+// code is blank: the system has no real unit codes (units.code is the program
+// code for department units, and common units belong to no single program).
 const CONCEPTS = [
-    { code: 'CU-COM', name: 'APPLY COMMUNICATION SKILLS', names: ['APPLY COMMUNICATION SKILLS'] },
-    { code: 'CU-DIG', name: 'APPLY DIGITAL LITERACY', names: ['APPLY DIGITAL LITERACY'] },
-    { code: 'CU-ENT', name: 'APPLY ENTREPRENEURIAL SKILLS', names: ['APPLY ENTREPRENEURIAL SKILLS'] },
-    { code: 'CU-ETH', name: 'APPLY WORK ETHICS AND PRACTICES', names: ['APPLY WORK ETHICS AND PRACTICES', 'APPLY WORK ETHICS PRACTICES', 'APPLY WORKPLACE ETHICS AND PRACTICES'] },
+    { code: '', name: 'APPLY COMMUNICATION SKILLS', names: ['APPLY COMMUNICATION SKILLS'] },
+    { code: '', name: 'APPLY DIGITAL LITERACY', names: ['APPLY DIGITAL LITERACY'] },
+    { code: '', name: 'APPLY ENTREPRENEURIAL SKILLS', names: ['APPLY ENTREPRENEURIAL SKILLS'] },
+    { code: '', name: 'APPLY WORK ETHICS AND PRACTICES', names: ['APPLY WORK ETHICS AND PRACTICES', 'APPLY WORK ETHICS PRACTICES', 'APPLY WORKPLACE ETHICS AND PRACTICES'] },
 ];
 
 async function repoint(table, col, codeName, fromIds, canonicalId, extraSet) {
