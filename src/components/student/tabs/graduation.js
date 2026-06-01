@@ -120,7 +120,7 @@ window.StudentTabs = window.StudentTabs || {};
             statusInfo.innerHTML = `
                 <div class="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
                     <p class="text-sm text-green-700 dark:text-green-300">✓ Eligible to apply for graduation</p>
-                    <p class="text-xs text-green-600 dark:text-green-400 mt-1">Level ${escapeHtml(data.level)} students can apply in Module ${escapeHtml(data.moduleOfStudy)}</p>
+                    <p class="text-xs text-green-600 dark:text-green-400 mt-1">You've reached the final module (Module ${escapeHtml(data.requiredModule != null ? data.requiredModule : data.moduleOfStudy)}) of Level ${escapeHtml(data.level)}</p>
                 </div>
             `;
         }

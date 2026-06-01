@@ -33,11 +33,15 @@ function generateIntakeCode(intake, intakeYear) {
     return `${intakePrefix}${yearSuffix}`;
 }
 
-// Eligibility rule (recovered from the V1 GraduationApplication/AttachmentApplication eligibility
-// static dropped in the Postgres migration): a student may apply in the final module of
-// their level — Module (level - 3). Level 4 → Module 1, Level 5 → Module 2, Level 6 → Module 3.
+// Eligibility rule: a student may apply once they have COMPLETED all the modules
+// of their level — i.e. reached the final (max) module for that level. The module
+// counts per level are the single source of truth in MAX_MODULE_BY_LEVEL below
+// (also used by promotion), so eligibility and promotion never disagree.
+// Final module per level: L3 → 1, L4 → 2, L5 → 4, L6 → 6.
 function isEligibleToApply(level, moduleOfStudy) {
-    return moduleOfStudy === (level - 3);
+    const cap = getMaxModuleForLevel(level);
+    if (!cap) return false;
+    return Number(moduleOfStudy) >= cap;
 }
 
 // Fees: programs.program_cost is the ANNUAL fee. An academic year is split into

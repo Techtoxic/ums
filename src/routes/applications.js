@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { verifyToken, authorize, verifyOwnership } = require('../middleware/auth');
-const { isEligibleToApply } = require('../utils/studentHelpers');
+const { isEligibleToApply, getMaxModuleForLevel } = require('../utils/studentHelpers');
 const { Student, GraduationApplication, AttachmentApplication, User, Notification } = require('../db/models');
 
 // Check if student can apply for graduation
@@ -29,9 +29,10 @@ router.get('/students/:studentId/graduation-eligibility', verifyToken, authorize
             canApply: eligible && !existingApplication,
             level,
             moduleOfStudy,
+            requiredModule: getMaxModuleForLevel(level),
             hasExistingApplication: !!existingApplication,
             existingApplication: existingApplication,
-            reason: !eligible ? `Level ${level} students can only apply in module ${level - 3}` : null
+            reason: !eligible ? `You can apply once you reach Module ${getMaxModuleForLevel(level) || '?'} (the final module of Level ${level}). You are currently in Module ${moduleOfStudy}.` : null
         });
 
     } catch (error) {
@@ -57,7 +58,7 @@ router.post('/students/:studentId/graduation-application', verifyToken, authoriz
         // Validate eligibility
         if (!isEligibleToApply(level, moduleOfStudy)) {
             return res.status(400).json({
-                message: `Level ${level} students can only apply for graduation in module ${level - 3}`
+                message: `You can apply for graduation once you reach Module ${getMaxModuleForLevel(level) || '?'} (the final module of Level ${level}). You are currently in Module ${moduleOfStudy}.`
             });
         }
 
@@ -121,9 +122,10 @@ router.get('/students/:studentId/attachment-eligibility', verifyToken, authorize
             canApply: eligible && !existingApplication,
             level,
             moduleOfStudy,
+            requiredModule: getMaxModuleForLevel(level),
             hasExistingApplication: !!existingApplication,
             existingApplication: existingApplication,
-            reason: !eligible ? `Level ${level} students can only apply in module ${level - 3}` : null
+            reason: !eligible ? `You can apply once you reach Module ${getMaxModuleForLevel(level) || '?'} (the final module of Level ${level}). You are currently in Module ${moduleOfStudy}.` : null
         });
 
     } catch (error) {
@@ -154,7 +156,7 @@ router.post('/students/:studentId/attachment-application', verifyToken, authoriz
         // Validate eligibility
         if (!isEligibleToApply(level, moduleOfStudy)) {
             return res.status(400).json({
-                message: `Level ${level} students can only apply for attachment in module ${level - 3}`
+                message: `You can apply for attachment once you reach Module ${getMaxModuleForLevel(level) || '?'} (the final module of Level ${level}). You are currently in Module ${moduleOfStudy}.`
             });
         }
 
