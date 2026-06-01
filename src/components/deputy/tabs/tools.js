@@ -95,9 +95,9 @@ window.DeputyTabs = window.DeputyTabs || {};
             const statusClass = getStatusClass(tool.status);
             const trainerName = tool.trainerName || 'Unknown Trainer';
             const submittedAt = tool.createdAt ? new Date(tool.createdAt).toLocaleDateString() : 'N/A';
-            const cell = 'padding:10px 12px;vertical-align:middle';
+            const cell = 'padding:12px';
             return `
-                <tr style="border-top:1px solid var(--border,#e5e7eb)">
+                <tr>
                     <td style="${cell};font-weight:600">${escapeHtml(TOOL_TYPE_NAMES[tool.toolType] || tool.toolType)}</td>
                     <td style="${cell}">${escapeHtml(trainerName)}</td>
                     <td style="${cell};color:var(--text-secondary)">${escapeHtml(toolDeptLabel(tool.trainerDepartment))}</td>
