@@ -100,10 +100,12 @@ class StudentExporter {
     // are stable so CSV columns stay aligned across runs.
     formatStudentData(students) {
         return students.map(student => {
-            // Program/course DISPLAY via the shared catalog (Rule 7); prefer a
-            // server-provided display name, then the catalog, then title-case.
-            const courseDisplay = student.courseName
-                || (window.Catalog ? window.Catalog.formatCourseName(student.course) : null)
+            // Program/course DISPLAY. Resolve the course CODE (e.g. "GA4") via the
+            // shared catalog FIRST — it maps codes→names correctly. The server's
+            // courseName can be the raw code for short-code courses, so it's only
+            // a fallback (then the code itself as a last resort).
+            const courseDisplay = (window.Catalog && window.Catalog.formatCourseName(student.course))
+                || student.courseName
                 || student.course || 'N/A';
             // Department DISPLAY via the catalog-backed deptDisplay() helper.
             const departmentDisplay = student.departmentName
