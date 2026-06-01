@@ -1,0 +1,21 @@
+{
+  "_comment": "COPY this file to trainers.local.json (same folder) and fill in REAL data. trainers.local.json is git-ignored and must NEVER be committed. department must be one of: agriculture, applied_science, computing_informatics, building_civil, business_liberal, electromechanical, hospitality. role defaults to 'trainer'; use 'hod' for a head of department. defaultPassword is used when a trainer has no explicit password.",
+  "defaultPassword": "Trainer@2026",
+  "deactivateOthers": true,
+  "trainers": [
+    {
+      "name": "Jane Doe",
+      "email": "jane.doe@edtti.ac.ke",
+      "department": "computing_informatics",
+      "phone": "0700000000",
+      "staffId": "TR001",
+      "role": "trainer"
+    },
+    {
+      "name": "John Smith",
+      "email": "john.smith@edtti.ac.ke",
+      "department": "electromechanical",
+      "role": "hod"
+    }
+  ]
+}

@@ -302,11 +302,16 @@ router.post('/common-unit-assignments', verifyToken, authorize('admin', 'hod'), 
             return res.status(400).json({ success: false, message: 'Missing required fields' });
         }
 
-        // Verify the common unit exists.
-        const [unit] = await db.select({ id: schema.units.id }).from(schema.units)
+        // Verify the unit exists AND is actually flagged common. A non-common
+        // (department-owned) unit must be assigned through the department-scoped
+        // /assignments/assign flow, not here — this keeps the two flows separate.
+        const [unit] = await db.select({ id: schema.units.id, isCommon: schema.units.is_common }).from(schema.units)
             .where(and(eq(schema.units.id, commonUnitId), isNull(schema.units.deleted_at))).limit(1);
         if (!unit) {
             return res.status(404).json({ success: false, message: 'Common unit not found' });
+        }
+        if (!unit.isCommon) {
+            return res.status(400).json({ success: false, message: 'That unit is not a common unit. Use the department unit-allocation flow instead.', code: 'NOT_A_COMMON_UNIT' });
         }
 
         // Verify the trainer exists.

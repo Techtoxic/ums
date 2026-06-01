@@ -71,6 +71,18 @@ router.get('/assignments/department/:department', verifyToken, authorize('admin'
     }
 });
 
+// Resolve the snake_case department of a user row by id (authoritative — never
+// trust a department sent in the request body). Returns null if not found.
+async function getUserDepartment(userId) {
+    if (!userId) return null;
+    const [row] = await db
+        .select({ department: schema.users.department })
+        .from(schema.users)
+        .where(eq(schema.users.id, userId))
+        .limit(1);
+    return row ? row.department : null;
+}
+
 // Assign units to trainer
 router.post('/assignments/assign', verifyToken, authorize('admin', 'hod'), async (req, res) => {
     try {
@@ -116,15 +128,66 @@ router.post('/assignments/assign', verifyToken, authorize('admin', 'hod'), async
         }
         const uniqueUnitIds = [...hoursByUnit.keys()];
 
-        // Only assign units that actually exist and are not soft-deleted; invalid
-        // ids are skipped rather than failing the whole batch.
+        // Fetch the candidate units WITH their is_common flag and owning
+        // department (units → programs → departments). Used both to skip
+        // invalid/soft-deleted ids and to enforce the allocation rules below.
         const validUnits = uniqueUnitIds.length
             ? await db
-                .select({ id: schema.units.id })
+                .select({
+                    id: schema.units.id,
+                    isCommon: schema.units.is_common,
+                    deptCode: schema.departments.code,
+                })
                 .from(schema.units)
+                .leftJoin(schema.programs, eq(schema.programs.id, schema.units.program_id))
+                .leftJoin(schema.departments, eq(schema.departments.id, schema.programs.department_id))
                 .where(and(inArray(schema.units.id, uniqueUnitIds), isNull(schema.units.deleted_at)))
             : [];
         const validSet = new Set(validUnits.map(u => u.id));
+        const unitById = new Map(validUnits.map(u => [u.id, u]));
+
+        // ---- Allocation rules -------------------------------------------------
+        // 1. Common units are NEVER assigned through this route — they go through
+        //    the common-unit allocation flow (any HOD → any trainer). Reject them
+        //    here regardless of role so the two flows stay cleanly separated.
+        // 2. For an HOD (admin bypasses), a non-common unit may only be assigned
+        //    when BOTH the unit's department AND the trainer's department match
+        //    the HOD's own department.
+        const commonInBatch = validUnits.filter(u => u.isCommon).map(u => u.id);
+        if (commonInBatch.length) {
+            return res.status(400).json({
+                message: 'Common units cannot be assigned here. Use the common-unit allocation flow instead.',
+                code: 'COMMON_UNIT_NOT_ALLOWED',
+                unitIds: commonInBatch,
+            });
+        }
+
+        if (req.user.role === 'hod') {
+            const hodDept = await getUserDepartment(req.user.userId);
+            if (!hodDept) {
+                return res.status(403).json({ message: 'Your account has no department set; cannot assign units.', code: 'NO_DEPARTMENT' });
+            }
+            const hodShort = DEPT_TEXT_TO_SHORT[hodDept];
+
+            // (a) every requested unit must belong to the HOD's department
+            const foreignUnits = [...validSet].filter(id => unitById.get(id).deptCode !== hodShort);
+            if (foreignUnits.length) {
+                return res.status(403).json({
+                    message: 'You can only assign units that belong to your own department.',
+                    code: 'UNIT_OUT_OF_DEPARTMENT',
+                    unitIds: foreignUnits,
+                });
+            }
+
+            // (b) the trainer must belong to the HOD's department
+            const trainerDept = await getUserDepartment(trainerId);
+            if (trainerDept !== hodDept) {
+                return res.status(403).json({
+                    message: 'You can only assign units to trainers in your own department.',
+                    code: 'TRAINER_OUT_OF_DEPARTMENT',
+                });
+            }
+        }
 
         // Duplicate guard: trainer_assignments has NO unique constraint on
         // (trainer_id, unit_id, academic_year, semester) — only a non-unique

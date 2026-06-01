@@ -56,6 +56,12 @@ temp_diff.txt
 # SEV-H-015: one-time seeded admin credentials file (read once, then delete)
 .seed-credentials.txt
 
+# Real staff/trainer PII — seeded locally, NEVER committed (lawsuit/PII risk).
+# Ignore the directory CONTENTS (not the dir itself) so the .example template
+# can still be re-included; git cannot re-include a file under an ignored dir.
+drizzle/private/*
+!drizzle/private/*.example.json
+
 # Markdown reports and other docs — keep README.md tracked, ignore everything else
 *.md
 !README.md
