@@ -692,6 +692,8 @@ StudentUpload.getCIBECUploads = async function getCIBECUploads(filters = {}) {
         eqText(u.unit_code, filters.unitCode);
         eqInt(u.module, filters.module);
         eqText(u.upload_type, filters.uploadType);
+        eqInt(u.assessment_number, filters.assessmentNumber);
+        eqInt(u.practical_number, filters.practicalNumber);
         eqInt(u.academic_year, filters.academicYear);
         eqInt(u.semester, filters.semester);
         eqText(u.status, filters.status);

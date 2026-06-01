@@ -427,10 +427,13 @@ function setupEventListeners() {
     
     // Real-time filters: the dropdowns apply immediately on change; the search
     // box applies as you type (debounced) and on Enter.
-    ['filter-department', 'filter-course-level', 'filter-upload-type', 'filter-year'].forEach(id => {
+    ['filter-department', 'filter-course-level', 'filter-module', 'filter-assessment-number', 'filter-practical-number'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.addEventListener('change', applyFilters);
     });
+    // Upload type: reveal the matching Assessment/Practical number dropdown, then apply.
+    const uploadTypeEl = document.getElementById('filter-upload-type');
+    if (uploadTypeEl) uploadTypeEl.addEventListener('change', () => { toggleUploadNumberFilters(); applyFilters(); });
     let cbetSearchDebounce;
     const searchEl = document.getElementById('search-student');
     if (searchEl) {
@@ -649,14 +652,18 @@ function renderCbetBreadcrumb() {
 
 // Apply filters
 function applyFilters() {
+    const uploadType = document.getElementById('filter-upload-type').value;
     const filters = {
         department: document.getElementById('filter-department').value,
         courseLevel: document.getElementById('filter-course-level').value,
-        uploadType: document.getElementById('filter-upload-type').value,
-        module: document.getElementById('filter-year').value,
-        studentId: document.getElementById('search-student').value.trim()
+        uploadType: uploadType,
+        module: document.getElementById('filter-module').value,
+        studentId: document.getElementById('search-student').value.trim(),
+        // Only relevant to their upload type.
+        assessmentNumber: uploadType === 'assessment' ? (document.getElementById('filter-assessment-number')?.value || '') : '',
+        practicalNumber: uploadType === 'practical' ? (document.getElementById('filter-practical-number')?.value || '') : '',
     };
-    
+
     // Remove empty filters
     Object.keys(filters).forEach(key => {
         if (!filters[key]) delete filters[key];
@@ -677,14 +684,33 @@ function clearFilters() {
     document.getElementById('filter-department').value = '';
     document.getElementById('filter-course-level').value = '';
     document.getElementById('filter-upload-type').value = '';
-    document.getElementById('filter-year').value = '';
+    document.getElementById('filter-module').value = '';
+    const aNum = document.getElementById('filter-assessment-number');
+    const pNum = document.getElementById('filter-practical-number');
+    if (aNum) aNum.value = '';
+    if (pNum) pNum.value = '';
     document.getElementById('search-student').value = '';
-    
+    toggleUploadNumberFilters();
+
     currentFilters = {};
     currentPage = 1;
-    
+
     updateActiveFilters();
     loadUploads();
+}
+
+// Show the Assessment-No. / Practical-No. dropdown that matches the chosen
+// upload type; hide (and reset) the other.
+function toggleUploadNumberFilters() {
+    const type = document.getElementById('filter-upload-type')?.value || '';
+    const aWrap = document.getElementById('assessment-number-filter');
+    const pWrap = document.getElementById('practical-number-filter');
+    const aNum = document.getElementById('filter-assessment-number');
+    const pNum = document.getElementById('filter-practical-number');
+    if (aWrap) aWrap.classList.toggle('hidden', type !== 'assessment');
+    if (pWrap) pWrap.classList.toggle('hidden', type !== 'practical');
+    if (type !== 'assessment' && aNum) aNum.value = '';
+    if (type !== 'practical' && pNum) pNum.value = '';
 }
 
 // Update active filters display
@@ -704,6 +730,8 @@ function updateActiveFilters() {
         courseLevel: 'Course Level',
         uploadType: 'Upload Type',
         module: 'Module',
+        assessmentNumber: 'Assessment No.',
+        practicalNumber: 'Practical No.',
         studentId: 'Student'
     };
     
@@ -726,14 +754,18 @@ function removeFilter(key) {
         department: 'filter-department',
         courseLevel: 'filter-course-level',
         uploadType: 'filter-upload-type',
-        module: 'filter-year',
+        module: 'filter-module',
+        assessmentNumber: 'filter-assessment-number',
+        practicalNumber: 'filter-practical-number',
         studentId: 'search-student'
     };
-    
+
     if (inputMap[key]) {
-        document.getElementById(inputMap[key]).value = '';
+        const el = document.getElementById(inputMap[key]);
+        if (el) el.value = '';
     }
-    
+    if (key === 'uploadType') toggleUploadNumberFilters();
+
     updateActiveFilters();
     loadUploads(currentFilters);
 }

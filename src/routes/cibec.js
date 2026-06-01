@@ -331,6 +331,8 @@ router.get('/cibec/uploads', verifyToken, authorize('admin', 'cibec', 'registrar
             module: req.query.module,
             courseLevel: req.query.courseLevel,
             uploadType: req.query.uploadType,
+            assessmentNumber: req.query.assessmentNumber,
+            practicalNumber: req.query.practicalNumber,
             academicYear: req.query.academicYear,
             semester: req.query.semester,
             studentId: req.query.studentId,
