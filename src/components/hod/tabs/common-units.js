@@ -198,7 +198,7 @@ async function showAssignCommonUnitsModal() {
     if (commonUnitSelect) {
         commonUnitSelect.innerHTML = '<option value="">Choose a common unit...</option>' +
             commonUnitsData.map(unit => `
-                <option value="${unit._id}">${escapeHtml(unit.unitName)} (${escapeHtml(unit.unitCode)})</option>
+                <option value="${unit._id}">${escapeHtml(unit.unitName)}${unit.unitCode ? ` (${escapeHtml(unit.unitCode)})` : ''}</option>
             `).join('');
     }
     
@@ -283,8 +283,8 @@ function populateTrainersForCommonUnit() {
     }
     
     const trainersHtml = filteredTrainers.map(trainer => `
-        <div class="trainer-item p-3 border-b border-gray-200 dark:border-gray-600 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 ${selectedTrainerForCommonUnit?.id === trainer._id ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800' : ''}"
-             onclick="selectTrainerForCommonUnit('${escapeAttr(trainer._id)}', '${escapeAttr(trainer.name)}', '${escapeAttr(trainer.department)}')">
+        <div class="trainer-item p-3 border-b border-gray-200 dark:border-gray-600 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 ${selectedTrainerForCommonUnit?.id === (trainer.id || trainer._id) ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800' : ''}"
+             onclick="selectTrainerForCommonUnit('${escapeAttr(trainer.id || trainer._id)}', '${escapeAttr(trainer.name)}', '${escapeAttr(trainer.department)}')">
             <div class="flex items-center justify-between">
                 <div class="flex-1">
                     <h4 class="font-medium text-gray-800 dark:text-gray-200 text-sm">${escapeHtml(trainer.name)}</h4>
