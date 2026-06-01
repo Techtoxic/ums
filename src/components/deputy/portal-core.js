@@ -49,30 +49,25 @@
         }
 
 // ---- dark mode ----
-// dashboard-theme.js auto-wires [data-theme-toggle], but admin-style markup also
-// calls toggleDarkMode() inline and shows a #dark-mode-icon, so keep both in sync.
-function toggleDarkMode() {
-    const html = document.documentElement;
+// Theme is owned by the shared controller (public/js/dashboard-theme.js): the
+// [data-theme-toggle] button is auto-wired, the choice persists under the 'theme'
+// key, and it's applied PRE-PAINT on every load — so light/dark survives SPA
+// navigation and reloads. We only mirror the state onto the #dark-mode-icon.
+// (Previously there were TWO controllers — dashboard-theme.js + a local 'darkMode'
+//  toggle — which double-toggled and never persisted light.)
+function syncDarkIcon() {
     const icon = document.getElementById('dark-mode-icon');
-    if (html.classList.contains('dark')) {
-        html.classList.remove('dark');
-        localStorage.setItem('darkMode', 'false');
-        if (icon) icon.className = 'ri-moon-line text-lg';
-    } else {
-        html.classList.add('dark');
-        localStorage.setItem('darkMode', 'true');
-        if (icon) icon.className = 'ri-sun-line text-lg';
-    }
+    if (!icon) return;
+    const isDark = window.DASHBOARD_THEME
+        ? window.DASHBOARD_THEME.get() === 'dark'
+        : document.documentElement.classList.contains('dark');
+    icon.className = (isDark ? 'ri-sun-line' : 'ri-moon-line') + ' text-lg';
 }
+window.addEventListener('themeChanged', syncDarkIcon);
+document.addEventListener('DOMContentLoaded', syncDarkIcon);
 
-function initDarkMode() {
-    const icon = document.getElementById('dark-mode-icon');
-    if (document.documentElement.classList.contains('dark') || localStorage.getItem('darkMode') === 'true') {
-        document.documentElement.classList.add('dark');
-        if (icon) icon.className = 'ri-sun-line text-lg';
-    }
-}
-document.addEventListener('DOMContentLoaded', initDarkMode);
+// Back-compat: any inline caller of toggleDarkMode() routes to the shared controller.
+function toggleDarkMode() { if (window.DASHBOARD_THEME) window.DASHBOARD_THEME.toggle(); }
 
 // ---- sidebar (admin-parity) ----
 // One toggle for both modes: on mobile (<1024) it slides the off-canvas sidebar
@@ -162,20 +157,25 @@ window.showSection = showSection;
 document.addEventListener('DOMContentLoaded', async () => {
     // Cookie-based auth: requireAuth bounces to /admin/login on no/expired session
     // and populates the sidebar profile from /api/me.
-    if (window.AUTH && typeof window.AUTH.requireAuth === 'function') {
-        const user = await window.AUTH.requireAuth('/admin/login');
-        if (user && user.name) {
-            const userName = document.getElementById('userName');
-            const userAvatar = document.getElementById('userAvatar');
-            const welcomeName = document.getElementById('welcomeName');
-            if (userName) userName.textContent = user.name;
-            if (welcomeName) welcomeName.textContent = user.name;
-            if (userAvatar) userAvatar.textContent = user.name.charAt(0).toUpperCase();
+    try {
+        if (window.AUTH && typeof window.AUTH.requireAuth === 'function') {
+            const user = await window.AUTH.requireAuth('/admin/login');
+            if (user && user.name) {
+                const userName = document.getElementById('userName');
+                const userAvatar = document.getElementById('userAvatar');
+                const welcomeName = document.getElementById('welcomeName');
+                if (userName) userName.textContent = user.name;
+                if (welcomeName) welcomeName.textContent = user.name;
+                if (userAvatar) userAvatar.textContent = user.name.charAt(0).toUpperCase();
+            }
         }
-    }
+    } catch (e) { console.error('Auth init failed:', e); }
 
     // Load the shared programs/departments catalog once before tabs render.
-    if (window.Catalog) { await window.Catalog.ready(); }
+    // CRITICAL: never let a catalog failure (e.g. a 429) abort the bootstrap —
+    // the router MUST start, or every tab renders blank and nav falls back to
+    // full-page reloads (which reset the theme). So this is best-effort.
+    try { if (window.Catalog) await window.Catalog.ready(); } catch (e) { console.error('Catalog load failed (continuing):', e); }
 
     // Academic-year chip in the topbar (best-effort; deputy is authorized).
     loadAcademicYearChip();
