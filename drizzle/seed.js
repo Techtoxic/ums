@@ -45,8 +45,6 @@ async function hash(pw) {
     return bcrypt.hash(pw, BCRYPT_COST);
 }
 
-const pad2 = (n) => String(n).padStart(2, '0');
-
 /** Insert a row only if a row matching `whereClause` doesn't already exist.
  *  Returns the existing or newly-inserted row. */
 async function upsert(table, whereClause, values) {
@@ -110,12 +108,13 @@ async function seedUnits(progByCode) {
             const modulesToSeed = availableModules.filter((m) => (isTopLevel ? true : m <= cap));
             for (const m of modulesToSeed) {
                 const names = course.modules[m] || [];
-                let seq = 0;
                 for (const name of names) {
-                    seq++;
+                    // The unit code IS the course code (e.g. "GA4"). Units are
+                    // identified by name + module — the module lives in its own
+                    // column, not baked into the code. Codes repeat per program.
                     values.push({
                         program_id: program.id,
-                        code: `${code}-M${m}-${pad2(seq)}`,
+                        code,
                         name,
                         module: m,
                         year: m,

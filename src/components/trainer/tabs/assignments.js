@@ -94,11 +94,12 @@ function createAssignmentCard(assignment) {
     const unitCode = assignment.unitId?.unitCode || 'N/A';
     const unitName = assignment.unitId?.unitName || 'Unknown Unit';
     const courseCode = assignment.unitId?.courseCode || assignment.courseCode || 'N/A';
-    const level = assignment.unitId?.level || 'N/A';
     const status = assignment.status || 'active';
     const assignedAt = assignment.createdAt ? new Date(assignment.createdAt).toLocaleDateString() : 'N/A';
     const assignedBy = assignment.assignedBy || 'System';
-    const semester = assignment.semester || 'Current';
+    // "Module" is the unit's own module (the period it's taught in). What the DB
+    // calls "semester" is the institution's "module".
+    const moduleNo = assignment.unitId?.module ?? assignment.module ?? assignment.semester ?? 'N/A';
     const notes = assignment.notes || '';
     const type = assignment.type || 'department';
     const isCommonUnit = type === 'common';
@@ -130,16 +131,12 @@ function createAssignmentCard(assignment) {
                     <span class="font-medium text-gray-900 dark:text-white">${escapeHtml(formatCourseName(courseCode))}</span>
                     </div>
                     <div class="flex justify-between text-sm">
-                    <span class="text-gray-600 dark:text-gray-400">Level:</span>
-                    <span class="font-medium text-gray-900 dark:text-white">Level ${escapeHtml(level)}</span>
-                    </div>
-                    <div class="flex justify-between text-sm">
                     <span class="text-gray-600 dark:text-gray-400">Assigned:</span>
                     <span class="font-medium text-gray-900 dark:text-white">${escapeHtml(assignedAt)}</span>
                     </div>
                     <div class="flex justify-between text-sm">
-                    <span class="text-gray-600 dark:text-gray-400">Semester:</span>
-                    <span class="font-medium text-gray-900 dark:text-white">${escapeHtml(semester)}</span>
+                    <span class="text-gray-600 dark:text-gray-400">Module:</span>
+                    <span class="font-medium text-gray-900 dark:text-white">${escapeHtml(String(moduleNo))}</span>
                     </div>
                     ${isCommonUnit && assignment.assignedByDepartment ? `
                     <div class="flex justify-between text-sm">
