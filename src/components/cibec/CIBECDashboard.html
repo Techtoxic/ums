@@ -89,50 +89,76 @@
         }
         .tree-chevron { transition: transform .15s ease; }
         .tree-chevron.open { transform: rotate(90deg); }
+        /* Sidebar nav items */
+        .cbet-nav { color: var(--text-secondary, #64748b); transition: background-color .12s ease, color .12s ease; }
+        .cbet-nav:hover { background-color: rgba(122,12,12,.06); color: #7A0C0C; }
+        html.dark .cbet-nav:hover { background-color: rgba(252,165,165,.08); color: #fca5a5; }
+        .cbet-nav.active { background-color: rgba(122,12,12,.10); color: #7A0C0C; }
+        html.dark .cbet-nav.active { background-color: rgba(252,165,165,.12); color: #fca5a5; }
+        /* Evidence browser drill-down rows */
+        .cbet-row { transition: background-color .12s ease; cursor: pointer; }
+        .cbet-row:hover { background-color: rgba(122,12,12,.06); }
+        html.dark .cbet-row:hover { background-color: rgba(252,165,165,.08); }
     </style>
     <script src="/public/js/auth.js"></script>
     <script src="/public/js/catalog.js"></script>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900">
+  <div class="flex min-h-screen">
+    <!-- Sidebar -->
+    <aside class="w-60 flex-shrink-0 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col sticky top-0 h-screen">
+        <div class="p-5 border-b border-gray-200 dark:border-gray-700 flex items-center gap-3">
+            <i class="ri-folder-user-line text-2xl text-primary"></i>
+            <div>
+                <h1 class="text-base font-bold text-gray-900 dark:text-gray-100">CBET Portal</h1>
+                <p class="text-xs text-gray-500 dark:text-gray-400">Student Uploads</p>
+            </div>
+        </div>
+        <nav class="p-3 space-y-1 flex-1">
+            <button id="nav-browse" class="cbet-nav active w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium" data-tab="browse">
+                <i class="ri-node-tree text-lg"></i> Browse
+            </button>
+            <button id="nav-search" class="cbet-nav w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium" data-tab="search">
+                <i class="ri-search-line text-lg"></i> Search
+            </button>
+        </nav>
+        <div class="p-4 border-t border-gray-200 dark:border-gray-700 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+            <i class="ri-user-line text-gray-500 dark:text-gray-400"></i>
+            <span class="font-medium truncate" id="userName">CBET Admin</span>
+        </div>
+    </aside>
+
+    <!-- Main column -->
+    <div class="flex-1 flex flex-col min-w-0">
     <!-- Header -->
-    <header class="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16">
-                <div class="flex items-center space-x-3">
-                    <i class="ri-folder-user-line text-3xl text-primary"></i>
-                    <div>
-                        <h1 class="text-xl font-bold text-gray-900 dark:text-gray-100">CBET Portal</h1>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">Student Uploads Management</p>
-                    </div>
-                    <span id="academic-year-chip" style="display:none;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;background:var(--bg-muted,rgba(127,127,127,.12));color:var(--text-secondary,#475569);border:1px solid var(--border-default,rgba(127,127,127,.2));white-space:nowrap;margin-left:12px"><i class="ri-calendar-line"></i> <span class="ay-value"></span></span>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <button id="refresh-btn" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors">
-                        <i class="ri-refresh-line text-xl text-gray-600 dark:text-gray-400"></i>
-                    </button>
-                    <button id="notifications-btn" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors relative">
-                        <i class="ri-notification-line text-xl text-gray-600 dark:text-gray-400"></i>
-                        <span id="notif-badge" class="hidden absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">0</span>
-                    </button>
-                    <div class="flex items-center space-x-2">
-                        <i class="ri-user-line text-gray-600 dark:text-gray-400"></i>
-                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300" id="userName">CBET Admin</span>
-                    </div>
-                    <button data-theme-toggle class="theme-toggle" aria-label="Toggle dark mode">
-                        <i class="ri-sun-line theme-icon-light"></i>
-                        <i class="ri-moon-line theme-icon-dark"></i>
-                    </button>
-                    <button id="logoutBtn" class="btn btn--danger btn--icon" aria-label="Logout">
-                        <i class="ri-logout-box-line"></i>
-                    </button>
-                </div>
+    <header class="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-40">
+        <div class="flex justify-between items-center h-16 px-6">
+            <div class="flex items-center gap-3">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Student Uploads Management</h2>
+                <span id="academic-year-chip" style="display:none;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;background:var(--bg-muted,rgba(127,127,127,.12));color:var(--text-secondary,#475569);border:1px solid var(--border-default,rgba(127,127,127,.2));white-space:nowrap"><i class="ri-calendar-line"></i> <span class="ay-value"></span></span>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button id="refresh-btn" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors">
+                    <i class="ri-refresh-line text-xl text-gray-600 dark:text-gray-400"></i>
+                </button>
+                <button id="notifications-btn" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors relative">
+                    <i class="ri-notification-line text-xl text-gray-600 dark:text-gray-400"></i>
+                    <span id="notif-badge" class="hidden absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">0</span>
+                </button>
+                <button data-theme-toggle class="theme-toggle" aria-label="Toggle dark mode">
+                    <i class="ri-sun-line theme-icon-light"></i>
+                    <i class="ri-moon-line theme-icon-dark"></i>
+                </button>
+                <button id="logoutBtn" class="btn btn--danger btn--icon" aria-label="Logout">
+                    <i class="ri-logout-box-line"></i>
+                </button>
             </div>
         </div>
     </header>
 
     <!-- Main Content -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
+    <main class="flex-1 px-6 py-6">
+
         <!-- Statistics Cards -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <!-- Stat tiles on the EDTTI palette: maroon (brand), emerald, gold (accent), slate. -->
@@ -177,22 +203,10 @@
             </div>
         </div>
 
-        <!-- Tab Bar -->
-        <div class="border-b border-gray-200 dark:border-gray-700 mb-6">
-            <nav class="flex items-center -mb-px overflow-x-auto" aria-label="Tabs">
-                <button id="tabbtn-browse" class="cbet-tab active" data-tab="browse">
-                    <i class="ri-node-tree mr-2"></i>Browse
-                </button>
-                <button id="tabbtn-search" class="cbet-tab" data-tab="search">
-                    <i class="ri-search-line mr-2"></i>Search
-                </button>
-            </nav>
-        </div>
-
         <!-- ============ BROWSE PANEL ============ -->
         <div id="tab-browse">
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4">
-                <div class="flex items-center justify-between mb-2">
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 md:p-5">
+                <div class="flex items-center justify-between mb-3">
                     <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
                         <i class="ri-folders-line mr-2 text-primary"></i>
                         Evidence Browser
@@ -201,11 +215,10 @@
                         <i class="ri-refresh-line mr-1"></i>Reload
                     </button>
                 </div>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Academic Year → Course → Intake → Module → Unit → Student → Document. Pick across the columns; click a document to open it.</p>
-                <!-- Breadcrumb of the current selection path -->
-                <div id="cbet-breadcrumb" class="flex flex-wrap items-center gap-1 text-xs text-gray-500 dark:text-gray-400 mb-3"></div>
-                <!-- Miller columns: each level is a column; selecting an item opens the next column to the right. -->
-                <div id="cbet-columns" class="flex gap-3 overflow-x-auto pb-2" style="min-height:360px"></div>
+                <!-- Breadcrumb trail (click a crumb to jump back) -->
+                <div id="cbet-breadcrumb" class="flex flex-wrap items-center gap-1.5 text-sm mb-3"></div>
+                <!-- Drill-down: one level at a time, full width, no horizontal scroll. -->
+                <div id="cbet-list" class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"></div>
             </div>
         </div>
 
@@ -346,6 +359,8 @@
         </div>
         <!-- ============ END SEARCH PANEL ============ -->
     </main>
+    </div><!-- /main column -->
+  </div><!-- /flex layout -->
 
     <!-- Student Details Modal -->
     <div id="student-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">

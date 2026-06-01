@@ -87,7 +87,7 @@ function switchTab(tab) {
     if (!CBET_TABS.includes(tab)) return;
     CBET_TABS.forEach(t => {
         const panel = document.getElementById('tab-' + t);
-        const btn = document.getElementById('tabbtn-' + t);
+        const btn = document.getElementById('nav-' + t);
         if (panel) panel.classList.toggle('hidden', t !== tab);
         if (btn) btn.classList.toggle('active', t === tab);
     });
@@ -451,9 +451,9 @@ function setupEventListeners() {
     // Export button
     document.getElementById('export-btn').addEventListener('click', exportToExcel);
 
-    // Tab bar
+    // Sidebar nav (Browse / Search)
     CBET_TABS.forEach(t => {
-        const btn = document.getElementById('tabbtn-' + t);
+        const btn = document.getElementById('nav-' + t);
         if (btn) btn.addEventListener('click', () => switchTab(t));
     });
 
@@ -525,113 +525,117 @@ async function loadTreeChildren(level, branchParams) {
     return data.nodes || [];
 }
 
-// ── Miller-columns evidence browser ─────────────────────────────────────────
-// Each level is a column; selecting an item opens the next level's column to the
-// right (and discards deeper ones). Spine: academicYear → course → intake →
-// module → unit → student → slot (documents). One state entry per visible column.
-let cbetCols = []; // [{ level, params, nodes, selectedKey, loading? }]
+// ── Evidence browser — single-panel breadcrumb drill-down ───────────────────
+// One level at a time, full width, no horizontal scroll. Spine: academicYear →
+// course → intake → module → unit → student → slot (documents). frames[] is the
+// trail; the LAST frame is what's shown. Each frame caches its level's nodes.
+let cbetFrames = []; // [{ level, params, nodes, pickedLabel, loading? }]
 
-// Entry point (kept name for the init + Reload button): reset to the root column.
+function cbetCurrentFrame() { return cbetFrames[cbetFrames.length - 1]; }
+
+// Entry point (kept name for init + Reload): reset to the root level.
 async function loadTreeRoot() {
-    cbetCols = [];
-    const container = document.getElementById('cbet-columns');
-    if (container) container.innerHTML = `<div class="flex items-center text-gray-500 dark:text-gray-400 px-2 py-6"><i class="ri-loader-4-line animate-spin mr-2"></i>Loading…</div>`;
+    const list = document.getElementById('cbet-list');
+    if (list) list.innerHTML = `<div class="flex items-center text-gray-500 dark:text-gray-400 text-sm px-4 py-6"><i class="ri-loader-4-line animate-spin mr-2"></i>Loading…</div>`;
     try {
         const nodes = await loadTreeChildren('academicYear', {});
-        cbetCols = [{ level: 'academicYear', params: {}, nodes, selectedKey: null }];
-        renderCbetColumns();
+        cbetFrames = [{ level: 'academicYear', params: {}, nodes, pickedLabel: null }];
+        renderCbetBrowse();
     } catch (e) {
         console.error('Error loading evidence browser:', e);
-        if (container) container.innerHTML = `<p class="text-danger px-2 py-6">Failed to load.</p>`;
+        if (list) list.innerHTML = `<p class="text-danger px-4 py-6">Failed to load.</p>`;
         showToast('Failed to load evidence browser', 'error');
     }
 }
 
-// Render every column from state.
-function renderCbetColumns() {
-    const container = document.getElementById('cbet-columns');
-    if (!container) return;
-    container.innerHTML = '';
-    cbetCols.forEach((col, colIndex) => {
-        const colEl = document.createElement('div');
-        colEl.className = 'flex-shrink-0 w-60 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden flex flex-col';
-        colEl.style.maxHeight = '360px';
-        colEl.innerHTML = `<div class="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/40 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2"><i class="${TREE_ICONS[col.level] || 'ri-folder-line'}"></i>${escapeHtml(TREE_TITLES[col.level] || col.level)}</div>`;
-
-        const list = document.createElement('div');
-        list.className = 'overflow-y-auto flex-1';
-        if (col.loading) {
-            list.innerHTML = `<div class="flex items-center text-gray-500 dark:text-gray-400 text-sm px-3 py-3"><i class="ri-loader-4-line animate-spin mr-2"></i>Loading…</div>`;
-        } else if (!col.nodes.length) {
-            list.innerHTML = `<p class="text-gray-400 dark:text-gray-500 text-sm px-3 py-3">— empty —</p>`;
-        } else {
-            col.nodes.forEach(node => {
-                const isSlot = node.level === 'slot';
-                const selected = String(col.selectedKey) === String(node.key);
-                const btn = document.createElement('button');
-                btn.className = 'w-full text-left px-3 py-2 flex items-center gap-2 text-sm transition-colors ' +
-                    (selected ? 'bg-primary/10 text-primary dark:bg-primary/25 dark:text-red-200' : 'text-gray-800 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700/40');
-                const trail = isSlot
-                    ? `<i class="ri-external-link-line ml-auto text-gray-400"></i>`
-                    : (typeof node.count === 'number' ? `<span class="ml-auto px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">${node.count}</span>` : '');
-                btn.innerHTML = `<i class="${TREE_ICONS[node.level] || 'ri-circle-line'} ${selected ? '' : 'text-primary dark:text-red-300'}"></i><span class="truncate">${escapeHtml(node.label || node.key || '')}</span>${trail}`;
-                btn.addEventListener('click', () => selectCbetItem(colIndex, node.key));
-                list.appendChild(btn);
-            });
-        }
-        colEl.appendChild(list);
-        container.appendChild(colEl);
-    });
-    renderCbetBreadcrumb();
-}
-
-// Select an item: highlight it, drop deeper columns, then open the next column
-// (or the document, if it's a leaf).
-async function selectCbetItem(colIndex, key) {
-    const col = cbetCols[colIndex];
-    if (!col) return;
-    const node = col.nodes.find(n => String(n.key) === String(key));
-    if (!node) return;
-
-    col.selectedKey = node.key;
-    cbetCols = cbetCols.slice(0, colIndex + 1); // discard deeper columns
-
+// Pick an item: drill into its level (or open the document leaf).
+async function cbetPick(node) {
     if (node.level === 'slot') {
-        renderCbetColumns();
         if (node.uploadId) viewFile(node.uploadId);
         else showToast('No file attached to this document', 'warning');
         return;
     }
-
+    const cur = cbetCurrentFrame();
     const childLevel = TREE_CHILD_LEVEL[node.level];
-    const childParams = Object.assign({}, col.params, nodeBranchParam(node));
-    cbetCols.push({ level: childLevel, params: childParams, nodes: [], selectedKey: null, loading: true });
-    renderCbetColumns();
+    const childParams = Object.assign({}, cur.params, nodeBranchParam(node));
+    cbetFrames.push({ level: childLevel, params: childParams, nodes: [], pickedLabel: node.label, loading: true });
+    renderCbetBrowse();
     try {
         const nodes = await loadTreeChildren(childLevel, childParams);
-        cbetCols[cbetCols.length - 1] = { level: childLevel, params: childParams, nodes, selectedKey: null };
-        renderCbetColumns();
+        cbetFrames[cbetFrames.length - 1] = { level: childLevel, params: childParams, nodes, pickedLabel: node.label };
+        renderCbetBrowse();
     } catch (e) {
-        console.error('Error loading column:', e);
-        cbetCols.pop();
-        renderCbetColumns();
+        console.error('Error loading level:', e);
+        cbetFrames.pop();
+        renderCbetBrowse();
         showToast('Failed to load', 'error');
     }
 }
 
-// Breadcrumb of the selected path across the columns.
+// Jump back to a frame via the breadcrumb.
+function cbetGoTo(frameIndex) {
+    if (frameIndex < 0 || frameIndex >= cbetFrames.length) return;
+    cbetFrames = cbetFrames.slice(0, frameIndex + 1);
+    renderCbetBrowse();
+}
+window.cbetGoTo = cbetGoTo;
+
+// Render the current level as a full-width list.
+function renderCbetBrowse() {
+    renderCbetBreadcrumb();
+    const list = document.getElementById('cbet-list');
+    const frame = cbetCurrentFrame();
+    if (!list || !frame) return;
+
+    const countLabel = (!frame.loading && Array.isArray(frame.nodes))
+        ? `<span class="ml-auto font-normal normal-case text-gray-400">${frame.nodes.length} item${frame.nodes.length === 1 ? '' : 's'}</span>` : '';
+    const header = `<div class="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/40 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2"><i class="${TREE_ICONS[frame.level] || 'ri-folder-line'}"></i>${escapeHtml(TREE_TITLES[frame.level] || frame.level)}${countLabel}</div>`;
+
+    if (frame.loading) {
+        list.innerHTML = header + `<div class="flex items-center text-gray-500 dark:text-gray-400 text-sm px-4 py-6"><i class="ri-loader-4-line animate-spin mr-2"></i>Loading…</div>`;
+        return;
+    }
+    if (!frame.nodes.length) {
+        list.innerHTML = header + `<p class="text-gray-400 dark:text-gray-500 text-sm px-4 py-6">— nothing here —</p>`;
+        return;
+    }
+
+    const rows = frame.nodes.map(node => {
+        const isSlot = node.level === 'slot';
+        const trail = isSlot
+            ? `<span class="ml-auto text-primary dark:text-red-300 text-sm font-medium flex items-center gap-1"><i class="ri-external-link-line"></i>Open</span>`
+            : `<span class="ml-auto px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">${typeof node.count === 'number' ? node.count : ''}</span><i class="ri-arrow-right-s-line text-gray-400 ml-1"></i>`;
+        return `<div class="cbet-row flex items-center gap-3 px-4 py-3" data-key="${escapeAttr(String(node.key))}">
+            <i class="${TREE_ICONS[node.level] || 'ri-circle-line'} text-primary dark:text-red-300 text-lg"></i>
+            <span class="text-sm text-gray-800 dark:text-gray-100 truncate">${escapeHtml(node.label || node.key || '')}</span>
+            ${trail}
+        </div>`;
+    }).join('');
+    list.innerHTML = header + `<div class="divide-y divide-gray-100 dark:divide-gray-700/60 max-h-[60vh] overflow-y-auto">${rows}</div>`;
+
+    list.querySelectorAll('[data-key]').forEach(el => {
+        el.addEventListener('click', () => {
+            const node = frame.nodes.find(n => String(n.key) === el.getAttribute('data-key'));
+            if (node) cbetPick(node);
+        });
+    });
+}
+
+// Breadcrumb: Home + each picked item; clicking a crumb jumps back to that level.
 function renderCbetBreadcrumb() {
     const el = document.getElementById('cbet-breadcrumb');
     if (!el) return;
-    const crumbs = [];
-    cbetCols.forEach(col => {
-        if (col.selectedKey == null) return;
-        const node = col.nodes.find(n => String(n.key) === String(col.selectedKey));
-        if (node) crumbs.push(escapeHtml(node.label || node.key || ''));
-    });
-    el.innerHTML = crumbs.length
-        ? crumbs.map(c => `<span>${c}</span>`).join('<i class="ri-arrow-right-s-line text-gray-300 dark:text-gray-600"></i>')
-        : '<span class="text-gray-400 dark:text-gray-500">Pick an academic year to start…</span>';
+    const parts = [`<button onclick="cbetGoTo(0)" class="text-primary hover:underline dark:text-red-300 font-medium">Home</button>`];
+    for (let i = 1; i < cbetFrames.length; i++) {
+        const label = cbetFrames[i].pickedLabel || cbetFrames[i].level;
+        parts.push(`<i class="ri-arrow-right-s-line text-gray-300 dark:text-gray-600"></i>`);
+        if (i === cbetFrames.length - 1) {
+            parts.push(`<span class="text-gray-700 dark:text-gray-200 font-medium">${escapeHtml(label)}</span>`);
+        } else {
+            parts.push(`<button onclick="cbetGoTo(${i})" class="text-primary hover:underline dark:text-red-300">${escapeHtml(label)}</button>`);
+        }
+    }
+    el.innerHTML = parts.join(' ');
 }
 
 // Apply filters
