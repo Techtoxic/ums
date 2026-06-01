@@ -92,9 +92,29 @@ async function seedPrograms(deptByText) {
     return out;
 }
 
+// Common units are SHARED across all programs — seeded ONCE as program-agnostic
+// rows (program_id = NULL, is_common = true), not duplicated per program. These
+// names (incl. spelling variants) are skipped in the per-program loop below.
+const COMMON_UNIT_NAMES = new Set([
+    'APPLY COMMUNICATION SKILLS',
+    'APPLY DIGITAL LITERACY',
+    'APPLY ENTREPRENEURIAL SKILLS',
+    'APPLY WORK ETHICS AND PRACTICES',
+    'APPLY WORK ETHICS PRACTICES',
+    'APPLY WORKPLACE ETHICS AND PRACTICES',
+]);
+const CANONICAL_COMMON_UNITS = [
+    { code: 'CU-COM', name: 'APPLY COMMUNICATION SKILLS' },
+    { code: 'CU-DIG', name: 'APPLY DIGITAL LITERACY' },
+    { code: 'CU-ENT', name: 'APPLY ENTREPRENEURIAL SKILLS' },
+    { code: 'CU-ETH', name: 'APPLY WORK ETHICS AND PRACTICES' },
+];
+const normUnitName = (s) => String(s || '').trim().replace(/\s+/g, ' ').toUpperCase();
+
 async function seedUnits(progByCode) {
-    // Duplicate-per-level: each level program gets modules 1..cap(level); the
+    // Department-owned units: each level program gets modules 1..cap(level); the
     // highest-level program of a course gets ALL modules present in the doc.
+    // Common units are excluded here and seeded once (shared) afterwards.
     const values = [];
     for (const course of COURSES) {
         const availableModules = Object.keys(course.modules).map(Number).sort((a, b) => a - b);
@@ -109,6 +129,7 @@ async function seedUnits(progByCode) {
             for (const m of modulesToSeed) {
                 const names = course.modules[m] || [];
                 for (const name of names) {
+                    if (COMMON_UNIT_NAMES.has(normUnitName(name))) continue; // shared, seeded below
                     // The unit code IS the course code (e.g. "GA4"). Units are
                     // identified by name + module — the module lives in its own
                     // column, not baked into the code. Codes repeat per program.
@@ -130,7 +151,19 @@ async function seedUnits(progByCode) {
     for (let i = 0; i < values.length; i += CHUNK) {
         await db.insert(units).values(values.slice(i, i + CHUNK));
     }
-    console.log(`  ✓ units: ${values.length}`);
+
+    // Seed the shared common units ONCE (program-agnostic, module-agnostic).
+    await db.insert(units).values(CANONICAL_COMMON_UNITS.map((c) => ({
+        program_id: null,
+        code: c.code,
+        name: c.name,
+        module: null,
+        year: 1,
+        semester: 1,
+        is_common: true,
+    })));
+
+    console.log(`  ✓ units: ${values.length} department + ${CANONICAL_COMMON_UNITS.length} shared common`);
 }
 
 async function seedUsers() {
