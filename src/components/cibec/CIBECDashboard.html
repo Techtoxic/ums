@@ -183,9 +183,6 @@
                 <button id="tabbtn-browse" class="cbet-tab active" data-tab="browse">
                     <i class="ri-node-tree mr-2"></i>Browse
                 </button>
-                <button id="tabbtn-completeness" class="cbet-tab" data-tab="completeness">
-                    <i class="ri-grid-line mr-2"></i>Completeness
-                </button>
                 <button id="tabbtn-search" class="cbet-tab" data-tab="search">
                     <i class="ri-search-line mr-2"></i>Search
                 </button>
@@ -219,79 +216,6 @@
                         Select a node in the tree to see its path here.
                     </div>
                 </div>
-            </div>
-        </div>
-
-        <!-- ============ COMPLETENESS PANEL ============ -->
-        <div id="tab-completeness" class="hidden">
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-6">
-                <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center mb-4">
-                    <i class="ri-grid-line mr-2 text-primary"></i>
-                    Completeness Matrix
-                </h2>
-                <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Unit</label>
-                        <select id="completeness-unit" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
-                            <option value="">Select a unit…</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Intake Year</label>
-                        <select id="completeness-intake" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
-                            <option value="">All Intakes</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Academic Year</label>
-                        <select id="completeness-acadyear" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
-                            <option value="">All Years</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Semester</label>
-                        <select id="completeness-semester" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
-                            <option value="">All Semesters</option>
-                        </select>
-                    </div>
-                    <div class="flex items-end">
-                        <button id="completeness-load" class="w-full px-6 py-2 bg-primary hover:bg-secondary text-white rounded-lg font-medium transition-colors">
-                            <i class="ri-table-line mr-2"></i>Load Matrix
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Matrix summary -->
-            <div id="completeness-summary" class="hidden bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-6">
-                <div class="flex items-center justify-between flex-wrap gap-4">
-                    <div>
-                        <h3 id="completeness-unit-name" class="text-lg font-bold text-gray-900 dark:text-gray-100">-</h3>
-                        <p id="completeness-fraction" class="text-sm text-gray-500 dark:text-gray-400 mt-1">-</p>
-                    </div>
-                    <div class="text-right">
-                        <div id="completeness-percent" class="text-4xl font-extrabold text-primary dark:text-red-300">-</div>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Complete</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Matrix loading -->
-            <div id="completeness-loading" class="hidden text-center py-12">
-                <i class="ri-loader-4-line text-4xl text-primary animate-spin mb-4"></i>
-                <p class="text-gray-600 dark:text-gray-400">Loading matrix…</p>
-            </div>
-
-            <!-- Matrix empty -->
-            <div id="completeness-empty" class="hidden text-center py-12 bg-white dark:bg-gray-800 rounded-xl shadow-md">
-                <i class="ri-table-line text-6xl text-gray-300 mb-4"></i>
-                <p class="text-gray-600 dark:text-gray-400 text-lg">No matrix to show</p>
-                <p class="text-gray-500 dark:text-gray-400 text-sm mt-2">Pick a unit and click “Load Matrix”.</p>
-            </div>
-
-            <!-- Matrix table -->
-            <div id="completeness-table-wrap" class="hidden bg-white dark:bg-gray-800 rounded-xl shadow-md p-2 overflow-x-auto">
-                <table id="completeness-table" class="min-w-full text-sm"></table>
             </div>
         </div>
 

@@ -76,16 +76,13 @@ async function initializeDashboard() {
     // Browse tab is the default view: load the tree root (level=course).
     loadTreeRoot();
 
-    // Completeness tab: populate its filter dropdowns (best-effort).
-    populateCompletenessFilters();
-
     console.log('Dashboard initialized');
 }
 
 // ===================================================================
 // TAB SWITCHING
 // ===================================================================
-const CBET_TABS = ['browse', 'completeness', 'search'];
+const CBET_TABS = ['browse', 'search'];
 function switchTab(tab) {
     if (!CBET_TABS.includes(tab)) return;
     CBET_TABS.forEach(t => {
@@ -463,10 +460,6 @@ function setupEventListeners() {
     // Browse: reload tree root
     const treeReload = document.getElementById('tree-reload-btn');
     if (treeReload) treeReload.addEventListener('click', loadTreeRoot);
-
-    // Completeness: load matrix
-    const compLoad = document.getElementById('completeness-load');
-    if (compLoad) compLoad.addEventListener('click', loadCompleteness);
 }
 
 // ===================================================================
@@ -659,165 +652,6 @@ function updateTreeDetail(node, fetchParams) {
     }
 
     detail.innerHTML = breadcrumb + body;
-}
-
-// ===================================================================
-// COMPLETENESS MATRIX
-// ===================================================================
-async function populateCompletenessFilters() {
-    try {
-        const res = await authFetch(`${API_BASE}/cibec/filters`);
-        if (!res.ok) throw new Error('Failed to load filters');
-        const data = await res.json();
-        const f = (data && data.filters) || {};
-
-        const unitSel = document.getElementById('completeness-unit');
-        if (unitSel && Array.isArray(f.units)) {
-            f.units.forEach(u => {
-                const opt = document.createElement('option');
-                opt.value = u.unitId;
-                opt.textContent = `${u.code} · ${u.name}`;
-                unitSel.appendChild(opt);
-            });
-        }
-
-        const intakeSel = document.getElementById('completeness-intake');
-        if (intakeSel && Array.isArray(f.intakes)) {
-            f.intakes.forEach(i => {
-                const opt = document.createElement('option');
-                opt.value = i.intakeYear;
-                opt.textContent = i.intake ? `${i.intakeYear} (${i.intake})` : String(i.intakeYear);
-                intakeSel.appendChild(opt);
-            });
-        }
-
-        const aySel = document.getElementById('completeness-acadyear');
-        if (aySel && Array.isArray(f.academicYears)) {
-            f.academicYears.forEach(y => {
-                const opt = document.createElement('option');
-                opt.value = y;
-                opt.textContent = y;
-                aySel.appendChild(opt);
-            });
-        }
-
-        const semSel = document.getElementById('completeness-semester');
-        if (semSel && Array.isArray(f.semesters)) {
-            f.semesters.forEach(s => {
-                const opt = document.createElement('option');
-                opt.value = s;
-                opt.textContent = s;
-                semSel.appendChild(opt);
-            });
-        }
-    } catch (e) {
-        console.error('Error populating completeness filters:', e);
-    }
-}
-
-async function loadCompleteness() {
-    const unitId = document.getElementById('completeness-unit').value;
-    if (!unitId) {
-        showToast('Please select a unit', 'warning');
-        return;
-    }
-    const intakeYear = document.getElementById('completeness-intake').value;
-    const academicYear = document.getElementById('completeness-acadyear').value;
-    const semester = document.getElementById('completeness-semester').value;
-
-    const loading = document.getElementById('completeness-loading');
-    const empty = document.getElementById('completeness-empty');
-    const summary = document.getElementById('completeness-summary');
-    const tableWrap = document.getElementById('completeness-table-wrap');
-
-    summary.classList.add('hidden');
-    empty.classList.add('hidden');
-    tableWrap.classList.add('hidden');
-    loading.classList.remove('hidden');
-
-    try {
-        const qs = new URLSearchParams();
-        qs.append('unitId', unitId);
-        if (intakeYear) qs.append('intakeYear', intakeYear);
-        if (academicYear) qs.append('academicYear', academicYear);
-        if (semester) qs.append('semester', semester);
-
-        const res = await authFetch(`${API_BASE}/cibec/completeness?${qs}`);
-        if (!res.ok) throw new Error('Failed to load completeness');
-        const data = await res.json();
-        loading.classList.add('hidden');
-        renderCompletenessMatrix(data);
-    } catch (e) {
-        console.error('Error loading completeness:', e);
-        loading.classList.add('hidden');
-        showToast('Failed to load matrix', 'error');
-    }
-}
-
-function renderCompletenessMatrix(data) {
-    const summary = document.getElementById('completeness-summary');
-    const empty = document.getElementById('completeness-empty');
-    const tableWrap = document.getElementById('completeness-table-wrap');
-    const table = document.getElementById('completeness-table');
-
-    const unit = data.unit || {};
-    const slots = data.slots || [];
-    const students = data.students || [];
-    const completion = data.completion || { present: 0, total: 0, percent: 0 };
-
-    // Summary header.
-    document.getElementById('completeness-unit-name').textContent =
-        (unit.code ? unit.code + ' · ' : '') + (unit.name || '') + (unit.isCommon ? ' (common)' : '');
-    document.getElementById('completeness-fraction').textContent =
-        `${completion.present} of ${completion.total} expected documents present`;
-    document.getElementById('completeness-percent').textContent = `${completion.percent != null ? completion.percent : 0}%`;
-    summary.classList.remove('hidden');
-
-    if (students.length === 0) {
-        tableWrap.classList.add('hidden');
-        empty.classList.remove('hidden');
-        empty.querySelector('p').textContent = 'No students in this roster';
-        return;
-    }
-    empty.classList.add('hidden');
-
-    // Header row.
-    const headCells = [`<th class="text-left px-3 py-2 sticky left-0 bg-white dark:bg-gray-800 z-10 border-b border-gray-200 dark:border-gray-700">Student</th>`];
-    slots.forEach(s => {
-        headCells.push(`<th class="px-3 py-2 text-center border-b border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 whitespace-nowrap">${escapeHtml(s.label || s.key)}</th>`);
-    });
-
-    // Body rows.
-    const bodyRows = students.map(stu => {
-        const cells = slots.map(s => {
-            const cell = (stu.cells && stu.cells[s.key]) || { present: false };
-            if (cell.present) {
-                const verHint = cell.version ? ` title="v${escapeAttr(String(cell.version))}"` : '';
-                const verLabel = cell.version ? `<span class="block text-[10px] text-gray-400 dark:text-gray-500">v${escapeHtml(String(cell.version))}</span>` : '';
-                const click = cell.uploadId ? `onclick="viewFile('${escapeAttr(cell.uploadId)}')"` : '';
-                return `<td class="px-3 py-2 text-center border-b border-gray-100 dark:border-gray-700/50">
-                    <button ${click}${verHint} class="inline-flex flex-col items-center text-success hover:opacity-80 transition-opacity">
-                        <i class="ri-checkbox-circle-fill text-xl"></i>${verLabel}
-                    </button>
-                </td>`;
-            }
-            return `<td class="px-3 py-2 text-center border-b border-gray-100 dark:border-gray-700/50">
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">
-                    <i class="ri-close-circle-line"></i>Missing
-                </span>
-            </td>`;
-        }).join('');
-        return `<tr>
-            <td class="px-3 py-2 sticky left-0 bg-white dark:bg-gray-800 z-10 border-b border-gray-100 dark:border-gray-700/50">
-                <div class="font-medium text-gray-900 dark:text-gray-100">${escapeHtml(stu.admissionNumber || '')}</div>
-                <div class="text-xs text-gray-500 dark:text-gray-400">${escapeHtml(stu.name || '')}</div>
-            </td>
-            ${cells}
-        </tr>`;
-    }).join('');
-
-    table.innerHTML = `<thead><tr>${headCells.join('')}</tr></thead><tbody>${bodyRows}</tbody>`;
-    tableWrap.classList.remove('hidden');
 }
 
 // Apply filters

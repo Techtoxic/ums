@@ -27,7 +27,7 @@
  */
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
-const { eq, and, or, ne, gt, gte, lt, lte, inArray, isNull, isNotNull, sql, desc, asc } = require('drizzle-orm');
+const { eq, and, or, ne, gt, gte, lt, lte, inArray, isNull, isNotNull, ilike, sql, desc, asc } = require('drizzle-orm');
 const { db, schema } = require('./index');
 
 const BCRYPT_COST = 10; // V1 used cost 10; preserve for new writes
@@ -699,8 +699,16 @@ StudentUpload.getCIBECUploads = async function getCIBECUploads(filters = {}) {
         eqText(u.intake, filters.intake);
         eqInt(u.intake_year, filters.intakeYear);
         if (filters.studentId) {
-            const val = String(filters.studentId);
-            conds.push(_isUuid(val) ? eq(u.student_id, val) : eq(u.admission_number, val));
+            const val = String(filters.studentId).trim();
+            if (_isUuid(val)) {
+                conds.push(eq(u.student_id, val));
+            } else {
+                // The search box accepts an admission number OR a (partial) name.
+                // Match either column case-insensitively so "jane" finds the
+                // student and a partial admission number still narrows results.
+                const like = `%${val}%`;
+                conds.push(or(ilike(u.admission_number, like), ilike(u.student_name, like)));
+            }
         }
         // NOTE: `courseLevel` has no column on student_uploads — ignored.
         // TODO: derive level (e.g. join programs) if CIBEC needs level filtering.

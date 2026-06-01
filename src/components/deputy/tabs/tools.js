@@ -26,7 +26,7 @@ window.DeputyTabs = window.DeputyTabs || {};
 
         // Fetch and display tools of trade
         async function fetchToolsOfTrade() {
-            const toolsContainer = document.querySelector('.grid.grid-cols-1.md\\:grid-cols-2.xl\\:grid-cols-4.gap-4');
+            const toolsContainer = document.getElementById('toolsContainer');
             if (!toolsContainer) return;
 
             // Show loading state
@@ -56,55 +56,85 @@ window.DeputyTabs = window.DeputyTabs || {};
             }
         }
 
-        function displayToolsOfTrade(tools) {
-            // Get the tools list container
-            const toolsContainer = document.querySelector('.grid.grid-cols-1.md\\:grid-cols-2.xl\\:grid-cols-4.gap-4');
-            if (!toolsContainer) return;
+        // Human-readable department label from a snake_case code (Rule 7: prefer
+        // the shared catalog; fall back to a title-cased code).
+        function toolDeptLabel(code) {
+            if (!code) return 'Unassigned';
+            if (window.Catalog && typeof window.Catalog.departmentName === 'function') {
+                const n = window.Catalog.departmentName(code);
+                if (n) return n;
+            }
+            return String(code).replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        }
 
-            // Clear existing tools
+        const TOOL_TYPE_NAMES = {
+            'course_outline': 'Course Outline',
+            'learning_plan': 'Learning Plan',
+            'record_of_work': 'Record of Work',
+            'session_plan': 'Session Plan',
+            'exam': 'Exam',
+            'tvet_license': 'TVET License'
+        };
+
+        // One tool card (department is shown by the section header, not repeated here).
+        function toolCardHtml(tool) {
+            const statusClass = getStatusClass(tool.status);
+            const trainerName = tool.trainerName || 'Unknown Trainer';
+            const submittedAt = tool.createdAt ? new Date(tool.createdAt).toLocaleDateString() : 'N/A';
+            return `
+                <div class="adm-card"><div class="adm-card__body">
+                    <div class="flex items-center justify-between gap-2" style="margin-bottom:8px">
+                        <h4 class="td-strong" style="font-size:14px">${escapeHtml(TOOL_TYPE_NAMES[tool.toolType] || tool.toolType)}</h4>
+                        <span class="pill ${statusClass}">${escapeHtml((tool.status || '').replace('_', ' ').toUpperCase())}</span>
+                    </div>
+                    <p style="color:var(--text-secondary);font-size:13px;margin-bottom:2px">${escapeHtml(trainerName)}</p>
+                    <p class="kpi__note" style="margin-bottom:12px">Submitted: ${escapeHtml(submittedAt)}</p>
+                    <div class="flex items-center" style="gap:6px">
+                        <button onclick="reviewTool('${escapeAttr(tool.id)}')" class="adm-btn adm-btn--outline adm-btn--sm"><i class="ri-eye-line"></i> Review</button>
+                        <button onclick="downloadTool('${escapeAttr(tool.id)}')" class="adm-btn adm-btn--ghost adm-btn--sm"><i class="ri-download-line"></i></button>
+                        <button onclick="deleteToolDeputy('${escapeAttr(tool.id)}')" class="adm-btn adm-btn--ghost adm-btn--sm" style="color:var(--error,#dc2626)"><i class="ri-delete-bin-line"></i></button>
+                    </div>
+                </div></div>`;
+        }
+
+        function displayToolsOfTrade(tools) {
+            const toolsContainer = document.getElementById('toolsContainer');
+            if (!toolsContainer) return;
             toolsContainer.innerHTML = '';
 
-            if (tools.length === 0) {
+            if (!tools || tools.length === 0) {
                 toolsContainer.innerHTML = `
-                    <div class="adm-card" style="grid-column:1/-1"><div class="adm-card__body" style="text-align:center;padding:32px 0;color:var(--text-muted)">
+                    <div class="adm-card"><div class="adm-card__body" style="text-align:center;padding:32px 0;color:var(--text-muted)">
                         <i class="ri-tools-line" style="font-size:32px;display:block;margin-bottom:8px;color:var(--text-tertiary)"></i>
                         <p style="font-size:13px">No tools of trade submitted yet</p>
                     </div></div>`;
                 return;
             }
 
-            // Display each tool
+            // Group tools by the trainer's department code.
+            const groups = new Map();
             tools.forEach(tool => {
-                const statusClass = getStatusClass(tool.status);
-                const toolTypeNames = {
-                    'course_outline': 'Course Outline',
-                    'learning_plan': 'Learning Plan',
-                    'record_of_work': 'Record of Work',
-                    'session_plan': 'Session Plan',
-                    'exam': 'Exam',
-                    'tvet_license': 'TVET License'
-                };
-                const trainerName = tool.trainerName || 'Unknown Trainer';
-                const trainerDepartment = tool.trainerDepartment || '';
-                const submittedAt = tool.createdAt ? new Date(tool.createdAt).toLocaleDateString() : 'N/A';
-
-                const toolCard = `
-                    <div class="adm-card"><div class="adm-card__body">
-                        <div class="flex items-center justify-between gap-2" style="margin-bottom:8px">
-                            <h4 class="td-strong" style="font-size:14px">${escapeHtml(toolTypeNames[tool.toolType] || tool.toolType)}</h4>
-                            <span class="pill ${statusClass}">${escapeHtml((tool.status || '').replace('_', ' ').toUpperCase())}</span>
-                        </div>
-                        <p style="color:var(--text-secondary);font-size:13px;margin-bottom:2px">${escapeHtml(trainerName)}${trainerDepartment ? ` — ${escapeHtml(trainerDepartment)}` : ''}</p>
-                        <p class="kpi__note" style="margin-bottom:12px">Submitted: ${escapeHtml(submittedAt)}</p>
-                        <div class="flex items-center" style="gap:6px">
-                            <button onclick="reviewTool('${escapeAttr(tool.id)}')" class="adm-btn adm-btn--outline adm-btn--sm"><i class="ri-eye-line"></i> Review</button>
-                            <button onclick="downloadTool('${escapeAttr(tool.id)}')" class="adm-btn adm-btn--ghost adm-btn--sm"><i class="ri-download-line"></i></button>
-                            <button onclick="deleteToolDeputy('${escapeAttr(tool.id)}')" class="adm-btn adm-btn--ghost adm-btn--sm" style="color:var(--error,#dc2626)"><i class="ri-delete-bin-line"></i></button>
-                        </div>
-                    </div></div>
-                `;
-                toolsContainer.insertAdjacentHTML('beforeend', toolCard);
+                const key = tool.trainerDepartment || '';
+                if (!groups.has(key)) groups.set(key, []);
+                groups.get(key).push(tool);
             });
+
+            // Render one section per department, alphabetical by display label.
+            const sortedKeys = [...groups.keys()].sort((a, b) => toolDeptLabel(a).localeCompare(toolDeptLabel(b)));
+            const sections = sortedKeys.map(key => {
+                const items = groups.get(key);
+                const cards = items.map(toolCardHtml).join('');
+                return `
+                    <section>
+                        <div class="flex items-center gap-2" style="margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border,#e5e7eb)">
+                            <i class="ri-building-2-line" style="color:var(--primary,#7f1d1d)"></i>
+                            <h3 class="td-strong" style="font-size:15px;margin:0">${escapeHtml(toolDeptLabel(key))}</h3>
+                            <span class="pill pill--neutral">${items.length}</span>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">${cards}</div>
+                    </section>`;
+            }).join('');
+            toolsContainer.innerHTML = sections;
         }
 
         function getStatusClass(status) {
