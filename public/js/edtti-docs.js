@@ -14,6 +14,10 @@ window.EDTTIDocs = (function () {
     const GOLD = [212, 160, 23];
     const CREAM = [250, 244, 232];
     const INSTITUTION = 'EMURUA DIKIRR TECHNICAL TRAINING INSTITUTE';
+    // Global header block — kept identical on every generated PDF (item 1).
+    const ADDRESS = 'P.O. Box 49, Emurua Dikirr - 20500';
+    const CONTACT = 'Tel: +254 729 123 456   |   Email: info@emurua-tech.ac.ke';
+    const WEB_ISO = 'Website: www.emurua-tech.ac.ke   |   ISO 9001:2015 Certified Institution';
 
     let logoDataUrl = null;
     let logoPromise = null;
@@ -43,26 +47,32 @@ window.EDTTIDocs = (function () {
     function letterhead(doc, opts = {}) {
         const pw = doc.internal.pageSize.getWidth();
         if (logoDataUrl) {
-            try { doc.addImage(logoDataUrl, 'PNG', 14, 9, 24, 21); } catch (e) { /* ignore */ }
+            try { doc.addImage(logoDataUrl, 'PNG', 14, 8, 22, 20); } catch (e) { /* ignore */ }
         }
+        // Institution name (the only maroon element in the header text block).
         doc.setTextColor.apply(doc, MAROON);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(opts.landscape ? 15 : 14);
-        doc.text(INSTITUTION, pw / 2, 16, { align: 'center' });
+        doc.text(INSTITUTION, pw / 2, 13, { align: 'center' });
+        // Consistent global contact / ISO block.
         doc.setTextColor(90, 90, 90);
-        doc.setFont('helvetica', 'italic');
-        doc.setFontSize(9);
-        doc.text('Skills for Life', pw / 2, 21.5, { align: 'center' });
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.text(ADDRESS, pw / 2, 18, { align: 'center' });
+        doc.text(CONTACT, pw / 2, 22, { align: 'center' });
+        doc.text(WEB_ISO, pw / 2, 26, { align: 'center' });
+        let lineY = 30;
         if (opts.title) {
             doc.setTextColor.apply(doc, MAROON);
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(12);
-            doc.text(String(opts.title).toUpperCase(), pw / 2, 29, { align: 'center' });
+            doc.text(String(opts.title).toUpperCase(), pw / 2, 32, { align: 'center' });
+            lineY = 36;
         }
         doc.setDrawColor.apply(doc, GOLD);
         doc.setLineWidth(0.8);
-        doc.line(14, 33, pw - 14, 33);
-        let y = 39;
+        doc.line(14, lineY, pw - 14, lineY);
+        let y = lineY + 6;
         doc.setTextColor(70, 70, 70);
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(9);
@@ -77,11 +87,21 @@ window.EDTTIDocs = (function () {
         const pages = doc.internal.getNumberOfPages();
         for (let i = 1; i <= pages; i++) {
             doc.setPage(i);
-            // watermark
-            doc.setTextColor(232, 224, 208);
+            // Watermark — use a real alpha channel (GState) when the jsPDF build
+            // supports it so the opacity is consistent and faint enough to read
+            // through; fall back to a pale tint on older builds. Always reset
+            // alpha afterwards so the footer/body stay fully opaque.
+            const hasGState = typeof doc.GState === 'function';
+            if (hasGState) {
+                try { doc.setGState(new doc.GState({ opacity: 0.07 })); } catch (e) { /* */ }
+                doc.setTextColor.apply(doc, MAROON);
+            } else {
+                doc.setTextColor(238, 232, 220);
+            }
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(54);
             doc.text('OFFICIAL · EDTTI', pw / 2, ph / 2, { align: 'center', angle: 30 });
+            if (hasGState) { try { doc.setGState(new doc.GState({ opacity: 1 })); } catch (e) { /* */ } }
             // footer
             doc.setTextColor(110, 110, 110);
             doc.setFont('helvetica', 'normal');
@@ -187,7 +207,7 @@ window.EDTTIDocs = (function () {
         URL.revokeObjectURL(url);
     }
 
-    return { loadLogo, letterhead, decorate, lockDocument, newDoc, tablePDF, analyticsPDF, downloadExcel, formatKES, MAROON, GOLD, CREAM };
+    return { loadLogo, letterhead, decorate, lockDocument, newDoc, tablePDF, analyticsPDF, downloadExcel, formatKES, MAROON, GOLD, CREAM, INSTITUTION, ADDRESS, CONTACT, WEB_ISO };
 })();
 
 // Back-compat alias used by finance tabs.

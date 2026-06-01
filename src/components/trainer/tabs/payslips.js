@@ -194,77 +194,33 @@ async function downloadPayslipPDF(payslipId) {
         return;
     }
     
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
+    const D = window.EDTTIDocs;
+    const doc = D ? D.newDoc(false) : new (window.jspdf.jsPDF)();
+    if (D) { try { await D.loadLogo(); } catch (e) { /* ignore */ } }
 
-    // Load the school logo (transparent PNG) for the letterhead.
-    let logoDataUrl = null;
-    try { if (window.EDTTIDocs) logoDataUrl = await window.EDTTIDocs.loadLogo(); } catch (e) { /* ignore */ }
-    
-    const monthNames = ['', 'January', 'February', 'March', 'April', 'May', 'June', 
+    const monthNames = ['', 'January', 'February', 'March', 'April', 'May', 'June',
                       'July', 'August', 'September', 'October', 'November', 'December'];
     const monthName = monthNames[parseInt(payslip.month)];
-    
-    // Colors
+
+    // Colors (maroon stays in the shared header only)
     const primaryColor = [122, 12, 12]; // #7A0C0C
-    const secondaryColor = [139, 42, 42]; // #8B2A2A
     const textDark = [31, 41, 55];
     const textGray = [107, 114, 128];
-    
-    // Header - School Logo Area (Red background)
-    doc.setFillColor(...primaryColor);
-    doc.rect(0, 0, 210, 35, 'F');
 
-    // School logo on a small white plate (top-left) for contrast on maroon.
-    if (logoDataUrl) {
-        doc.setFillColor(255, 255, 255);
-        doc.roundedRect(12, 6, 24, 23, 2, 2, 'F');
-        try { doc.addImage(logoDataUrl, 'PNG', 13.5, 7, 21, 21); } catch (e) { /* ignore */ }
-    }
-    
-    // School Name
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(20);
-    doc.setFont('helvetica', 'bold');
-    doc.text('EMURUA DIKIRR TECHNICAL TRAINING INSTITUTE', 105, 12, { align: 'center' });
-    
-    // Contact Info
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.text('P.O. Box 49, Emurua Dikirr - 20500', 105, 18, { align: 'center' });
-    doc.text('Tel: +254 729 123 456 | Email: info@emurua-tech.ac.ke', 105, 23, { align: 'center' });
-    doc.text('Website: www.emurua-tech.ac.ke', 105, 28, { align: 'center' });
-    
-    // ISO Certification
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'italic');
-    doc.text('ISO 9001:2015 Certified Institution', 105, 33, { align: 'center' });
-    
-    // Horizontal line
-    doc.setDrawColor(...secondaryColor);
-    doc.setLineWidth(0.5);
-    doc.line(10, 38, 200, 38);
-    
-    // Document Title
+    // Shared branded letterhead: logo + institution + global contact/ISO block.
+    let yHead = D ? D.letterhead(doc, { title: 'Payslip' }) : 42;
     doc.setTextColor(...textDark);
-    doc.setFontSize(16);
-    doc.setFont('helvetica', 'bold');
-    doc.text('PAYSLIP', 105, 48, { align: 'center' });
     doc.setFontSize(12);
     doc.setFont('helvetica', 'normal');
-    doc.text(`${monthName} ${payslip.year}`, 105, 55, { align: 'center' });
-    
+    doc.text(`${monthName} ${payslip.year}`, 105, yHead, { align: 'center' });
+
     // Reference and Date
     doc.setFontSize(9);
     doc.setTextColor(...textGray);
     const refNumber = `EDTTI/PAYROLL/${payslip.year}/${payslip._id.substring(18)}`;
-    doc.text(`Ref: ${refNumber}`, 15, 65);
-    doc.text(`Date: ${new Date(payslip.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}`, 195, 65, { align: 'right' });
-    
-    // Line
-    doc.setLineWidth(0.2);
-    doc.line(15, 68, 195, 68);
-    
+    doc.text(`Ref: ${refNumber}`, 15, yHead + 6);
+    doc.text(`Date: ${new Date(payslip.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}`, 195, yHead + 6, { align: 'right' });
+
     // Trainer Details Section
     doc.setFontSize(11);
     doc.setTextColor(...textDark);
@@ -358,6 +314,9 @@ async function downloadPayslipPDF(payslipId) {
     doc.text('This is an official document from Emurua Dikirr Technical Training Institute', 15, yPos);
     doc.text(`Generated on ${new Date().toLocaleDateString('en-GB')} | ${new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`, 195, yPos, { align: 'right' });
     
+    // Consistent watermark + footer + page numbers across all PDFs (item 4).
+    if (D) { try { D.decorate(doc, { footer: 'EDTTI — Official Payslip · Confidential' }); D.lockDocument(doc); } catch (e) { /* ignore */ } }
+
     // Save the PDF
     const fileName = `EDTTI_Payslip_${payslip.trainerName.replace(/\s+/g, '_')}_${monthName}_${payslip.year}.pdf`;
     doc.save(fileName);

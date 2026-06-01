@@ -904,163 +904,84 @@ function setupSidebar() {
 
 // ---- payment receipt PDF (verbatim inline block) ----
                 // Generate individual payment receipt (formal payslip-style format)
-        function generatePaymentReceipt(payment, student = null) {
+        async function generatePaymentReceipt(payment, student = null) {
             try {
-                // Create PDF receipt
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF('p', 'mm', 'a4');
+                const D = window.EDTTIDocs;
+                if (!D || !window.jspdf) throw new Error('PDF engine not loaded');
+                await D.loadLogo();
 
-                // Dark red/maroon color for header (RGB: 122, 12, 12)
-                const headerColor = [122, 12, 12];
+                const doc = D.newDoc(false);
                 const pageWidth = doc.internal.pageSize.getWidth();
-                const pageHeight = doc.internal.pageSize.getHeight();
+                doc.setProperties({ title: 'Payment Receipt', author: 'EDTTI UMS', creator: 'EDTTI UMS' });
 
-                // ========================================
-                // HEADER BANNER (Dark Red Background)
-                // ========================================
-                doc.setFillColor(...headerColor);
-                doc.rect(0, 0, pageWidth, 40, 'F');
+                // Shared branded letterhead: logo + institution + global contact
+                // block + gold divider (item 1/3). Brown stays in the header only.
+                let y = D.letterhead(doc, { title: 'Payment Receipt' });
 
-                // Institution Name (White text on red background)
-                doc.setTextColor(255, 255, 255); // White
-                doc.setFontSize(16);
-                doc.setFont(undefined, 'bold');
-                doc.text('EMURUA DIKIRR TECHNICAL TRAINING INSTITUTE', pageWidth / 2, 12, { align: 'center' });
-
-                // Contact Information
-                doc.setFontSize(9);
-                doc.setFont(undefined, 'normal');
-                doc.text('P.O. Box 49, Emurua Dikirr - 20500', pageWidth / 2, 18, { align: 'center' });
-                doc.text('Tel: +254 729 123 456 | Email: info@emurua-tech.ac.ke', pageWidth / 2, 23, { align: 'center' });
-                doc.text('Website: www.emurua-tech.ac.ke', pageWidth / 2, 28, { align: 'center' });
-                doc.setFontSize(8);
-                doc.text('ISO 9001:2015 Certified Institution', pageWidth / 2, 34, { align: 'center' });
-
-                // ========================================
-                // RECEIPT TITLE AND REFERENCE
-                // ========================================
-                doc.setTextColor(0, 0, 0); // Black text
-                doc.setFontSize(18);
-                doc.setFont(undefined, 'bold');
-                doc.text('PAYMENT RECEIPT', pageWidth / 2, 55, { align: 'center' });
-
-                // Receipt date
                 const paymentDate = payment.paymentDate ? new Date(payment.paymentDate) : new Date();
-                const monthYear = paymentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-                doc.setFontSize(12);
-                doc.setFont(undefined, 'normal');
-                doc.text(monthYear, pageWidth / 2, 62, { align: 'center' });
-
-                // Reference and Date (left and right aligned)
-                const receiptRef = `Ref: EDTTI/RECEIPT/2025/${payment._id ? payment._id.slice(-6) : (payment.reference || 'N/A').slice(-6)}`;
                 const formattedDate = paymentDate.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
-                
-                doc.setFontSize(10);
-                doc.text(receiptRef, 20, 70);
-                doc.text(`Date: ${formattedDate}`, pageWidth - 20, 70, { align: 'right' });
+                const refTail = payment._id ? payment._id.slice(-6) : String(payment.reference || 'N/A').slice(-6);
+                const receiptRef = `EDTTI/RECEIPT/${paymentDate.getFullYear()}/${refTail}`;
 
-                // ========================================
-                // STUDENT INFORMATION SECTION
-                // ========================================
-                let yPos = 85;
-                doc.setFontSize(12);
-                doc.setFont(undefined, 'bold');
-                doc.text('STUDENT INFORMATION', 20, yPos);
-                
-                yPos += 8;
-                doc.setFontSize(10);
-                doc.setFont(undefined, 'normal');
-                
-                // Use program name if available, otherwise format course code
+                doc.setFontSize(10); doc.setTextColor(0, 0, 0); doc.setFont('helvetica', 'normal');
+                doc.text(`Ref: ${receiptRef}`, 14, y);
+                doc.text(`Date: ${formattedDate}`, pageWidth - 14, y, { align: 'right' });
+
+                // Program / department, readable.
                 let programDisplay = 'N/A';
-                if (student?.programName) {
-                    programDisplay = student.programName;
-                } else if (student?.course) {
-                    // Fallback: Convert course code to readable format
-                    programDisplay = student.course.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                }
+                if (student?.programName) programDisplay = student.programName;
+                else if (student?.course) programDisplay = student.course.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                const deptName = student?.department
+                    ? student.department.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+                    : 'N/A';
 
-                doc.text(`Name: ${student?.name || 'N/A'}`, 20, yPos);
-                yPos += 7;
-                doc.text(`Admission Number: ${payment.studentId || student?.admissionNumber || 'N/A'}`, 20, yPos);
-                yPos += 7;
-                doc.text(`Program: ${programDisplay}`, 20, yPos);
-                if (student?.department) {
-                    yPos += 7;
-                    const deptName = student.department.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                    doc.text(`Department: ${deptName}`, 20, yPos);
-                }
+                // Student info (clean key/value table).
+                doc.autoTable({
+                    startY: y + 4,
+                    theme: 'plain',
+                    styles: { fontSize: 10, cellPadding: 1.5 },
+                    columnStyles: { 0: { fontStyle: 'bold', textColor: D.MAROON, cellWidth: 45 } },
+                    body: [
+                        ['Name', student?.name || 'N/A'],
+                        ['Admission No.', payment.studentId || student?.admissionNumber || 'N/A'],
+                        ['Program', programDisplay],
+                        ['Department', deptName],
+                    ],
+                    margin: { left: 14, right: 14 },
+                });
+                y = doc.lastAutoTable.finalY + 6;
 
-                // ========================================
-                // PAYMENT DETAILS SECTION (Table Style)
-                // ========================================
-                yPos += 15;
-                doc.setFontSize(12);
-                doc.setFont(undefined, 'bold');
-                doc.text('PAYMENT DETAILS', 20, yPos);
+                // Payment details + reference line.
+                const modes = { mpesa: 'M-Pesa Payment', bank: 'Bank Transfer', bursary: 'CDF Bursary' };
+                const modeDisplay = modes[payment.paymentMode] || payment.paymentMode || 'N/A';
+                let refLine = '';
+                if (payment.paymentMode === 'bursary' && payment.bursaryReference) refLine = `Bursary Ref: ${payment.bursaryReference}`;
+                else if (payment.paymentMode === 'mpesa' && payment.mpesaTransactionId) refLine = `M-Pesa Txn: ${payment.mpesaTransactionId}`;
+                else if (payment.paymentMode === 'bank' && payment.receiptNumber) refLine = `Bank Receipt: ${payment.receiptNumber}${payment.bankName ? ` (${payment.bankName})` : ''}`;
+                const amount = `KES ${Number(payment.amount || 0).toLocaleString()}`;
 
-                // Table header background (dark red)
-                yPos += 8;
-                doc.setFillColor(...headerColor);
-                doc.rect(20, yPos - 5, pageWidth - 40, 8, 'F');
+                doc.autoTable({
+                    startY: y,
+                    head: [['Description', 'Amount']],
+                    body: [[modeDisplay + (refLine ? `\n${refLine}` : ''), amount]],
+                    foot: [['Total Paid', amount]],
+                    theme: 'grid',
+                    styles: { fontSize: 10, cellPadding: 3 },
+                    headStyles: { fillColor: D.MAROON, textColor: 255, fontStyle: 'bold' },
+                    footStyles: { fillColor: D.CREAM, textColor: D.MAROON, fontStyle: 'bold' },
+                    columnStyles: { 1: { halign: 'right' } },
+                    margin: { left: 14, right: 14 },
+                });
+                y = doc.lastAutoTable.finalY + 14;
 
-                // Table headers (white text)
-                doc.setTextColor(255, 255, 255);
-                doc.setFontSize(10);
-                doc.setFont(undefined, 'bold');
-                doc.text('Description', 25, yPos);
-                doc.text('Amount (KES)', pageWidth - 25, yPos, { align: 'right' });
+                doc.setFontSize(9); doc.setTextColor(70, 70, 70); doc.setFont('helvetica', 'normal');
+                doc.text('This is an official payment receipt from Emurua Dikirr Technical Training Institute.', 14, y);
 
-                // Table content (black text on white background)
-                yPos += 8;
-                doc.setTextColor(0, 0, 0);
-                doc.setFontSize(10);
-                doc.setFont(undefined, 'normal');
-                
-                // Format payment mode properly
-                let paymentModeDisplay = 'N/A';
-                if (payment.paymentMode) {
-                    const modes = {
-                        'mpesa': 'M-Pesa Payment',
-                        'bank': 'Bank Transfer',
-                        'bursary': 'CDF Bursary'
-                    };
-                    paymentModeDisplay = modes[payment.paymentMode] || payment.paymentMode;
-                }
+                D.decorate(doc, { footer: 'EDTTI — Official Payment Receipt · Confidential' });
+                D.lockDocument(doc);
 
-                doc.text(paymentModeDisplay, 25, yPos);
-                doc.text(Number(payment.amount || 0).toLocaleString(), pageWidth - 25, yPos, { align: 'right' });
-
-                // Add reference details below
-                yPos += 10;
-                doc.setFontSize(9);
-                if (payment.paymentMode === 'bursary' && payment.bursaryReference) {
-                    doc.text(`Bursary Reference: ${payment.bursaryReference}`, 25, yPos);
-                    yPos += 6;
-                } else if (payment.paymentMode === 'mpesa' && payment.mpesaTransactionId) {
-                    doc.text(`M-Pesa Transaction ID: ${payment.mpesaTransactionId}`, 25, yPos);
-                    yPos += 6;
-                } else if (payment.paymentMode === 'bank' && payment.receiptNumber) {
-                    doc.text(`Bank Receipt Number: ${payment.receiptNumber}`, 25, yPos);
-                    yPos += 6;
-                    if (payment.bankName) {
-                        doc.text(`Bank: ${payment.bankName}`, 25, yPos);
-                        yPos += 6;
-                    }
-                }
-
-                // ========================================
-                // FOOTER
-                // ========================================
-                doc.setFontSize(9);
-                doc.setFont(undefined, 'normal');
-                doc.text('This is an official payment receipt from Emurua Dikirr Technical Training Institute', pageWidth / 2, pageHeight - 20, { align: 'center' });
-                doc.text(`Generated on ${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })} | Student Portal: ums.emurua-tech.ac.ke`, pageWidth / 2, pageHeight - 15, { align: 'center' });
-
-                // Save the PDF
-                const filename = `payment_receipt_${(payment.studentId || 'student').replace(/\//g, '_')}_${Date.now()}.pdf`;
+                const filename = `payment_receipt_${String(payment.studentId || 'student').replace(/\//g, '_')}_${Date.now()}.pdf`;
                 doc.save(filename);
-
                 showToast('Payment receipt generated successfully!', 'success');
             } catch (error) {
                 console.error('Error generating receipt:', error);
