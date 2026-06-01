@@ -215,6 +215,7 @@ router.get('/units', verifyToken, authorize('admin', 'registrar', 'hod', 'deputy
         const rows = await db
             .select({
                 id: schema.units.id,
+                programId: schema.units.program_id,
                 unitCode: schema.units.code,
                 unitName: schema.units.name,
                 module: schema.units.module,

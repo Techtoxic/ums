@@ -56,7 +56,7 @@ async function displayPrograms(searchTerm = '') {
                         <p style="font-size:13px">No programs found matching "${escapeHtml(searchTerm)}"</p>
                     </div>
                 ` : filtered.map(program => {
-                    const units = (_adminUnitsByProgram[program.id] || []).slice().sort((a, b) => (a.code || '').localeCompare(b.code || ''));
+                    const units = (_adminUnitsByProgram[program.id] || []).slice().sort((a, b) => (a.unitCode || '').localeCompare(b.unitCode || ''));
                     return `
                     <div class="adm-card"><div class="adm-card__body">
                         <div class="flex items-start justify-between gap-2" style="margin-bottom:6px">
@@ -73,8 +73,8 @@ async function displayPrograms(searchTerm = '') {
                             <div style="margin-top:10px;max-height:176px;overflow-y:auto;display:flex;flex-direction:column;gap:4px">
                                 ${units.length === 0 ? `<p class="kpi__note">No units recorded</p>` : units.map(u => `
                                     <div class="flex items-center justify-between gap-2" style="background:var(--bg-muted);border-radius:var(--radius);padding:6px 10px">
-                                        <span style="font-family:monospace;color:var(--text-muted);flex-shrink:0;font-size:12px">${escapeHtml(u.code || '')}</span>
-                                        <span style="color:var(--text-secondary);text-align:right;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(u.name || '')}</span>
+                                        <span style="font-family:monospace;color:var(--text-muted);flex-shrink:0;font-size:12px">${escapeHtml(u.unitCode || '')}</span>
+                                        <span style="color:var(--text-secondary);text-align:right;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(u.unitName || '')}</span>
                                     </div>
                                 `).join('')}
                             </div>
