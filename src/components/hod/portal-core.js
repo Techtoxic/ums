@@ -379,8 +379,11 @@ function populateModalUnits() {
     const assignedUnitIds = assignmentsData
         .filter(a => a.unitId && a.unitId._id)
         .map(a => a.unitId._id);
-    const unassignedUnits = unitsData.filter(unit => !assignedUnitIds.includes(unit._id));
-    
+    // Exclude common units: those are allocated via the "Common Units" tab
+    // (any HOD → any trainer), not this department-scoped flow. The assign route
+    // rejects common units, so listing them here only produces errors.
+    const unassignedUnits = unitsData.filter(unit => !assignedUnitIds.includes(unit._id) && !unit.isCommon);
+
     console.log('populateModalUnits - unassignedUnits:', unassignedUnits);
     
     unitsList.innerHTML = unassignedUnits.map(unit => `
@@ -443,16 +446,29 @@ async function assignSelectedUnits() {
             })
         });
         
-        if (!response.ok) throw new Error('Failed to assign units');
-        
-        showToast('Units assigned successfully', 'success');
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+            // Surface the server's specific reason (e.g. unit/trainer out of
+            // department, or a common unit selected) instead of a generic message.
+            showToast(data.message || 'Failed to assign units', 'error');
+            return;
+        }
+
+        // The route skips units already assigned this period; report the actual count.
+        const assignedCount = Array.isArray(data.assignments) ? data.assignments.length : 0;
+        if (assignedCount > 0) {
+            showToast(`Assigned ${assignedCount} unit${assignedCount === 1 ? '' : 's'} successfully`, 'success');
+        } else {
+            showToast('No new units assigned — they may already be assigned for this period.', 'warning');
+        }
         closeAssignUnitsModal();
         await loadAssignments();
         populateCoursesDisplay();
         populateTrainersDisplay();
         populateAssignmentsDisplay();
         updateStatsDisplay();
-        
+
     } catch (error) {
         console.error('Error assigning units:', error);
         showToast('Error assigning units', 'error');

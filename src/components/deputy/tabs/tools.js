@@ -518,13 +518,15 @@ window.DeputyTabs = window.DeputyTabs || {};
                 }
                 
                 const data = await response.json();
-                const trainers = data.trainers || [];
+                // /trainers/department/:department returns a raw array (each row
+                // carries `_id`); be tolerant of a {trainers:[…]} shape too.
+                const trainers = Array.isArray(data) ? data : (data.trainers || []);
                 const trainerSelect = document.getElementById('trainerSelect');
-                
+
                 trainerSelect.innerHTML = '<option value="">Select Trainer</option>';
                 trainers.forEach(trainer => {
                     const option = document.createElement('option');
-                    option.value = trainer._id;
+                    option.value = trainer.id || trainer._id;
                     option.textContent = trainer.name;
                     trainerSelect.appendChild(option);
                 });
@@ -548,7 +550,7 @@ window.DeputyTabs = window.DeputyTabs || {};
                 trainerSelect.innerHTML = '<option value="">Select Trainer</option>';
                 trainers.forEach(trainer => {
                     const option = document.createElement('option');
-                    option.value = trainer._id;
+                    option.value = trainer.id || trainer._id;
                     option.textContent = `${trainer.name} (${trainer.department})`;
                     trainerSelect.appendChild(option);
                 });
@@ -572,7 +574,7 @@ window.DeputyTabs = window.DeputyTabs || {};
                 trainerSelect.innerHTML = '<option value="all_trainers">All Trainers</option>';
                 trainers.forEach(trainer => {
                     const option = document.createElement('option');
-                    option.value = trainer._id;
+                    option.value = trainer.id || trainer._id;
                     option.textContent = `${trainer.name} (${trainer.department})`;
                     trainerSelect.appendChild(option);
                 });

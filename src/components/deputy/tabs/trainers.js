@@ -18,7 +18,7 @@ var trainersPagination = {
     filters: { search: '', department: 'all' },
 };
 
-// Load trainers data (once) + per-trainer counts, then render page 1.
+// Load trainers data (once), then render page 1.
 async function loadTrainersData() {
     try {
         const response = await window.AUTH.fetch(`${API_BASE_URL}/trainers/all-departments`);
@@ -29,30 +29,16 @@ async function loadTrainersData() {
         const data = await response.json();
         const trainers = data.trainers || [];
 
-        // Load additional data for each trainer
-        const trainersWithData = await Promise.all(trainers.map(async (trainer) => {
-            try {
-                // Get students for this trainer
-                const studentsResponse = await window.AUTH.fetch(`${API_BASE_URL}/trainers/${trainer._id}/students`);
-                let studentCount = 0;
-                if (studentsResponse.ok) {
-                    const studentsData = await studentsResponse.json();
-                    studentCount = Object.values(studentsData.students || {}).flat().length;
-                }
-
-                // Get assignments for this trainer
-                const assignmentsResponse = await window.AUTH.fetch(`${API_BASE_URL}/trainers/${trainer._id}/assignments`);
-                let assignedUnits = 0;
-                if (assignmentsResponse.ok) {
-                    const assignmentsData = await assignmentsResponse.json();
-                    assignedUnits = assignmentsData.assignments?.length || 0;
-                }
-
-                return { ...trainer, studentCount, assignedUnits };
-            } catch (error) {
-                console.error(`Error loading data for trainer ${trainer._id}:`, error);
-                return { ...trainer, studentCount: 0, assignedUnits: 0 };
-            }
+        // The list endpoint already returns per-trainer counts (unitsAssigned /
+        // studentsAssigned), computed server-side in two grouped queries. Use
+        // them directly — no per-trainer fan-out. (The old code fetched
+        // /trainers/<id>/students + /assignments per row, which 403'd: those
+        // endpoints don't authorize the deputy role, and it read trainer._id
+        // when the endpoint returns `id`.)
+        const trainersWithData = trainers.map(trainer => ({
+            ...trainer,
+            studentCount: trainer.studentsAssigned || 0,
+            assignedUnits: trainer.unitsAssigned || 0,
         }));
 
         trainersPagination.all = trainersWithData;
