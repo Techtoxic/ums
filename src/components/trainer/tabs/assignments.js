@@ -85,20 +85,35 @@ function displayAssignments() {
     const start = (assignmentsPage - 1) * ASSIGNMENTS_PAGE_SIZE;
     const pageItems = validAssignments.slice(start, start + ASSIGNMENTS_PAGE_SIZE);
 
+    const headCell = 'text-left px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400';
     const assignmentsGrid = document.getElementById('assignmentsGrid');
-    assignmentsGrid.innerHTML = pageItems.map(createAssignmentRow).join('');
+    assignmentsGrid.innerHTML = `
+        <table class="min-w-full text-sm">
+            <thead class="border-b border-gray-200 dark:border-gray-700">
+                <tr>
+                    <th class="${headCell}">Unit Code</th>
+                    <th class="${headCell}">Unit Name</th>
+                    <th class="${headCell}">Course</th>
+                    <th class="${headCell}">Module</th>
+                    <th class="${headCell}">Status</th>
+                    <th class="${headCell}"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 dark:divide-gray-700/60">
+                ${pageItems.map(createAssignmentRow).join('')}
+            </tbody>
+        </table>`;
 
     renderListPagination('assignmentsPagination', validAssignments.length, assignmentsPage, totalPages, start, pageItems.length, 'assignmentsGoToPage');
     showAssignmentsGrid();
 }
 
-// One assignment as a list row.
+// One assignment as a table row.
 function createAssignmentRow(assignment) {
     const unitCode = assignment.unitId?.unitCode || 'N/A';
     const unitName = assignment.unitId?.unitName || 'Unknown Unit';
     const courseCode = assignment.unitId?.courseCode || assignment.courseCode || 'N/A';
     const status = assignment.status || 'active';
-    const assignedAt = assignment.createdAt ? new Date(assignment.createdAt).toLocaleDateString() : 'N/A';
     // "Module" is the unit's own module. What the DB calls "semester" = module.
     const moduleNo = assignment.unitId?.module ?? assignment.module ?? assignment.semester ?? 'N/A';
     const type = assignment.type || 'department';
@@ -109,26 +124,28 @@ function createAssignmentRow(assignment) {
         'completed': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
         'cancelled': 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
     };
+    const cell = 'px-3 py-2 align-middle text-gray-900 dark:text-gray-100';
 
     return `
-        <div class="flex items-center gap-4 py-3 px-1 hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors">
-            <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-2 flex-wrap">
-                    <span class="font-semibold text-gray-900 dark:text-white">${escapeHtml(unitCode)}</span>
-                    <span class="text-sm text-gray-600 dark:text-gray-400 truncate">${escapeHtml(unitName)}</span>
-                    ${isCommonUnit ? '<span class="px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full">Common</span>' : ''}
-                </div>
-                <div class="text-xs text-gray-500 dark:text-gray-500 mt-0.5">
-                    ${escapeHtml(formatCourseName(courseCode))} · Module ${escapeHtml(String(moduleNo))} · Assigned ${escapeHtml(assignedAt)}
-                </div>
-            </div>
-            <span class="px-2.5 py-1 rounded-full text-xs font-medium ${statusColors[status] || statusColors.active}">
-                ${escapeHtml(status.charAt(0).toUpperCase() + status.slice(1))}
-            </span>
-            <button onclick="viewUnitDetails('${escapeAttr(assignment._id)}')" class="text-primary hover:text-secondary text-sm font-medium transition-colors whitespace-nowrap">
-                <i class="ri-eye-line mr-1"></i>View
-            </button>
-        </div>
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors">
+            <td class="${cell} font-medium">
+                ${escapeHtml(unitCode)}
+                ${isCommonUnit ? '<span class="ml-1 px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full">Common</span>' : ''}
+            </td>
+            <td class="${cell} text-gray-600 dark:text-gray-400">${escapeHtml(unitName)}</td>
+            <td class="${cell}">${escapeHtml(formatCourseName(courseCode))}</td>
+            <td class="${cell}">${escapeHtml(String(moduleNo))}</td>
+            <td class="${cell}">
+                <span class="px-2.5 py-1 rounded-full text-xs font-medium ${statusColors[status] || statusColors.active}">
+                    ${escapeHtml(status.charAt(0).toUpperCase() + status.slice(1))}
+                </span>
+            </td>
+            <td class="${cell} text-right">
+                <button onclick="viewUnitDetails('${escapeAttr(assignment._id)}')" class="text-primary hover:text-secondary text-sm font-medium transition-colors whitespace-nowrap">
+                    <i class="ri-eye-line mr-1"></i>View
+                </button>
+            </td>
+        </tr>
     `;
 }
 
@@ -136,7 +153,8 @@ function createAssignmentRow(assignment) {
 function renderListPagination(containerId, total, page, totalPages, start, pageCount, goToFnName) {
     const el = document.getElementById(containerId);
     if (!el) return;
-    if (total <= 0) { el.classList.add('hidden'); el.innerHTML = ''; return; }
+    // Only show pagination when there's more than one page.
+    if (total <= 0 || totalPages <= 1) { el.classList.add('hidden'); el.innerHTML = ''; return; }
     const from = start + 1;
     const to = start + pageCount;
     const prevDisabled = page <= 1;

@@ -89,7 +89,22 @@ function displayStudents() {
     const start = (studentsPage - 1) * STUDENTS_PAGE_SIZE;
     const pageItems = filteredStudents.slice(start, start + STUDENTS_PAGE_SIZE);
 
-    studentsGrid.innerHTML = pageItems.map(createStudentRow).join('');
+    const headCell = 'text-left px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400';
+    studentsGrid.innerHTML = `
+        <table class="min-w-full text-sm">
+            <thead class="border-b border-gray-200 dark:border-gray-700">
+                <tr>
+                    <th class="${headCell}">Name</th>
+                    <th class="${headCell}">Admission No.</th>
+                    <th class="${headCell}">Course</th>
+                    <th class="${headCell}">Module</th>
+                    <th class="${headCell}">Phone Number</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 dark:divide-gray-700/60">
+                ${pageItems.map(createStudentRow).join('')}
+            </tbody>
+        </table>`;
 
     // renderListPagination is defined in tabs/assignments.js (loaded first).
     if (typeof renderListPagination === 'function') {
@@ -97,26 +112,20 @@ function displayStudents() {
     }
 }
 
-// One student as a list row.
+// One student as a table row.
 function createStudentRow(student) {
     const admissionNumber = student.admissionNumber || student.studentId || 'N/A';
     const moduleStr = student.module ? `Module ${student.module}` : 'N/A';
-    const email = student.email || 'N/A';
-    const intake = student.intake || 'N/A';
-
+    const phone = student.phoneNumber || student.phone || 'N/A';
+    const cell = 'px-3 py-2 align-middle text-gray-900 dark:text-gray-100';
     return `
-        <div class="flex items-center gap-4 py-3 px-1 hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors">
-            <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
-                <i class="ri-user-line text-primary"></i>
-            </div>
-            <div class="flex-1 min-w-0">
-                <div class="font-semibold text-gray-900 dark:text-white truncate">${escapeHtml(student.name)}</div>
-                <div class="text-xs text-gray-500 dark:text-gray-500 truncate">
-                    ${escapeHtml(admissionNumber)} · ${escapeHtml(formatCourseName(student.course))} · ${escapeHtml(moduleStr)} · Intake: ${escapeHtml(intake)}
-                </div>
-            </div>
-            <div class="hidden sm:block text-xs text-gray-500 dark:text-gray-400 truncate max-w-[180px]">${escapeHtml(email)}</div>
-        </div>
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors">
+            <td class="${cell} font-medium">${escapeHtml(student.name)}</td>
+            <td class="${cell} text-gray-600 dark:text-gray-400">${escapeHtml(admissionNumber)}</td>
+            <td class="${cell}">${escapeHtml(formatCourseName(student.course))}</td>
+            <td class="${cell}">${escapeHtml(moduleStr)}</td>
+            <td class="${cell} text-gray-600 dark:text-gray-400">${escapeHtml(phone)}</td>
+        </tr>
     `;
 }
 

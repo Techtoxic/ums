@@ -20,13 +20,11 @@
                 </div>
 
                 <div class="card__body">
-                    <!-- Students List -->
-                    <div id="studentsGrid" class="flex flex-col divide-y divide-gray-200 dark:divide-gray-700">
-                        <!-- Student rows will be populated here -->
-                    </div>
+                    <!-- Students Table (JS injects a full <table> here) -->
+                    <div id="studentsGrid" class="overflow-x-auto"></div>
 
-                    <!-- Pagination -->
-                    <div id="studentsPagination" class="hidden items-center justify-between gap-3 pt-4 mt-3 border-t border-gray-200 dark:border-gray-700 text-sm"></div>
+                    <!-- Pagination (bottom; hidden for a single page) -->
+                    <div id="studentsPagination" class="hidden flex items-center justify-between gap-3 pt-4 mt-3 border-t border-gray-200 dark:border-gray-700 text-sm"></div>
 
                     <!-- Students Empty State -->
                     <div id="studentsEmptyState" class="text-center py-12 hidden">

@@ -22,13 +22,11 @@
                         <p class="mt-2 text-gray-600 dark:text-gray-400">Loading assignments...</p>
                     </div>
 
-                    <!-- Assignments List -->
-                    <div id="assignmentsGrid" class="flex flex-col divide-y divide-gray-200 dark:divide-gray-700 hidden">
-                        <!-- Assignment rows will be populated here -->
-                    </div>
+                    <!-- Assignments Table (JS injects a full <table> here) -->
+                    <div id="assignmentsGrid" class="overflow-x-auto hidden"></div>
 
-                    <!-- Pagination -->
-                    <div id="assignmentsPagination" class="hidden items-center justify-between gap-3 pt-4 mt-3 border-t border-gray-200 dark:border-gray-700 text-sm"></div>
+                    <!-- Pagination (bottom; hidden for a single page) -->
+                    <div id="assignmentsPagination" class="hidden flex items-center justify-between gap-3 pt-4 mt-3 border-t border-gray-200 dark:border-gray-700 text-sm"></div>
 
                     <!-- Empty State -->
                     <div id="emptyState" class="text-center py-12 hidden">
