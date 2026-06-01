@@ -54,13 +54,6 @@ function formatCurrency(amount) {
         : 'N/A';
 }
 
-// ---- generateFeesStatement (topbar button, verbatim) ----
-// Generate fees statement function (placeholder)
-function generateFeesStatement() {
-    showToast('Generating fees statement...', 'info');
-    // Implementation would go here
-}
-
 // ---- showNotification (verbatim) ----
 // Show notification toast
 function showNotification(message, type = 'info') {
@@ -210,7 +203,6 @@ function getFinanceUserData() {
 window.openSidebar = openSidebar;
 window.closeSidebar = closeSidebar;
 window.toggleDarkMode = toggleDarkMode;
-window.generateFeesStatement = generateFeesStatement;
 
 // Fetch + show the current academic year in the topbar chip (best-effort).
 async function loadAcademicYearChip() {

@@ -271,43 +271,48 @@ async function showStudentPaymentReceipts(data) {
 function showPaymentSelectionModal(payments, student) {
     const modal = document.createElement('div');
     modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
+    // Inline colors force a white card + dark text regardless of dark mode
+    // (the global dark theme was tinting the card). Hover handled inline too.
     modal.innerHTML = `
-        <div class="bg-white rounded-lg max-w-2xl w-full max-h-[600px] overflow-hidden flex flex-col">
-            <div class="p-4 border-b">
-                <h3 class="text-lg font-semibold">All Payment Receipts</h3>
-                <p class="text-sm text-gray-600">Student: ${escapeHtml(student.name)} | Total Payments: ${payments.length}</p>
+        <div class="rounded-lg max-w-2xl w-full max-h-[600px] overflow-hidden flex flex-col" style="background:#ffffff;color:#111827">
+            <div class="p-4" style="border-bottom:1px solid #e5e7eb">
+                <h3 class="text-lg font-semibold" style="color:#111827">All Payment Receipts</h3>
+                <p class="text-sm" style="color:#4b5563">Student: ${escapeHtml(student.name)} | Total Payments: ${payments.length}</p>
             </div>
             <div class="p-4 overflow-y-auto flex-1">
                 <div class="space-y-2">
                     ${payments.map((payment, index) => `
-                        <button class="w-full text-left p-3 border rounded hover:bg-gray-50 payment-receipt-btn transition-colors" 
+                        <button class="w-full text-left p-3 rounded payment-receipt-btn transition-colors"
+                                style="border:1px solid #e5e7eb;background:#ffffff;color:#111827"
+                                onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='#ffffff'"
                                 data-payment='${escapeAttr(JSON.stringify(payment))}'>
                             <div class="flex justify-between items-start">
                                 <div class="flex-1">
                                     <div class="flex items-center gap-2 mb-1">
-                                        <span class="font-medium text-gray-700">#${payments.length - index}</span>
-                                        <span class="text-sm text-gray-500">Date: ${payment.paymentDate ? new Date(payment.paymentDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A'}</span>
+                                        <span class="font-medium" style="color:#374151">#${payments.length - index}</span>
+                                        <span class="text-sm" style="color:#6b7280">Date: ${payment.paymentDate ? new Date(payment.paymentDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A'}</span>
                                     </div>
-                                    <div class="text-sm text-gray-600">
+                                    <div class="text-sm" style="color:#4b5563">
                                         Mode: ${escapeHtml(formatPaymentModeForDisplay(payment.paymentMode))}
                                         ${payment.reference ? ` | Ref: ${escapeHtml(payment.reference)}` : ''}
                                     </div>
                                 </div>
                                 <div class="text-right">
-                                    <div class="font-semibold text-green-600">KES ${Number(payment.amount || 0).toLocaleString()}</div>
-                                    <span class="text-xs text-gray-500">Click to view</span>
+                                    <div class="font-semibold" style="color:#16a34a">KES ${Number(payment.amount || 0).toLocaleString()}</div>
+                                    <span class="text-xs" style="color:#6b7280">Click to view</span>
                                 </div>
                             </div>
                         </button>
                     `).join('')}
                 </div>
             </div>
-            <div class="p-4 border-t bg-gray-50">
+            <div class="p-4" style="border-top:1px solid #e5e7eb;background:#f9fafb">
                 <div class="flex justify-between items-center mb-3">
-                    <span class="font-medium text-gray-700">Total Paid:</span>
-                    <span class="font-bold text-lg text-green-600">KES ${payments.reduce((sum, p) => sum + Number(p.amount || 0), 0).toLocaleString()}</span>
+                    <span class="font-medium" style="color:#374151">Total Paid:</span>
+                    <span class="font-bold text-lg" style="color:#16a34a">KES ${payments.reduce((sum, p) => sum + Number(p.amount || 0), 0).toLocaleString()}</span>
                 </div>
-                <button class="w-full px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition-colors" 
+                <button class="w-full px-4 py-2 rounded transition-colors" style="background:#d1d5db;color:#374151"
+                        onmouseover="this.style.background='#9ca3af'" onmouseout="this.style.background='#d1d5db'"
                         onclick="this.closest('.fixed').remove()">Close</button>
             </div>
         </div>

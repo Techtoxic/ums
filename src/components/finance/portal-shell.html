@@ -122,12 +122,9 @@
                 <div class="dashboard-topbar__title">Finance Dashboard</div>
                 <span id="academic-year-chip" style="display:none;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;background:var(--bg-muted,rgba(127,127,127,.12));color:var(--text-secondary,#475569);border:1px solid var(--border-default,rgba(127,127,127,.2));white-space:nowrap"><i class="ri-calendar-line"></i> <span class="ay-value"></span></span>
                 <div class="dashboard-topbar__actions">
-                    <button class="btn btn--primary" onclick="generateFeesStatement()">
-                        <i class="ri-file-list-line"></i> Statement
-                    </button>
-                    <button class="btn btn--secondary">
-                        <i class="ri-download-line"></i> Export
-                    </button>
+                    <!-- "Statement" + "Export" topbar buttons removed: they were a
+                         no-op placeholder and an unwired button. Use the Reports tab
+                         for the real per-report PDF/Excel exports. -->
                     <button data-theme-toggle class="theme-toggle" aria-label="Toggle dark mode">
                         <i class="ri-sun-line theme-icon-light"></i>
                         <i class="ri-moon-line theme-icon-dark"></i>
