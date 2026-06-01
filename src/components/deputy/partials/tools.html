@@ -65,6 +65,38 @@
     </div>
 </div>
 
-<!-- Tools List — JS (tabs/tools.js displayToolsOfTrade) renders one section per
-     department into this container, each with its own responsive card grid. -->
-<div id="toolsContainer" class="flex flex-col gap-6"></div>
+<!-- Filters -->
+<div class="adm-card" style="margin-bottom:16px"><div class="adm-card__body" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+    <div>
+        <label class="adm-label">Tool Type</label>
+        <select id="toolsFilterType" class="adm-select">
+            <option value="">All Types</option>
+            <option value="course_outline">Course Outline</option>
+            <option value="learning_plan">Learning Plan</option>
+            <option value="record_of_work">Record of Work</option>
+            <option value="session_plan">Session Plan</option>
+            <option value="exam">Exam</option>
+            <option value="tvet_license">TVET License</option>
+        </select>
+    </div>
+    <div>
+        <label class="adm-label">Department</label>
+        <select id="toolsFilterDept" class="adm-select"><option value="">All Departments</option></select>
+    </div>
+    <div>
+        <label class="adm-label">Status</label>
+        <select id="toolsFilterStatus" class="adm-select">
+            <option value="">All Statuses</option>
+            <option value="submitted">Submitted</option>
+            <option value="reviewed">Reviewed</option>
+            <option value="rejected">Rejected</option>
+        </select>
+    </div>
+    <div style="flex:1"></div>
+    <button id="toolsClearFilters" class="adm-btn adm-btn--ghost adm-btn--sm"><i class="ri-filter-off-line"></i> Clear</button>
+</div></div>
+
+<!-- Tools List — JS (tabs/tools.js displayToolsOfTrade) renders a paginated table here. -->
+<div id="toolsContainer"></div>
+<!-- Pagination (hidden for a single page) -->
+<div id="toolsPagination" class="hidden" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:14px;margin-top:8px;border-top:1px solid var(--border,#e5e7eb);font-size:13px"></div>

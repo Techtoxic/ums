@@ -30,30 +30,44 @@ window.DeputyTabs = window.DeputyTabs || {};
             if (!toolsContainer) return;
 
             // Show loading state
-            toolsContainer.innerHTML = '<div class="col-span-full text-center py-4"><i class="ri-loader-4-line animate-spin text-2xl text-primary"></i></div>';
+            toolsContainer.innerHTML = '<div class="text-center py-6"><i class="ri-loader-4-line animate-spin text-2xl text-primary"></i></div>';
 
             try {
                 const response = await window.AUTH.fetch(`${API_BASE_URL}/tools`);
                 if (!response.ok) {
                     throw new Error(`Failed to fetch tools: ${response.status} ${response.statusText}`);
                 }
-                
+
                 const tools = await response.json();
                 if (!Array.isArray(tools)) {
                     throw new Error('Invalid response format: expected an array of tools');
                 }
-                
+
                 toolsData = tools; // Store tools data globally
-                displayToolsOfTrade(tools);
+                toolsPage = 1;
+                displayToolsOfTrade();
             } catch (error) {
                 console.error('Error fetching tools:', error);
                 toolsContainer.innerHTML = `
-                    <div class="col-span-full text-center py-4 text-danger">
+                    <div class="text-center py-6 text-danger">
                         <i class="ri-error-warning-line text-2xl mb-2"></i>
                         <p>Failed to load tools. Please try again later.</p>
                     </div>`;
                 showToast(error.message, 'error');
             }
+        }
+
+        // Filter + pagination state for the tools list.
+        let toolsFilters = { type: '', department: '', status: '' };
+        let toolsPage = 1;
+        const TOOLS_PAGE_SIZE = 12;
+
+        function getFilteredTools() {
+            return (toolsData || []).filter(t =>
+                (!toolsFilters.type || t.toolType === toolsFilters.type) &&
+                (!toolsFilters.department || t.trainerDepartment === toolsFilters.department) &&
+                (!toolsFilters.status || t.status === toolsFilters.status)
+            );
         }
 
         // Human-readable department label from a snake_case code (Rule 7: prefer
@@ -76,66 +90,88 @@ window.DeputyTabs = window.DeputyTabs || {};
             'tvet_license': 'TVET License'
         };
 
-        // One tool card (department is shown by the section header, not repeated here).
-        function toolCardHtml(tool) {
+        // One tool as a table row (all actions inline).
+        function toolRowHtml(tool) {
             const statusClass = getStatusClass(tool.status);
             const trainerName = tool.trainerName || 'Unknown Trainer';
             const submittedAt = tool.createdAt ? new Date(tool.createdAt).toLocaleDateString() : 'N/A';
+            const cell = 'padding:10px 12px;vertical-align:middle';
             return `
-                <div class="adm-card"><div class="adm-card__body">
-                    <div class="flex items-center justify-between gap-2" style="margin-bottom:8px">
-                        <h4 class="td-strong" style="font-size:14px">${escapeHtml(TOOL_TYPE_NAMES[tool.toolType] || tool.toolType)}</h4>
-                        <span class="pill ${statusClass}">${escapeHtml((tool.status || '').replace('_', ' ').toUpperCase())}</span>
-                    </div>
-                    <p style="color:var(--text-secondary);font-size:13px;margin-bottom:2px">${escapeHtml(trainerName)}</p>
-                    <p class="kpi__note" style="margin-bottom:12px">Submitted: ${escapeHtml(submittedAt)}</p>
-                    <div class="flex items-center" style="gap:6px">
+                <tr style="border-top:1px solid var(--border,#e5e7eb)">
+                    <td style="${cell};font-weight:600">${escapeHtml(TOOL_TYPE_NAMES[tool.toolType] || tool.toolType)}</td>
+                    <td style="${cell}">${escapeHtml(trainerName)}</td>
+                    <td style="${cell};color:var(--text-secondary)">${escapeHtml(toolDeptLabel(tool.trainerDepartment))}</td>
+                    <td style="${cell};color:var(--text-secondary)">${escapeHtml(submittedAt)}</td>
+                    <td style="${cell}"><span class="pill ${statusClass}">${escapeHtml((tool.status || '').replace('_', ' ').toUpperCase())}</span></td>
+                    <td style="${cell};text-align:right;white-space:nowrap">
                         <button onclick="reviewTool('${escapeAttr(tool.id)}')" class="adm-btn adm-btn--outline adm-btn--sm"><i class="ri-eye-line"></i> Review</button>
-                        <button onclick="downloadTool('${escapeAttr(tool.id)}')" class="adm-btn adm-btn--ghost adm-btn--sm"><i class="ri-download-line"></i></button>
-                        <button onclick="deleteToolDeputy('${escapeAttr(tool.id)}')" class="adm-btn adm-btn--ghost adm-btn--sm" style="color:var(--error,#dc2626)"><i class="ri-delete-bin-line"></i></button>
-                    </div>
-                </div></div>`;
+                        <button onclick="downloadTool('${escapeAttr(tool.id)}')" class="adm-btn adm-btn--ghost adm-btn--sm" title="Download"><i class="ri-download-line"></i></button>
+                        <button onclick="deleteToolDeputy('${escapeAttr(tool.id)}')" class="adm-btn adm-btn--ghost adm-btn--sm" title="Delete" style="color:var(--error,#dc2626)"><i class="ri-delete-bin-line"></i></button>
+                    </td>
+                </tr>`;
         }
 
-        function displayToolsOfTrade(tools) {
+        // Render the filtered + paginated tools table.
+        function displayToolsOfTrade() {
             const toolsContainer = document.getElementById('toolsContainer');
             if (!toolsContainer) return;
-            toolsContainer.innerHTML = '';
 
-            if (!tools || tools.length === 0) {
+            const filtered = getFilteredTools();
+            const pager = document.getElementById('toolsPagination');
+
+            if (!filtered.length) {
                 toolsContainer.innerHTML = `
                     <div class="adm-card"><div class="adm-card__body" style="text-align:center;padding:32px 0;color:var(--text-muted)">
                         <i class="ri-tools-line" style="font-size:32px;display:block;margin-bottom:8px;color:var(--text-tertiary)"></i>
-                        <p style="font-size:13px">No tools of trade submitted yet</p>
+                        <p style="font-size:13px">${(toolsData && toolsData.length) ? 'No tools match the selected filters' : 'No tools of trade submitted yet'}</p>
                     </div></div>`;
+                if (pager) pager.classList.add('hidden');
                 return;
             }
 
-            // Group tools by the trainer's department code.
-            const groups = new Map();
-            tools.forEach(tool => {
-                const key = tool.trainerDepartment || '';
-                if (!groups.has(key)) groups.set(key, []);
-                groups.get(key).push(tool);
-            });
+            const totalPages = Math.max(1, Math.ceil(filtered.length / TOOLS_PAGE_SIZE));
+            if (toolsPage > totalPages) toolsPage = totalPages;
+            if (toolsPage < 1) toolsPage = 1;
+            const start = (toolsPage - 1) * TOOLS_PAGE_SIZE;
+            const pageItems = filtered.slice(start, start + TOOLS_PAGE_SIZE);
 
-            // Render one section per department, alphabetical by display label.
-            const sortedKeys = [...groups.keys()].sort((a, b) => toolDeptLabel(a).localeCompare(toolDeptLabel(b)));
-            const sections = sortedKeys.map(key => {
-                const items = groups.get(key);
-                const cards = items.map(toolCardHtml).join('');
-                return `
-                    <section>
-                        <div class="flex items-center gap-2" style="margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border,#e5e7eb)">
-                            <i class="ri-building-2-line" style="color:var(--primary,#7f1d1d)"></i>
-                            <h3 class="td-strong" style="font-size:15px;margin:0">${escapeHtml(toolDeptLabel(key))}</h3>
-                            <span class="pill pill--neutral">${items.length}</span>
-                        </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">${cards}</div>
-                    </section>`;
-            }).join('');
-            toolsContainer.innerHTML = sections;
+            const head = 'text-align:left;padding:10px 12px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted)';
+            toolsContainer.innerHTML = `
+                <div class="adm-card"><div class="adm-card__body" style="padding:0;overflow-x:auto">
+                    <table style="width:100%;border-collapse:collapse;font-size:14px">
+                        <thead><tr>
+                            <th style="${head}">Tool Type</th>
+                            <th style="${head}">Trainer</th>
+                            <th style="${head}">Department</th>
+                            <th style="${head}">Submitted</th>
+                            <th style="${head}">Status</th>
+                            <th style="${head};text-align:right">Actions</th>
+                        </tr></thead>
+                        <tbody>${pageItems.map(toolRowHtml).join('')}</tbody>
+                    </table>
+                </div></div>`;
+
+            renderToolsPagination(filtered.length, totalPages, start, pageItems.length);
         }
+
+        function renderToolsPagination(total, totalPages, start, pageCount) {
+            const el = document.getElementById('toolsPagination');
+            if (!el) return;
+            if (totalPages <= 1) { el.classList.add('hidden'); el.innerHTML = ''; return; }
+            const prevDis = toolsPage <= 1, nextDis = toolsPage >= totalPages;
+            const btn = (label, dis, target) =>
+                `<button ${dis ? 'disabled' : ''} onclick="toolsGoToPage(${target})" class="adm-btn adm-btn--ghost adm-btn--sm" ${dis ? 'style="opacity:.4;cursor:not-allowed"' : ''}>${label}</button>`;
+            el.innerHTML = `
+                <span style="color:var(--text-muted)">Showing ${start + 1}–${start + pageCount} of ${total}</span>
+                <div style="display:flex;align-items:center;gap:8px">
+                    ${btn('<i class="ri-arrow-left-s-line"></i> Prev', prevDis, toolsPage - 1)}
+                    <span style="color:var(--text-muted)">Page ${toolsPage} of ${totalPages}</span>
+                    ${btn('Next <i class="ri-arrow-right-s-line"></i>', nextDis, toolsPage + 1)}
+                </div>`;
+            el.classList.remove('hidden');
+        }
+        function toolsGoToPage(p) { toolsPage = p; displayToolsOfTrade(); }
+        window.toolsGoToPage = toolsGoToPage;
 
         function getStatusClass(status) {
             const statusClasses = {
@@ -594,5 +630,36 @@ window.DeputyTabs.tools = {
         if (deptSelect && window.Catalog) {
             window.Catalog.populateDepartmentSelect(deptSelect, { includeAll: true, allLabel: 'Select Department' });
         }
+
+        // Wire the list filters once (the partial persists across revisits).
+        if (window.__deputyToolsFiltersWired) return;
+        window.__deputyToolsFiltersWired = true;
+        const fType = document.getElementById('toolsFilterType');
+        const fDept = document.getElementById('toolsFilterDept');
+        const fStatus = document.getElementById('toolsFilterStatus');
+        if (fDept && window.Catalog) {
+            window.Catalog.populateDepartmentSelect(fDept, { includeAll: true, allLabel: 'All Departments' });
+        }
+        const onChange = () => {
+            toolsFilters = {
+                type: fType ? fType.value : '',
+                department: fDept ? fDept.value : '',
+                status: fStatus ? fStatus.value : '',
+            };
+            toolsPage = 1;
+            displayToolsOfTrade();
+        };
+        if (fType) fType.addEventListener('change', onChange);
+        if (fDept) fDept.addEventListener('change', onChange);
+        if (fStatus) fStatus.addEventListener('change', onChange);
+        const clearBtn = document.getElementById('toolsClearFilters');
+        if (clearBtn) clearBtn.addEventListener('click', () => {
+            if (fType) fType.value = '';
+            if (fDept) fDept.value = '';
+            if (fStatus) fStatus.value = '';
+            toolsFilters = { type: '', department: '', status: '' };
+            toolsPage = 1;
+            displayToolsOfTrade();
+        });
     }
 };
