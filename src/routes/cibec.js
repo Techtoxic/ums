@@ -86,7 +86,10 @@ router.get('/cibec/tree', verifyToken, authorize(...REVIEWER_ROLES), async (req,
         if (course) conds.push(eq(U.course, course));
         if (intakeYear != null) conds.push(eq(U.intake_year, intakeYear));
         if (moduleNo != null) conds.push(eq(U.module, moduleNo));
-        if (unitId) conds.push(eq(U.unit_id, unitId));
+        // '__no_unit__' is the sentinel for profile/other docs that carry no unit
+        // (KCPE results, profile photos, …) — match unit_id IS NULL, not equality.
+        if (unitId === '__no_unit__') conds.push(isNull(U.unit_id));
+        else if (unitId) conds.push(eq(U.unit_id, unitId));
         if (admissionNumber) conds.push(eq(U.admission_number, admissionNumber));
         const where = and(...conds);
         const cnt = sql`count(*)::int`;
@@ -131,10 +134,17 @@ router.get('/cibec/tree', verifyToken, authorize(...REVIEWER_ROLES), async (req,
         } else if (level === 'unit') {
             const rows = await db.select({ key: U.unit_id, code: U.unit_code, name: U.unit_name, count: cnt })
                 .from(U).where(where).groupBy(U.unit_id, U.unit_code, U.unit_name).orderBy(asc(U.unit_code));
-            nodes = rows.map(r => ({
-                key: r.key, label: `${r.code || '—'}${r.name ? ' · ' + r.name : ''}`,
-                count: r.count, hasChildren: true, level: 'unit', unitId: r.key, unitCode: r.code, unitName: r.name,
-            }));
+            nodes = rows.map(r => {
+                // Docs with no unit (KCPE results, profile photos, …) group under a
+                // single "Profile / Other Documents" node instead of a blank "—".
+                const noUnit = !r.key;
+                return {
+                    key: noUnit ? '__no_unit__' : r.key,
+                    label: noUnit ? 'Profile / Other Documents' : `${r.code ? r.code + ' · ' : ''}${r.name || '—'}`,
+                    count: r.count, hasChildren: true, level: 'unit',
+                    unitId: noUnit ? '__no_unit__' : r.key, unitCode: r.code, unitName: r.name,
+                };
+            });
         } else if (level === 'student') {
             const rows = await db.select({ key: U.admission_number, name: U.student_name, count: cnt })
                 .from(U).where(where).groupBy(U.admission_number, U.student_name).orderBy(asc(U.admission_number));

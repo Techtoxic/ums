@@ -425,12 +425,21 @@ function setupEventListeners() {
     // Clear filters
     document.getElementById('clear-filters-btn').addEventListener('click', clearFilters);
     
-    // Search on enter
-    document.getElementById('search-student').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            applyFilters();
-        }
+    // Real-time filters: the dropdowns apply immediately on change; the search
+    // box applies as you type (debounced) and on Enter.
+    ['filter-department', 'filter-course-level', 'filter-upload-type', 'filter-year'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('change', applyFilters);
     });
+    let cbetSearchDebounce;
+    const searchEl = document.getElementById('search-student');
+    if (searchEl) {
+        searchEl.addEventListener('input', () => {
+            clearTimeout(cbetSearchDebounce);
+            cbetSearchDebounce = setTimeout(applyFilters, 300);
+        });
+        searchEl.addEventListener('keypress', (e) => { if (e.key === 'Enter') { clearTimeout(cbetSearchDebounce); applyFilters(); } });
+    }
     
     // Pagination
     document.getElementById('prev-page').addEventListener('click', () => {
