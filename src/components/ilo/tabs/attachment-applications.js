@@ -109,7 +109,12 @@ function printAttachmentList() {
                 '<style>table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8px;text-align:left}th{background-color:#f2f2f2}</style>' +
             '</head>' +
             '<body>' +
-                '<h1>Attachment Applications Report</h1>' +
+                '<div style="text-align:center;border-bottom:3px solid #7A0C0C;padding-bottom:10px;margin-bottom:16px">' +
+                    '<img src="/public/img/logo.png" alt="EDTTI" style="height:60px;object-fit:contain"><br>' +
+                    '<div style="font-size:17px;font-weight:bold;color:#7A0C0C">EMURUA DIKIRR TECHNICAL TRAINING INSTITUTE</div>' +
+                    '<div style="font-size:11px;color:#555">P.O. Box 49, Emurua Dikirr - 20500<br>Tel: +254 729 123 456 | Email: info@emurua-tech.ac.ke<br>Website: www.emurua-tech.ac.ke | ISO 9001:2015 Certified Institution</div>' +
+                '</div>' +
+                '<h1 style="text-align:center;font-size:16px">Attachment Applications Report</h1>' +
                 '<table>' +
                     '<thead>' +
                         '<tr>' +

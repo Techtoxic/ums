@@ -202,18 +202,29 @@ class StudentExporter {
         if (_registrarLogoDataUrl) {
             try { doc.addImage(_registrarLogoDataUrl, 'PNG', 14, 6, 22, 19); } catch (e) { /* ignore */ }
         }
-        doc.setFontSize(16);
+        doc.setTextColor(122, 12, 12);
+        doc.setFontSize(15);
         doc.setFont(undefined, 'bold');
-        doc.text('EMURUA DIKIRR TECHNICAL TRAINING INSTITUTE', pageWidth / 2, 14, { align: 'center' });
-        doc.setFontSize(11);
+        doc.text('EMURUA DIKIRR TECHNICAL TRAINING INSTITUTE', pageWidth / 2, 13, { align: 'center' });
+        // Global contact / ISO header block (consistent across all PDFs).
+        doc.setTextColor(90, 90, 90);
+        doc.setFontSize(8);
         doc.setFont(undefined, 'normal');
-        doc.text('Registrar — Student Records Export', pageWidth / 2, 21, { align: 'center' });
+        doc.text('P.O. Box 49, Emurua Dikirr - 20500', pageWidth / 2, 18, { align: 'center' });
+        doc.text('Tel: +254 729 123 456   |   Email: info@emurua-tech.ac.ke', pageWidth / 2, 22, { align: 'center' });
+        doc.text('Website: www.emurua-tech.ac.ke   |   ISO 9001:2015 Certified Institution', pageWidth / 2, 26, { align: 'center' });
+        doc.setTextColor(122, 12, 12);
+        doc.setFontSize(11);
+        doc.setFont(undefined, 'bold');
+        doc.text('STUDENT RECORDS EXPORT', pageWidth / 2, 32, { align: 'center' });
 
+        doc.setTextColor(70, 70, 70);
         doc.setFontSize(9);
-        doc.text(`Generated on: ${new Date().toLocaleString('en-GB')}`, 14, 30);
-        doc.text(`Total Records: ${data.length}`, 14, 35);
+        doc.setFont(undefined, 'normal');
+        doc.text(`Generated on: ${new Date().toLocaleString('en-GB')}`, 14, 39);
+        doc.text(`Total Records: ${data.length}`, 14, 44);
 
-        let yPosition = 40;
+        let yPosition = 49;
         if (filters && Object.keys(filters).length > 0) {
             doc.text('Filters Applied:', 14, yPosition);
             yPosition += 5;
@@ -244,13 +255,19 @@ class StudentExporter {
         const totalPages = doc.internal.getNumberOfPages();
         for (let i = 1; i <= totalPages; i++) {
             doc.setPage(i);
-            // Diagonal "OFFICIAL · EDTTI" watermark — light gray, large font.
-            doc.setTextColor(225, 215, 195);
+            // Diagonal "OFFICIAL · EDTTI" watermark — real alpha when available
+            // (matches the shared EDTTIDocs opacity), pale tint fallback.
+            const hasGState = typeof doc.GState === 'function';
+            if (hasGState) {
+                try { doc.setGState(new doc.GState({ opacity: 0.07 })); } catch (e) { /* */ }
+                doc.setTextColor(122, 12, 12);
+            } else {
+                doc.setTextColor(238, 232, 220);
+            }
             doc.setFontSize(60);
             doc.setFont(undefined, 'bold');
-            doc.text('OFFICIAL · EDTTI', pageWidth / 2, pageHeight / 2, {
-                align: 'center', angle: 30,
-            });
+            doc.text('OFFICIAL · EDTTI', pageWidth / 2, pageHeight / 2, { align: 'center', angle: 30 });
+            if (hasGState) { try { doc.setGState(new doc.GState({ opacity: 1 })); } catch (e) { /* */ } }
             // Footer.
             doc.setTextColor(80);
             doc.setFont(undefined, 'normal');

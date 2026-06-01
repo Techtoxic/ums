@@ -234,9 +234,12 @@ function printReceipt() {
         <head>
             <title>Payment Receipt</title>
             <style>
-                body { font-family: Arial, sans-serif; margin: 20px; }
-                .receipt { max-width: 400px; margin: 0 auto; }
-                .header { text-align: center; margin-bottom: 20px; }
+                body { font-family: Arial, sans-serif; margin: 20px; color: #000; }
+                .receipt { max-width: 460px; margin: 0 auto; }
+                .edtti-head { text-align: center; border-bottom: 3px solid #7A0C0C; padding-bottom: 10px; margin-bottom: 16px; }
+                .edtti-head img { height: 60px; object-fit: contain; }
+                .edtti-head .name { font-size: 16px; font-weight: bold; color: #7A0C0C; }
+                .edtti-head .meta { font-size: 11px; color: #555; }
                 .details { margin: 10px 0; }
                 .row { display: flex; justify-content: space-between; margin: 5px 0; }
                 .amount { font-size: 18px; font-weight: bold; color: #059669; }
@@ -244,6 +247,11 @@ function printReceipt() {
         </head>
         <body>
             <div class="receipt">
+                <div class="edtti-head">
+                    <img src="/public/img/logo.png" alt="EDTTI"><br>
+                    <div class="name">EMURUA DIKIRR TECHNICAL TRAINING INSTITUTE</div>
+                    <div class="meta">P.O. Box 49, Emurua Dikirr - 20500<br>Tel: +254 729 123 456 | Email: info@emurua-tech.ac.ke<br>Website: www.emurua-tech.ac.ke | ISO 9001:2015 Certified Institution</div>
+                </div>
                 ${content.innerHTML}
             </div>
         </body>
