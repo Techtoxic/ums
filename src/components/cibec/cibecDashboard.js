@@ -471,6 +471,7 @@ function setupEventListeners() {
 // the branch-param object that should be passed to its children (its own
 // ancestors + the param it contributes) so expansion accumulates naturally.
 const TREE_CHILD_LEVEL = {
+    academicYear: 'course',
     course: 'intake',
     intake: 'module',
     module: 'unit',
@@ -478,6 +479,7 @@ const TREE_CHILD_LEVEL = {
     student: 'slot'
 };
 const TREE_ICONS = {
+    academicYear: 'ri-calendar-2-line',
     course: 'ri-graduation-cap-line',
     intake: 'ri-calendar-line',
     module: 'ri-stack-line',
@@ -485,19 +487,27 @@ const TREE_ICONS = {
     student: 'ri-user-line',
     slot: 'ri-file-line'
 };
+const TREE_TITLES = {
+    academicYear: 'Academic Year',
+    course: 'Course',
+    intake: 'Intake',
+    module: 'Module',
+    unit: 'Unit',
+    student: 'Student',
+    slot: 'Documents'
+};
 
-// Given a node and the branch params used to FETCH it, compute the branch
-// params to fetch ITS children (accumulate the param this node contributes).
-function childBranchParams(node, parentParams) {
-    const params = Object.assign({}, parentParams);
+// The branch param a node contributes to its children's fetch.
+function nodeBranchParam(node) {
     switch (node.level) {
-        case 'course':  params.course = node.key; break;
-        case 'intake':  params.intakeYear = node.intakeYear; break;
-        case 'module':  params.module = node.key; break;
-        case 'unit':    params.unitId = node.unitId; break;
-        case 'student': params.admissionNumber = node.admissionNumber; break;
+        case 'academicYear': return { academicYear: node.academicYear };
+        case 'course':       return { course: node.key };
+        case 'intake':       return { intakeYear: node.intakeYear };
+        case 'module':       return { module: node.key };
+        case 'unit':         return { unitId: node.unitId };
+        case 'student':      return { admissionNumber: node.admissionNumber };
+        default:             return {};
     }
-    return params;
 }
 
 // Fetch children at a given level with accumulated branch params.
@@ -515,143 +525,113 @@ async function loadTreeChildren(level, branchParams) {
     return data.nodes || [];
 }
 
-// Load the root (level=course) into #cbet-tree.
+// ── Miller-columns evidence browser ─────────────────────────────────────────
+// Each level is a column; selecting an item opens the next level's column to the
+// right (and discards deeper ones). Spine: academicYear → course → intake →
+// module → unit → student → slot (documents). One state entry per visible column.
+let cbetCols = []; // [{ level, params, nodes, selectedKey, loading? }]
+
+// Entry point (kept name for the init + Reload button): reset to the root column.
 async function loadTreeRoot() {
-    const root = document.getElementById('cbet-tree');
-    if (!root) return;
-    root.innerHTML = `<div class="flex items-center text-gray-500 dark:text-gray-400 px-2 py-3">
-        <i class="ri-loader-4-line animate-spin mr-2"></i>Loading…</div>`;
+    cbetCols = [];
+    const container = document.getElementById('cbet-columns');
+    if (container) container.innerHTML = `<div class="flex items-center text-gray-500 dark:text-gray-400 px-2 py-6"><i class="ri-loader-4-line animate-spin mr-2"></i>Loading…</div>`;
     try {
-        const nodes = await loadTreeChildren('course', {});
-        root.innerHTML = '';
-        if (nodes.length === 0) {
-            root.innerHTML = `<p class="text-gray-500 dark:text-gray-400 px-2 py-3">No courses found.</p>`;
-            return;
-        }
-        nodes.forEach(n => root.appendChild(renderTreeNode(n, {})));
+        const nodes = await loadTreeChildren('academicYear', {});
+        cbetCols = [{ level: 'academicYear', params: {}, nodes, selectedKey: null }];
+        renderCbetColumns();
     } catch (e) {
-        console.error('Error loading tree root:', e);
-        root.innerHTML = `<p class="text-danger px-2 py-3">Failed to load tree.</p>`;
-        showToast('Failed to load tree', 'error');
+        console.error('Error loading evidence browser:', e);
+        if (container) container.innerHTML = `<p class="text-danger px-2 py-6">Failed to load.</p>`;
+        showToast('Failed to load evidence browser', 'error');
     }
 }
 
-// Build a single tree-node row (and its lazy child container). `fetchParams`
-// are the branch params that were used to fetch THIS node (i.e. its parent's
-// child-params); we keep them so we can compute this node's own child params.
-function renderTreeNode(node, fetchParams, depth = 0) {
-    const wrap = document.createElement('div');
+// Render every column from state.
+function renderCbetColumns() {
+    const container = document.getElementById('cbet-columns');
+    if (!container) return;
+    container.innerHTML = '';
+    cbetCols.forEach((col, colIndex) => {
+        const colEl = document.createElement('div');
+        colEl.className = 'flex-shrink-0 w-60 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden flex flex-col';
+        colEl.style.maxHeight = '360px';
+        colEl.innerHTML = `<div class="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/40 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2"><i class="${TREE_ICONS[col.level] || 'ri-folder-line'}"></i>${escapeHtml(TREE_TITLES[col.level] || col.level)}</div>`;
 
-    const isLeaf = !node.hasChildren || node.level === 'slot';
-    const icon = TREE_ICONS[node.level] || 'ri-circle-line';
-
-    const row = document.createElement('div');
-    row.className = 'tree-node-row flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer select-none';
-    row.style.paddingLeft = (8 + depth * 18) + 'px';
-
-    const chevronHtml = isLeaf
-        ? `<span class="inline-block w-4"></span>`
-        : `<i class="tree-chevron ri-arrow-right-s-line text-gray-400 dark:text-gray-500"></i>`;
-
-    const countHtml = (typeof node.count === 'number')
-        ? `<span class="ml-auto px-2 py-0.5 text-xs rounded-full bg-primary/10 text-primary dark:bg-primary/25 dark:text-red-200">${node.count}</span>`
-        : '';
-
-    row.innerHTML = `
-        ${chevronHtml}
-        <i class="${icon} text-primary dark:text-red-300"></i>
-        <span class="text-gray-800 dark:text-gray-100 truncate">${escapeHtml(node.label || node.key || '')}</span>
-        ${countHtml}
-    `;
-    wrap.appendChild(row);
-
-    // Lazy child container.
-    const childBox = document.createElement('div');
-    childBox.className = 'tree-children';
-    childBox.style.display = 'none';
-    wrap.appendChild(childBox);
-
-    if (isLeaf) {
-        // Slot leaf → open the document.
-        row.addEventListener('click', () => {
-            updateTreeDetail(node, fetchParams);
-            if (node.uploadId) {
-                viewFile(node.uploadId);
-            } else {
-                showToast('No file attached to this slot', 'warning');
-            }
-        });
-        return wrap;
-    }
-
-    let loaded = false; // cache: children fetched once
-    let open = false;
-    const chevron = row.querySelector('.tree-chevron');
-
-    row.addEventListener('click', async () => {
-        updateTreeDetail(node, fetchParams);
-        open = !open;
-        if (chevron) chevron.classList.toggle('open', open);
-        childBox.style.display = open ? 'block' : 'none';
-        if (open && !loaded) {
-            loaded = true;
-            childBox.innerHTML = `<div class="flex items-center text-gray-500 dark:text-gray-400 py-2" style="padding-left:${8 + (depth + 1) * 18}px">
-                <i class="ri-loader-4-line animate-spin mr-2"></i>Loading…</div>`;
-            try {
-                const childLevel = TREE_CHILD_LEVEL[node.level];
-                const params = childBranchParams(node, fetchParams);
-                const children = await loadTreeChildren(childLevel, params);
-                childBox.innerHTML = '';
-                if (children.length === 0) {
-                    childBox.innerHTML = `<p class="text-gray-400 dark:text-gray-500 py-1.5" style="padding-left:${8 + (depth + 1) * 18}px">— empty —</p>`;
-                } else {
-                    children.forEach(c => childBox.appendChild(renderTreeNode(c, params, depth + 1)));
-                }
-            } catch (e) {
-                loaded = false; // allow retry
-                console.error('Error expanding node:', e);
-                childBox.innerHTML = `<p class="text-danger py-1.5" style="padding-left:${8 + (depth + 1) * 18}px">Failed to load.</p>`;
-            }
+        const list = document.createElement('div');
+        list.className = 'overflow-y-auto flex-1';
+        if (col.loading) {
+            list.innerHTML = `<div class="flex items-center text-gray-500 dark:text-gray-400 text-sm px-3 py-3"><i class="ri-loader-4-line animate-spin mr-2"></i>Loading…</div>`;
+        } else if (!col.nodes.length) {
+            list.innerHTML = `<p class="text-gray-400 dark:text-gray-500 text-sm px-3 py-3">— empty —</p>`;
+        } else {
+            col.nodes.forEach(node => {
+                const isSlot = node.level === 'slot';
+                const selected = String(col.selectedKey) === String(node.key);
+                const btn = document.createElement('button');
+                btn.className = 'w-full text-left px-3 py-2 flex items-center gap-2 text-sm transition-colors ' +
+                    (selected ? 'bg-primary/10 text-primary dark:bg-primary/25 dark:text-red-200' : 'text-gray-800 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700/40');
+                const trail = isSlot
+                    ? `<i class="ri-external-link-line ml-auto text-gray-400"></i>`
+                    : (typeof node.count === 'number' ? `<span class="ml-auto px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">${node.count}</span>` : '');
+                btn.innerHTML = `<i class="${TREE_ICONS[node.level] || 'ri-circle-line'} ${selected ? '' : 'text-primary dark:text-red-300'}"></i><span class="truncate">${escapeHtml(node.label || node.key || '')}</span>${trail}`;
+                btn.addEventListener('click', () => selectCbetItem(colIndex, node.key));
+                list.appendChild(btn);
+            });
         }
+        colEl.appendChild(list);
+        container.appendChild(colEl);
     });
-
-    return wrap;
+    renderCbetBreadcrumb();
 }
 
-// Contextual breadcrumb / hint in the right detail column.
-function updateTreeDetail(node, fetchParams) {
-    const detail = document.getElementById('cbet-detail');
-    if (!detail) return;
-    const crumbs = [];
-    if (fetchParams.course) crumbs.push(`<span class="text-gray-500 dark:text-gray-400">${escapeHtml(courseName(fetchParams.course))}</span>`);
-    if (fetchParams.intakeYear) crumbs.push(`<span class="text-gray-500 dark:text-gray-400">Intake ${escapeHtml(String(fetchParams.intakeYear))}</span>`);
-    if (fetchParams.module) crumbs.push(`<span class="text-gray-500 dark:text-gray-400">Module ${escapeHtml(String(fetchParams.module))}</span>`);
-    if (fetchParams.unitId) crumbs.push(`<span class="text-gray-500 dark:text-gray-400">Unit</span>`);
-    if (fetchParams.admissionNumber) crumbs.push(`<span class="text-gray-500 dark:text-gray-400">${escapeHtml(String(fetchParams.admissionNumber))}</span>`);
+// Select an item: highlight it, drop deeper columns, then open the next column
+// (or the document, if it's a leaf).
+async function selectCbetItem(colIndex, key) {
+    const col = cbetCols[colIndex];
+    if (!col) return;
+    const node = col.nodes.find(n => String(n.key) === String(key));
+    if (!node) return;
 
-    const breadcrumb = crumbs.length
-        ? `<div class="flex flex-wrap items-center gap-1 text-xs mb-3">${crumbs.join('<span class="text-gray-300 dark:text-gray-600">/</span>')}</div>`
-        : '';
-
-    let body = `
-        <div class="flex items-center gap-2 mb-1">
-            <i class="${TREE_ICONS[node.level] || 'ri-circle-line'} text-primary dark:text-red-300"></i>
-            <span class="font-semibold text-gray-900 dark:text-gray-100">${escapeHtml(node.label || node.key || '')}</span>
-        </div>
-        <p class="text-xs text-gray-500 dark:text-gray-400 capitalize">${escapeHtml(node.level)}${typeof node.count === 'number' ? ' · ' + node.count + ' item' + (node.count === 1 ? '' : 's') : ''}</p>
-    `;
+    col.selectedKey = node.key;
+    cbetCols = cbetCols.slice(0, colIndex + 1); // discard deeper columns
 
     if (node.level === 'slot') {
-        body += `
-            <div class="mt-3 text-sm">
-                ${node.fileName ? `<p class="text-gray-700 dark:text-gray-300 break-all"><i class="ri-file-line mr-1"></i>${escapeHtml(node.fileName)}</p>` : ''}
-                ${node.uploadType ? `<p class="text-gray-500 dark:text-gray-400 mt-1">${escapeHtml(node.uploadType)}</p>` : ''}
-                ${node.version ? `<p class="text-amber-600 dark:text-amber-400 mt-1"><i class="ri-refresh-line mr-1"></i>v${escapeHtml(String(node.version))}</p>` : ''}
-                ${node.uploadId ? `<button onclick="viewFile('${escapeAttr(node.uploadId)}')" class="mt-3 px-4 py-2 bg-primary hover:bg-secondary text-white rounded-lg text-sm font-medium transition-colors"><i class="ri-eye-line mr-1"></i>Open document</button>` : ''}
-            </div>`;
+        renderCbetColumns();
+        if (node.uploadId) viewFile(node.uploadId);
+        else showToast('No file attached to this document', 'warning');
+        return;
     }
 
-    detail.innerHTML = breadcrumb + body;
+    const childLevel = TREE_CHILD_LEVEL[node.level];
+    const childParams = Object.assign({}, col.params, nodeBranchParam(node));
+    cbetCols.push({ level: childLevel, params: childParams, nodes: [], selectedKey: null, loading: true });
+    renderCbetColumns();
+    try {
+        const nodes = await loadTreeChildren(childLevel, childParams);
+        cbetCols[cbetCols.length - 1] = { level: childLevel, params: childParams, nodes, selectedKey: null };
+        renderCbetColumns();
+    } catch (e) {
+        console.error('Error loading column:', e);
+        cbetCols.pop();
+        renderCbetColumns();
+        showToast('Failed to load', 'error');
+    }
+}
+
+// Breadcrumb of the selected path across the columns.
+function renderCbetBreadcrumb() {
+    const el = document.getElementById('cbet-breadcrumb');
+    if (!el) return;
+    const crumbs = [];
+    cbetCols.forEach(col => {
+        if (col.selectedKey == null) return;
+        const node = col.nodes.find(n => String(n.key) === String(col.selectedKey));
+        if (node) crumbs.push(escapeHtml(node.label || node.key || ''));
+    });
+    el.innerHTML = crumbs.length
+        ? crumbs.map(c => `<span>${c}</span>`).join('<i class="ri-arrow-right-s-line text-gray-300 dark:text-gray-600"></i>')
+        : '<span class="text-gray-400 dark:text-gray-500">Pick an academic year to start…</span>';
 }
 
 // Apply filters

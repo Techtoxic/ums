@@ -191,31 +191,21 @@
 
         <!-- ============ BROWSE PANEL ============ -->
         <div id="tab-browse">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- Tree column -->
-                <div class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl shadow-md p-4">
-                    <div class="flex items-center justify-between mb-3 px-2">
-                        <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
-                            <i class="ri-node-tree mr-2 text-primary"></i>
-                            Evidence Browser
-                        </h2>
-                        <button id="tree-reload-btn" class="text-sm text-primary hover:text-secondary dark:text-red-300 dark:hover:text-red-200 font-medium">
-                            <i class="ri-refresh-line mr-1"></i>Reload
-                        </button>
-                    </div>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 px-2 mb-3">Course → Intake → Module → Unit → Student → Assessment slot. Click a file leaf to open the document.</p>
-                    <div id="cbet-tree" class="text-sm"></div>
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4">
+                <div class="flex items-center justify-between mb-2">
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
+                        <i class="ri-folders-line mr-2 text-primary"></i>
+                        Evidence Browser
+                    </h2>
+                    <button id="tree-reload-btn" class="text-sm text-primary hover:text-secondary dark:text-red-300 dark:hover:text-red-200 font-medium">
+                        <i class="ri-refresh-line mr-1"></i>Reload
+                    </button>
                 </div>
-                <!-- Detail / breadcrumb column -->
-                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-5">
-                    <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center mb-3">
-                        <i class="ri-information-line mr-2 text-primary"></i>
-                        Selection
-                    </h3>
-                    <div id="cbet-detail" class="text-sm text-gray-500 dark:text-gray-400">
-                        Select a node in the tree to see its path here.
-                    </div>
-                </div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Academic Year → Course → Intake → Module → Unit → Student → Document. Pick across the columns; click a document to open it.</p>
+                <!-- Breadcrumb of the current selection path -->
+                <div id="cbet-breadcrumb" class="flex flex-wrap items-center gap-1 text-xs text-gray-500 dark:text-gray-400 mb-3"></div>
+                <!-- Miller columns: each level is a column; selecting an item opens the next column to the right. -->
+                <div id="cbet-columns" class="flex gap-3 overflow-x-auto pb-2" style="min-height:360px"></div>
             </div>
         </div>
 

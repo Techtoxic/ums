@@ -4,6 +4,7 @@ const { verifyToken, authorize } = require('../middleware/auth');
 const { StudentUpload, AuditLog, Student } = require('../db/models');
 const { db, schema } = require('../db');
 const { eq, and, isNull, isNotNull, desc, asc, sql, gte, lte } = require('drizzle-orm');
+const { getCourseDisplayName } = require('../utils/courseCodes');
 
 const U = schema.studentUploads;
 
@@ -71,7 +72,8 @@ function rowSlotKey(r) {
 // ───────────────────────────────────────────────────────────────────────────
 router.get('/cibec/tree', verifyToken, authorize(...REVIEWER_ROLES), async (req, res) => {
     try {
-        const level = req.query.level || 'course';
+        const level = req.query.level || 'academicYear';
+        const academicYear = toYearInt(req.query.academicYear);
         const course = req.query.course || null;
         const intakeYear = toYearInt(req.query.intakeYear);
         const moduleNo = toInt(req.query.module);
@@ -80,6 +82,7 @@ router.get('/cibec/tree', verifyToken, authorize(...REVIEWER_ROLES), async (req,
 
         // Branch filter shared by every level below the root.
         const conds = [eq(U.status, 'uploaded')];
+        if (academicYear != null) conds.push(eq(U.academic_year, academicYear));
         if (course) conds.push(eq(U.course, course));
         if (intakeYear != null) conds.push(eq(U.intake_year, intakeYear));
         if (moduleNo != null) conds.push(eq(U.module, moduleNo));
@@ -89,10 +92,29 @@ router.get('/cibec/tree', verifyToken, authorize(...REVIEWER_ROLES), async (req,
         const cnt = sql`count(*)::int`;
 
         let nodes = [];
-        if (level === 'course') {
-            const rows = await db.select({ key: U.course, count: cnt })
-                .from(U).where(where).groupBy(U.course).orderBy(asc(U.course));
-            nodes = rows.filter(r => r.key).map(r => ({ key: r.key, label: r.key, count: r.count, hasChildren: true, level: 'course' }));
+        if (level === 'academicYear') {
+            // Top level (DECISION): wrap everything under the academic year the
+            // document was uploaded in, so each year is its own folder.
+            const rows = await db.select({ key: U.academic_year, count: cnt })
+                .from(U).where(where).groupBy(U.academic_year).orderBy(desc(U.academic_year));
+            nodes = rows.map(r => ({
+                key: String(r.key ?? ''),
+                label: r.key != null ? `AY ${r.key}/${r.key + 1}` : 'No academic year',
+                count: r.count, hasChildren: true, level: 'academicYear', academicYear: r.key,
+            }));
+        } else if (level === 'course') {
+            // Label the course node with the PROGRAM NAME (join programs on the
+            // course code), not the raw code.
+            const rows = await db.select({ key: U.course, name: schema.programs.name, count: cnt })
+                .from(U).leftJoin(schema.programs, eq(schema.programs.code, U.course))
+                .where(where).groupBy(U.course, schema.programs.name).orderBy(asc(U.course));
+            // Prefer the program name from the code join; fall back to the helper
+            // (handles snake_case course keys like "applied_biology_6"); else raw.
+            nodes = rows.filter(r => r.key).map(r => ({
+                key: r.key,
+                label: r.name || getCourseDisplayName(r.key) || r.key,
+                count: r.count, hasChildren: true, level: 'course',
+            }));
         } else if (level === 'intake') {
             const rows = await db.select({ year: U.intake_year, intake: U.intake, count: cnt })
                 .from(U).where(where).groupBy(U.intake_year, U.intake)
