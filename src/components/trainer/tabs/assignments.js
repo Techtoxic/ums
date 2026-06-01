@@ -3,6 +3,10 @@
 // this tab preserves that broken behaviour (error state shown). Not a regression.
 window.TrainerTabs = window.TrainerTabs || {};
 
+// Pagination state for the assignments list view.
+let assignmentsPage = 1;
+const ASSIGNMENTS_PAGE_SIZE = 10;
+
 // (verbatim from trainerDashboard.js)
 // Load trainer assignments
 async function loadAssignments() {
@@ -27,7 +31,8 @@ async function loadAssignments() {
         }
         
         assignmentsData = data.assignments || [];
-        
+        assignmentsPage = 1;
+
         console.log(`Successfully loaded ${assignmentsData.length} assignments`);
         
         // Update stats
@@ -47,130 +52,118 @@ async function loadAssignments() {
     }
 }
 
-// Display assignments
+// Display assignments — paginated list view.
 function displayAssignments() {
-    console.log('Displaying assignments...');
-    
     const filter = document.getElementById('assignmentFilter')?.value || '';
     let filteredAssignments = [...assignmentsData];
-    
+
     // Apply filter
     if (filter === 'current') {
         filteredAssignments = assignmentsData.filter(a => a.semester === 'current');
     } else if (filter === 'upcoming') {
         filteredAssignments = assignmentsData.filter(a => a.semester === 'upcoming');
     }
-    
-    console.log(`Filtered assignments: ${filteredAssignments.length} (filter: ${filter || 'none'})`);
-    
+
     // Validate assignments have complete data
     const validAssignments = filteredAssignments.filter(assignment => {
-        return assignment && 
-               assignment.unitId && 
-               assignment.unitId.unitCode && 
+        return assignment &&
+               assignment.unitId &&
+               assignment.unitId.unitCode &&
                assignment.unitId.unitName &&
                assignment.status;
     });
-    
-    console.log(`Valid assignments: ${validAssignments.length}`);
-    
+
     if (validAssignments.length === 0) {
         showEmptyState();
         return;
     }
-    
-    // Generate assignment cards
+
+    // Clamp the current page to the available range.
+    const totalPages = Math.max(1, Math.ceil(validAssignments.length / ASSIGNMENTS_PAGE_SIZE));
+    if (assignmentsPage > totalPages) assignmentsPage = totalPages;
+    if (assignmentsPage < 1) assignmentsPage = 1;
+    const start = (assignmentsPage - 1) * ASSIGNMENTS_PAGE_SIZE;
+    const pageItems = validAssignments.slice(start, start + ASSIGNMENTS_PAGE_SIZE);
+
     const assignmentsGrid = document.getElementById('assignmentsGrid');
-    assignmentsGrid.innerHTML = validAssignments.map(assignment => createAssignmentCard(assignment)).join('');
-    
-    // Show assignments grid
+    assignmentsGrid.innerHTML = pageItems.map(createAssignmentRow).join('');
+
+    renderListPagination('assignmentsPagination', validAssignments.length, assignmentsPage, totalPages, start, pageItems.length, 'assignmentsGoToPage');
     showAssignmentsGrid();
-    
-    console.log('Assignments displayed successfully');
 }
 
-// Create assignment card HTML
-function createAssignmentCard(assignment) {
+// One assignment as a list row.
+function createAssignmentRow(assignment) {
     const unitCode = assignment.unitId?.unitCode || 'N/A';
     const unitName = assignment.unitId?.unitName || 'Unknown Unit';
     const courseCode = assignment.unitId?.courseCode || assignment.courseCode || 'N/A';
     const status = assignment.status || 'active';
     const assignedAt = assignment.createdAt ? new Date(assignment.createdAt).toLocaleDateString() : 'N/A';
-    const assignedBy = assignment.assignedBy || 'System';
-    // "Module" is the unit's own module (the period it's taught in). What the DB
-    // calls "semester" is the institution's "module".
+    // "Module" is the unit's own module. What the DB calls "semester" = module.
     const moduleNo = assignment.unitId?.module ?? assignment.module ?? assignment.semester ?? 'N/A';
-    const notes = assignment.notes || '';
     const type = assignment.type || 'department';
     const isCommonUnit = type === 'common';
-    
-        const statusColors = {
-        'active': 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800',
-        'completed': 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800',
-        'cancelled': 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800'
-        };
-        
-        return `
-        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 card-hover ${isCommonUnit ? 'ring-2 ring-blue-200 dark:ring-blue-800' : ''}">
-                <div class="flex justify-between items-start mb-4">
-                    <div class="flex-1">
-                        <div class="flex items-center gap-2">
-                            <h3 class="font-semibold text-gray-900 dark:text-white text-lg">${escapeHtml(unitCode)}</h3>
-                            ${isCommonUnit ? '<span class="px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full">Common Unit</span>' : ''}
-                        </div>
-                        <p class="text-gray-600 dark:text-gray-400 text-sm">${escapeHtml(unitName)}</p>
-                    </div>
-                    <span class="px-3 py-1 rounded-full text-xs font-medium border ${statusColors[status] || statusColors.active}">
-                        ${escapeHtml(status.charAt(0).toUpperCase() + status.slice(1))}
-                    </span>
+
+    const statusColors = {
+        'active': 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+        'completed': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+        'cancelled': 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+    };
+
+    return `
+        <div class="flex items-center gap-4 py-3 px-1 hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors">
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="font-semibold text-gray-900 dark:text-white">${escapeHtml(unitCode)}</span>
+                    <span class="text-sm text-gray-600 dark:text-gray-400 truncate">${escapeHtml(unitName)}</span>
+                    ${isCommonUnit ? '<span class="px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full">Common</span>' : ''}
                 </div>
-                
-                <div class="space-y-2 mb-4">
-                    <div class="flex justify-between text-sm">
-                    <span class="text-gray-600 dark:text-gray-400">Course:</span>
-                    <span class="font-medium text-gray-900 dark:text-white">${escapeHtml(formatCourseName(courseCode))}</span>
-                    </div>
-                    <div class="flex justify-between text-sm">
-                    <span class="text-gray-600 dark:text-gray-400">Assigned:</span>
-                    <span class="font-medium text-gray-900 dark:text-white">${escapeHtml(assignedAt)}</span>
-                    </div>
-                    <div class="flex justify-between text-sm">
-                    <span class="text-gray-600 dark:text-gray-400">Module:</span>
-                    <span class="font-medium text-gray-900 dark:text-white">${escapeHtml(String(moduleNo))}</span>
-                    </div>
-                    ${isCommonUnit && assignment.assignedByDepartment ? `
-                    <div class="flex justify-between text-sm">
-                        <span class="text-gray-600 dark:text-gray-400">Assigned By:</span>
-                        <span class="font-medium text-gray-900 dark:text-white">${escapeHtml(formatDepartmentName(assignment.assignedByDepartment))} HOD</span>
-                    </div>
-                    ` : ''}
-                </div>
-                
-            ${notes ? `
-                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 mb-4">
-                    <p class="text-sm text-gray-600 dark:text-gray-400">
-                        <i class="ri-sticky-note-line mr-2 text-gray-400 dark:text-gray-500"></i>
-                        ${escapeHtml(notes)}
-                        </p>
-                    </div>
-                ` : ''}
-                
-            <div class="flex justify-between items-center pt-4 border-t border-gray-100 dark:border-gray-700">
-                <div class="text-xs text-gray-500 dark:text-gray-500">
-                    Assigned by: ${escapeHtml(assignedBy)}
-                </div>
-                <button onclick="viewUnitDetails('${escapeAttr(assignment._id)}')" class="text-primary hover:text-secondary text-sm font-medium transition-colors">
-                    <i class="ri-eye-line mr-1"></i>View Details
-                </button>
+                <div class="text-xs text-gray-500 dark:text-gray-500 mt-0.5">
+                    ${escapeHtml(formatCourseName(courseCode))} · Module ${escapeHtml(String(moduleNo))} · Assigned ${escapeHtml(assignedAt)}
                 </div>
             </div>
-        `;
+            <span class="px-2.5 py-1 rounded-full text-xs font-medium ${statusColors[status] || statusColors.active}">
+                ${escapeHtml(status.charAt(0).toUpperCase() + status.slice(1))}
+            </span>
+            <button onclick="viewUnitDetails('${escapeAttr(assignment._id)}')" class="text-primary hover:text-secondary text-sm font-medium transition-colors whitespace-nowrap">
+                <i class="ri-eye-line mr-1"></i>View
+            </button>
+        </div>
+    `;
 }
+
+// Shared list pagination bar (Prev / range / Next). Used by assignments + students.
+function renderListPagination(containerId, total, page, totalPages, start, pageCount, goToFnName) {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+    if (total <= 0) { el.classList.add('hidden'); el.innerHTML = ''; return; }
+    const from = start + 1;
+    const to = start + pageCount;
+    const prevDisabled = page <= 1;
+    const nextDisabled = page >= totalPages;
+    const btn = (label, disabled, target) =>
+        `<button ${disabled ? 'disabled' : ''} onclick="${goToFnName}(${target})" class="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-sm font-medium ${disabled ? 'opacity-40 cursor-not-allowed' : 'hover:bg-gray-100 dark:hover:bg-gray-700'} text-gray-700 dark:text-gray-200">${label}</button>`;
+    el.innerHTML = `
+        <span class="text-gray-600 dark:text-gray-400">Showing ${from}–${to} of ${total}</span>
+        <div class="flex items-center gap-2">
+            ${btn('<i class="ri-arrow-left-s-line"></i> Prev', prevDisabled, page - 1)}
+            <span class="text-gray-600 dark:text-gray-400">Page ${page} of ${totalPages}</span>
+            ${btn('Next <i class="ri-arrow-right-s-line"></i>', nextDisabled, page + 1)}
+        </div>`;
+    el.classList.remove('hidden');
+}
+
+function assignmentsGoToPage(p) {
+    assignmentsPage = p;
+    displayAssignments();
+}
+window.assignmentsGoToPage = assignmentsGoToPage;
 
 // Show loading state
 function showLoadingState() {
     document.getElementById('loadingState')?.classList.remove('hidden');
     document.getElementById('assignmentsGrid')?.classList.add('hidden');
+    document.getElementById('assignmentsPagination')?.classList.add('hidden');
     document.getElementById('emptyState')?.classList.add('hidden');
     document.getElementById('errorState')?.classList.add('hidden');
 }
@@ -187,6 +180,7 @@ function showAssignmentsGrid() {
 function showEmptyState() {
     document.getElementById('loadingState')?.classList.add('hidden');
     document.getElementById('assignmentsGrid')?.classList.add('hidden');
+    document.getElementById('assignmentsPagination')?.classList.add('hidden');
     document.getElementById('emptyState')?.classList.remove('hidden');
     document.getElementById('errorState')?.classList.add('hidden');
 }
@@ -195,6 +189,7 @@ function showEmptyState() {
 function showErrorState(message) {
     document.getElementById('loadingState')?.classList.add('hidden');
     document.getElementById('assignmentsGrid')?.classList.add('hidden');
+    document.getElementById('assignmentsPagination')?.classList.add('hidden');
     document.getElementById('emptyState')?.classList.add('hidden');
     document.getElementById('errorState')?.classList.remove('hidden');
     const errorMessageEl = document.getElementById('errorMessage');
@@ -224,7 +219,7 @@ window.TrainerTabs.assignments = {
         if (!window.__trAssignmentsWired) {
             window.__trAssignmentsWired = true;
             const f = document.getElementById('assignmentFilter');
-            if (f) f.addEventListener('change', displayAssignments);
+            if (f) f.addEventListener('change', () => { assignmentsPage = 1; displayAssignments(); });
         }
         loadAssignments();
     }

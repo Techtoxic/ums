@@ -31,8 +31,11 @@ window.TrainerRouter = (function () {
     const ACTIVE_CLASSES = ['bg-primary/10', 'text-primary', 'dark:bg-primary/20', 'dark:text-primary-light'];
     const INACTIVE_CLASSES = ['text-gray-600', 'dark:text-gray-400', 'hover:bg-gray-100', 'dark:hover:bg-gray-700', 'hover:text-gray-900', 'dark:hover:text-white'];
 
-    // tab -> injected pane element (cache; partials are fetched once).
-    const panes = {};
+    // tab -> in-flight/resolved pane PROMISE (memoized so concurrent showTab()
+    // calls for the same tab can't double-inject the partial), and tab ->
+    // resolved pane element (for the hide loop).
+    const panePromises = {};
+    const paneEls = {};
 
     // Pull the tab id from a /trainer/<tab> path (or an href): last path segment;
     // the role name or an empty path defaults to dashboard.
@@ -43,24 +46,33 @@ window.TrainerRouter = (function () {
         return VALID_TABS.includes(tab) ? tab : 'dashboard';
     }
 
-    // Fetch + inject a tab's partial once; return its cached pane.
-    async function ensurePane(tab) {
-        if (panes[tab]) return panes[tab];
-        const root = document.getElementById('tab-root');
-        const pane = document.createElement('div');
-        // Keep the monolith's section-<tab> id + content-section class.
-        pane.id = 'section-' + tab;
-        pane.className = 'content-section hidden';
-        try {
-            const res = await fetch(`/trainer/partials/${tab}.html`, { credentials: 'include' });
-            pane.innerHTML = await res.text();
-        } catch (err) {
-            console.error('Failed to load partial for tab', tab, err);
-            pane.innerHTML = '<div class="p-6 text-center text-red-600">Failed to load this section. Please refresh.</div>';
-        }
-        root.appendChild(pane);
-        panes[tab] = pane;
-        return pane;
+    // Fetch + inject a tab's partial exactly once; return its (memoized) pane.
+    // The promise is cached SYNCHRONOUSLY before the first await so two near-
+    // simultaneous calls share one pane instead of each creating their own.
+    function ensurePane(tab) {
+        if (panePromises[tab]) return panePromises[tab];
+        panePromises[tab] = (async () => {
+            const root = document.getElementById('tab-root');
+            // Reuse an existing node if one is somehow already in the DOM.
+            let pane = document.getElementById('section-' + tab);
+            if (!pane) {
+                pane = document.createElement('div');
+                // Keep the monolith's section-<tab> id + content-section class.
+                pane.id = 'section-' + tab;
+                pane.className = 'content-section hidden';
+                try {
+                    const res = await fetch(`/trainer/partials/${tab}.html`, { credentials: 'include' });
+                    pane.innerHTML = await res.text();
+                } catch (err) {
+                    console.error('Failed to load partial for tab', tab, err);
+                    pane.innerHTML = '<div class="p-6 text-center text-red-600">Failed to load this section. Please refresh.</div>';
+                }
+                root.appendChild(pane);
+            }
+            paneEls[tab] = pane;
+            return pane;
+        })();
+        return panePromises[tab];
     }
 
     // Show a tab: inject (if needed), reveal it, hide the rest, sync chrome, init.
@@ -68,7 +80,7 @@ window.TrainerRouter = (function () {
         if (!VALID_TABS.includes(tab)) tab = 'dashboard';
         const pane = await ensurePane(tab);
 
-        Object.keys(panes).forEach(t => panes[t].classList.add('hidden'));
+        Object.keys(paneEls).forEach(t => paneEls[t].classList.add('hidden'));
         pane.classList.remove('hidden');
 
         // Active nav-item (verbatim class swap from showSection()).

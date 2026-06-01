@@ -3,6 +3,10 @@
 // this tab preserves that broken behaviour. Not a regression.
 window.TrainerTabs = window.TrainerTabs || {};
 
+// Pagination state for the students list view.
+let studentsPage = 1;
+const STUDENTS_PAGE_SIZE = 10;
+
 // (verbatim from trainerDashboard.js)
 // Load students
 async function loadStudents() {
@@ -31,8 +35,8 @@ async function loadStudents() {
             studentsData = Array.isArray(data) ? data : [];
         }
         
+        studentsPage = 1;
         console.log(`Successfully loaded ${studentsData.length} students`);
-        console.log('Students data:', studentsData.map(s => ({ name: s.name, course: s.course })));
         
         // Update stats
         updateStats();
@@ -52,91 +56,75 @@ async function loadStudents() {
     }
 }
 
-// Display students
+// Display students — paginated list view.
 function displayStudents() {
-    console.log('Displaying students...');
-    
     const filter = document.getElementById('studentsFilter')?.value || '';
     let filteredStudents = [...studentsData];
-    
-    // Apply filter
-    if (filter === 'module1') {
-        filteredStudents = studentsData.filter(s => s.module === 1);
-    } else if (filter === 'module2') {
-        filteredStudents = studentsData.filter(s => s.module === 2);
-    } else if (filter === 'module3') {
-        filteredStudents = studentsData.filter(s => s.module === 3);
-    } else if (filter === 'module4') {
-        filteredStudents = studentsData.filter(s => s.module === 4);
-    } else if (filter === 'module5') {
-        filteredStudents = studentsData.filter(s => s.module === 5);
-    } else if (filter === 'module6') {
-        filteredStudents = studentsData.filter(s => s.module === 6);
+
+    // Apply module filter (values are module1..module6).
+    const m = /^module(\d+)$/.exec(filter);
+    if (m) {
+        const moduleNo = Number(m[1]);
+        filteredStudents = studentsData.filter(s => s.module === moduleNo);
     }
-    
+
     const studentsGrid = document.getElementById('studentsGrid');
     const studentsEmptyState = document.getElementById('studentsEmptyState');
-    
+    const pagination = document.getElementById('studentsPagination');
+
     if (filteredStudents.length === 0) {
         studentsGrid.classList.add('hidden');
+        pagination?.classList.add('hidden');
         studentsEmptyState.classList.remove('hidden');
         return;
     }
-    
+
     studentsGrid.classList.remove('hidden');
     studentsEmptyState.classList.add('hidden');
-    
-    studentsGrid.innerHTML = filteredStudents.map(student => createStudentCard(student)).join('');
-    
-    console.log(`Displayed ${filteredStudents.length} students`);
+
+    // Clamp page + slice.
+    const totalPages = Math.max(1, Math.ceil(filteredStudents.length / STUDENTS_PAGE_SIZE));
+    if (studentsPage > totalPages) studentsPage = totalPages;
+    if (studentsPage < 1) studentsPage = 1;
+    const start = (studentsPage - 1) * STUDENTS_PAGE_SIZE;
+    const pageItems = filteredStudents.slice(start, start + STUDENTS_PAGE_SIZE);
+
+    studentsGrid.innerHTML = pageItems.map(createStudentRow).join('');
+
+    // renderListPagination is defined in tabs/assignments.js (loaded first).
+    if (typeof renderListPagination === 'function') {
+        renderListPagination('studentsPagination', filteredStudents.length, studentsPage, totalPages, start, pageItems.length, 'studentsGoToPage');
+    }
 }
 
-// Create student card HTML
-function createStudentCard(student) {
+// One student as a list row.
+function createStudentRow(student) {
     const admissionNumber = student.admissionNumber || student.studentId || 'N/A';
     const moduleStr = student.module ? `Module ${student.module}` : 'N/A';
     const email = student.email || 'N/A';
     const intake = student.intake || 'N/A';
-    
+
     return `
-        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 card-hover">
-            <div class="flex items-center space-x-4 mb-4">
-                <div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                    <i class="ri-user-line text-primary text-xl"></i>
-                </div>
-                <div class="flex-1 min-w-0">
-                    <h3 class="font-semibold text-gray-900 dark:text-white truncate">${escapeHtml(student.name)}</h3>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 truncate">${escapeHtml(formatCourseName(student.course))}</p>
-                        </div>
-                    </div>
-                    
-                        <div class="space-y-2">
-                <div class="flex justify-between text-sm">
-                    <span class="text-gray-600 dark:text-gray-400">Admission No:</span>
-                    <span class="font-medium text-gray-900 dark:text-white">${escapeHtml(admissionNumber)}</span>
-                        </div>
-                <div class="flex justify-between text-sm">
-                    <span class="text-gray-600 dark:text-gray-400">Module:</span>
-                    <span class="font-medium text-gray-900 dark:text-white">${escapeHtml(moduleStr)}</span>
-                    </div>
-                <div class="flex justify-between text-sm">
-                    <span class="text-gray-600 dark:text-gray-400">Intake:</span>
-                    <span class="font-medium text-gray-900 dark:text-white">${escapeHtml(intake)}</span>
-                </div>
-                <div class="flex justify-between text-sm">
-                    <span class="text-gray-600 dark:text-gray-400">Email:</span>
-                    <span class="font-medium text-gray-900 dark:text-white text-xs truncate">${escapeHtml(email)}</span>
-                        </div>
-                    </div>
-            
-            <div class="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
+        <div class="flex items-center gap-4 py-3 px-1 hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors">
+            <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
+                <i class="ri-user-line text-primary"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+                <div class="font-semibold text-gray-900 dark:text-white truncate">${escapeHtml(student.name)}</div>
                 <div class="text-xs text-gray-500 dark:text-gray-500 truncate">
-                    Course: ${escapeHtml(formatCourseName(student.course))}
+                    ${escapeHtml(admissionNumber)} · ${escapeHtml(formatCourseName(student.course))} · ${escapeHtml(moduleStr)} · Intake: ${escapeHtml(intake)}
                 </div>
             </div>
+            <div class="hidden sm:block text-xs text-gray-500 dark:text-gray-400 truncate max-w-[180px]">${escapeHtml(email)}</div>
         </div>
     `;
 }
+
+function studentsGoToPage(p) {
+    studentsPage = p;
+    displayStudents();
+}
+window.studentsGoToPage = studentsGoToPage;
 
 async function refreshStudents() {
     await loadStudents();
@@ -149,7 +137,7 @@ window.TrainerTabs.students = {
         if (!window.__trStudentsWired) {
             window.__trStudentsWired = true;
             const f = document.getElementById('studentsFilter');
-            if (f) f.addEventListener('change', displayStudents);
+            if (f) f.addEventListener('change', () => { studentsPage = 1; displayStudents(); });
         }
         loadStudents();
     }
