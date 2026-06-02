@@ -159,7 +159,7 @@ function displayStudentNotes() {
                 <h4 class="font-semibold text-gray-900 mb-2">${escapeHtml(note.title)}</h4>
                 <p class="text-sm text-gray-700 mb-2">${escapeHtml(note.content)}</p>
                 <div class="text-xs text-gray-500">
-                    By: ${escapeHtml(note.createdBy.userName)} | ${note.isRead ? `Read on ${escapeHtml(formatDate(note.readAt))}` : 'Unread'}
+                    By: ${escapeHtml((note.createdBy && note.createdBy.userName) || note.authorName || note.createdByName || 'Staff')} | ${note.isRead ? `Read on ${escapeHtml(formatDate(note.readAt))}` : 'Unread'}
                 </div>
             </div>
         `;
