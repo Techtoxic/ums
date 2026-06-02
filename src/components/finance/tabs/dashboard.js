@@ -271,48 +271,44 @@ async function showStudentPaymentReceipts(data) {
 function showPaymentSelectionModal(payments, student) {
     const modal = document.createElement('div');
     modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
-    // Inline colors force a white card + dark text regardless of dark mode
-    // (the global dark theme was tinting the card). Hover handled inline too.
+    // Theme-aware: light card in light mode, dark surface in dark mode.
     modal.innerHTML = `
-        <div class="rounded-lg max-w-2xl w-full max-h-[600px] overflow-hidden flex flex-col" style="background:#ffffff;color:#111827">
-            <div class="p-4" style="border-bottom:1px solid #e5e7eb">
-                <h3 class="text-lg font-semibold" style="color:#111827">All Payment Receipts</h3>
-                <p class="text-sm" style="color:#4b5563">Student: ${escapeHtml(student.name)} | Total Payments: ${payments.length}</p>
+        <div class="rounded-lg max-w-2xl w-full max-h-[600px] overflow-hidden flex flex-col bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-2xl">
+            <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 class="text-lg font-semibold">All Payment Receipts</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400">Student: ${escapeHtml(student.name)} | Total Payments: ${payments.length}</p>
             </div>
             <div class="p-4 overflow-y-auto flex-1">
                 <div class="space-y-2">
                     ${payments.map((payment, index) => `
-                        <button class="w-full text-left p-3 rounded payment-receipt-btn transition-colors"
-                                style="border:1px solid #e5e7eb;background:#ffffff;color:#111827"
-                                onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='#ffffff'"
+                        <button class="w-full text-left p-3 rounded payment-receipt-btn transition-colors border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/60"
                                 data-payment='${escapeAttr(JSON.stringify(payment))}'>
                             <div class="flex justify-between items-start">
                                 <div class="flex-1">
                                     <div class="flex items-center gap-2 mb-1">
-                                        <span class="font-medium" style="color:#374151">#${payments.length - index}</span>
-                                        <span class="text-sm" style="color:#6b7280">Date: ${payment.paymentDate ? new Date(payment.paymentDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A'}</span>
+                                        <span class="font-medium text-gray-700 dark:text-gray-200">#${payments.length - index}</span>
+                                        <span class="text-sm text-gray-500 dark:text-gray-400">Date: ${payment.paymentDate ? new Date(payment.paymentDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A'}</span>
                                     </div>
-                                    <div class="text-sm" style="color:#4b5563">
+                                    <div class="text-sm text-gray-600 dark:text-gray-300">
                                         Mode: ${escapeHtml(formatPaymentModeForDisplay(payment.paymentMode))}
                                         ${payment.reference ? ` | Ref: ${escapeHtml(payment.reference)}` : ''}
                                     </div>
                                 </div>
                                 <div class="text-right">
-                                    <div class="font-semibold" style="color:#16a34a">KES ${Number(payment.amount || 0).toLocaleString()}</div>
-                                    <span class="text-xs" style="color:#6b7280">Click to view</span>
+                                    <div class="font-semibold text-green-600 dark:text-green-400">KES ${Number(payment.amount || 0).toLocaleString()}</div>
+                                    <span class="text-xs text-gray-500 dark:text-gray-400">Click to view</span>
                                 </div>
                             </div>
                         </button>
                     `).join('')}
                 </div>
             </div>
-            <div class="p-4" style="border-top:1px solid #e5e7eb;background:#f9fafb">
+            <div class="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40">
                 <div class="flex justify-between items-center mb-3">
-                    <span class="font-medium" style="color:#374151">Total Paid:</span>
-                    <span class="font-bold text-lg" style="color:#16a34a">KES ${payments.reduce((sum, p) => sum + Number(p.amount || 0), 0).toLocaleString()}</span>
+                    <span class="font-medium text-gray-700 dark:text-gray-200">Total Paid:</span>
+                    <span class="font-bold text-lg text-green-600 dark:text-green-400">KES ${payments.reduce((sum, p) => sum + Number(p.amount || 0), 0).toLocaleString()}</span>
                 </div>
-                <button class="w-full px-4 py-2 rounded transition-colors" style="background:#d1d5db;color:#374151"
-                        onmouseover="this.style.background='#9ca3af'" onmouseout="this.style.background='#d1d5db'"
+                <button class="w-full px-4 py-2 rounded transition-colors bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-400 dark:hover:bg-gray-600"
                         onclick="this.closest('.fixed').remove()">Close</button>
             </div>
         </div>
@@ -932,15 +928,22 @@ function setupSidebar() {
                 doc.text(`Ref: ${receiptRef}`, 14, y);
                 doc.text(`Date: ${formattedDate}`, pageWidth - 14, y, { align: 'right' });
 
-                // Program / department, readable.
-                let programDisplay = 'N/A';
-                if (student?.programName) programDisplay = student.programName;
-                else if (student?.course) programDisplay = student.course.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                const deptName = student?.department
-                    ? student.department.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
-                    : 'N/A';
+                // Program / department — resolve the NAME (not the raw code), and
+                // never leave department blank when we can derive it.
+                const titleCase = (s) => String(s || '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                const courseVal = student?.course || payment.course;
+                let programDisplay = student?.programName
+                    || (typeof formatCourseName === 'function' && courseVal ? formatCourseName(courseVal) : null)
+                    || (courseVal ? titleCase(courseVal) : 'N/A');
+                const deptRaw = student?.department || payment.department;
+                const deptName = (window.Catalog && deptRaw ? window.Catalog.departmentName(deptRaw) : null)
+                    || student?.departmentName
+                    || (deptRaw ? titleCase(deptRaw) : 'N/A');
 
-                // Student info (clean key/value table).
+                // Transaction / reference code (the actual payment reference).
+                const reference = payment.reference || payment.referenceNumber || receiptRef;
+
+                // Student info (clean key/value table) — includes the reference.
                 doc.autoTable({
                     startY: y + 4,
                     theme: 'plain',
@@ -951,6 +954,7 @@ function setupSidebar() {
                         ['Admission No.', payment.studentId || student?.admissionNumber || 'N/A'],
                         ['Program', programDisplay],
                         ['Department', deptName],
+                        ['Reference', reference],
                     ],
                     margin: { left: 14, right: 14 },
                 });
@@ -959,10 +963,11 @@ function setupSidebar() {
                 // Payment details + reference line.
                 const modes = { mpesa: 'M-Pesa Payment', bank: 'Bank Transfer', bursary: 'CDF Bursary' };
                 const modeDisplay = modes[payment.paymentMode] || payment.paymentMode || 'N/A';
-                let refLine = '';
-                if (payment.paymentMode === 'bursary' && payment.bursaryReference) refLine = `Bursary Ref: ${payment.bursaryReference}`;
-                else if (payment.paymentMode === 'mpesa' && payment.mpesaTransactionId) refLine = `M-Pesa Txn: ${payment.mpesaTransactionId}`;
-                else if (payment.paymentMode === 'bank' && payment.receiptNumber) refLine = `Bank Receipt: ${payment.receiptNumber}${payment.bankName ? ` (${payment.bankName})` : ''}`;
+                const refs = [`Ref: ${reference}`];
+                if (payment.paymentMode === 'mpesa' && payment.mpesaTransactionId) refs.push(`M-Pesa Txn: ${payment.mpesaTransactionId}`);
+                else if (payment.paymentMode === 'bank' && payment.receiptNumber) refs.push(`Bank Receipt: ${payment.receiptNumber}${payment.bankName ? ` (${payment.bankName})` : ''}`);
+                else if (payment.paymentMode === 'bursary' && payment.bursaryReference) refs.push(`Bursary Ref: ${payment.bursaryReference}`);
+                const refLine = refs.join('\n');
                 const amount = `KES ${Number(payment.amount || 0).toLocaleString()}`;
 
                 doc.autoTable({
