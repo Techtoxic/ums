@@ -128,6 +128,81 @@ function updateBulkActionButtons() {
     }
 }
 
+// Export the current assignments view as a branded PDF — same letterhead/layout
+// as the other portal reports (EDTTIDocs), with the Department + HOD highlighted
+// in the summary band. Respects the active filter (All / Assigned / Unassigned).
+async function exportAssignmentsPDF() {
+    if (!window.EDTTIDocs || !window.jspdf) {
+        if (typeof showToast === 'function') showToast('PDF library not loaded yet — please retry in a moment', 'error');
+        else alert('PDF library not loaded yet — please retry in a moment');
+        return;
+    }
+
+    const filterEl = document.getElementById('assignmentFilter');
+    const filter = filterEl ? filterEl.value : '';
+
+    // A "Unit" cell that mirrors the table: name as the primary label, code in
+    // parentheses when it adds information.
+    const unitLabel = (code, name) => {
+        const n = (name || '').trim();
+        const c = (code || '').trim();
+        if (n && c && c.toUpperCase() !== n.toUpperCase()) return `${n} (${c})`;
+        return n || c || 'Unknown Unit';
+    };
+
+    let rows;
+    if (filter === 'unassigned') {
+        const assignedUnitIds = (assignmentsData || []).map(a => a.unitId && a.unitId._id);
+        rows = (unitsData || [])
+            .filter(unit => !assignedUnitIds.includes(unit._id))
+            .map(unit => [
+                unitLabel(unit.unitCode, unit.unitName),
+                formatCourseName(unit.courseCode) || '',
+                'Unassigned',
+                '—',
+                '—',
+            ]);
+    } else {
+        rows = (assignmentsData || []).map(a => [
+            unitLabel(a.unitId && a.unitId.unitCode, a.unitId && a.unitId.unitName),
+            a.unitId ? (formatCourseName(a.unitId.courseCode) || '') : 'Unknown Course',
+            a.trainerId ? (a.trainerId.name || 'Unknown Trainer') : 'Unassigned',
+            a.assignedAt ? new Date(a.assignedAt).toLocaleDateString() : '—',
+            a.hours != null ? String(a.hours) : '—',
+        ]);
+    }
+
+    const deptName = (typeof formatDepartmentName === 'function' && currentHOD)
+        ? formatDepartmentName(currentHOD.department)
+        : (currentHOD ? currentHOD.department : '');
+    const hodName = currentHOD ? currentHOD.name : '';
+    const scope = filter === 'unassigned' ? 'Unassigned Units'
+        : (filter === 'assigned' ? 'Assigned Units' : 'All Assignments');
+
+    try {
+        await window.EDTTIDocs.tablePDF({
+            title: 'Unit Assignments Report',
+            subtitle: 'Head of Department · Unit Assignments',
+            summary: [
+                ['Department', deptName || 'N/A'],
+                ['Head of Department', hodName || 'N/A'],
+                ['Scope', scope],
+                ['Total Records', String(rows.length)],
+                ['Generated', new Date().toLocaleString()],
+            ],
+            columns: ['Unit', 'Course', 'Trainer', 'Assigned Date', 'Hrs/week'],
+            rows,
+            filename: `unit_assignments_${(deptName || 'department').replace(/\s+/g, '_').toLowerCase()}_${new Date().toISOString().slice(0, 10)}.pdf`,
+            footer: 'EDTTI UMS — HOD · Unit Assignments',
+        });
+    } catch (err) {
+        console.error('Export assignments PDF failed:', err);
+        if (typeof showToast === 'function') showToast('Failed to export PDF: ' + err.message, 'error');
+    }
+}
+
+window.exportAssignmentsPDF = exportAssignmentsPDF;
+
 window.HODTabs.assignments = {
     init() {
         populateAssignmentsDisplay();
