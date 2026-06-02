@@ -115,7 +115,7 @@ function displayStudentNotes() {
     
     if (filteredNotes.length === 0) {
         container.innerHTML = `
-            <div class="text-center py-12 text-gray-500">
+            <div class="text-center py-12 text-gray-500 dark:text-gray-400 dark:text-gray-400">
                 <i class="ri-file-list-line text-4xl mb-4"></i>
                 <p>No ${currentNoteFilter === 'all' ? '' : currentNoteFilter} notes found</p>
             </div>
@@ -141,24 +141,24 @@ function displayStudentNotes() {
         };
         
         return `
-            <div class="bg-gray-50 rounded-lg p-4 mb-4 border-l-4 ${note.noteType === 'private' ? 'border-purple-500' : 'border-green-500'}">
+            <div class="bg-gray-50 dark:bg-gray-700/40 rounded-lg p-4 mb-4 border-l-4 ${note.noteType === 'private' ? 'border-primary' : 'border-green-500'}">
                 <div class="flex justify-between items-start mb-2">
                     <div class="flex items-center space-x-2">
-                        <span class="px-2 py-1 text-xs font-semibold rounded ${note.noteType === 'private' ? 'bg-purple-100 text-purple-700' : 'bg-green-100 text-green-700'}">
+                        <span class="px-2 py-1 text-xs font-semibold rounded ${note.noteType === 'private' ? 'bg-primary/10 text-primary' : 'bg-green-100 text-green-700'}">
                             ${escapeHtml(String(note.noteType).toUpperCase())}
                         </span>
                         <span class="px-2 py-1 text-xs font-semibold rounded ${priorityColors[note.priority]}">
                             ${escapeHtml(String(note.priority).toUpperCase())}
                         </span>
-                        <span class="text-xs text-gray-500">
+                        <span class="text-xs text-gray-500 dark:text-gray-400">
                             <i class="${categoryIcons[note.category]} mr-1"></i>${escapeHtml(note.category)}
                         </span>
                     </div>
-                    <span class="text-xs text-gray-500">${escapeHtml(formatDate(note.createdAt))}</span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">${escapeHtml(formatDate(note.createdAt))}</span>
                 </div>
-                <h4 class="font-semibold text-gray-900 mb-2">${escapeHtml(note.title)}</h4>
-                <p class="text-sm text-gray-700 mb-2">${escapeHtml(note.content)}</p>
-                <div class="text-xs text-gray-500">
+                <h4 class="font-semibold text-gray-900 dark:text-gray-100 mb-2">${escapeHtml(note.title)}</h4>
+                <p class="text-sm text-gray-700 dark:text-gray-300 mb-2">${escapeHtml(note.content)}</p>
+                <div class="text-xs text-gray-500 dark:text-gray-400">
                     By: ${escapeHtml((note.createdBy && note.createdBy.userName) || note.authorName || note.createdByName || 'Staff')} | ${note.isRead ? `Read on ${escapeHtml(formatDate(note.readAt))}` : 'Unread'}
                 </div>
             </div>
@@ -172,12 +172,12 @@ function filterNotes(type) {
     
     // Update button styles
     document.querySelectorAll('.note-filter-btn').forEach(btn => {
-        btn.classList.remove('active', 'bg-purple-100', 'text-purple-700');
+        btn.classList.remove('active', 'bg-primary/10', 'text-primary');
         btn.classList.add('bg-gray-100', 'text-gray-700');
     });
     
     event.target.classList.remove('bg-gray-100', 'text-gray-700');
-    event.target.classList.add('active', 'bg-purple-100', 'text-purple-700');
+    event.target.classList.add('active', 'bg-primary/10', 'text-primary');
     
     displayStudentNotes();
 }

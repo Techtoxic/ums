@@ -78,7 +78,7 @@ function displayStudents(students) {
     if (!students.length) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+                <td colspan="6" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
                     <i class="ri-inbox-line text-4xl mb-4"></i>
                     <p>No students found</p>
                 </td>
@@ -91,22 +91,22 @@ function displayStudents(students) {
         const courseDisplay = window.Catalog ? window.Catalog.formatCourseName(student.course) : (typeof formatCourseName === 'function' ? formatCourseName(student.course) : (student.course || ''));
         const departmentDisplay = window.Catalog ? window.Catalog.departmentName(student.department) : (student.department || '');
         return `
-        <tr class="hover:bg-gray-50 transition">
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/40 transition">
             <td class="px-6 py-4">
                 <div class="flex items-center">
-                    <div class="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center mr-3">
-                        <i class="ri-user-line text-purple-600"></i>
+                    <div class="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center mr-3">
+                        <i class="ri-user-line text-primary"></i>
                     </div>
                     <div>
-                        <div class="font-medium text-gray-900">${escapeHtml(student.name)}</div>
-                        <div class="text-sm text-gray-500">${escapeHtml(student.idNumber || '')}</div>
+                        <div class="font-medium text-gray-900 dark:text-gray-100">${escapeHtml(student.name)}</div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">${escapeHtml(student.idNumber || '')}</div>
                     </div>
                 </div>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(student.admissionNumber || '')}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">${escapeHtml(student.admissionNumber || '')}</td>
             <td class="px-6 py-4">
-                <div class="text-sm text-gray-900">${escapeHtml(courseDisplay)}</div>
-                <div class="text-xs text-gray-500">${escapeHtml(departmentDisplay)}</div>
+                <div class="text-sm text-gray-900 dark:text-gray-100">${escapeHtml(courseDisplay)}</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">${escapeHtml(departmentDisplay)}</div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
                 <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
@@ -114,12 +114,12 @@ function displayStudents(students) {
                 </span>
             </td>
             <td class="px-6 py-4">
-                <div class="text-sm text-gray-900">${escapeHtml(student.phoneNumber || '')}</div>
-                <div class="text-xs text-gray-500">${escapeHtml(student.email || 'No email')}</div>
+                <div class="text-sm text-gray-900 dark:text-gray-100">${escapeHtml(student.phoneNumber || '')}</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">${escapeHtml(student.email || 'No email')}</div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                 <button onclick='openAddNoteModal(${escapeAttr(JSON.stringify(student))})'
-                    class="px-3 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 transition">
+                    class="px-3 py-1 bg-primary text-white rounded hover:bg-secondary transition">
                     <i class="ri-add-line mr-1"></i>Add Note
                 </button>
                 <button onclick='viewStudentNotes("${escapeAttr(student.admissionNumber)}")'
@@ -154,7 +154,7 @@ function renderDeanPagination() {
     else if (currentPage >= totalPages - 2) { startPage = totalPages - maxButtons + 1; endPage = totalPages; }
     else { startPage = currentPage - 2; endPage = currentPage + 2; }
     for (let i = startPage; i <= endPage; i++) {
-        buttons += `<button onclick="deanNavigateStudentsPage(${i})" class="px-3 py-1 text-sm border rounded-lg ${i === currentPage ? 'bg-purple-600 text-white border-purple-600' : 'hover:bg-gray-50'}">${i}</button>`;
+        buttons += `<button onclick="deanNavigateStudentsPage(${i})" class="px-3 py-1 text-sm border rounded-lg ${i === currentPage ? 'bg-primary text-white border-primary' : 'hover:bg-gray-50'}">${i}</button>`;
     }
 
     container.innerHTML = `

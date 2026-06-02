@@ -14,10 +14,9 @@
     <link rel="stylesheet" href="/public/css/dashboard-styles.css">
     <script src="/public/js/dashboard-theme.js"></script>
     <script>
-        // Tailwind alias palette realigned to the EDTTI design system so any
-        // remaining utility usage (bg-primary, text-primary, focus:ring-purple-*)
-        // can be swapped on a per-need basis without re-rendering surprise
-        // colors. focus ring purple stays — that's a focus-state-only tint.
+        // Tailwind alias palette aligned to the EDTTI design system: primary =
+        // maroon, secondary = maroon-dark, accent = gold. All purple has been
+        // removed in favour of these brand tokens.
         tailwind.config = {
             darkMode: 'class',
             theme: {
@@ -67,17 +66,13 @@
         <!-- Sidebar -->
         <aside class="w-64 bg-white dark:bg-gray-800 shadow-lg h-screen fixed overflow-y-auto">
             <nav class="p-4 space-y-2">
-                <a href="/dean/students" class="nav-link flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-purple-50 transition active">
+                <a href="/dean/students" class="nav-link flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-primary/10 transition active">
                     <i class="ri-group-line text-xl mr-3"></i>
                     <span>Students</span>
                 </a>
-                <a href="/dean/notes" class="nav-link flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-purple-50 transition">
+                <a href="/dean/notes" class="nav-link flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-primary/10 transition">
                     <i class="ri-file-list-line text-xl mr-3"></i>
                     <span>All Notes</span>
-                </a>
-                <a href="/dean/tools-of-trade" class="nav-link flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-purple-50 transition">
-                    <i class="ri-tools-line text-xl mr-3"></i>
-                    <span>Tools of Trade</span>
                 </a>
             </nav>
         </aside>
@@ -105,14 +100,14 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Note Type *</label>
                     <div class="grid grid-cols-2 gap-4">
-                        <label class="flex items-center p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-purple-50 transition">
+                        <label class="flex items-center p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-primary/10 transition">
                             <input type="radio" name="noteType" value="private" class="mr-3" checked>
                             <div>
                                 <div class="font-semibold text-gray-800 dark:text-gray-100">Private</div>
                                 <div class="text-xs text-gray-500 dark:text-gray-400">Confidential - Only you can see</div>
                             </div>
                         </label>
-                        <label class="flex items-center p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-purple-50 transition">
+                        <label class="flex items-center p-4 border-2 border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-primary/10 transition">
                             <input type="radio" name="noteType" value="public" class="mr-3">
                             <div>
                                 <div class="font-semibold text-gray-800 dark:text-gray-100">Public</div>
@@ -125,7 +120,7 @@
                 <!-- Category -->
                 <div>
                     <label for="note-category" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Category *</label>
-                    <select id="note-category" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500">
+                    <select id="note-category" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary">
                         <option value="welfare">Welfare</option>
                         <option value="academic">Academic</option>
                         <option value="disciplinary">Disciplinary</option>
@@ -138,7 +133,7 @@
                 <!-- Priority -->
                 <div>
                     <label for="note-priority" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Priority *</label>
-                    <select id="note-priority" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500">
+                    <select id="note-priority" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary">
                         <option value="low">Low</option>
                         <option value="medium" selected>Medium</option>
                         <option value="high">High</option>
@@ -150,14 +145,14 @@
                 <div>
                     <label for="note-title" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Title *</label>
                     <input type="text" id="note-title" placeholder="Enter note title" 
-                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500">
+                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary">
                 </div>
 
                 <!-- Content -->
                 <div>
                     <label for="note-content" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Note Content *</label>
                     <textarea id="note-content" rows="6" placeholder="Enter detailed note..." 
-                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500"></textarea>
+                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary"></textarea>
                 </div>
             </div>
 
@@ -165,7 +160,7 @@
                 <button onclick="closeAddNoteModal()" class="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
                     Cancel
                 </button>
-                <button onclick="saveNote()" class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
+                <button onclick="saveNote()" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition">
                     <i class="ri-save-line mr-2"></i>Save Note
                 </button>
             </div>
@@ -190,7 +185,7 @@
             <div class="p-6">
                 <!-- Note Type Filter -->
                 <div class="flex space-x-2 mb-6">
-                    <button onclick="filterNotes('all')" class="note-filter-btn active px-4 py-2 bg-purple-100 text-purple-700 rounded-lg">
+                    <button onclick="filterNotes('all')" class="note-filter-btn active px-4 py-2 bg-primary/10 text-primary rounded-lg">
                         All Notes
                     </button>
                     <button onclick="filterNotes('private')" class="note-filter-btn px-4 py-2 bg-gray-100 text-gray-700 dark:text-gray-300 rounded-lg">
@@ -206,52 +201,10 @@
         </div>
     </div>
 
-    <!-- Tool Review Modal -->
-    <div id="tool-review-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto m-4">
-            <div class="p-6 border-b border-gray-200 dark:border-gray-700">
-                <div class="flex justify-between items-center">
-                    <h3 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Review Submission</h3>
-                    <button onclick="closeToolReviewModal()" class="text-gray-500 dark:text-gray-400 hover:text-gray-700">
-                        <i class="ri-close-line text-2xl"></i>
-                    </button>
-                </div>
-            </div>
-
-            <div class="p-6 space-y-4">
-                <!-- Status -->
-                <div>
-                    <label for="tool-review-status" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Status *</label>
-                    <select id="tool-review-status" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500">
-                        <option value="reviewed">Reviewed</option>
-                        <option value="rejected">Rejected</option>
-                    </select>
-                </div>
-
-                <!-- Feedback -->
-                <div>
-                    <label for="tool-review-feedback" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Feedback (optional)</label>
-                    <textarea id="tool-review-feedback" rows="5" placeholder="Enter feedback for the trainer..."
-                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500"></textarea>
-                </div>
-            </div>
-
-            <div class="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end space-x-3">
-                <button onclick="closeToolReviewModal()" class="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
-                    Cancel
-                </button>
-                <button onclick="submitToolReview()" class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
-                    <i class="ri-check-line mr-2"></i>Submit Review
-                </button>
-            </div>
-        </div>
-    </div>
-
     <!-- Scripts -->
     <script src="/src/components/dean/portal-core.js"></script>
     <script src="/src/components/dean/portal-router.js"></script>
     <script src="/src/components/dean/tabs/students.js"></script>
     <script src="/src/components/dean/tabs/notes.js"></script>
-    <script src="/src/components/dean/tabs/tools-of-trade.js"></script>
 </body>
 </html>

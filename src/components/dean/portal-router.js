@@ -16,7 +16,7 @@
 window.DeanRouter = (function () {
     const BASE = '/dean';
     const DEFAULT_TAB = 'students';
-    const VALID_TABS = ['students', 'notes', 'tools-of-trade'];
+    const VALID_TABS = ['students', 'notes'];
 
     // tab -> injected pane element (cache; partials are fetched once).
     const panes = {};
