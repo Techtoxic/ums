@@ -3,19 +3,22 @@
                     <div class="flex justify-between items-center mb-4">
                         <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">Graduation Applications</h2>
                         <div class="flex space-x-4">
-                            <select id="graduation-status-filter" class="border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1 text-sm">
+                            <select id="graduation-status-filter" class="border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md px-3 py-1 text-sm">
                                 <option value="">All Status</option>
                                 <option value="pending">Pending</option>
                                 <option value="approved">Approved</option>
                                 <option value="rejected">Rejected</option>
                                 <option value="under_review">Under Review</option>
                             </select>
-                            <select id="graduation-department-filter" class="border border-gray-300 dark:border-gray-600 rounded-md px-3 py-1 text-sm">
+                            <select id="graduation-department-filter" class="border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-md px-3 py-1 text-sm">
                                 <option value="">All Departments</option>
                                 <option value="engineering_technology">Engineering Technology</option>
                                 <option value="business_studies">Business Studies</option>
                                 <option value="applied_sciences">Applied Sciences</option>
                             </select>
+                            <button onclick="exportGraduationPDF()" class="px-4 py-1 bg-primary text-white rounded text-sm hover:bg-secondary">
+                                <i class="ri-download-2-line mr-1"></i>Export PDF
+                            </button>
                             <button onclick="printGraduationList()" class="px-4 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700">
                                 <i class="ri-printer-line mr-1"></i>Print
                             </button>
