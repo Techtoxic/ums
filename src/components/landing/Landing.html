@@ -8,580 +8,449 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Emurua Dikirr Technical Training Institute — Skills for Life</title>
     <meta name="description" content="EDTTI is a TVETA-accredited public technical training institute in Narok County, Kenya. Skills for Life across Engineering, Science, Hospitality, Business, ICT and Agriculture.">
-    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.0.0/fonts/remixicon.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Academic/Research pairing: Crimson Pro (scholarly headings) + Atkinson Hyperlegible (accessible body). -->
+    <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Crimson+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        /* ============================================================
+           EDTTI Landing — Swiss-Modernism layout, academic type,
+           institution maroon/gold. 8px spacing scale, high contrast.
+           ============================================================ */
         :root {
-            --edtti-maroon: #7A0C0C;
-            --edtti-maroon-dark: #5C0808;
-            --edtti-gold: #D4A017;
-            --edtti-gold-light: #F4D58D;
-            --edtti-cream: #FFF8E7;
-            --edtti-text: #1F2937;
-            --edtti-text-light: #6B7280;
-            --edtti-bg-light: #F9FAFB;
-            --edtti-bg-grey: #F5F5F5;
+            --maroon: #7A0C0C;
+            --maroon-dark: #5C0808;
+            --gold: #D4A017;
+            --gold-light: #F4D58D;
+            --cream: #FFF8E7;
+            --ink: #1A1A1A;
+            --muted: #5B5B5B;
+            --line: #E6E2DC;
+            --bg: #FFFFFF;
+            --bg-alt: #F7F5F1;            /* warm off-white, academic feel */
+            /* 8px base spacing scale */
+            --s1: 8px; --s2: 16px; --s3: 24px; --s4: 32px; --s6: 48px; --s8: 64px; --s12: 96px;
+            --maxw: 1180px;
+            --serif: 'Crimson Pro', Georgia, 'Times New Roman', serif;
+            --sans: 'Atkinson Hyperlegible', -apple-system, BlinkMacSystemFont, sans-serif;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
         html { scroll-behavior: smooth; }
-
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            color: var(--edtti-text);
-            background: #ffffff;
-            overflow-x: hidden;
-        }
-
+        body { font-family: var(--sans); color: var(--ink); background: var(--bg); line-height: 1.6; overflow-x: hidden; }
         a { text-decoration: none; color: inherit; }
+        h1, h2, h3, h4 { font-family: var(--serif); font-weight: 700; letter-spacing: -0.01em; line-height: 1.12; }
+        img { max-width: 100%; display: block; }
 
-        /* ---------- Nav ---------- */
-        .nav {
-            position: sticky;
-            top: 0;
-            z-index: 50;
-            background: #ffffff;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
-        }
-        .nav-inner {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0.85rem 1.25rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 1rem;
-        }
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 0.55rem;
-            font-weight: 800;
-            font-size: 1.4rem;
-            color: var(--edtti-maroon);
-            letter-spacing: -0.02em;
-        }
-        .brand i { font-size: 1.7rem; }
-        .nav-links { display: flex; align-items: center; gap: 0.6rem; }
-        .btn-outline {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
-            padding: 0.5rem 0.95rem;
-            border: 1.5px solid var(--edtti-maroon);
-            color: var(--edtti-maroon);
-            border-radius: 8px;
-            font-size: 0.875rem;
-            font-weight: 600;
-            cursor: pointer;
-            background: transparent;
-            transition: all 0.18s ease;
-        }
-        .btn-outline:hover {
-            background: var(--edtti-maroon);
-            color: #ffffff;
-            transform: translateY(-1px);
-        }
-        .nav-toggle {
-            display: none;
-            font-size: 1.6rem;
-            color: var(--edtti-maroon);
-            background: none;
-            border: none;
-            cursor: pointer;
+        /* Accessible focus ring (keyboard users) */
+        a:focus-visible, button:focus-visible {
+            outline: 3px solid var(--gold);
+            outline-offset: 2px;
+            border-radius: 4px;
         }
 
-        /* ---------- Hero ---------- */
-        .hero {
-            position: relative;
-            min-height: 70vh;
-            display: flex;
-            align-items: center;
-            background: linear-gradient(135deg, var(--edtti-maroon) 0%, var(--edtti-maroon-dark) 100%);
-            color: #ffffff;
-            overflow: hidden;
+        /* Skip link (WCAG) */
+        .skip-link {
+            position: absolute; left: -999px; top: 0; z-index: 200;
+            background: var(--maroon); color: #fff; padding: 10px 16px; border-radius: 0 0 8px 0;
+            font-weight: 700; font-size: 0.9rem;
         }
-        .hero-inner {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 4.5rem 1.25rem;
-            display: grid;
-            grid-template-columns: 1.4fr 1fr;
-            gap: 2rem;
-            align-items: center;
-            width: 100%;
-        }
-        .hero h1 {
-            font-size: clamp(2rem, 5vw, 3.4rem);
-            font-weight: 800;
-            line-height: 1.1;
-            letter-spacing: -0.02em;
-        }
-        .hero .tagline {
-            display: inline-block;
-            margin-top: 1rem;
-            font-size: clamp(1.1rem, 2.5vw, 1.5rem);
-            font-weight: 600;
-            color: var(--edtti-gold-light);
-        }
-        .hero p.lead {
-            margin-top: 1.1rem;
-            font-size: 1.05rem;
-            line-height: 1.65;
-            color: rgba(255, 255, 255, 0.88);
-            max-width: 38rem;
-        }
-        .hero-cta { margin-top: 2rem; display: flex; flex-wrap: wrap; gap: 0.9rem; }
-        .btn-primary {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.85rem 1.6rem;
-            background: var(--edtti-gold);
-            color: var(--edtti-maroon-dark);
-            border-radius: 10px;
-            font-weight: 700;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.18s ease;
-        }
-        .btn-primary:hover {
-            background: var(--edtti-gold-light);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(212, 160, 23, 0.35);
-        }
-        .btn-ghost {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.85rem 1.6rem;
-            background: transparent;
-            color: #ffffff;
-            border: 1.5px solid rgba(255, 255, 255, 0.7);
-            border-radius: 10px;
-            font-weight: 600;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.18s ease;
-        }
-        .btn-ghost:hover {
-            background: rgba(255, 255, 255, 0.12);
-            border-color: #ffffff;
-            transform: translateY(-2px);
-        }
-        /* Abstract decorative cluster — no photos, no people */
-        .hero-decor {
-            position: relative;
-            height: 320px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .hero-decor .ring {
-            position: absolute;
-            border: 2px solid rgba(244, 213, 141, 0.25);
-            border-radius: 50%;
-        }
-        .hero-decor .ring.r1 { width: 320px; height: 320px; }
-        .hero-decor .ring.r2 { width: 230px; height: 230px; border-style: dashed; }
-        .hero-decor .ring.r3 { width: 140px; height: 140px; }
-        .hero-decor .ic {
-            position: absolute;
-            color: var(--edtti-gold-light);
-            opacity: 0.85;
-            font-size: 2.1rem;
-        }
-        .hero-decor .ic.center {
-            font-size: 3.4rem;
-            color: var(--edtti-gold);
-            opacity: 1;
-        }
-        .hero-decor .ic.top { top: 6%; left: 50%; transform: translateX(-50%); }
-        .hero-decor .ic.right { top: 50%; right: 4%; transform: translateY(-50%); }
-        .hero-decor .ic.bottom { bottom: 6%; left: 50%; transform: translateX(-50%); }
-        .hero-decor .ic.left { top: 50%; left: 4%; transform: translateY(-50%); }
+        .skip-link:focus { left: 0; }
 
-        /* ---------- Generic section ---------- */
-        .section { padding: 4.5rem 1.25rem; }
-        .section-inner { max-width: 1200px; margin: 0 auto; }
-        .section h2 {
-            font-size: clamp(1.7rem, 3.5vw, 2.4rem);
-            font-weight: 800;
-            color: var(--edtti-maroon);
-            letter-spacing: -0.02em;
-        }
-        .section .sub {
-            margin-top: 0.5rem;
-            color: var(--edtti-text-light);
-            font-size: 1.05rem;
-        }
-        .bg-grey { background: var(--edtti-bg-grey); }
-        .bg-white { background: #ffffff; }
+        .wrap { max-width: var(--maxw); margin: 0 auto; padding-left: var(--s3); padding-right: var(--s3); }
 
-        /* ---------- About ---------- */
-        .about-grid {
-            margin-top: 2.5rem;
-            display: grid;
-            grid-template-columns: 1.5fr 1fr;
-            gap: 2.5rem;
-            align-items: center;
-        }
-        .about-text { font-size: 1.08rem; line-height: 1.8; color: var(--edtti-text); }
-        .stat-cards { display: flex; flex-direction: column; gap: 1rem; }
-        .stat-card {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 1.25rem;
-            background: var(--edtti-cream);
-            border-radius: 12px;
-            border-left: 4px solid var(--edtti-gold);
-        }
-        .stat-card i { font-size: 2rem; color: var(--edtti-maroon); }
-        .stat-card .num { font-size: 1.35rem; font-weight: 800; color: var(--edtti-maroon); }
-        .stat-card .lbl { font-size: 0.9rem; color: var(--edtti-text-light); }
+        /* ---------------- Nav ---------------- */
+        .nav { position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,0.96); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+        .nav-inner { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); padding: 12px var(--s3); max-width: var(--maxw); margin: 0 auto; }
+        .brand { display: flex; align-items: center; gap: 10px; }
+        .brand img { width: 38px; height: 38px; object-fit: contain; }
+        .brand .bt { display: flex; flex-direction: column; line-height: 1.05; }
+        .brand .bt strong { font-family: var(--serif); font-size: 1.25rem; color: var(--maroon); font-weight: 700; }
+        .brand .bt span { font-size: 0.66rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+        .nav-mid { display: flex; align-items: center; gap: var(--s3); }
+        .nav-mid a { font-size: 0.92rem; font-weight: 700; color: var(--muted); padding: 6px 2px; border-bottom: 2px solid transparent; transition: color .15s, border-color .15s; }
+        .nav-mid a:hover { color: var(--maroon); }
+        .nav-mid a.active { color: var(--maroon); border-bottom-color: var(--gold); }
+        .nav-cta { display: flex; align-items: center; gap: 10px; }
+        .btn { display: inline-flex; align-items: center; gap: 8px; font-family: var(--sans); font-weight: 700; font-size: 0.9rem; cursor: pointer; border-radius: 8px; transition: transform .15s, background .15s, color .15s, box-shadow .15s; border: 1.5px solid transparent; }
+        .btn-sm { padding: 8px 14px; }
+        .btn-lg { padding: 14px 24px; font-size: 1rem; }
+        .btn-primary { background: var(--gold); color: var(--maroon-dark); }
+        .btn-primary:hover { background: var(--gold-light); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(212,160,23,.32); }
+        .btn-outline { background: transparent; border-color: var(--maroon); color: var(--maroon); }
+        .btn-outline:hover { background: var(--maroon); color: #fff; transform: translateY(-2px); }
+        .btn-ghost { background: transparent; border-color: rgba(255,255,255,.6); color: #fff; }
+        .btn-ghost:hover { background: rgba(255,255,255,.12); border-color: #fff; transform: translateY(-2px); }
+        .nav-toggle { display: none; background: none; border: none; color: var(--maroon); font-size: 1.7rem; cursor: pointer; }
 
-        /* ---------- Departments grid ---------- */
-        .dept-grid {
-            margin-top: 2.5rem;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1.5rem;
+        /* ---------------- Hero ---------------- */
+        .hero { position: relative; background: var(--maroon); color: #fff; overflow: hidden; }
+        /* Swiss grid texture — restrained, decorative */
+        .hero::before {
+            content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .5;
+            background-image: linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
+            background-size: 48px 48px;
+            mask-image: radial-gradient(ellipse at 70% 30%, #000 0%, transparent 70%);
         }
-        .dept-card {
-            background: #ffffff;
-            border: 1px solid #eee;
-            border-radius: 14px;
-            padding: 1.8rem;
-            text-align: center;
-            transition: transform 0.18s ease, box-shadow 0.18s ease;
-        }
-        .dept-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 28px rgba(122, 12, 12, 0.12);
-        }
-        .dept-card .dept-icon {
-            width: 64px;
-            height: 64px;
-            margin: 0 auto 1rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--edtti-cream);
-            color: var(--edtti-maroon);
-            font-size: 2rem;
-            border-radius: 50%;
-        }
-        .dept-card h3 { font-size: 1.15rem; font-weight: 700; color: var(--edtti-text); }
-        .dept-card a.view {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.35rem;
-            margin-top: 0.9rem;
-            color: var(--edtti-maroon);
-            font-weight: 600;
-            font-size: 0.9rem;
-            cursor: pointer;
-        }
-        .dept-card a.view:hover { color: var(--edtti-gold); }
+        .hero-inner { position: relative; max-width: var(--maxw); margin: 0 auto; padding: var(--s12) var(--s3); display: grid; grid-template-columns: 1.35fr 1fr; gap: var(--s8); align-items: center; }
+        .eyebrow { display: inline-flex; align-items: center; gap: 8px; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold-light); border: 1px solid rgba(244,213,141,.4); padding: 6px 12px; border-radius: 999px; }
+        .hero h1 { margin-top: var(--s3); font-size: clamp(2.4rem, 5.2vw, 4rem); }
+        .hero .tag { display: block; margin-top: var(--s2); font-family: var(--serif); font-style: italic; font-size: clamp(1.2rem, 2.6vw, 1.7rem); color: var(--gold-light); font-weight: 500; }
+        .hero p.lead { margin-top: var(--s3); font-size: 1.1rem; line-height: 1.7; color: rgba(255,255,255,.9); max-width: 40rem; }
+        .hero-cta { margin-top: var(--s6); display: flex; flex-wrap: wrap; gap: var(--s2); }
+        .hero-badges { margin-top: var(--s6); display: flex; flex-wrap: wrap; gap: var(--s3); }
+        .hero-badge { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; color: rgba(255,255,255,.85); }
+        .hero-badge i { color: var(--gold); font-size: 1.3rem; }
+        /* Disciplines panel (no photos/people — abstract, on-brand) */
+        .disc { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+        .disc .d { display: flex; flex-direction: column; gap: 8px; padding: var(--s3); background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); border-radius: 14px; transition: background .15s, transform .15s; }
+        .disc .d:hover { background: rgba(255,255,255,.1); transform: translateY(-3px); }
+        .disc .d i { font-size: 1.8rem; color: var(--gold-light); }
+        .disc .d span { font-weight: 700; font-size: 0.96rem; }
 
-        /* ---------- Why cards ---------- */
-        .why-grid {
-            margin-top: 2.5rem;
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 1.5rem;
-        }
-        .why-card {
-            padding: 1.8rem;
-            border-radius: 14px;
-            background: var(--edtti-bg-light);
-            border-top: 4px solid var(--edtti-maroon);
-        }
-        .why-card i { font-size: 2.2rem; color: var(--edtti-gold); }
-        .why-card h3 { margin-top: 0.9rem; font-size: 1.1rem; font-weight: 700; color: var(--edtti-maroon); }
-        .why-card p { margin-top: 0.5rem; font-size: 0.94rem; line-height: 1.6; color: var(--edtti-text-light); }
+        /* ---------------- Stats band ---------------- */
+        .stats { background: var(--cream); border-bottom: 1px solid var(--line); }
+        .stats-inner { max-width: var(--maxw); margin: 0 auto; padding: var(--s6) var(--s3); display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s3); }
+        .stat { display: flex; align-items: center; gap: var(--s2); justify-content: center; }
+        .stat i { font-size: 2.2rem; color: var(--maroon); }
+        .stat .num { font-family: var(--serif); font-size: 2rem; font-weight: 700; color: var(--maroon); line-height: 1; }
+        .stat .lbl { font-size: 0.88rem; color: var(--muted); }
 
-        /* ---------- Footer ---------- */
-        .footer { background: var(--edtti-maroon-dark); color: #ffffff; }
-        .footer-inner {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 3.5rem 1.25rem 2rem;
-            display: grid;
-            grid-template-columns: 1.3fr 1.4fr 1fr;
-            gap: 2.5rem;
-        }
-        .footer h4 {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: var(--edtti-gold-light);
-            margin-bottom: 1rem;
-        }
-        .footer .f-brand { display: flex; align-items: center; gap: 0.5rem; font-size: 1.5rem; font-weight: 800; }
-        .footer p, .footer li { font-size: 0.92rem; line-height: 1.75; color: rgba(255, 255, 255, 0.82); }
+        /* ---------------- Sections ---------------- */
+        .section { padding: var(--s12) 0; }
+        .section.alt { background: var(--bg-alt); }
+        .section-head { max-width: 46rem; }
+        .kicker { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); }
+        .section h2 { margin-top: 10px; font-size: clamp(1.9rem, 3.6vw, 2.7rem); color: var(--ink); }
+        .section h2 .accent { color: var(--maroon); }
+        .section .sub { margin-top: var(--s2); font-size: 1.08rem; color: var(--muted); }
+        .rule { width: 56px; height: 4px; background: var(--gold); margin-top: var(--s3); border-radius: 2px; }
+
+        /* About */
+        .about-grid { margin-top: var(--s6); display: grid; grid-template-columns: 1.4fr 1fr; gap: var(--s8); align-items: start; }
+        .about-text p { font-size: 1.12rem; line-height: 1.85; color: var(--ink); margin-bottom: var(--s2); }
+        .about-text p + p { margin-top: 0; }
+        .feature-list { list-style: none; margin-top: var(--s3); display: grid; gap: 12px; }
+        .feature-list li { display: flex; align-items: flex-start; gap: 10px; font-size: 1rem; }
+        .feature-list i { color: var(--maroon); font-size: 1.2rem; margin-top: 2px; }
+        .quote-card { background: var(--maroon); color: #fff; border-radius: 16px; padding: var(--s4); }
+        .quote-card .q { font-family: var(--serif); font-style: italic; font-size: 1.5rem; line-height: 1.4; }
+        .quote-card .q-by { margin-top: var(--s3); font-size: 0.9rem; color: var(--gold-light); font-weight: 700; letter-spacing: 0.04em; }
+
+        /* Departments */
+        .dept-grid { margin-top: var(--s6); display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s3); }
+        .dept-card { background: var(--bg); border: 1px solid var(--line); border-radius: 14px; padding: var(--s4); transition: transform .16s, box-shadow .16s, border-color .16s; }
+        .dept-card:hover { transform: translateY(-4px); box-shadow: 0 14px 34px rgba(122,12,12,.1); border-color: transparent; }
+        .dept-icon { width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; background: var(--cream); color: var(--maroon); font-size: 1.7rem; border-radius: 12px; margin-bottom: var(--s2); }
+        .dept-card h3 { font-size: 1.2rem; color: var(--ink); }
+        .dept-card p { margin-top: 6px; font-size: 0.92rem; color: var(--muted); }
+
+        /* Why */
+        .why-grid { margin-top: var(--s6); display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--s3); }
+        .why-card { padding: var(--s4); border-radius: 14px; background: var(--bg); border: 1px solid var(--line); border-top: 4px solid var(--maroon); }
+        .why-card .ic { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: var(--cream); color: var(--maroon); font-size: 1.5rem; }
+        .why-card h3 { margin-top: var(--s2); font-size: 1.12rem; color: var(--ink); }
+        .why-card p { margin-top: 8px; font-size: 0.94rem; line-height: 1.6; color: var(--muted); }
+
+        /* CTA band */
+        .cta { background: linear-gradient(135deg, var(--maroon) 0%, var(--maroon-dark) 100%); color: #fff; }
+        .cta-inner { max-width: var(--maxw); margin: 0 auto; padding: var(--s12) var(--s3); display: grid; grid-template-columns: 1.4fr 1fr; gap: var(--s6); align-items: center; }
+        .cta h2 { font-size: clamp(1.9rem, 3.6vw, 2.6rem); }
+        .cta p { margin-top: var(--s2); font-size: 1.08rem; color: rgba(255,255,255,.9); max-width: 36rem; }
+        .cta-actions { display: flex; flex-direction: column; gap: 12px; }
+        .cta-actions .btn { justify-content: center; }
+
+        /* Footer */
+        .footer { background: var(--maroon-dark); color: #fff; }
+        .footer-inner { max-width: var(--maxw); margin: 0 auto; padding: var(--s8) var(--s3) var(--s4); display: grid; grid-template-columns: 1.4fr 1.3fr 1fr; gap: var(--s6); }
+        .footer .f-brand { display: flex; align-items: center; gap: 10px; }
+        .footer .f-brand img { width: 40px; height: 40px; object-fit: contain; }
+        .footer .f-brand strong { font-family: var(--serif); font-size: 1.4rem; }
+        .footer p, .footer li { font-size: 0.92rem; line-height: 1.75; color: rgba(255,255,255,.8); }
+        .footer h4 { font-size: 1.05rem; color: var(--gold-light); margin-bottom: var(--s2); }
         .footer ul { list-style: none; }
-        .footer .f-contact li { display: flex; align-items: flex-start; gap: 0.55rem; margin-bottom: 0.4rem; }
-        .footer .f-contact i { color: var(--edtti-gold); margin-top: 0.18rem; }
-        .footer .f-portals a {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
-            margin-bottom: 0.55rem;
-            color: rgba(255, 255, 255, 0.88);
-            font-weight: 500;
-            transition: color 0.16s ease, transform 0.16s ease;
-        }
-        .footer .f-portals a:hover { color: var(--edtti-gold-light); transform: translateX(3px); }
-        .footer-motto { color: var(--edtti-gold) !important; font-weight: 600; margin-top: 0.5rem; }
-        .footer-bottom {
-            border-top: 1px solid rgba(255, 255, 255, 0.15);
-            text-align: center;
-            padding: 1.25rem;
-            font-size: 0.85rem;
-            color: rgba(255, 255, 255, 0.65);
-        }
-        .footer-bottom .ums { display: block; margin-top: 0.25rem; font-size: 0.78rem; color: rgba(255, 255, 255, 0.45); }
+        .f-contact li { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+        .f-contact i { color: var(--gold); margin-top: 3px; }
+        .f-portals a { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 10px; color: rgba(255,255,255,.88); font-weight: 700; transition: color .15s, transform .15s; }
+        .f-portals a:hover { color: var(--gold-light); transform: translateX(3px); }
+        .f-motto { color: var(--gold) !important; font-family: var(--serif); font-style: italic; font-weight: 600; margin-top: 10px; }
+        .footer-bottom { border-top: 1px solid rgba(255,255,255,.15); text-align: center; padding: var(--s3); font-size: 0.85rem; color: rgba(255,255,255,.65); }
+        .footer-bottom .ums { display: block; margin-top: 4px; font-size: 0.78rem; color: rgba(255,255,255,.45); }
 
-        /* ---------- Responsive ---------- */
-        @media (max-width: 900px) {
-            .hero-inner { grid-template-columns: 1fr; }
-            .hero-decor { display: none; }
-            .about-grid { grid-template-columns: 1fr; }
+        /* Scroll reveal (respects reduced motion) */
+        .reveal { opacity: 0; transform: translateY(16px); transition: opacity .5s ease, transform .5s ease; }
+        .reveal.in { opacity: 1; transform: none; }
+        @media (prefers-reduced-motion: reduce) {
+            html { scroll-behavior: auto; }
+            .reveal { opacity: 1; transform: none; transition: none; }
+        }
+
+        /* ---------------- Responsive ---------------- */
+        @media (max-width: 980px) {
+            .hero-inner { grid-template-columns: 1fr; gap: var(--s6); }
+            .about-grid { grid-template-columns: 1fr; gap: var(--s4); }
             .dept-grid { grid-template-columns: repeat(2, 1fr); }
             .why-grid { grid-template-columns: repeat(2, 1fr); }
-            .footer-inner { grid-template-columns: 1fr; gap: 2rem; }
+            .cta-inner { grid-template-columns: 1fr; }
+            .footer-inner { grid-template-columns: 1fr; gap: var(--s4); }
+            .nav-mid { display: none; }
         }
-        @media (max-width: 640px) {
-            .nav-links {
-                display: none;
-                position: absolute;
-                top: 100%;
-                left: 0;
-                right: 0;
-                flex-direction: column;
-                align-items: stretch;
-                background: #ffffff;
-                padding: 1rem 1.25rem;
-                gap: 0.6rem;
-                box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-            }
-            .nav-links.open { display: flex; }
-            .nav-links .btn-outline { justify-content: center; }
+        @media (max-width: 620px) {
+            :root { --s12: 64px; --s8: 48px; }
+            .nav-cta { display: none; }
+            .nav-cta.open { display: flex; position: absolute; top: 100%; left: 0; right: 0; flex-direction: column; align-items: stretch; background: #fff; padding: var(--s2) var(--s3); gap: 10px; border-bottom: 1px solid var(--line); box-shadow: 0 10px 20px rgba(0,0,0,.08); }
+            .nav-cta.open .btn { justify-content: center; }
             .nav-toggle { display: block; }
-            .dept-grid { grid-template-columns: 1fr; }
-            .why-grid { grid-template-columns: 1fr; }
-            .section { padding: 3rem 1.25rem; }
-            .hero-inner { padding: 3rem 1.25rem; }
+            .stats-inner { grid-template-columns: 1fr; gap: var(--s2); }
+            .stat { justify-content: flex-start; }
+            .dept-grid, .why-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
+    <a href="#main" class="skip-link">Skip to main content</a>
 
-    <!-- 1. NAV -->
-    <nav class="nav">
+    <!-- ============ NAV ============ -->
+    <nav class="nav" aria-label="Primary">
         <div class="nav-inner">
             <a href="/" class="brand" aria-label="EDTTI home">
-                <i class="ri-graduation-cap-line" aria-hidden="true"></i>
-                <span>EDTTI</span>
+                <img src="/public/img/logo.png" alt="EDTTI crest">
+                <span class="bt">
+                    <strong>EDTTI</strong>
+                    <span>Emurua Dikirr TTI</span>
+                </span>
             </a>
-            <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation menu" aria-expanded="false">
+            <div class="nav-mid" id="navMid">
+                <a href="#about">About</a>
+                <a href="#departments">Departments</a>
+                <a href="#why">Why EDTTI</a>
+                <a href="#contact">Contact</a>
+            </div>
+            <button class="nav-toggle" id="navToggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="navCta">
                 <i class="ri-menu-line" aria-hidden="true"></i>
             </button>
-            <div class="nav-links" id="navLinks">
-                <a href="/student/login" class="btn-outline" aria-label="Student Portal — log in as a student">
-                    <i class="ri-user-line" aria-hidden="true"></i> Student Portal
-                </a>
-                <a href="/trainer/login" class="btn-outline" aria-label="Trainer Portal — log in as a trainer">
-                    <i class="ri-presentation-line" aria-hidden="true"></i> Trainer Portal
-                </a>
-                <a href="/admin/login" class="btn-outline" aria-label="Staff Portal — log in as staff">
-                    <i class="ri-shield-user-line" aria-hidden="true"></i> Staff Portal
-                </a>
+            <div class="nav-cta" id="navCta">
+                <a href="/student/login" class="btn btn-outline btn-sm"><i class="ri-user-line" aria-hidden="true"></i> Student</a>
+                <a href="/trainer/login" class="btn btn-outline btn-sm"><i class="ri-presentation-line" aria-hidden="true"></i> Trainer</a>
+                <a href="/admin/login" class="btn btn-primary btn-sm"><i class="ri-shield-user-line" aria-hidden="true"></i> Staff Portal</a>
             </div>
         </div>
     </nav>
 
-    <!-- 2. HERO -->
-    <header class="hero">
-        <div class="hero-inner">
-            <div>
-                <h1>Emurua Dikirr Technical Training Institute</h1>
-                <span class="tagline">Skills for Life</span>
-                <p class="lead">
-                    A TVETA-accredited public technical institution committed to equipping Kenyan
-                    youth with employable skills in Engineering, Science, Hospitality, Business,
-                    ICT, and Agriculture.
-                </p>
-                <div class="hero-cta">
-                    <a href="/student/login" class="btn-primary" aria-label="Student Portal — log in as a student">
-                        <i class="ri-graduation-cap-line" aria-hidden="true"></i> Student Portal
-                    </a>
-                    <a href="/admin/login" class="btn-ghost" aria-label="Staff Portal — log in as staff">
-                        <i class="ri-shield-user-line" aria-hidden="true"></i> Staff Portal
-                    </a>
-                </div>
-            </div>
-            <div class="hero-decor" aria-hidden="true">
-                <span class="ring r1"></span>
-                <span class="ring r2"></span>
-                <span class="ring r3"></span>
-                <i class="ic center ri-graduation-cap-line"></i>
-                <i class="ic top ri-flask-line"></i>
-                <i class="ic right ri-computer-line"></i>
-                <i class="ic bottom ri-tools-line"></i>
-                <i class="ic left ri-plant-line"></i>
-            </div>
-        </div>
-    </header>
-
-    <!-- 3. ABOUT -->
-    <section class="section bg-white" id="about">
-        <div class="section-inner">
-            <h2>About EDTTI</h2>
-            <div class="about-grid">
-                <p class="about-text">
-                    Emurua Dikirr Technical Training Institute is a public TVET institution located
-                    in Narok County, established in September 2019 under the Kenyan government's
-                    Vision 2030 initiative. We provide quality technical and vocational education
-                    designed to prepare our trainees for the global job market and entrepreneurship.
-                </p>
-                <div class="stat-cards">
-                    <div class="stat-card">
-                        <i class="ri-book-open-line" aria-hidden="true"></i>
-                        <div>
-                            <div class="num">32+ Programmes</div>
-                            <div class="lbl">Across all departments</div>
-                        </div>
+    <main id="main">
+        <!-- ============ HERO ============ -->
+        <header class="hero">
+            <div class="hero-inner">
+                <div>
+                    <span class="eyebrow"><i class="ri-verified-badge-line" aria-hidden="true"></i> TVETA-Accredited · Public TVET</span>
+                    <h1>Emurua Dikirr Technical Training Institute</h1>
+                    <span class="tag">Skills for Life</span>
+                    <p class="lead">
+                        A public technical and vocational institution in Narok County, Kenya — equipping
+                        young people with employable, hands-on skills across Engineering, Science,
+                        Hospitality, Business, ICT and Agriculture.
+                    </p>
+                    <div class="hero-cta">
+                        <a href="/student/login" class="btn btn-primary btn-lg"><i class="ri-graduation-cap-line" aria-hidden="true"></i> Student Portal</a>
+                        <a href="#departments" class="btn btn-ghost btn-lg"><i class="ri-compass-3-line" aria-hidden="true"></i> Explore Programmes</a>
                     </div>
-                    <div class="stat-card">
-                        <i class="ri-building-line" aria-hidden="true"></i>
-                        <div>
-                            <div class="num">7 Departments</div>
-                            <div class="lbl">Specialized technical fields</div>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <i class="ri-calendar-event-line" aria-hidden="true"></i>
-                        <div>
-                            <div class="num">Since 2019</div>
-                            <div class="lbl">Serving Narok County</div>
-                        </div>
+                    <div class="hero-badges">
+                        <span class="hero-badge"><i class="ri-government-line" aria-hidden="true"></i> HEF funding eligible</span>
+                        <span class="hero-badge"><i class="ri-cpu-line" aria-hidden="true"></i> Jitume digital skills lab</span>
+                        <span class="hero-badge"><i class="ri-calendar-event-line" aria-hidden="true"></i> Established 2019</span>
                     </div>
                 </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- 4. DEPARTMENTS -->
-    <section class="section bg-grey" id="departments">
-        <div class="section-inner">
-            <h2>Our Departments</h2>
-            <p class="sub">Programmes across seven specialized departments</p>
-            <div class="dept-grid">
-                <div class="dept-card">
-                    <div class="dept-icon"><i class="ri-flask-line" aria-hidden="true"></i></div>
-                    <h3>Applied Science</h3>
-                    <a href="#" class="view">View Programmes <i class="ri-arrow-right-line" aria-hidden="true"></i></a>
-                </div>
-                <div class="dept-card">
-                    <div class="dept-icon"><i class="ri-plant-line" aria-hidden="true"></i></div>
-                    <h3>Agriculture</h3>
-                    <a href="#" class="view">View Programmes <i class="ri-arrow-right-line" aria-hidden="true"></i></a>
-                </div>
-                <div class="dept-card">
-                    <div class="dept-icon"><i class="ri-building-2-line" aria-hidden="true"></i></div>
-                    <h3>Building &amp; Civil Engineering</h3>
-                    <a href="#" class="view">View Programmes <i class="ri-arrow-right-line" aria-hidden="true"></i></a>
-                </div>
-                <div class="dept-card">
-                    <div class="dept-icon"><i class="ri-tools-line" aria-hidden="true"></i></div>
-                    <h3>Electromechanical</h3>
-                    <a href="#" class="view">View Programmes <i class="ri-arrow-right-line" aria-hidden="true"></i></a>
-                </div>
-                <div class="dept-card">
-                    <div class="dept-icon"><i class="ri-restaurant-line" aria-hidden="true"></i></div>
-                    <h3>Hospitality</h3>
-                    <a href="#" class="view">View Programmes <i class="ri-arrow-right-line" aria-hidden="true"></i></a>
-                </div>
-                <div class="dept-card">
-                    <div class="dept-icon"><i class="ri-briefcase-line" aria-hidden="true"></i></div>
-                    <h3>Business &amp; Liberal Studies</h3>
-                    <a href="#" class="view">View Programmes <i class="ri-arrow-right-line" aria-hidden="true"></i></a>
-                </div>
-                <div class="dept-card">
-                    <div class="dept-icon"><i class="ri-computer-line" aria-hidden="true"></i></div>
-                    <h3>Computing &amp; Informatics</h3>
-                    <a href="#" class="view">View Programmes <i class="ri-arrow-right-line" aria-hidden="true"></i></a>
+                <div class="disc" aria-hidden="true">
+                    <div class="d"><i class="ri-flask-line"></i><span>Applied Science</span></div>
+                    <div class="d"><i class="ri-tools-line"></i><span>Electromechanical</span></div>
+                    <div class="d"><i class="ri-computer-line"></i><span>Computing &amp; ICT</span></div>
+                    <div class="d"><i class="ri-building-2-line"></i><span>Building &amp; Civil</span></div>
+                    <div class="d"><i class="ri-restaurant-line"></i><span>Hospitality</span></div>
+                    <div class="d"><i class="ri-plant-line"></i><span>Agriculture</span></div>
                 </div>
             </div>
-        </div>
-    </section>
+        </header>
 
-    <!-- 5. WHY EDTTI -->
-    <section class="section bg-white" id="why">
-        <div class="section-inner">
-            <h2>Why Choose EDTTI?</h2>
-            <div class="why-grid">
-                <div class="why-card">
-                    <i class="ri-shield-check-line" aria-hidden="true"></i>
-                    <h3>TVETA Accredited</h3>
-                    <p>Recognized by the Technical and Vocational Education and Training Authority</p>
+        <!-- ============ STATS ============ -->
+        <section class="stats" aria-label="Institute at a glance">
+            <div class="stats-inner">
+                <div class="stat">
+                    <i class="ri-book-open-line" aria-hidden="true"></i>
+                    <div><div class="num">32+</div><div class="lbl">Programmes offered</div></div>
                 </div>
-                <div class="why-card">
-                    <i class="ri-cpu-line" aria-hidden="true"></i>
-                    <h3>Modern Equipment</h3>
-                    <p>Equipped with modern labs, workshops, and Jitume digital skills lab</p>
+                <div class="stat">
+                    <i class="ri-building-line" aria-hidden="true"></i>
+                    <div><div class="num">7</div><div class="lbl">Specialized departments</div></div>
                 </div>
-                <div class="why-card">
-                    <i class="ri-government-line" aria-hidden="true"></i>
-                    <h3>Government Funding</h3>
-                    <p>Eligible for HEF funding through hef.co.ke</p>
-                </div>
-                <div class="why-card">
-                    <i class="ri-medal-line" aria-hidden="true"></i>
-                    <h3>Skills for Life</h3>
-                    <p>Whole-rounded training preparing graduates for global competitiveness</p>
+                <div class="stat">
+                    <i class="ri-flag-line" aria-hidden="true"></i>
+                    <div><div class="num">2019</div><div class="lbl">Serving Narok County since</div></div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- 6. FOOTER -->
-    <footer class="footer">
+        <!-- ============ ABOUT ============ -->
+        <section class="section" id="about">
+            <div class="wrap">
+                <div class="section-head reveal">
+                    <span class="kicker">About the Institute</span>
+                    <h2>Quality technical education, <span class="accent">built for the job market</span></h2>
+                    <div class="rule"></div>
+                </div>
+                <div class="about-grid">
+                    <div class="about-text reveal">
+                        <p>
+                            Emurua Dikirr Technical Training Institute is a public TVET institution in
+                            Narok County, established in September 2019 under the Kenyan government's
+                            Vision 2030 initiative. We deliver competency-based training designed to
+                            prepare trainees for employment and entrepreneurship.
+                        </p>
+                        <ul class="feature-list">
+                            <li><i class="ri-checkbox-circle-line" aria-hidden="true"></i> Competency-Based Education &amp; Training (CBET) curriculum</li>
+                            <li><i class="ri-checkbox-circle-line" aria-hidden="true"></i> Modern labs, workshops and a Jitume digital skills lab</li>
+                            <li><i class="ri-checkbox-circle-line" aria-hidden="true"></i> Pathways from Level 3 through Level 6 qualifications</li>
+                            <li><i class="ri-checkbox-circle-line" aria-hidden="true"></i> Government funding support via the Higher Education Fund (HEF)</li>
+                        </ul>
+                    </div>
+                    <aside class="quote-card reveal">
+                        <p class="q">"We don't just teach trades — we prepare graduates who are globally competitive and ready to build."</p>
+                        <p class="q-by">— The EDTTI promise</p>
+                    </aside>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ DEPARTMENTS ============ -->
+        <section class="section alt" id="departments">
+            <div class="wrap">
+                <div class="section-head reveal">
+                    <span class="kicker">Our Departments</span>
+                    <h2>Seven departments, <span class="accent">one standard of excellence</span></h2>
+                    <p class="sub">Hands-on programmes spanning the trades and professions that power the region.</p>
+                    <div class="rule"></div>
+                </div>
+                <div class="dept-grid">
+                    <article class="dept-card reveal">
+                        <div class="dept-icon"><i class="ri-flask-line" aria-hidden="true"></i></div>
+                        <h3>Applied Science</h3>
+                        <p>Analytical Chemistry, Applied Biology, Science Laboratory Technology.</p>
+                    </article>
+                    <article class="dept-card reveal">
+                        <div class="dept-icon"><i class="ri-plant-line" aria-hidden="true"></i></div>
+                        <h3>Agriculture</h3>
+                        <p>Agricultural Extension and sustainable crop &amp; livestock practice.</p>
+                    </article>
+                    <article class="dept-card reveal">
+                        <div class="dept-icon"><i class="ri-building-2-line" aria-hidden="true"></i></div>
+                        <h3>Building &amp; Civil Engineering</h3>
+                        <p>Building Technology and Plumbing, from substructure to finishes.</p>
+                    </article>
+                    <article class="dept-card reveal">
+                        <div class="dept-icon"><i class="ri-tools-line" aria-hidden="true"></i></div>
+                        <h3>Electromechanical</h3>
+                        <p>Electrical and Automotive Engineering, electronics and machines.</p>
+                    </article>
+                    <article class="dept-card reveal">
+                        <div class="dept-icon"><i class="ri-restaurant-line" aria-hidden="true"></i></div>
+                        <h3>Hospitality</h3>
+                        <p>Food &amp; Beverage, Fashion &amp; Design, Cosmetology, Tour &amp; Travel.</p>
+                    </article>
+                    <article class="dept-card reveal">
+                        <div class="dept-icon"><i class="ri-briefcase-line" aria-hidden="true"></i></div>
+                        <h3>Business &amp; Liberal Studies</h3>
+                        <p>Business Management, Office Administration, Social Work, Storekeeping.</p>
+                    </article>
+                    <article class="dept-card reveal">
+                        <div class="dept-icon"><i class="ri-computer-line" aria-hidden="true"></i></div>
+                        <h3>Computing &amp; Informatics</h3>
+                        <p>ICT and Library &amp; Information Science with a modern digital lab.</p>
+                    </article>
+                    <article class="dept-card reveal" style="display:flex;flex-direction:column;justify-content:center;background:var(--maroon);color:#fff;border:none;">
+                        <h3 style="color:#fff;">Find your programme</h3>
+                        <p style="color:rgba(255,255,255,.85);">Sign in to the Student Portal to view modules, fees and your timetable.</p>
+                        <a href="/student/login" class="btn btn-primary btn-sm" style="margin-top:var(--s2);align-self:flex-start;"><i class="ri-arrow-right-line" aria-hidden="true"></i> Student Portal</a>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ WHY ============ -->
+        <section class="section" id="why">
+            <div class="wrap">
+                <div class="section-head reveal">
+                    <span class="kicker">Why EDTTI</span>
+                    <h2>Reasons trainees <span class="accent">choose us</span></h2>
+                    <div class="rule"></div>
+                </div>
+                <div class="why-grid">
+                    <article class="why-card reveal">
+                        <div class="ic"><i class="ri-shield-check-line" aria-hidden="true"></i></div>
+                        <h3>TVETA Accredited</h3>
+                        <p>Recognised by the Technical and Vocational Education and Training Authority.</p>
+                    </article>
+                    <article class="why-card reveal">
+                        <div class="ic"><i class="ri-cpu-line" aria-hidden="true"></i></div>
+                        <h3>Modern Equipment</h3>
+                        <p>Well-equipped labs, workshops and a Jitume digital skills lab.</p>
+                    </article>
+                    <article class="why-card reveal">
+                        <div class="ic"><i class="ri-government-line" aria-hidden="true"></i></div>
+                        <h3>Government Funding</h3>
+                        <p>Eligible for HEF support through <span style="white-space:nowrap;">hef.co.ke</span>.</p>
+                    </article>
+                    <article class="why-card reveal">
+                        <div class="ic"><i class="ri-medal-line" aria-hidden="true"></i></div>
+                        <h3>Skills for Life</h3>
+                        <p>Whole-rounded training preparing graduates for global competitiveness.</p>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ CTA ============ -->
+        <section class="cta" aria-label="Get started">
+            <div class="cta-inner">
+                <div class="reveal">
+                    <h2>Ready to begin your journey?</h2>
+                    <p>Access your portal to manage admissions, fees, units and tools of trade — anytime, from anywhere.</p>
+                </div>
+                <div class="cta-actions reveal">
+                    <a href="/student/login" class="btn btn-primary btn-lg"><i class="ri-user-line" aria-hidden="true"></i> Student Portal</a>
+                    <a href="/trainer/login" class="btn btn-ghost btn-lg"><i class="ri-presentation-line" aria-hidden="true"></i> Trainer Portal</a>
+                    <a href="/admin/login" class="btn btn-ghost btn-lg"><i class="ri-shield-user-line" aria-hidden="true"></i> Staff Portal</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="footer" id="contact">
         <div class="footer-inner">
             <div>
                 <div class="f-brand">
-                    <i class="ri-graduation-cap-line" aria-hidden="true"></i> EDTTI
+                    <img src="/public/img/logo.png" alt="EDTTI crest">
+                    <strong>EDTTI</strong>
                 </div>
-                <p>Emurua Dikirr Technical Training Institute — a public TVET institution preparing Kenyan youth for the global job market.</p>
-                <p class="footer-motto">Skills for Life</p>
+                <p style="margin-top:var(--s2);">Emurua Dikirr Technical Training Institute — a public TVET institution preparing Kenyan youth for the global job market.</p>
+                <p class="f-motto">Skills for Life</p>
             </div>
             <div>
                 <h4>Contact</h4>
                 <ul class="f-contact">
                     <li><i class="ri-map-pin-line" aria-hidden="true"></i><span>Mogondo Centre, Dikirr-Olchobose Road, Narok County, Kenya</span></li>
                     <li><i class="ri-mail-send-line" aria-hidden="true"></i><span>P.O. BOX 180-20401, Chebunyo</span></li>
-                    <li><i class="ri-phone-line" aria-hidden="true"></i><span>+254 740 555 123</span></li>
-                    <li><i class="ri-phone-line" aria-hidden="true"></i><span>+254 728 733 148</span></li>
-                    <li><i class="ri-mail-line" aria-hidden="true"></i><span>info@edtti.ac.ke</span></li>
+                    <li><i class="ri-phone-line" aria-hidden="true"></i><a href="tel:+254740555123">+254 740 555 123</a></li>
+                    <li><i class="ri-phone-line" aria-hidden="true"></i><a href="tel:+254728733148">+254 728 733 148</a></li>
+                    <li><i class="ri-mail-line" aria-hidden="true"></i><a href="mailto:info@edtti.ac.ke">info@edtti.ac.ke</a></li>
                 </ul>
             </div>
             <div>
                 <h4>Portals</h4>
                 <div class="f-portals">
-                    <a href="/student/login" aria-label="Student Portal — log in as a student">
-                        <i class="ri-user-line" aria-hidden="true"></i> Student Portal
-                    </a>
-                    <a href="/trainer/login" aria-label="Trainer Portal — log in as a trainer">
-                        <i class="ri-presentation-line" aria-hidden="true"></i> Trainer Portal
-                    </a>
-                    <a href="/admin/login" aria-label="Staff Portal — log in as staff">
-                        <i class="ri-shield-user-line" aria-hidden="true"></i> Staff Portal
-                    </a>
+                    <a href="/student/login"><i class="ri-user-line" aria-hidden="true"></i> Student Portal</a>
+                    <a href="/trainer/login"><i class="ri-presentation-line" aria-hidden="true"></i> Trainer Portal</a>
+                    <a href="/admin/login"><i class="ri-shield-user-line" aria-hidden="true"></i> Staff Portal</a>
                 </div>
             </div>
         </div>
@@ -592,21 +461,51 @@
     </footer>
 
     <script>
-        // Mobile nav toggle only — landing page is public, no auth.
+        // Public landing — no auth. Mobile menu, scrollspy (active nav), reveal-on-scroll.
         (function () {
             var toggle = document.getElementById('navToggle');
-            var links = document.getElementById('navLinks');
-            if (!toggle || !links) return;
-            toggle.addEventListener('click', function () {
-                var open = links.classList.toggle('open');
-                toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-            });
-            links.addEventListener('click', function (e) {
-                if (e.target.closest('a')) {
-                    links.classList.remove('open');
-                    toggle.setAttribute('aria-expanded', 'false');
-                }
-            });
+            var cta = document.getElementById('navCta');
+            if (toggle && cta) {
+                toggle.addEventListener('click', function () {
+                    var open = cta.classList.toggle('open');
+                    toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+                });
+                cta.addEventListener('click', function (e) {
+                    if (e.target.closest('a')) { cta.classList.remove('open'); toggle.setAttribute('aria-expanded', 'false'); }
+                });
+            }
+
+            // Scrollspy — highlight the nav link for the section in view.
+            var links = Array.prototype.slice.call(document.querySelectorAll('.nav-mid a'));
+            var map = {};
+            links.forEach(function (a) { var id = a.getAttribute('href').slice(1); if (id) map[id] = a; });
+            var sections = Object.keys(map).map(function (id) { return document.getElementById(id); }).filter(Boolean);
+            if ('IntersectionObserver' in window && sections.length) {
+                var spy = new IntersectionObserver(function (entries) {
+                    entries.forEach(function (en) {
+                        if (en.isIntersecting) {
+                            links.forEach(function (l) { l.classList.remove('active'); });
+                            var active = map[en.target.id];
+                            if (active) active.classList.add('active');
+                        }
+                    });
+                }, { rootMargin: '-45% 0px -50% 0px', threshold: 0 });
+                sections.forEach(function (s) { spy.observe(s); });
+            }
+
+            // Reveal on scroll (skipped when reduced motion is preferred).
+            var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            var reveals = Array.prototype.slice.call(document.querySelectorAll('.reveal'));
+            if (reduce || !('IntersectionObserver' in window)) {
+                reveals.forEach(function (el) { el.classList.add('in'); });
+            } else {
+                var io = new IntersectionObserver(function (entries, obs) {
+                    entries.forEach(function (en) {
+                        if (en.isIntersecting) { en.target.classList.add('in'); obs.unobserve(en.target); }
+                    });
+                }, { threshold: 0.12 });
+                reveals.forEach(function (el) { io.observe(el); });
+            }
         })();
     </script>
 </body>
