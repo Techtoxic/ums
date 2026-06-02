@@ -45,10 +45,10 @@ function buildWhere(table, filter, fieldMap) {
     if (!filter || typeof filter !== 'object' || Object.keys(filter).length === 0) return undefined;
     const conds = [];
     for (const [key, value] of Object.entries(filter)) {
-        if (key === '_id') {
-            conds.push(eq(table.id, value));
-            continue;
-        }
+        // NOTE: do NOT special-case `_id` here with a bare eq() — resolveCol()
+        // below already maps `_id` -> table.id, and the operator-object branch
+        // must run so `{ _id: { $ne: x } }` becomes ne(id, x) instead of binding
+        // the whole `{ $ne: x }` object as a UUID ("[object Object]" 500s).
         if (key === '$or' && Array.isArray(value)) {
             const sub = value.map((f) => buildWhere(table, f, fieldMap)).filter(Boolean);
             if (sub.length) conds.push(or(...sub));

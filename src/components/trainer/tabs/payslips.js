@@ -190,7 +190,7 @@ function showPayslipModal(payslip) {
 async function downloadPayslipPDF(payslipId) {
     const payslip = trainerPayslips.find(p => p._id === payslipId);
     if (!payslip) {
-        showNotification('Payslip not found', 'error');
+        showToast('Payslip not found', 'error');
         return;
     }
     
@@ -322,7 +322,7 @@ async function downloadPayslipPDF(payslipId) {
     doc.save(fileName);
     
     // Show success notification
-    showNotification('Payslip downloaded successfully', 'success');
+    showToast('Payslip downloaded successfully', 'success');
 }
 
 // Mark payslip as viewed
@@ -392,7 +392,7 @@ function showPayslipsEmpty() {
 // Refresh payslips
 async function refreshPayslips() {
     await loadTrainerPayslips();
-    showNotification('Payslips refreshed', 'success');
+    showToast('Payslips refreshed', 'success');
 }
 
 window.TrainerTabs.payslips = {
