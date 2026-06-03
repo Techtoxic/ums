@@ -21,6 +21,7 @@
                     colors: {
                         primary: '#7A0C0C',
                         secondary: '#8B2A2A',
+                        accent: '#D4A017',
                         success: '#10b981',
                         warning: '#f59e0b',
                         danger: '#ef4444',
@@ -141,7 +142,12 @@
                 <i class="ri-group-line text-lg"></i>
                 <span class="sidebar-text font-medium">My Students</span>
             </a>
-            
+
+            <a href="/trainer/books" id="nav-books" class="nav-item flex items-center space-x-3 p-3 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-all duration-200">
+                <i class="ri-book-2-line text-lg"></i>
+                <span class="sidebar-text font-medium">Unit Books</span>
+            </a>
+
             <a href="/trainer/tools-of-trade" id="nav-tools-of-trade" class="nav-item flex items-center space-x-3 p-3 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-all duration-200">
                 <i class="ri-tools-line text-lg"></i>
                 <span class="sidebar-text font-medium">Tools of Trade</span>
@@ -332,10 +338,12 @@
 
     <!-- Scripts -->
     <script src="/src/components/trainer/portal-core.js"></script>
+    <script src="/public/js/books-api.js"></script>
     <script src="/src/components/trainer/portal-router.js"></script>
     <script src="/src/components/trainer/tabs/dashboard.js"></script>
     <script src="/src/components/trainer/tabs/assignments.js"></script>
     <script src="/src/components/trainer/tabs/students.js"></script>
+    <script src="/src/components/trainer/tabs/books.js"></script>
     <script src="/src/components/trainer/tabs/tools-of-trade.js"></script>
     <script src="/src/components/trainer/tabs/payslips.js"></script>
     <script src="/src/components/trainer/tabs/notifications.js"></script>

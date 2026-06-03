@@ -1215,6 +1215,8 @@ app.use('/api/notifications', require('./src/routes/notifications'));
 app.use('/api', require('./src/routes/applications'));
 // ILO Office API — extracted to src/routes/ilo.js
 app.use('/api', require('./src/routes/ilo'));
+// Book Resource module — dual open-library search + per-unit approvals
+app.use('/api', require('./src/routes/books'));
 
 // ========================================
 // CLEAN URL ROUTES (Hide .html extensions)

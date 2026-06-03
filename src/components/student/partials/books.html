@@ -1,0 +1,38 @@
+<!-- My Books — student reading library, grouped by registered unit. -->
+<div class="space-y-6">
+    <div>
+        <h2 class="text-2xl font-serif font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+            <i class="ri-book-2-line text-primary"></i> My Books
+        </h2>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Reading materials your trainers have approved for the units you are registered in.
+        </p>
+    </div>
+
+    <!-- Loading -->
+    <div id="student-books-loading" class="space-y-6">
+        <div class="animate-pulse space-y-3">
+            <div class="h-5 w-48 bg-gray-200 dark:bg-gray-700 rounded"></div>
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div class="h-64 bg-gray-200 dark:bg-gray-700 rounded-xl"></div>
+                <div class="h-64 bg-gray-200 dark:bg-gray-700 rounded-xl"></div>
+                <div class="h-64 bg-gray-200 dark:bg-gray-700 rounded-xl"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Unit groups render here -->
+    <div id="student-books-root" class="hidden space-y-8"></div>
+
+    <!-- Empty -->
+    <div id="student-books-empty" class="hidden text-center py-16">
+        <i class="ri-book-open-line text-5xl text-gray-300 dark:text-gray-600"></i>
+        <p class="mt-3 text-gray-500 dark:text-gray-400">Your lecturers haven't added any reading materials yet.<br>Check back soon.</p>
+    </div>
+
+    <!-- Error -->
+    <div id="student-books-error" class="hidden text-center py-16">
+        <i class="ri-error-warning-line text-5xl text-gray-300 dark:text-gray-600"></i>
+        <p class="mt-3 text-gray-500 dark:text-gray-400" id="student-books-error-msg">Failed to load your books.</p>
+    </div>
+</div>

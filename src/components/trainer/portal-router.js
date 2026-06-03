@@ -14,13 +14,14 @@
 
 window.TrainerRouter = (function () {
     const BASE = '/trainer';
-    const VALID_TABS = ['dashboard', 'assignments', 'students', 'tools-of-trade', 'payslips', 'notifications', 'profile'];
+    const VALID_TABS = ['dashboard', 'assignments', 'students', 'books', 'tools-of-trade', 'payslips', 'notifications', 'profile'];
 
     // Page titles — same map the monolith's showSection() used.
     const TITLES = {
         'dashboard': 'Dashboard',
         'assignments': 'My Assignments',
         'students': 'My Students',
+        'books': 'Unit Books',
         'tools-of-trade': 'Tools of Trade',
         'payslips': 'My Payslips',
         'notifications': 'Notifications',

@@ -1,0 +1,123 @@
+<!-- Unit Books — trainer search + per-unit approval. Injected into #tab-root. -->
+<div class="space-y-6">
+
+    <!-- Header + unit picker -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+                <h2 class="text-2xl font-serif font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                    <i class="ri-book-2-line text-primary"></i> Unit Books
+                </h2>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    Pick a unit, search open academic libraries, and approve reading materials for your students.
+                </p>
+            </div>
+            <div class="min-w-[260px]">
+                <label for="books-unit-select" class="block text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">Unit</label>
+                <select id="books-unit-select"
+                    class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-primary focus:border-transparent">
+                    <option value="">Loading your units…</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+
+        <!-- LEFT (40%) — approved books for the selected unit -->
+        <aside class="lg:col-span-2">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 lg:sticky lg:top-4">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-serif font-semibold text-gray-900 dark:text-gray-100">Approved books</h3>
+                    <span id="approved-count" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-primary/10 text-primary">0</span>
+                </div>
+                <div id="approved-books-list" class="space-y-3"></div>
+                <div id="approved-empty" class="hidden text-center py-10">
+                    <i class="ri-inbox-line text-4xl text-gray-300 dark:text-gray-600"></i>
+                    <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">No books added yet.<br>Search and add books for your students.</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- RIGHT (60%) — search + results -->
+        <section class="lg:col-span-3">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5">
+
+                <!-- Search bar -->
+                <div class="flex gap-2">
+                    <div class="relative flex-1">
+                        <i class="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        <input id="book-search-input" type="text" placeholder="Search textbooks, topics, authors…"
+                            class="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-primary focus:border-transparent">
+                    </div>
+                    <button id="book-search-btn"
+                        class="px-5 py-2.5 bg-primary hover:bg-secondary text-white rounded-lg font-medium transition-colors flex items-center gap-2">
+                        <i class="ri-search-line"></i><span class="hidden sm:inline">Search</span>
+                    </button>
+                </div>
+
+                <!-- Deep search toggle -->
+                <button id="book-filters-toggle" type="button"
+                    class="mt-3 text-sm text-primary hover:text-secondary font-medium flex items-center gap-1">
+                    <i class="ri-equalizer-line"></i> Deep search filters
+                    <i id="book-filters-chevron" class="ri-arrow-down-s-line transition-transform"></i>
+                </button>
+
+                <!-- Filters panel -->
+                <div id="book-filters-panel" class="hidden mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl bg-gray-50 dark:bg-gray-700/40 border border-gray-100 dark:border-gray-700">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Subject</label>
+                        <select id="book-subject" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 text-sm">
+                            <option value="all">All</option>
+                            <option value="Science">Science</option>
+                            <option value="Mathematics">Mathematics</option>
+                            <option value="Social Sciences">Social Sciences</option>
+                            <option value="Business">Business</option>
+                            <option value="Humanities">Humanities</option>
+                            <option value="Computer Science">Computer Science</option>
+                            <option value="Health">Health</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Language</label>
+                        <select id="book-language" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 text-sm">
+                            <option value="all">All</option>
+                            <option value="en" selected>English</option>
+                            <option value="es">Spanish</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Source</label>
+                        <select id="book-source" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 text-sm">
+                            <option value="all">All Sources</option>
+                            <option value="openstax">Academic Textbooks</option>
+                            <option value="gutendex">Classic Literature</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Year range</label>
+                        <div class="flex items-center gap-2">
+                            <input id="book-year-from" type="number" inputmode="numeric" placeholder="From"
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 text-sm">
+                            <span class="text-gray-400">–</span>
+                            <input id="book-year-to" type="number" inputmode="numeric" placeholder="To"
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 text-sm">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Result count / status -->
+                <div class="flex items-center justify-between mt-4">
+                    <p id="book-results-count" class="text-sm text-gray-500 dark:text-gray-400"></p>
+                    <p id="book-results-status" class="text-xs text-amber-600 dark:text-amber-400"></p>
+                </div>
+
+                <!-- Results -->
+                <div id="book-results" class="mt-3 space-y-4"></div>
+
+                <!-- Pagination -->
+                <div id="book-pagination" class="hidden mt-5 flex items-center justify-center gap-2"></div>
+            </div>
+        </section>
+    </div>
+</div>

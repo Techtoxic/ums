@@ -636,6 +636,49 @@ const revenueEntries = pgTable(
 // ============================================================================
 // EXPORTS
 // ============================================================================
+// ============================================================================
+// UNIT BOOKS  (book/textbook resources a trainer approves for a unit)
+// ============================================================================
+// Books are sourced from external open libraries (OpenStax academic textbooks +
+// Project Gutenberg via Gutendex) and normalized into one flat shape before a
+// trainer "approves" one for a unit. Students enrolled in the unit then see it.
+// `source` is plain text (not an enum) so new providers need no migration.
+const unitBooks = pgTable(
+    'unit_books',
+    {
+        id: uuid('id').primaryKey().defaultRandom(),
+        unit_id: uuid('unit_id').notNull().references(() => units.id, { onDelete: 'cascade' }),
+        approved_by: uuid('approved_by').notNull().references(() => users.id),
+
+        // Unified book fields (normalized from both APIs)
+        external_id: text('external_id').notNull(), // API-specific id
+        source: text('source').notNull(),           // 'openstax' | 'gutendex'
+        title: text('title').notNull(),
+        authors: text('authors').array(),           // array of author names
+        cover_url: text('cover_url'),
+        description: text('description'),
+        subject: text('subject'),
+        pdf_url: text('pdf_url'),                    // direct PDF download link
+        preview_url: text('preview_url'),           // browser-readable link
+        language: text('language').default('en'),
+
+        approved_at: timestamp('approved_at', { withTimezone: true }).notNull().defaultNow(),
+        is_active: boolean('is_active').notNull().default(true),
+        created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+        updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    },
+    (t) => ({
+        unitIdx: index('idx_unit_books_unit_id').on(t.unit_id),
+        sourceIdx: index('idx_unit_books_source').on(t.source),
+        // Prevent the same external book being approved twice for one unit.
+        unitExternalSourceUnique: uniqueIndex('unit_books_unit_external_source_unique').on(
+            t.unit_id,
+            t.external_id,
+            t.source,
+        ),
+    }),
+);
+
 module.exports = {
     // enums
     userRoleEnum,
@@ -672,4 +715,5 @@ module.exports = {
     payments,
     payslips,
     revenueEntries,
+    unitBooks,
 };
