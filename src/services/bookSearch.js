@@ -1,15 +1,18 @@
 // services/bookSearch.js — dual open-library book search for the Book Resource
-// module. Queries OpenStax (academic textbooks) and Gutendex/Project Gutenberg
-// (classic literature) in parallel, normalizes both to one flat shape,
-// deduplicates by title (preferring the richer OpenStax record), and sorts.
+// module. Queries OpenStax (peer-reviewed academic textbooks, full free PDFs)
+// and Open Library (broad catalog including technical/vocational/trade titles,
+// many readable on the Internet Archive) in parallel, normalizes both to one
+// flat shape, deduplicates by title (preferring the richer OpenStax record),
+// and sorts.
 //
 // Resilience: a failure of one provider never kills the search — the other's
 // results are still returned with `partial: true`. Node 18+ global fetch.
 
 const OPENSTAX_URL = 'https://openstax.org/apps/cms/api/v2/pages/';
-const GUTENDEX_URL = 'https://gutendex.com/books/';
-// Gutendex can be slow from some networks; cap the wait so a search never hangs.
-// If a provider exceeds this it's dropped and the response is flagged `partial`.
+const OPENLIBRARY_SEARCH = 'https://openlibrary.org/search.json';
+const OPENLIBRARY_COVERS = 'https://covers.openlibrary.org/b/id';
+// Cap the wait so a slow provider can't stall a search. If a provider exceeds
+// this it's dropped and the response is flagged `partial`.
 const FETCH_TIMEOUT_MS = 12000;
 const PAGE_SIZE = 20;
 
@@ -17,8 +20,8 @@ const PAGE_SIZE = 20;
 // Small helpers
 // ---------------------------------------------------------------------------
 
-// fetch with a hard timeout so a hung provider can't stall the whole request.
-async function fetchJson(url) {
+// One fetch attempt with a hard timeout so a hung provider can't stall the request.
+async function fetchOnce(url) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
     try {
@@ -30,6 +33,21 @@ async function fetchJson(url) {
         return await res.json();
     } finally {
         clearTimeout(timer);
+    }
+}
+
+// fetchJson retries once on a transient failure (network blip / cold connection)
+// — but NOT on a 4xx, which is a deterministic bad request.
+async function fetchJson(url, retries = 1) {
+    try {
+        return await fetchOnce(url);
+    } catch (err) {
+        const is4xx = /HTTP 4\d\d/.test(err.message || '');
+        if (retries > 0 && !is4xx) {
+            await new Promise((r) => setTimeout(r, 350));
+            return fetchJson(url, retries - 1);
+        }
+        throw err;
     }
 }
 
@@ -93,12 +111,20 @@ async function fetchOpenStax(query) {
     return enriched;
 }
 
-async function fetchGutendex(query, language) {
-    const params = new URLSearchParams({ mime_type: 'application/pdf' });
-    if (query) params.set('search', query);
-    if (language && language !== 'all') params.set('languages', language);
-    const data = await fetchJson(`${GUTENDEX_URL}?${params.toString()}`);
-    return Array.isArray(data?.results) ? data.results : [];
+async function fetchOpenLibrary(query, language) {
+    // Open Library search returns rich rows in one call (no per-item enrichment).
+    const params = new URLSearchParams({
+        q: query || 'textbook',
+        limit: '40',
+        fields: 'key,title,author_name,first_publish_year,cover_i,ia,lending_identifier_s,public_scan_b,ebook_access,language,subject',
+    });
+    if (language && language !== 'all') {
+        // Open Library wants ISO-639-2/B 3-letter codes (eng, spa…).
+        const map = { en: 'eng', es: 'spa', fr: 'fre' };
+        params.set('language', map[language] || language);
+    }
+    const data = await fetchJson(`${OPENLIBRARY_SEARCH}?${params.toString()}`);
+    return Array.isArray(data?.docs) ? data.docs : [];
 }
 
 // ---------------------------------------------------------------------------
@@ -154,25 +180,25 @@ function normalizeOpenStax(book) {
     };
 }
 
-function normalizeGutendex(book) {
-    const formats = book.formats || {};
-    const pdfUrl = formats['application/pdf'] || null;
-    const htmlUrl =
-        formats['text/html'] || formats['text/html; charset=utf-8'] || null;
-    const cover =
-        formats['image/jpeg'] || formats['image/jpeg; charset=utf-8'] || null;
+function normalizeOpenLibrary(doc) {
+    // An Internet Archive identifier means the book is readable/downloadable.
+    const ia = (Array.isArray(doc.ia) && doc.ia[0]) || doc.lending_identifier_s || null;
+    const isPublic = doc.public_scan_b === true || doc.ebook_access === 'public';
+    const key = doc.key || '';
     return {
-        external_id: String(book.id),
-        source: 'gutendex',
-        title: book.title || 'Untitled',
-        authors: Array.isArray(book.authors) ? book.authors.map((a) => a.name).filter(Boolean) : [],
-        cover_url: cover,
-        description: truncate(Array.isArray(book.subjects) ? book.subjects.join(', ') : null, 300),
-        subject: book.bookshelves?.[0] || book.subjects?.[0] || null,
-        pdf_url: pdfUrl,
-        preview_url: htmlUrl || pdfUrl,
-        language: book.languages?.[0] || 'en',
-        year: book.copyright_year || null,
+        external_id: key.replace(/^\/works\//, '') || String(doc.cover_i || doc.title),
+        source: 'openlibrary',
+        title: doc.title || 'Untitled',
+        authors: Array.isArray(doc.author_name) ? doc.author_name : [],
+        cover_url: doc.cover_i ? `${OPENLIBRARY_COVERS}/${doc.cover_i}-M.jpg` : null,
+        description: truncate(Array.isArray(doc.subject) ? doc.subject.slice(0, 8).join(', ') : null, 300),
+        subject: (Array.isArray(doc.subject) && doc.subject[0]) || null,
+        // Only offer a direct PDF for fully public-domain scans; otherwise the
+        // student opens the readable Archive/Open Library page instead.
+        pdf_url: ia && isPublic ? `https://archive.org/download/${ia}/${ia}.pdf` : null,
+        preview_url: ia ? `https://archive.org/details/${ia}` : (key ? `https://openlibrary.org${key}` : null),
+        language: (Array.isArray(doc.language) && doc.language[0]) || 'en',
+        year: doc.first_publish_year || null,
     };
 }
 
@@ -231,7 +257,7 @@ function sortBooks(books, query, subjectWant) {
  * Search both providers and return a unified, deduplicated, sorted, paginated
  * result set. Never throws on provider failure.
  *
- * filters: { subject, language, source ('all'|'openstax'|'gutendex'),
+ * filters: { subject, language, source ('all'|'openstax'|'openlibrary'),
  *            yearFrom, yearTo, page }
  * returns: { results, total, page, pageSize, totalPages, partial }
  */
@@ -241,19 +267,19 @@ async function searchBooks(query, filters = {}) {
     const page = Math.max(1, parseInt(filters.page, 10) || 1);
 
     const wantOpenStax = source === 'all' || source === 'openstax';
-    const wantGutendex = source === 'all' || source === 'gutendex';
-    // Gutendex is English/other-language literature; if a non-en/non-all
-    // language is chosen, OpenStax (en only) can't contribute.
+    const wantOpenLibrary = source === 'all' || source === 'openlibrary';
+    // OpenStax is English-only; if a non-en/non-all language is chosen it can't
+    // contribute and Open Library carries the search.
     const openStaxApplicable = wantOpenStax && (language === 'all' || language === 'en');
 
-    const [osSettled, gxSettled] = await Promise.allSettled([
+    const [osSettled, olSettled] = await Promise.allSettled([
         openStaxApplicable ? fetchOpenStax(query) : Promise.resolve([]),
-        wantGutendex ? fetchGutendex(query, language) : Promise.resolve([]),
+        wantOpenLibrary ? fetchOpenLibrary(query, language) : Promise.resolve([]),
     ]);
 
     let partial = false;
     let openstax = [];
-    let gutendex = [];
+    let openlibrary = [];
 
     if (osSettled.status === 'fulfilled') {
         openstax = osSettled.value.map(normalizeOpenStax);
@@ -261,15 +287,15 @@ async function searchBooks(query, filters = {}) {
         partial = true;
         console.error('bookSearch: OpenStax failed:', osSettled.reason?.message || osSettled.reason);
     }
-    if (gxSettled.status === 'fulfilled') {
-        gutendex = gxSettled.value.map(normalizeGutendex);
-    } else if (wantGutendex) {
+    if (olSettled.status === 'fulfilled') {
+        openlibrary = olSettled.value.map(normalizeOpenLibrary);
+    } else if (wantOpenLibrary) {
         partial = true;
-        console.error('bookSearch: Gutendex failed:', gxSettled.reason?.message || gxSettled.reason);
+        console.error('bookSearch: Open Library failed:', olSettled.reason?.message || olSettled.reason);
     }
 
     // OpenStax first so it wins dedup collisions.
-    let merged = deduplicate([...openstax, ...gutendex]);
+    let merged = deduplicate([...openstax, ...openlibrary]);
 
     // Subject metadata is sparse/inconsistent across both providers, so a hard
     // subject filter would wrongly drop most results. We instead let a subject
@@ -303,12 +329,27 @@ async function searchBooks(query, filters = {}) {
  */
 async function getBookDetail(source, externalId) {
     try {
-        if (source === 'gutendex') {
-            const data = await fetchJson(`${GUTENDEX_URL}${encodeURIComponent(externalId)}/`);
-            if (!data || !data.id) return null;
-            const norm = normalizeGutendex(data);
-            norm.description = stripHtml(Array.isArray(data.subjects) ? data.subjects.join(', ') : '') || norm.description;
-            return norm;
+        if (source === 'openlibrary') {
+            // externalId is the work id (e.g. OL12345W).
+            const work = await fetchJson(`https://openlibrary.org/works/${encodeURIComponent(externalId)}.json`);
+            if (!work) return null;
+            const descr = typeof work.description === 'string'
+                ? work.description
+                : (work.description && work.description.value) || null;
+            const coverId = Array.isArray(work.covers) && work.covers[0];
+            return {
+                external_id: externalId,
+                source: 'openlibrary',
+                title: work.title || 'Untitled',
+                authors: [],
+                cover_url: coverId ? `${OPENLIBRARY_COVERS}/${coverId}-M.jpg` : null,
+                description: stripHtml(descr),
+                subject: (Array.isArray(work.subjects) && work.subjects[0]) || null,
+                pdf_url: null,
+                preview_url: `https://openlibrary.org/works/${externalId}`,
+                language: 'en',
+                year: null,
+            };
         }
         if (source === 'openstax') {
             // The CMS pages API exposes detail by id under the same endpoint.
@@ -330,7 +371,7 @@ module.exports = {
     getBookDetail,
     // exported for tests
     normalizeOpenStax,
-    normalizeGutendex,
+    normalizeOpenLibrary,
     deduplicate,
     sortBooks,
     PAGE_SIZE,
