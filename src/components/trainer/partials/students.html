@@ -2,9 +2,12 @@
                 <div class="card__header">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0 w-full">
                         <h2 class="text-headline-sm text-gray-900 dark:text-white">My Students</h2>
-                        <div class="flex items-center space-x-4">
+                        <div class="flex flex-wrap items-center gap-3">
+                            <select id="studentsUnitFilter" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+                                <option value="">All Units</option>
+                            </select>
                             <select id="studentsFilter" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
-                                <option value="">All Students</option>
+                                <option value="">All Modules</option>
                                 <option value="module1">Module 1</option>
                                 <option value="module2">Module 2</option>
                                 <option value="module3">Module 3</option>
@@ -12,7 +15,10 @@
                                 <option value="module5">Module 5</option>
                                 <option value="module6">Module 6</option>
                             </select>
-                            <button onclick="refreshStudents()" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors text-sm font-medium">
+                            <button onclick="exportAttendancePDF()" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors text-sm font-medium">
+                                <i class="ri-file-download-line mr-2"></i>Export Attendance
+                            </button>
+                            <button onclick="refreshStudents()" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm font-medium">
                                 <i class="ri-refresh-line mr-2"></i>Refresh
                             </button>
                         </div>

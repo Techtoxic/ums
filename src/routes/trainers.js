@@ -385,6 +385,96 @@ router.get('/trainers/:trainerId/students', verifyToken, authorize('admin', 'hod
     }
 });
 
+// Attendance roster: the trainer's students grouped by the unit(s) they take,
+// for the "My Students" list + attendance-sheet export. Because unit_registrations
+// is not reliably populated, a student is matched to a unit by the cohort key
+// (program code + module): students.course == unit's program code AND
+// students.module == unit.module. Common units (no program code) match by module
+// within the trainer's roster. Returns a flat student list, the trainer's units,
+// and a unitId -> [studentId] map.
+router.get('/trainers/:trainerId/attendance-roster', verifyToken, authorize('admin', 'hod', 'registrar', 'trainer'), verifyOwnership('trainerId'), async (req, res) => {
+    try {
+        const { trainerId } = req.params;
+        if (!isValidId(trainerId)) {
+            return res.status(400).json({ message: 'Invalid trainer id' });
+        }
+
+        // The trainer's assigned units + their program code (units.code, falling
+        // back to the joined program code) and module.
+        const unitRows = await db
+            .select({
+                id: schema.units.id,
+                unitCode: schema.units.code,
+                unitName: schema.units.name,
+                module: schema.units.module,
+                isCommon: schema.units.is_common,
+                programCode: schema.programs.code,
+                programName: schema.programs.name,
+            })
+            .from(schema.trainerAssignments)
+            .innerJoin(schema.units, eq(schema.units.id, schema.trainerAssignments.unit_id))
+            .leftJoin(schema.programs, eq(schema.programs.id, schema.units.program_id))
+            .where(eq(schema.trainerAssignments.trainer_id, trainerId));
+
+        // Dedupe units; resolve a usable program code per unit.
+        const unitsById = new Map();
+        for (const u of unitRows) {
+            if (unitsById.has(u.id)) continue;
+            const code = (u.unitCode || u.programCode || '').trim();
+            unitsById.set(u.id, {
+                id: u.id,
+                code,
+                name: u.unitName || 'Unit',
+                module: u.module,
+                program: u.programName || null,
+            });
+        }
+        const units = [...unitsById.values()];
+        if (!units.length) {
+            return res.json({ success: true, students: [], units: [], byUnit: {} });
+        }
+
+        // Load the candidate students: anyone whose course is one of the trainer's
+        // program codes (covers all coded units). This bounds the query and is the
+        // pool the cohort match draws from.
+        const programCodes = [...new Set(units.map(u => u.code).filter(Boolean))];
+        let students = [];
+        if (programCodes.length) {
+            students = await db
+                .select({
+                    id: schema.students.id,
+                    name: schema.students.name,
+                    admissionNumber: schema.students.admission_number,
+                    course: schema.students.course,
+                    module: schema.students.module,
+                    phone: schema.students.phone_number,
+                })
+                .from(schema.students)
+                .where(and(
+                    inArray(schema.students.course, programCodes),
+                    isNull(schema.students.deleted_at),
+                ));
+        }
+
+        // unitId -> [studentId]: cohort match by (program code + module); common
+        // units (no code) match by module only within the loaded pool.
+        const byUnit = {};
+        for (const u of units) {
+            byUnit[u.id] = students.filter((s) => {
+                if (u.code) {
+                    return s.course === u.code && (u.module == null || s.module === u.module);
+                }
+                return u.module != null && s.module === u.module;
+            }).map((s) => s.id);
+        }
+
+        res.json({ success: true, students, units, byUnit });
+    } catch (error) {
+        console.error('Error fetching attendance roster:', error);
+        res.status(500).json({ message: 'Failed to fetch attendance roster' });
+    }
+});
+
 // Create a trainer (admin only). A trainer profile is intentionally minimal:
 // name, department, phone, email. The account is seeded with a known default
 // password and flagged is_first_login so the trainer is forced to set their own
