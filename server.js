@@ -693,7 +693,7 @@ registerPortal(app, portalDeps, {
 // Trainer portal pages.
 registerPortal(app, portalDeps, {
     role: 'trainer',
-    tabs: ['dashboard', 'assignments', 'students', 'tools-of-trade', 'payslips', 'notifications', 'profile'],
+    tabs: ['dashboard', 'assignments', 'students', 'books', 'tools-of-trade', 'payslips', 'notifications', 'profile'],
     defaultTab: 'dashboard',
     login: { file: 'TrainerLogin.html' },
 });
@@ -1230,7 +1230,7 @@ app.use('/api', require('./src/routes/books'));
 // real tab, served by the catch-all).
 registerPortal(app, portalDeps, {
     role: 'student',
-    tabs: ['dashboard', 'profile', 'financial', 'payments', 'uploads', 'notes', 'units', 'graduation', 'attachment'],
+    tabs: ['dashboard', 'profile', 'financial', 'payments', 'uploads', 'notes', 'units', 'books', 'graduation', 'attachment'],
     defaultTab: 'dashboard',
     login: { fileSegments: ['src', 'login.html'] },
     legacyAlias: 'portal',
