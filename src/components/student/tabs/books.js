@@ -4,6 +4,7 @@ window.StudentTabs = window.StudentTabs || {};
 
 (function () {
     const esc = (s) => (window.escapeHtml ? window.escapeHtml(s) : String(s == null ? '' : s));
+    let booksById = {}; // id -> book, so the Read button can open it in-app
 
     function placeholderHtml() {
         return `<div class="w-full h-44 rounded-t-xl bg-gradient-to-br from-primary/10 to-accent/10 dark:from-primary/20 dark:to-accent/20 flex items-center justify-center">
@@ -25,12 +26,12 @@ window.StudentTabs = window.StudentTabs || {};
 
     function cardHtml(b) {
         const authors = (b.authors || []).join(', ') || '—';
-        const open = b.previewUrl || b.pdfUrl;
-        const openBtn = open
-            ? `<a href="${esc(open)}" target="_blank" rel="noopener"
+        const canRead = !!(b.previewUrl || b.pdfUrl);
+        const openBtn = canRead
+            ? `<button onclick="StudentBooks.read('${esc(b.id)}')"
                  class="flex-1 text-center px-3 py-2 text-sm rounded-lg bg-primary hover:bg-secondary text-white inline-flex items-center justify-center gap-1">
-                 <i class="ri-external-link-line"></i> Open</a>`
-            : `<span class="flex-1 text-center px-3 py-2 text-sm rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-400 cursor-not-allowed">Open</span>`;
+                 <i class="ri-book-open-line"></i> Read</button>`
+            : `<span class="flex-1 text-center px-3 py-2 text-sm rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-400 cursor-not-allowed">Read</span>`;
         const dl = b.pdfUrl
             ? `<a href="${esc(b.pdfUrl)}" target="_blank" rel="noopener" download
                  class="px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 inline-flex items-center justify-center gap-1" title="Download PDF">
@@ -77,6 +78,9 @@ window.StudentTabs = window.StudentTabs || {};
         try {
             const body = await window.BooksAPI.myBooks();
             const groups = (body && body.groups) || [];
+            // Index every book by id so the Read button can open it in-app.
+            booksById = {};
+            groups.forEach((g) => (g.books || []).forEach((b) => { booksById[b.id] = b; }));
             loading?.classList.add('hidden');
             if (!groups.length) {
                 empty?.classList.remove('hidden');
@@ -92,6 +96,13 @@ window.StudentTabs = window.StudentTabs || {};
             error?.classList.remove('hidden');
         }
     }
+
+    window.StudentBooks = {
+        read(id) {
+            const b = booksById[id];
+            if (b && window.BookReader) window.BookReader.open(b);
+        },
+    };
 
     window.StudentTabs.books = {
         init() { load(); },

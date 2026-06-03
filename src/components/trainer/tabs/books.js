@@ -195,7 +195,7 @@ window.TrainerTabs = window.TrainerTabs || {};
             const subjectTag = b.subject
                 ? `<span class="inline-block px-2 py-0.5 text-xs font-medium rounded-full bg-accent/15 text-amber-700 dark:text-amber-300">${esc(b.subject)}</span>` : '';
             const yearTag = b.year ? `<span class="text-xs text-gray-400">${esc(b.year)}</span>` : '';
-            const previewLink = b.preview_url || b.pdf_url;
+            const canRead = !!(b.preview_url || b.pdf_url);
             return `
             <div class="book-card flex gap-4 p-4 rounded-xl border border-gray-100 dark:border-gray-700 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 bg-white dark:bg-gray-800">
                 ${coverHtml(b.cover_url, b.title, 'w-20 h-28 flex-shrink-0')}
@@ -208,9 +208,9 @@ window.TrainerTabs = window.TrainerTabs || {};
                     <div class="mt-1">${subjectTag}</div>
                     <p class="text-sm text-gray-600 dark:text-gray-300 mt-1.5 line-clamp-2">${esc(b.description || '')}</p>
                     <div class="mt-3 flex items-center gap-2">
-                        ${previewLink ? `<a href="${esc(previewLink)}" target="_blank" rel="noopener"
+                        ${canRead ? `<button onclick="TrainerBooks.preview(${i})"
                             class="px-3 py-1.5 text-sm rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 inline-flex items-center gap-1">
-                            <i class="ri-external-link-line"></i> Preview</a>` : ''}
+                            <i class="ri-book-open-line"></i> Preview</button>` : ''}
                         ${added
                             ? `<span class="px-3 py-1.5 text-sm rounded-lg bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 inline-flex items-center gap-1"><i class="ri-check-line"></i> Added</span>`
                             : `<button onclick="TrainerBooks.add(${i})"
@@ -237,6 +237,10 @@ window.TrainerTabs = window.TrainerTabs || {};
 
     // ---- actions (exposed) ------------------------------------------------
     const TrainerBooks = {
+        preview(index) {
+            const b = state.results[index];
+            if (b && window.BookReader) window.BookReader.open(b);
+        },
         async add(index) {
             const b = state.results[index];
             if (!b) return;

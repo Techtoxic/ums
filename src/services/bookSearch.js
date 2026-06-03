@@ -181,7 +181,9 @@ function normalizeOpenStax(book) {
 }
 
 function normalizeOpenLibrary(doc) {
-    // An Internet Archive identifier means the book is readable/downloadable.
+    // An Internet Archive identifier means there is an actual digitized copy we
+    // can show in-app. Books WITHOUT one are catalog-only stubs (no readable
+    // book) and are filtered out by searchBooks — they'd just be a dead end.
     const ia = (Array.isArray(doc.ia) && doc.ia[0]) || doc.lending_identifier_s || null;
     const isPublic = doc.public_scan_b === true || doc.ebook_access === 'public';
     const key = doc.key || '';
@@ -193,10 +195,12 @@ function normalizeOpenLibrary(doc) {
         cover_url: doc.cover_i ? `${OPENLIBRARY_COVERS}/${doc.cover_i}-M.jpg` : null,
         description: truncate(Array.isArray(doc.subject) ? doc.subject.slice(0, 8).join(', ') : null, 300),
         subject: (Array.isArray(doc.subject) && doc.subject[0]) || null,
-        // Only offer a direct PDF for fully public-domain scans; otherwise the
-        // student opens the readable Archive/Open Library page instead.
+        // Direct PDF only for fully public-domain scans (downloadable as a file).
         pdf_url: ia && isPublic ? `https://archive.org/download/${ia}/${ia}.pdf` : null,
-        preview_url: ia ? `https://archive.org/details/${ia}` : (key ? `https://openlibrary.org${key}` : null),
+        // The embeddable Internet Archive BookReader — the actual book pages,
+        // shown INSIDE our portal via an iframe (no website chrome / redirect).
+        preview_url: ia ? `https://archive.org/embed/${ia}` : null,
+        ia: ia || null,
         language: (Array.isArray(doc.language) && doc.language[0]) || 'en',
         year: doc.first_publish_year || null,
     };
@@ -288,7 +292,9 @@ async function searchBooks(query, filters = {}) {
         console.error('bookSearch: OpenStax failed:', osSettled.reason?.message || osSettled.reason);
     }
     if (olSettled.status === 'fulfilled') {
-        openlibrary = olSettled.value.map(normalizeOpenLibrary);
+        // Keep only books with an actual readable/downloadable copy — drop
+        // catalog-only stubs so a user is never sent to a dead "Want to Read" page.
+        openlibrary = olSettled.value.map(normalizeOpenLibrary).filter((b) => b.preview_url || b.pdf_url);
     } else if (wantOpenLibrary) {
         partial = true;
         console.error('bookSearch: Open Library failed:', olSettled.reason?.message || olSettled.reason);
