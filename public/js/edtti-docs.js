@@ -15,9 +15,9 @@ window.EDTTIDocs = (function () {
     const CREAM = [250, 244, 232];
     const INSTITUTION = 'EMURUA DIKIRR TECHNICAL TRAINING INSTITUTE';
     // Global header block — kept identical on every generated PDF (item 1).
-    const ADDRESS = 'P.O. Box 49, Emurua Dikirr - 20500';
-    const CONTACT = 'Tel: +254 729 123 456   |   Email: info@emurua-tech.ac.ke';
-    const WEB_ISO = 'Website: www.emurua-tech.ac.ke   |   ISO 9001:2015 Certified Institution';
+    const ADDRESS = 'P.O. Box 180-20401, Chebunyo';
+    const CONTACT = 'Tel: 0740 555 123   |   Email: emuruadikirrtti2019@gmail.com';
+    const WEB_ISO = 'Website: edtti.ac.ke   |   ISO 9001:2015 Certified Institution';
 
     let logoDataUrl = null;
     let logoPromise = null;

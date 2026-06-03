@@ -212,9 +212,9 @@ class StudentExporter {
         doc.setTextColor(90, 90, 90);
         doc.setFontSize(8);
         doc.setFont(undefined, 'normal');
-        doc.text('P.O. Box 49, Emurua Dikirr - 20500', pageWidth / 2, 18, { align: 'center' });
-        doc.text('Tel: +254 729 123 456   |   Email: info@emurua-tech.ac.ke', pageWidth / 2, 22, { align: 'center' });
-        doc.text('Website: www.emurua-tech.ac.ke   |   ISO 9001:2015 Certified Institution', pageWidth / 2, 26, { align: 'center' });
+        doc.text('P.O. Box 180-20401, Chebunyo', pageWidth / 2, 18, { align: 'center' });
+        doc.text('Tel: 0740 555 123   |   Email: emuruadikirrtti2019@gmail.com', pageWidth / 2, 22, { align: 'center' });
+        doc.text('Website: edtti.ac.ke   |   ISO 9001:2015 Certified Institution', pageWidth / 2, 26, { align: 'center' });
         doc.setTextColor(122, 12, 12);
         doc.setFontSize(11);
         doc.setFont(undefined, 'bold');

@@ -250,7 +250,7 @@ function printReceipt() {
                 <div class="edtti-head">
                     <img src="/public/img/logo.png" alt="EDTTI"><br>
                     <div class="name">EMURUA DIKIRR TECHNICAL TRAINING INSTITUTE</div>
-                    <div class="meta">P.O. Box 49, Emurua Dikirr - 20500<br>Tel: +254 729 123 456 | Email: info@emurua-tech.ac.ke<br>Website: www.emurua-tech.ac.ke | ISO 9001:2015 Certified Institution</div>
+                    <div class="meta">P.O. Box 180-20401, Chebunyo<br>Tel: 0740 555 123 | Email: emuruadikirrtti2019@gmail.com<br>Website: edtti.ac.ke | ISO 9001:2015 Certified Institution</div>
                 </div>
                 ${content.innerHTML}
             </div>
