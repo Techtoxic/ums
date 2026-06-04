@@ -52,3 +52,24 @@
             filter: blur(2px);
             transition: filter 0.3s ease;
         }
+
+        /* ============================================================
+           Compactness layer (trainer portal only — this stylesheet is
+           loaded solely by the trainer shell). Tightens cards, headings
+           and tables so more information fits and reads cleanly.
+           ============================================================ */
+        /* Denser cards */
+        .card { padding: var(--space-4); }
+        .card__header { margin-bottom: var(--space-3); padding-bottom: var(--space-2); }
+        .card__footer { margin-top: var(--space-3); padding-top: var(--space-2); }
+
+        /* Smaller headline scale */
+        .text-headline-lg { font-size: clamp(1.25rem, 2.2vw, 1.6rem); }
+        .text-headline    { font-size: clamp(1.05rem, 1.6vw, 1.25rem); }
+        .text-headline-sm { font-size: clamp(0.9rem, 1.2vw, 1rem); }
+
+        /* Compact data tables (students / assignments / payslips lists).
+           id-scoped so it reliably wins over the Tailwind text-sm/py-2 utilities. */
+        #tab-root table { font-size: 0.82rem; }
+        #tab-root table th { padding-top: 0.4rem; padding-bottom: 0.4rem; }
+        #tab-root table td { padding-top: 0.4rem; padding-bottom: 0.4rem; }

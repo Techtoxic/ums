@@ -207,7 +207,57 @@
             .stat { justify-content: flex-start; }
             .dept-grid, .why-grid { grid-template-columns: 1fr; }
         }
+
+        /* ---------------- Theme toggle ---------------- */
+        .theme-toggle { background: none; border: 1.5px solid var(--line); color: var(--maroon); width: 40px; height: 40px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0; transition: background .15s, color .15s, border-color .15s; }
+        .theme-toggle:hover { background: var(--bg-alt); border-color: var(--maroon); }
+        .theme-toggle .theme-sun { display: none; }
+
+        /* ---------------- Dark mode ---------------- */
+        html.dark {
+            --ink: #ECE9E4;
+            --muted: #A6A19B;
+            --line: #2C2A2E;
+            --bg: #121214;
+            --bg-alt: #1A191C;
+            --cream: rgba(212,160,23,0.12);
+        }
+        html.dark body { background: var(--bg); color: var(--ink); }
+        html.dark .nav { background: rgba(18,18,20,0.95); border-bottom-color: var(--line); }
+        html.dark .brand .bt strong { color: var(--gold-light); }
+        html.dark .nav-mid a:hover, html.dark .nav-mid a.active { color: var(--gold-light); }
+        html.dark .stats { background: var(--bg-alt); }
+        html.dark .stat i, html.dark .stat .num { color: var(--gold-light); }
+        html.dark .section h2 .accent { color: var(--gold-light); }
+        html.dark .dept-icon, html.dark .why-card .ic { color: var(--gold-light); }
+        html.dark .feature-list i { color: var(--gold-light); }
+        html.dark .dept-card:hover { box-shadow: 0 14px 34px rgba(0,0,0,.55); }
+        html.dark .btn-outline { border-color: var(--gold-light); color: var(--gold-light); }
+        html.dark .btn-outline:hover { background: var(--gold-light); color: var(--maroon-dark); }
+        html.dark .nav-cta.open { background: var(--bg-alt); border-bottom-color: var(--line); }
+        html.dark .theme-toggle { color: var(--gold-light); border-color: var(--line); }
+        html.dark .theme-toggle:hover { border-color: var(--gold-light); background: var(--bg-alt); }
+        html.dark .theme-toggle .theme-moon { display: none; }
+        html.dark .theme-toggle .theme-sun { display: inline; }
     </style>
+    <script>
+        // Apply the saved (or OS-preferred) theme before paint to avoid a flash.
+        (function () {
+            try {
+                var saved = localStorage.getItem('theme');
+                var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                if (saved === 'dark' || (!saved && prefersDark)) document.documentElement.classList.add('dark');
+            } catch (e) { /* storage blocked — default light */ }
+            document.addEventListener('DOMContentLoaded', function () {
+                var btn = document.getElementById('themeToggle');
+                if (!btn) return;
+                btn.addEventListener('click', function () {
+                    var isDark = document.documentElement.classList.toggle('dark');
+                    try { localStorage.setItem('theme', isDark ? 'dark' : 'light'); } catch (e) {}
+                });
+            });
+        })();
+    </script>
 </head>
 <body>
     <a href="#main" class="skip-link">Skip to main content</a>
@@ -228,6 +278,10 @@
                 <a href="#why">Why EDTTI</a>
                 <a href="#contact">Contact</a>
             </div>
+            <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+                <i class="ri-moon-line theme-moon" aria-hidden="true"></i>
+                <i class="ri-sun-line theme-sun" aria-hidden="true"></i>
+            </button>
             <button class="nav-toggle" id="navToggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="navCta">
                 <i class="ri-menu-line" aria-hidden="true"></i>
             </button>
