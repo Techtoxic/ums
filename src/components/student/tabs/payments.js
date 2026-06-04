@@ -2,6 +2,16 @@
 
 window.StudentTabs = window.StudentTabs || {};
 
+// Academic year runs September–August. Used as a fallback when the payment row
+// did not carry a server-computed academicYear label.
+function resolveAcademicYearLabel(dateInput) {
+    const d = dateInput ? new Date(dateInput) : new Date();
+    const valid = !isNaN(d.getTime()) ? d : new Date();
+    const yr = valid.getFullYear();
+    const start = valid.getMonth() >= 8 ? yr : yr - 1; // Sep = index 8
+    return `${start}/${start + 1}`;
+}
+
 // (verbatim from studentPortal.js)
 // Update payment history display
 function updatePaymentHistory(payments) {
@@ -79,6 +89,18 @@ function showPaymentReceipt(payment) {
                 <div class="flex justify-between">
                     <span class="text-gray-600 dark:text-gray-400">Admission Number:</span>
                     <span class="font-medium text-gray-800 dark:text-white">${escapeHtml(studentData.admissionNumber || 'N/A')}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600 dark:text-gray-400">Course:</span>
+                    <span class="font-medium text-gray-800 dark:text-white">${escapeHtml(payment.courseName || studentData.courseName || studentData.course || 'N/A')}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600 dark:text-gray-400">Department:</span>
+                    <span class="font-medium text-gray-800 dark:text-white">${escapeHtml(payment.departmentName || studentData.departmentName || studentData.department || 'N/A')}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600 dark:text-gray-400">Academic Year:</span>
+                    <span class="font-medium text-gray-800 dark:text-white">${escapeHtml(payment.academicYear || resolveAcademicYearLabel(payment.paymentDate))}</span>
                 </div>
                 <div class="flex justify-between">
                     <span class="text-gray-600 dark:text-gray-400">Amount Paid:</span>
@@ -181,6 +203,9 @@ async function exportReceipt() {
         const details = [
             ['Student Name:', studentData.name || 'N/A'],
             ['Admission Number:', studentData.admissionNumber || 'N/A'],
+            ['Course:', paymentData.courseName || studentData.courseName || studentData.course || 'N/A'],
+            ['Department:', paymentData.departmentName || studentData.departmentName || studentData.department || 'N/A'],
+            ['Academic Year:', paymentData.academicYear || resolveAcademicYearLabel(paymentData.paymentDate)],
             ['Amount Paid:', formatCurrency(paymentData.amount)],
             ['Payment Method:', paymentData.paymentMode === 'mpesa' ? 'M-Pesa' : paymentData.paymentMode === 'bank' ? 'Bank Transfer' : 'N/A'],
             ['Reference/Transaction ID:', paymentData.reference || 'N/A'],

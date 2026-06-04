@@ -50,6 +50,23 @@ router.post('/payslips/generate', verifyToken, authorize('admin', 'finance'), as
             return res.status(400).json({ message: 'Missing required fields' });
         }
 
+        // Period guard (backend-enforced): payslips may ONLY be generated for the
+        // CURRENT month and CURRENT year. This blocks back-dated/future payslips
+        // regardless of the client. Month is compared numerically so "06", "6"
+        // and 6 all validate the same; year is compared numerically.
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonthNum = now.getMonth() + 1; // 1..12
+        const yearNum = Number(year);
+        const monthNum = parseInt(String(month).replace(/[^0-9]/g, ''), 10);
+        if (!Number.isInteger(yearNum) || yearNum !== currentYear) {
+            return res.status(400).json({ message: `Payslips can only be generated for the current year (${currentYear}).` });
+        }
+        if (!Number.isInteger(monthNum) || monthNum !== currentMonthNum) {
+            const names = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+            return res.status(400).json({ message: `Payslips can only be generated for the current month (${names[currentMonthNum]}).` });
+        }
+
         const period = `${month} ${year}`;
         const yearInt = Number(year);
         const payslips = [];

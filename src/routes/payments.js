@@ -5,16 +5,31 @@ const { toDecimal128 } = require('../utils/formatters');
 const { Payment, Student } = require('../db/models');
 const { db, schema } = require('../db');
 const { eq, desc } = require('drizzle-orm');
+const { getCourseDisplayName, getDepartmentDisplayName } = require('../utils/courseCodes');
+const { getCurrentAcademicYearLabel } = require('../utils/academicPeriod');
 
 // Shape a joined payment row for the frontend. `studentId` is exposed as the
 // ADMISSION NUMBER (the finance dashboard correlates payments to students by
 // admission number), while the DB stores student_id as the student uuid.
+//
+// Each row is enriched with the student's course/department/module and the
+// academic year of the payment so receipts can render those fields directly
+// (the receipt PDF no longer depends on a second /students fetch — that fetch
+// was being blocked for the finance role, leaving Department/Program as "N/A").
 function shapePaymentRow(r) {
     return {
         _id: r.id,
         id: r.id,
         studentId: r.admissionNumber,        // admission number for display/matching
         studentUuid: r.studentUuid,          // the real FK (uuid)
+        studentName: r.studentName,
+        course: r.course,
+        courseName: getCourseDisplayName(r.course),
+        department: r.department,
+        departmentName: getDepartmentDisplayName(r.department),
+        module: r.module,
+        intake: r.intake,
+        intakeYear: r.intakeYear,
         amount: r.amount,
         paymentMode: r.paymentMode,
         bankName: r.bankName,
@@ -22,6 +37,7 @@ function shapePaymentRow(r) {
         reference: r.referenceNumber,
         recordedBy: r.recordedBy,
         paymentDate: r.paymentDate,
+        academicYear: getCurrentAcademicYearLabel(r.paymentDate ? new Date(r.paymentDate) : new Date()),
         createdAt: r.createdAt,
     };
 }
@@ -30,6 +46,12 @@ const _paymentJoinFields = {
     id: schema.payments.id,
     studentUuid: schema.payments.student_id,
     admissionNumber: schema.students.admission_number,
+    studentName: schema.students.name,
+    course: schema.students.course,
+    department: schema.students.department,
+    module: schema.students.module,
+    intake: schema.students.intake,
+    intakeYear: schema.students.intake_year,
     amount: schema.payments.amount,
     paymentMode: schema.payments.payment_mode,
     bankName: schema.payments.bank_name,

@@ -87,6 +87,19 @@ const COURSE_CONFIG = Object.freeze({
     information_science_6:              { code: 'LIS6',  department: 'computing_informatics', name: 'Library and Information Science Level 6' },
 });
 
+// Reverse lookup: registration code (e.g. "GA6", "ICT5") -> canonical display
+// name. Many student rows store the SHORT CODE in the `course` column rather
+// than the snake_case key, so getCourseDisplayName must be able to resolve a
+// code back to its full name — otherwise portals/receipts show the raw code
+// (e.g. "GA6") instead of "Agricultural Extension Level 6". Built once from
+// COURSE_CONFIG; first name wins when multiple keys share a code.
+const CODE_TO_NAME = Object.freeze(
+    Object.values(COURSE_CONFIG).reduce((map, { code, name }) => {
+        if (code && !map[code]) map[code] = name;
+        return map;
+    }, {})
+);
+
 // Department display labels (human-readable, used by exports + listings).
 const DEPARTMENT_LABELS = Object.freeze({
     applied_science:        'Applied Science Department',
@@ -123,6 +136,10 @@ function getCourseDisplayName(course) {
     if (COURSE_CONFIG[key]) return COURSE_CONFIG[key].name;
     const norm = key.toLowerCase().replace(/\s+/g, '_');
     if (COURSE_CONFIG[norm]) return COURSE_CONFIG[norm].name;
+    // Stored as a short registration code (e.g. "GA6", "ICT5", "AB6")? Resolve
+    // it back to the full display name so portals/receipts never show the code.
+    const upper = key.toUpperCase();
+    if (CODE_TO_NAME[upper]) return CODE_TO_NAME[upper];
     // No match: fall back to readable formatting (underscores → spaces, Title
     // Case, append "Level N" if the key ends in a digit).
     return key

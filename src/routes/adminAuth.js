@@ -16,14 +16,18 @@ const { setAuthCookie, setCsrfCookie, generateCsrfToken } = require('../middlewa
 const emailService = new EmailService();
 const { users } = schema;
 
-// SEV-C-001: strict per-IP rate limiter for the entire admin auth surface
+// SEV-C-001: strict per-IP brute-force limiter for the entire admin auth surface
 // (login, OTP verification, email-change OTP, etc.). Mounted on the router so
 // every current and future route under /api/admin/auth is throttled.
+// skipSuccessfulRequests:true counts ONLY failed attempts so a shared campus IP
+// does not lock out legitimate staff; credential-guessing (which fails) is still
+// throttled. Tune via ADMIN_AUTH_RATE_LIMIT_MAX.
 const adminAuthLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100,                 // TEMP: raised from 10 for demo. Revert after.
+    max: (() => { const n = parseInt(process.env.ADMIN_AUTH_RATE_LIMIT_MAX, 10); return Number.isInteger(n) && n > 0 ? n : 20; })(),
     standardHeaders: true,
     legacyHeaders: false,
+    skipSuccessfulRequests: true,
     message: {
         success: false,
         message: 'Too many authentication attempts. Please try again later.'

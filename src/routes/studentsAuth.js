@@ -28,7 +28,7 @@ async function resolveProgramForCourse(course) {
 }
 
 // Get Student Data by Admission Number
-router.get('/students/admission/:admissionNumber', verifyToken, authorize('admin', 'registrar', 'finance', 'student'), verifyOwnership('admissionNumber'), async (req, res) => {
+router.get('/students/admission/:admissionNumber', verifyToken, authorize('admin', 'registrar', 'finance', 'student'), verifyOwnership('admissionNumber', ['finance']), async (req, res) => {
     try {
         const { admissionNumber } = req.params;
         console.log('Fetching student data for admission number:', admissionNumber);

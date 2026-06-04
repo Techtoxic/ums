@@ -922,64 +922,76 @@ function setupSidebar() {
                 const paymentDate = payment.paymentDate ? new Date(payment.paymentDate) : new Date();
                 const formattedDate = paymentDate.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
                 const refTail = payment._id ? payment._id.slice(-6) : String(payment.reference || 'N/A').slice(-6);
-                const receiptRef = `EDTTI/RECEIPT/${paymentDate.getFullYear()}/${refTail}`;
+                // Academic year runs Sept–Aug. Prefer the server-computed label on
+                // the payment row; fall back to deriving it from the payment date.
+                const acadYear = payment.academicYear || (() => {
+                    const yr = paymentDate.getFullYear();
+                    const start = paymentDate.getMonth() >= 8 ? yr : yr - 1; // Sep = index 8
+                    return `${start}/${start + 1}`;
+                })();
+                const receiptRef = `EDTTI/RECEIPT/${acadYear.replace('/', '-')}/${refTail}`;
 
                 doc.setFontSize(10); doc.setTextColor(0, 0, 0); doc.setFont('helvetica', 'normal');
                 doc.text(`Ref: ${receiptRef}`, 14, y);
                 doc.text(`Date: ${formattedDate}`, pageWidth - 14, y, { align: 'right' });
 
                 // Program / department — resolve the NAME (not the raw code), and
-                // never leave department blank when we can derive it.
+                // never leave department blank when we can derive it. The payment
+                // row is now enriched server-side with courseName/departmentName,
+                // so these resolve even when the student lookup is unavailable.
                 const titleCase = (s) => String(s || '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
                 const courseVal = student?.course || payment.course;
                 let programDisplay = student?.programName
+                    || payment.courseName
+                    || student?.courseName
                     || (typeof formatCourseName === 'function' && courseVal ? formatCourseName(courseVal) : null)
                     || (courseVal ? titleCase(courseVal) : 'N/A');
                 const deptRaw = student?.department || payment.department;
-                const deptName = (window.Catalog && deptRaw ? window.Catalog.departmentName(deptRaw) : null)
+                const deptName = payment.departmentName
                     || student?.departmentName
+                    || (window.Catalog && deptRaw ? window.Catalog.departmentName(deptRaw) : null)
                     || (deptRaw ? titleCase(deptRaw) : 'N/A');
 
                 // Transaction / reference code (the actual payment reference).
                 const reference = payment.reference || payment.referenceNumber || receiptRef;
 
-                // Student info (clean key/value table) — includes the reference.
+                // Student info (clean key/value table) — includes the academic year.
                 doc.autoTable({
                     startY: y + 4,
                     theme: 'plain',
                     styles: { fontSize: 10, cellPadding: 1.5 },
                     columnStyles: { 0: { fontStyle: 'bold', textColor: D.MAROON, cellWidth: 45 } },
                     body: [
-                        ['Name', student?.name || 'N/A'],
+                        ['Name', student?.name || payment.studentName || 'N/A'],
                         ['Admission No.', payment.studentId || student?.admissionNumber || 'N/A'],
                         ['Program', programDisplay],
                         ['Department', deptName],
-                        ['Reference', reference],
+                        ['Module', payment.module != null ? `Module ${payment.module}` : (student?.module != null ? `Module ${student.module}` : 'N/A')],
+                        ['Academic Year', acadYear],
                     ],
                     margin: { left: 14, right: 14 },
                 });
                 y = doc.lastAutoTable.finalY + 6;
 
-                // Payment details + reference line.
+                // Payment details — Reference is its OWN column (not crammed into
+                // the description), per finance requirement.
                 const modes = { mpesa: 'M-Pesa Payment', bank: 'Bank Transfer', bursary: 'CDF Bursary' };
                 const modeDisplay = modes[payment.paymentMode] || payment.paymentMode || 'N/A';
-                const refs = [`Ref: ${reference}`];
-                if (payment.paymentMode === 'mpesa' && payment.mpesaTransactionId) refs.push(`M-Pesa Txn: ${payment.mpesaTransactionId}`);
-                else if (payment.paymentMode === 'bank' && payment.receiptNumber) refs.push(`Bank Receipt: ${payment.receiptNumber}${payment.bankName ? ` (${payment.bankName})` : ''}`);
-                else if (payment.paymentMode === 'bursary' && payment.bursaryReference) refs.push(`Bursary Ref: ${payment.bursaryReference}`);
-                const refLine = refs.join('\n');
+                const refDetails = [reference];
+                if (payment.paymentMode === 'bank' && payment.bankName) refDetails.push(`Bank: ${payment.bankName}`);
+                const referenceCell = refDetails.join('\n');
                 const amount = `KES ${Number(payment.amount || 0).toLocaleString()}`;
 
                 doc.autoTable({
                     startY: y,
-                    head: [['Description', 'Amount']],
-                    body: [[modeDisplay + (refLine ? `\n${refLine}` : ''), amount]],
-                    foot: [['Total Paid', amount]],
+                    head: [['Description', 'Reference', 'Amount']],
+                    body: [[modeDisplay, referenceCell, amount]],
+                    foot: [['Total Paid', '', amount]],
                     theme: 'grid',
                     styles: { fontSize: 10, cellPadding: 3 },
                     headStyles: { fillColor: D.MAROON, textColor: 255, fontStyle: 'bold' },
                     footStyles: { fillColor: D.CREAM, textColor: D.MAROON, fontStyle: 'bold' },
-                    columnStyles: { 1: { halign: 'right' } },
+                    columnStyles: { 2: { halign: 'right' } },
                     margin: { left: 14, right: 14 },
                 });
                 y = doc.lastAutoTable.finalY + 14;

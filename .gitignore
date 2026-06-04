@@ -65,3 +65,4 @@ drizzle/private/*
 # Markdown reports and other docs — keep README.md tracked, ignore everything else
 *.md
 !README.md
+!SECURITY_AUDIT.md

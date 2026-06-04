@@ -296,19 +296,26 @@ const authorize = (...allowedRoles) => {
  * Verify the authenticated user owns the resource they are accessing.
  * Admin-level roles bypass.
  *
+ * @param {string} userIdParam - the route param/query key holding the target id.
+ * @param {string[]} [extraBypassRoles] - additional roles (beyond admin/registrar)
+ *        that are trusted to read other users' data on THIS route. Used where a
+ *        back-office role is already authorize()'d for the route but must reach
+ *        any user's record (e.g. finance generating a student payment receipt).
+ *
  * Important: compares as strings; UUIDs and string IDs are both handled.
  */
-const verifyOwnership = (userIdParam = 'id') => {
+const verifyOwnership = (userIdParam = 'id', extraBypassRoles = []) => {
     return (req, res, next) => {
         try {
             const requestedUserId = req.params[userIdParam] || req.query[userIdParam];
             const authenticatedUserId = req.user && req.user.userId;
 
-            // SEV-H-006: only admin and registrar may bypass ownership. Other
-            // back-office roles (dean, finance, deputy, cibec, ilo) must reach
-            // other users' data through routes that explicitly authorize them,
-            // never by silently skipping the ownership check.
-            const adminRoles = ['admin', 'registrar'];
+            // SEV-H-006: only admin and registrar may bypass ownership by default.
+            // Other back-office roles (dean, finance, deputy, cibec, ilo) must reach
+            // other users' data through routes that explicitly authorize them AND
+            // opt them into the bypass via extraBypassRoles — never by silently
+            // skipping the ownership check.
+            const adminRoles = ['admin', 'registrar', ...extraBypassRoles];
             if (adminRoles.includes(req.user && req.user.role)) {
                 return next();
             }

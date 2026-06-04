@@ -45,6 +45,14 @@ router.patch('/:notificationId/read', verifyToken, authorize('admin', 'student',
             return res.status(404).json({ message: 'Notification not found' });
         }
 
+        // IDOR guard: a user may only mark THEIR OWN notification read. Admins
+        // bypass. recipientId is the recipient's users.id / students.id (uuid),
+        // which equals req.user.userId for the owner. Don't leak existence — the
+        // 404 above already handles unknown ids; here we 403 on not-owner.
+        if (req.user.role !== 'admin' && String(notification.recipientId) !== String(req.user.userId)) {
+            return res.status(403).json({ success: false, message: 'Forbidden', code: 'NOT_OWNER' });
+        }
+
         notification.isRead = true;
         notification.readAt = new Date();
         await notification.save();
