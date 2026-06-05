@@ -223,6 +223,17 @@ class StudentExporter {
         doc.setTextColor(70, 70, 70);
         doc.setFontSize(9);
         doc.setFont(undefined, 'normal');
+        // Academic year (Sept->Aug, labelled by start year) — shown on every export.
+        const _now = new Date();
+        const _startYear = _now.getMonth() >= 8 ? _now.getFullYear() : _now.getFullYear() - 1;
+        const _acadYear = (window.EDTTIDocs && window.EDTTIDocs.academicYearLabel)
+            ? window.EDTTIDocs.academicYearLabel()
+            : `${_startYear}/${_startYear + 1}`;
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(122, 12, 12);
+        doc.text(`Academic Year: ${_acadYear}`, pageWidth - 14, 39, { align: 'right' });
+        doc.setFont(undefined, 'normal');
+        doc.setTextColor(70, 70, 70);
         doc.text(`Generated on: ${new Date().toLocaleString('en-GB')}`, 14, 39);
         doc.text(`Total Records: ${data.length}`, 14, 44);
 

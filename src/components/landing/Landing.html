@@ -147,6 +147,62 @@
         .dept-card h3 { font-size: 1.2rem; color: var(--ink); }
         .dept-card p { margin-top: 6px; font-size: 0.92rem; color: var(--muted); }
 
+        /* ---- Old-site media integrations (campus photos, values, intakes,
+               campus life, partners, charter). Reuse the maroon/gold tokens. ---- */
+        /* Hero campus photo (right column) */
+        .hero-media { position: relative; }
+        .hero-photo { width: 100%; aspect-ratio: 16/10; object-fit: cover; border-radius: 18px; border: 1px solid rgba(244,213,141,.35); box-shadow: 0 24px 60px rgba(0,0,0,.35); }
+        .hero-photo-cap { position: absolute; left: 16px; bottom: 14px; right: 16px; display: flex; align-items: center; gap: 8px; color: #fff; font-size: 0.82rem; font-weight: 700; text-shadow: 0 2px 8px rgba(0,0,0,.6); }
+        .hero-photo-cap i { color: var(--gold-light); }
+        .hero-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: var(--s4); }
+        .hero-chips .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 0.82rem; font-weight: 700; color: rgba(255,255,255,.92); background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.16); padding: 6px 12px; border-radius: 999px; }
+        .hero-chips .chip i { color: var(--gold-light); }
+
+        /* Values (Vision / Mission / Motto) */
+        .values-grid { margin-top: var(--s6); display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s3); }
+        .value-card { padding: var(--s4); border-radius: 16px; background: var(--bg); border: 1px solid var(--line); border-top: 4px solid var(--gold); }
+        .value-card .ic { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 12px; background: var(--cream); color: var(--maroon); font-size: 1.5rem; }
+        .value-card h3 { margin-top: var(--s2); font-size: 1.15rem; color: var(--ink); }
+        .value-card p { margin-top: 8px; font-size: 0.98rem; line-height: 1.6; color: var(--muted); }
+
+        /* Our Story (image + text) */
+        .story-grid { margin-top: var(--s6); display: grid; grid-template-columns: 0.9fr 1.1fr; gap: var(--s8); align-items: center; }
+        .story-photo { width: 100%; border-radius: 16px; border: 1px solid var(--line); object-fit: cover; box-shadow: 0 16px 40px rgba(122,12,12,.12); }
+        .story-text h3 { font-size: 1.4rem; color: var(--maroon); margin-top: var(--s3); }
+        .story-text h3:first-child { margin-top: 0; }
+        .story-text p { margin-top: 8px; font-size: 1.04rem; line-height: 1.8; color: var(--ink); }
+
+        /* Department photos on cards */
+        .dept-photo { width: 100%; aspect-ratio: 16/9; object-fit: cover; border-radius: 10px; margin-bottom: var(--s2); border: 1px solid var(--line); }
+
+        /* Intakes */
+        .intake-grid { margin-top: var(--s6); display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s3); }
+        .intake-card { padding: var(--s4); border-radius: 16px; background: var(--bg); border: 1px solid var(--line); position: relative; overflow: hidden; }
+        .intake-card::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--maroon); }
+        .intake-card .mon { font-family: var(--serif); font-size: 1.5rem; font-weight: 700; color: var(--maroon); }
+        .intake-card .dates { margin-top: var(--s2); display: grid; gap: 6px; }
+        .intake-card .dates span { display: flex; align-items: center; gap: 8px; font-size: 0.92rem; color: var(--muted); }
+        .intake-card .dates i { color: var(--gold); }
+        .intake-card .btn { margin-top: var(--s3); }
+
+        /* Campus life (sports) */
+        .life-grid { margin-top: var(--s6); display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s3); }
+        .life-card { position: relative; border-radius: 16px; overflow: hidden; aspect-ratio: 4/3; border: 1px solid var(--line); }
+        .life-card img { width: 100%; height: 100%; object-fit: cover; transition: transform .4s ease; }
+        .life-card:hover img { transform: scale(1.06); }
+        .life-card .cap { position: absolute; inset: 0; display: flex; align-items: flex-end; padding: var(--s3); background: linear-gradient(to top, rgba(28,8,8,.78) 0%, rgba(28,8,8,0) 55%); color: #fff; font-family: var(--serif); font-size: 1.25rem; font-weight: 700; }
+
+        /* Partners */
+        .partner-logos { margin-top: var(--s6); display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: var(--s4); }
+        .partner-logos figure { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        .partner-logos img { height: 76px; width: auto; object-fit: contain; filter: grayscale(20%); transition: filter .2s, transform .2s; }
+        .partner-logos figure:hover img { filter: none; transform: translateY(-3px); }
+        .partner-logos figcaption { font-size: 0.74rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+        html.dark .partner-logos { background: #fff; border-radius: 16px; padding: var(--s4); }
+
+        /* Charter download strip */
+        .charter-row { margin-top: var(--s4); display: flex; flex-wrap: wrap; gap: var(--s2); }
+
         /* Why */
         .why-grid { margin-top: var(--s6); display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--s3); }
         .why-card { padding: var(--s4); border-radius: 14px; background: var(--bg); border: 1px solid var(--line); border-top: 4px solid var(--maroon); }
@@ -191,6 +247,10 @@
         @media (max-width: 980px) {
             .hero-inner { grid-template-columns: 1fr; gap: var(--s6); }
             .about-grid { grid-template-columns: 1fr; gap: var(--s4); }
+            .story-grid { grid-template-columns: 1fr; gap: var(--s4); }
+            .values-grid { grid-template-columns: 1fr; }
+            .intake-grid { grid-template-columns: 1fr; }
+            .life-grid { grid-template-columns: 1fr; }
             .dept-grid { grid-template-columns: repeat(2, 1fr); }
             .why-grid { grid-template-columns: repeat(2, 1fr); }
             .cta-inner { grid-template-columns: 1fr; }
@@ -206,6 +266,7 @@
             .stats-inner { grid-template-columns: 1fr; gap: var(--s2); }
             .stat { justify-content: flex-start; }
             .dept-grid, .why-grid { grid-template-columns: 1fr; }
+            .values-grid, .intake-grid, .life-grid { grid-template-columns: 1fr; }
         }
 
         /* ---------------- Theme toggle ---------------- */
@@ -275,7 +336,8 @@
             <div class="nav-mid" id="navMid">
                 <a href="#about">About</a>
                 <a href="#departments">Departments</a>
-                <a href="#why">Why EDTTI</a>
+                <a href="#admissions">Admissions</a>
+                <a href="#life">Campus Life</a>
                 <a href="#contact">Contact</a>
             </div>
             <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle dark mode">
@@ -316,14 +378,18 @@
                         <span class="hero-badge"><i class="ri-cpu-line" aria-hidden="true"></i> Jitume digital skills lab</span>
                         <span class="hero-badge"><i class="ri-calendar-event-line" aria-hidden="true"></i> Established 2019</span>
                     </div>
+                    <div class="hero-chips" aria-label="Disciplines">
+                        <span class="chip"><i class="ri-flask-line" aria-hidden="true"></i> Applied Science</span>
+                        <span class="chip"><i class="ri-tools-line" aria-hidden="true"></i> Electromechanical</span>
+                        <span class="chip"><i class="ri-computer-line" aria-hidden="true"></i> Computing &amp; ICT</span>
+                        <span class="chip"><i class="ri-building-2-line" aria-hidden="true"></i> Building &amp; Civil</span>
+                        <span class="chip"><i class="ri-restaurant-line" aria-hidden="true"></i> Hospitality</span>
+                        <span class="chip"><i class="ri-plant-line" aria-hidden="true"></i> Agriculture</span>
+                    </div>
                 </div>
-                <div class="disc" aria-hidden="true">
-                    <div class="d"><i class="ri-flask-line"></i><span>Applied Science</span></div>
-                    <div class="d"><i class="ri-tools-line"></i><span>Electromechanical</span></div>
-                    <div class="d"><i class="ri-computer-line"></i><span>Computing &amp; ICT</span></div>
-                    <div class="d"><i class="ri-building-2-line"></i><span>Building &amp; Civil</span></div>
-                    <div class="d"><i class="ri-restaurant-line"></i><span>Hospitality</span></div>
-                    <div class="d"><i class="ri-plant-line"></i><span>Agriculture</span></div>
+                <div class="hero-media">
+                    <img class="hero-photo" src="/public/img/site/campus.jpg" alt="Emurua Dikirr Technical Training Institute campus" loading="eager" decoding="async">
+                    <div class="hero-photo-cap"><i class="ri-map-pin-2-fill" aria-hidden="true"></i> Our campus · Narok County, Kenya</div>
                 </div>
             </div>
         </header>
@@ -377,6 +443,44 @@
             </div>
         </section>
 
+        <!-- ============ STORY & VALUES ============ -->
+        <section class="section" id="story">
+            <div class="wrap">
+                <div class="section-head reveal">
+                    <span class="kicker">Our Story</span>
+                    <h2>From a local vision to a <span class="accent">hub of technical excellence</span></h2>
+                    <div class="rule"></div>
+                </div>
+                <div class="story-grid">
+                    <img class="story-photo reveal" src="/public/img/site/story.jpg" alt="EDTTI trainees at work" loading="lazy" decoding="async">
+                    <div class="story-text reveal">
+                        <h3>Origins</h3>
+                        <p>Emurua Dikirr Technical Training Institute was conceived with the vision of empowering local communities with practical skills and knowledge, and has steadily grown into a hub for technical and vocational excellence in Narok County.</p>
+                        <h3>Growth &amp; Mission</h3>
+                        <p>Over the years we have expanded our programmes and facilities to meet the growing demands of industry. Our mission is to provide hands-on training, foster innovation, and prepare students for successful careers in technical fields.</p>
+                    </div>
+                </div>
+
+                <div class="values-grid">
+                    <article class="value-card reveal">
+                        <div class="ic"><i class="ri-eye-line" aria-hidden="true"></i></div>
+                        <h3>Vision</h3>
+                        <p>To be a leading institution in technical training, empowering students with skills for a better future.</p>
+                    </article>
+                    <article class="value-card reveal">
+                        <div class="ic"><i class="ri-flag-2-line" aria-hidden="true"></i></div>
+                        <h3>Mission</h3>
+                        <p>To provide high-quality technical education and training that prepares students for the workforce and life.</p>
+                    </article>
+                    <article class="value-card reveal">
+                        <div class="ic"><i class="ri-medal-2-line" aria-hidden="true"></i></div>
+                        <h3>Motto</h3>
+                        <p>Knowledge, Skill, and Excellence — guiding every student toward success.</p>
+                    </article>
+                </div>
+            </div>
+        </section>
+
         <!-- ============ DEPARTMENTS ============ -->
         <section class="section alt" id="departments">
             <div class="wrap">
@@ -388,36 +492,43 @@
                 </div>
                 <div class="dept-grid">
                     <article class="dept-card reveal">
+                        <img class="dept-photo" src="/public/img/site/dept-applied.jpg" alt="Applied Science laboratory" loading="lazy" decoding="async">
                         <div class="dept-icon"><i class="ri-flask-line" aria-hidden="true"></i></div>
                         <h3>Applied Science</h3>
                         <p>Analytical Chemistry, Applied Biology, Science Laboratory Technology.</p>
                     </article>
                     <article class="dept-card reveal">
+                        <img class="dept-photo" src="/public/img/site/dept-agriculture.jpg" alt="Agriculture department" loading="lazy" decoding="async">
                         <div class="dept-icon"><i class="ri-plant-line" aria-hidden="true"></i></div>
                         <h3>Agriculture</h3>
                         <p>Agricultural Extension and sustainable crop &amp; livestock practice.</p>
                     </article>
                     <article class="dept-card reveal">
+                        <img class="dept-photo" src="/public/img/site/dept-civil.jpg" alt="Building and Civil Engineering" loading="lazy" decoding="async">
                         <div class="dept-icon"><i class="ri-building-2-line" aria-hidden="true"></i></div>
                         <h3>Building &amp; Civil Engineering</h3>
                         <p>Building Technology and Plumbing, from substructure to finishes.</p>
                     </article>
                     <article class="dept-card reveal">
+                        <img class="dept-photo" src="/public/img/site/dept-electrical.jpg" alt="Electrical and Automotive Engineering" loading="lazy" decoding="async">
                         <div class="dept-icon"><i class="ri-tools-line" aria-hidden="true"></i></div>
                         <h3>Electromechanical</h3>
                         <p>Electrical and Automotive Engineering, electronics and machines.</p>
                     </article>
                     <article class="dept-card reveal">
+                        <img class="dept-photo" src="/public/img/site/dept-hospitality.jpg" alt="Hospitality and Fashion" loading="lazy" decoding="async">
                         <div class="dept-icon"><i class="ri-restaurant-line" aria-hidden="true"></i></div>
                         <h3>Hospitality</h3>
                         <p>Food &amp; Beverage, Fashion &amp; Design, Cosmetology, Tour &amp; Travel.</p>
                     </article>
                     <article class="dept-card reveal">
+                        <img class="dept-photo" src="/public/img/site/dept-business.jpg" alt="Business and Administration" loading="lazy" decoding="async">
                         <div class="dept-icon"><i class="ri-briefcase-line" aria-hidden="true"></i></div>
                         <h3>Business &amp; Liberal Studies</h3>
                         <p>Business Management, Office Administration, Social Work, Storekeeping.</p>
                     </article>
                     <article class="dept-card reveal">
+                        <img class="dept-photo" src="/public/img/site/dept-ict.jpg" alt="ICT and Records" loading="lazy" decoding="async">
                         <div class="dept-icon"><i class="ri-computer-line" aria-hidden="true"></i></div>
                         <h3>Computing &amp; Informatics</h3>
                         <p>ICT and Library &amp; Information Science with a modern digital lab.</p>
@@ -427,6 +538,84 @@
                         <p style="color:rgba(255,255,255,.85);">Sign in to the Student Portal to view modules, fees and your timetable.</p>
                         <a href="/student/login" class="btn btn-primary btn-sm" style="margin-top:var(--s2);align-self:flex-start;"><i class="ri-arrow-right-line" aria-hidden="true"></i> Student Portal</a>
                     </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ INTAKES ============ -->
+        <section class="section" id="admissions">
+            <div class="wrap">
+                <div class="section-head reveal">
+                    <span class="kicker">Admissions</span>
+                    <h2>Three intakes <span class="accent">every year</span></h2>
+                    <p class="sub">Join EDTTI in January, May or September. Talk to the registry to begin your application.</p>
+                    <div class="rule"></div>
+                </div>
+                <div class="intake-grid">
+                    <article class="intake-card reveal">
+                        <div class="mon">January Intake</div>
+                        <div class="dates">
+                            <span><i class="ri-calendar-check-line" aria-hidden="true"></i> Opens: 1st January 2026</span>
+                            <span><i class="ri-calendar-close-line" aria-hidden="true"></i> Closes: 2nd February 2026</span>
+                        </div>
+                        <a href="#contact" class="btn btn-outline btn-sm"><i class="ri-mail-send-line" aria-hidden="true"></i> Enquire to apply</a>
+                    </article>
+                    <article class="intake-card reveal">
+                        <div class="mon">May Intake</div>
+                        <div class="dates">
+                            <span><i class="ri-calendar-check-line" aria-hidden="true"></i> Opens: 1st May 2026</span>
+                            <span><i class="ri-calendar-close-line" aria-hidden="true"></i> Closes: 15th June 2026</span>
+                        </div>
+                        <a href="#contact" class="btn btn-outline btn-sm"><i class="ri-mail-send-line" aria-hidden="true"></i> Enquire to apply</a>
+                    </article>
+                    <article class="intake-card reveal">
+                        <div class="mon">September Intake</div>
+                        <div class="dates">
+                            <span><i class="ri-calendar-check-line" aria-hidden="true"></i> Opens: 1st September 2026</span>
+                            <span><i class="ri-calendar-close-line" aria-hidden="true"></i> Closes: 15th October 2026</span>
+                        </div>
+                        <a href="#contact" class="btn btn-outline btn-sm"><i class="ri-mail-send-line" aria-hidden="true"></i> Enquire to apply</a>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ CAMPUS LIFE ============ -->
+        <section class="section alt" id="life">
+            <div class="wrap">
+                <div class="section-head reveal">
+                    <span class="kicker">Beyond the Classroom</span>
+                    <h2>There is more to <span class="accent">learning</span></h2>
+                    <p class="sub">Education at EDTTI goes beyond the classroom. We nurture teamwork, leadership, discipline and talent through vibrant co-curricular activities that shape well-rounded professionals.</p>
+                    <div class="rule"></div>
+                </div>
+                <div class="life-grid">
+                    <figure class="life-card reveal"><img src="/public/img/site/sport-football.jpg" alt="Football at EDTTI" loading="lazy" decoding="async"><figcaption class="cap">Football</figcaption></figure>
+                    <figure class="life-card reveal"><img src="/public/img/site/sport-netball.jpg" alt="Netball at EDTTI" loading="lazy" decoding="async"><figcaption class="cap">Netball</figcaption></figure>
+                    <figure class="life-card reveal"><img src="/public/img/site/sport-basketball.jpg" alt="Basketball at EDTTI" loading="lazy" decoding="async"><figcaption class="cap">Basketball</figcaption></figure>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ PARTNERS & CHARTER ============ -->
+        <section class="section" id="partners">
+            <div class="wrap">
+                <div class="section-head reveal">
+                    <span class="kicker">Recognition &amp; Partners</span>
+                    <h2>Accredited and <span class="accent">government-supported</span></h2>
+                    <p class="sub">EDTTI works with national bodies that examine, place and fund Kenyan TVET trainees.</p>
+                    <div class="rule"></div>
+                </div>
+                <div class="partner-logos reveal">
+                    <figure><img src="/public/img/site/partner-knec.png" alt="KNEC"><figcaption>KNEC</figcaption></figure>
+                    <figure><img src="/public/img/site/partner-cdacc.png" alt="TVET CDACC"><figcaption>TVET CDACC</figcaption></figure>
+                    <figure><img src="/public/img/site/partner-kuccps.png" alt="KUCCPS"><figcaption>KUCCPS</figcaption></figure>
+                    <figure><img src="/public/img/site/partner-helb.png" alt="HELB"><figcaption>HELB</figcaption></figure>
+                    <figure><img src="/public/img/site/partner-psc.png" alt="Public Service Commission"><figcaption>PSC</figcaption></figure>
+                </div>
+                <div class="charter-row reveal">
+                    <a href="/public/docs/charter-english.pdf" target="_blank" rel="noopener" class="btn btn-outline btn-sm"><i class="ri-file-text-line" aria-hidden="true"></i> Service Charter (English)</a>
+                    <a href="/public/docs/charter-swahili.pdf" target="_blank" rel="noopener" class="btn btn-outline btn-sm"><i class="ri-file-text-line" aria-hidden="true"></i> Mkataba wa Huduma (Kiswahili)</a>
                 </div>
             </div>
         </section>

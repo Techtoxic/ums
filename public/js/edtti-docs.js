@@ -22,6 +22,21 @@ window.EDTTIDocs = (function () {
     let logoDataUrl = null;
     let logoPromise = null;
 
+    // ----------------------------------------------------------------------
+    // Academic year — single source of truth for EVERY generated document.
+    // Mirrors the server convention in src/utils/academicPeriod.js: the year
+    // runs September -> August, labelled by its START year (e.g. a date in
+    // Oct 2025 or Mar 2026 both read "2025/2026"). Shown on every PDF header
+    // so receipts/reports/exports across ALL portals carry the academic year.
+    // ----------------------------------------------------------------------
+    function academicYearLabel(dateInput) {
+        const d = dateInput ? new Date(dateInput) : new Date();
+        const dd = isNaN(d) ? new Date() : d;
+        const y = dd.getFullYear();
+        const startYear = dd.getMonth() >= 8 ? y : y - 1; // month index 8 = September
+        return `${startYear}/${startYear + 1}`;
+    }
+
     // Load + cache the logo as a dataURL so jsPDF.addImage can embed it.
     function loadLogo() {
         if (logoDataUrl) return Promise.resolve(logoDataUrl);
@@ -73,11 +88,18 @@ window.EDTTIDocs = (function () {
         doc.setLineWidth(0.8);
         doc.line(14, lineY, pw - 14, lineY);
         let y = lineY + 6;
+        // Academic year — always shown, top-left of the meta row (maroon, bold).
+        const acadYear = opts.academicYear || academicYearLabel(opts.academicYearDate);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor.apply(doc, MAROON);
+        doc.setFontSize(9);
+        doc.text(`Academic Year: ${acadYear}`, 14, y);
+        // Generated timestamp on the right.
         doc.setTextColor(70, 70, 70);
         doc.setFont('helvetica', 'normal');
-        doc.setFontSize(9);
-        if (opts.subtitle) { doc.text(String(opts.subtitle), 14, y); }
         doc.text(`Generated: ${new Date().toLocaleString('en-GB')}`, pw - 14, y, { align: 'right' });
+        // Optional subtitle drops onto its own line so it never collides.
+        if (opts.subtitle) { y += 5; doc.text(String(opts.subtitle), 14, y); }
         return y + 6;
     }
 
@@ -207,7 +229,7 @@ window.EDTTIDocs = (function () {
         URL.revokeObjectURL(url);
     }
 
-    return { loadLogo, letterhead, decorate, lockDocument, newDoc, tablePDF, analyticsPDF, downloadExcel, formatKES, MAROON, GOLD, CREAM, INSTITUTION, ADDRESS, CONTACT, WEB_ISO };
+    return { loadLogo, letterhead, decorate, lockDocument, newDoc, tablePDF, analyticsPDF, downloadExcel, formatKES, academicYearLabel, MAROON, GOLD, CREAM, INSTITUTION, ADDRESS, CONTACT, WEB_ISO };
 })();
 
 // Back-compat alias used by finance tabs.

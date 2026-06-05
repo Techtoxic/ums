@@ -175,23 +175,34 @@ async function seedUsers() {
     const demoPw = await hash('Mt5@2026');
 
     const items = [
-        { email: 'okmomanyi56@gmail.com',           role: 'admin',     staff_id: 'ADMIN001',     name: 'System Administrator', department: 'Administration', password: adminPw },
-        { email: 'calvinnate6@gmail.com',           role: 'registrar', staff_id: 'REGISTRAR001', name: 'Registrar',            department: 'Registry',       password: adminPw },
+        // ---- Institutional / office accounts. The `name` is the OFFICIAL OFFICE
+        // TITLE because every portal greets the signed-in user by `name`
+        // ("Welcome, <name>"), so these render as the office, not a person.
+        { email: 'okmomanyi56@gmail.com',           role: 'admin',     staff_id: 'ADMIN001',     name: 'Principal',          department: 'Administration', password: adminPw },
+        { email: 'calvinnate6@gmail.com',           role: 'registrar', staff_id: 'REGISTRAR001', name: 'Registrar',          department: 'Registry',       password: adminPw },
         { email: 'whitenat16@gmail.com',            role: 'trainer',   staff_id: null,           name: 'Madam Nelly Chepkwony', department: 'applied_science', password: trainerPw },
-        { email: 'nashonbett18@gmail.com',          role: 'admin',     staff_id: 'ADMIN002',     name: 'Demo Presenter (Admin)',    department: 'Administration', password: demoPw },
-        { email: 'nashonbett18+registrar@gmail.com', role: 'registrar', staff_id: 'REGISTRAR002', name: 'Demo Presenter (Registrar)', department: 'Registry',       password: demoPw },
-        { email: 'maxxciey7@gmail.com',             role: 'admin',     staff_id: 'ADMIN003',     name: 'Maxxy', department: 'Administration', password: adminPw },
-        { email: 'maxxymaxxy04@gmail.com',          role: 'registrar', staff_id: 'REGISTRAR003', name: 'Maxxy', department: 'Registry',       password: adminPw },
-        { email: 'okmomanyi56+finance@gmail.com',   role: 'finance',   staff_id: 'FINANCE001',   name: 'Finance Officer',    department: 'Finance',            password: adminPw },
-        { email: 'okmomanyi56+dean@gmail.com',      role: 'dean',      staff_id: 'DEAN001',      name: 'Dean of Students',   department: 'Academic Affairs',   password: adminPw },
+
+        // ---- Demo presenter (nashonbett18). One OTP login per office for the
+        // pitch/demo. Gmail "+role" aliases all deliver to nashonbett18@gmail.com.
+        { email: 'nashonbett18@gmail.com',          role: 'admin',     staff_id: 'ADMIN002',     name: 'Principal',          department: 'Administration', password: demoPw },
+        { email: 'nashonbett18+registrar@gmail.com', role: 'registrar', staff_id: 'REGISTRAR002', name: 'Registrar',          department: 'Registry',       password: demoPw },
+        { email: 'nashonbett18+finance@gmail.com',  role: 'finance',   staff_id: 'FINANCE003',   name: 'Finance',            department: 'Finance',            password: demoPw },
+        { email: 'nashonbett18+deputy@gmail.com',   role: 'deputy',    staff_id: 'DEPUTY003',    name: 'Deputy Principal',   department: 'Administration',     password: demoPw },
+        { email: 'nashonbett18+cbet@gmail.com',     role: 'cibec',     staff_id: 'CBET003',      name: 'CBET Champion',      department: 'CBET',               password: demoPw },
+        { email: 'nashonbett18+ilo@gmail.com',      role: 'ilo',       staff_id: 'ILO003',       name: 'ILO',                department: 'Industrial Liaison', password: demoPw },
+
+        { email: 'maxxciey7@gmail.com',             role: 'admin',     staff_id: 'ADMIN003',     name: 'Principal',          department: 'Administration', password: adminPw },
+        { email: 'maxxymaxxy04@gmail.com',          role: 'registrar', staff_id: 'REGISTRAR003', name: 'Registrar',          department: 'Registry',       password: adminPw },
+        { email: 'okmomanyi56+finance@gmail.com',   role: 'finance',   staff_id: 'FINANCE001',   name: 'Finance',            department: 'Finance',            password: adminPw },
+        { email: 'okmomanyi56+dean@gmail.com',      role: 'dean',      staff_id: 'DEAN001',      name: 'Dean',               department: 'Academic Affairs',   password: adminPw },
         { email: 'okmomanyi56+deputy@gmail.com',    role: 'deputy',    staff_id: 'DEPUTY001',    name: 'Deputy Principal',   department: 'Administration',     password: adminPw },
-        { email: 'okmomanyi56+ilo@gmail.com',       role: 'ilo',       staff_id: 'ILO001',       name: 'ILO Officer',        department: 'Industrial Liaison', password: adminPw },
-        { email: 'okmomanyi56+cibec@gmail.com',     role: 'cibec',     staff_id: 'CIBEC001',     name: 'CIBEC Officer',      department: 'CIBEC',              password: adminPw },
-        { email: 'maxxciey302+finance@gmail.com',   role: 'finance',   staff_id: 'FINANCE002',   name: 'Finance Officer',    department: 'Finance',            password: adminPw },
-        { email: 'maxxciey302+dean@gmail.com',      role: 'dean',      staff_id: 'DEAN002',      name: 'Dean of Students',   department: 'Academic Affairs',   password: adminPw },
+        { email: 'okmomanyi56+ilo@gmail.com',       role: 'ilo',       staff_id: 'ILO001',       name: 'ILO',                department: 'Industrial Liaison', password: adminPw },
+        { email: 'okmomanyi56+cibec@gmail.com',     role: 'cibec',     staff_id: 'CIBEC001',     name: 'CBET Champion',      department: 'CBET',               password: adminPw },
+        { email: 'maxxciey302+finance@gmail.com',   role: 'finance',   staff_id: 'FINANCE002',   name: 'Finance',            department: 'Finance',            password: adminPw },
+        { email: 'maxxciey302+dean@gmail.com',      role: 'dean',      staff_id: 'DEAN002',      name: 'Dean',               department: 'Academic Affairs',   password: adminPw },
         { email: 'maxxciey302+deputy@gmail.com',    role: 'deputy',    staff_id: 'DEPUTY002',    name: 'Deputy Principal',   department: 'Administration',     password: adminPw },
-        { email: 'maxxciey302+ilo@gmail.com',       role: 'ilo',       staff_id: 'ILO002',       name: 'ILO Officer',        department: 'Industrial Liaison', password: adminPw },
-        { email: 'maxxciey302+cibec@gmail.com',     role: 'cibec',     staff_id: 'CIBEC002',     name: 'CIBEC Officer',      department: 'CIBEC',              password: adminPw },
+        { email: 'maxxciey302+ilo@gmail.com',       role: 'ilo',       staff_id: 'ILO002',       name: 'ILO',                department: 'Industrial Liaison', password: adminPw },
+        { email: 'maxxciey302+cibec@gmail.com',     role: 'cibec',     staff_id: 'CIBEC002',     name: 'CBET Champion',      department: 'CBET',               password: adminPw },
 
         // Additional trainers across departments
         { email: 'james.kiprop@edtti.ac.ke',  role: 'trainer', name: 'James Kiprop',  department: 'electromechanical', password: trainerPw },

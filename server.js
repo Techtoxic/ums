@@ -631,9 +631,13 @@ function noCacheAuthPages(req, res, next) {
 const { registerPortal } = require('./src/routes/portalPages');
 const portalDeps = { serveHTML, noCacheAuthPages, path, __dirname };
 // Minimal request logger - method, path, status only. Never log headers or bodies.
+// Skip the high-volume, low-value static asset hits (/public, *.css/js/img) so
+// production logs stay readable and disk doesn't fill under load.
+const _isStaticAsset = (p) => p.startsWith('/public') || /\.(css|js|png|jpe?g|gif|svg|ico|webp|woff2?|map|pdf)$/i.test(p);
 app.use((req, res, next) => {
     const start = Date.now();
     res.on('finish', () => {
+        if (process.env.NODE_ENV === 'production' && _isStaticAsset(req.path)) return;
         const ms = Date.now() - start;
         console.log(`${req.method} ${req.path} ${res.statusCode} ${ms}ms`);
     });
@@ -1198,7 +1202,11 @@ app.use('/api', require('./src/routes/finance'));
 
 
 app.use((req, res, next) => {
-    console.log(`Static file request: ${req.path}`);
+    // Debug-only: this fires on EVERY request, so keep it out of production logs
+    // (at thousands of users it floods pm2 logs / fills disk and adds latency).
+    if (process.env.NODE_ENV !== 'production') {
+        console.log(`Static file request: ${req.path}`);
+    }
     next();
 });
 
@@ -1353,7 +1361,7 @@ if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
     console.log('🚀 About to start listening on port', PORT);
     console.log('📍 Routes registered, starting server...');
 
-    app.listen(PORT, () => {
+    const httpServer = app.listen(PORT, () => {
         console.log(`✅ Server running on port ${PORT}`);
         console.log(`🔐 Admin Portal: http://localhost:${PORT}/admin/login`);
         console.log(`👨‍🎓 Student Portal: http://localhost:${PORT}/student/login`);
@@ -1363,8 +1371,50 @@ if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
         console.log(`🎓 Dean Portal: http://localhost:${PORT}/dean/dashboard`);
         console.log(`👔 Deputy Portal: http://localhost:${PORT}/deputy/dashboard`);
         console.log(`🏢 HOD Portal: http://localhost:${PORT}/hod/dashboard`);
+        // Tell pm2 (when started with wait_ready) that we're accepting traffic.
+        // No-op outside pm2 / when not forked with an IPC channel.
+        if (typeof process.send === 'function') process.send('ready');
     });
-    
+
+    // Keep-alive/headers timeouts tuned to sit safely behind an nginx reverse
+    // proxy (nginx default keepalive is 75s; Node's must be >= that to avoid
+    // the race that surfaces as sporadic 502s under load).
+    httpServer.keepAliveTimeout = 75000;
+    httpServer.headersTimeout = 80000;
+
+    // -----------------------------------------------------------------------
+    // Graceful shutdown — required for pm2 zero-downtime reloads. On SIGTERM/
+    // SIGINT (pm2 reload/restart/stop) we stop accepting new connections, let
+    // in-flight requests finish, close the Postgres pool, then exit cleanly.
+    // Without this, pm2 reload kills active requests and can leak DB sockets.
+    // -----------------------------------------------------------------------
+    let shuttingDown = false;
+    const shutdown = (signal) => {
+        if (shuttingDown) return;
+        shuttingDown = true;
+        console.log(`\n${signal} received — shutting down gracefully...`);
+        const forceExit = setTimeout(() => {
+            console.error('Graceful shutdown timed out after 10s — forcing exit.');
+            process.exit(1);
+        }, 10000);
+        forceExit.unref();
+        httpServer.close(async () => {
+            try {
+                if (client && typeof client.end === 'function') {
+                    await client.end({ timeout: 5 });
+                }
+                console.log('✅ HTTP server closed and DB pool drained. Bye.');
+            } catch (e) {
+                console.error('Error during DB pool drain:', e && e.message ? e.message : e);
+            } finally {
+                clearTimeout(forceExit);
+                process.exit(0);
+            }
+        });
+    };
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+    process.on('SIGINT', () => shutdown('SIGINT'));
+
     console.log('✅✅✅ SERVER FILE FULLY LOADED - AFTER APP.LISTEN() ✅✅✅');
 } else {
     console.log('🌐 Running in serverless mode (Vercel)');
