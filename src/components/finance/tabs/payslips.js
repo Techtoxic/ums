@@ -5,16 +5,105 @@ window.FinanceTabs = window.FinanceTabs || {};
 let allPayslips = [];
 let filteredPayslips = [];
 
+// Trainer selection for the generate form.
+let payslipTrainers = [];               // [{ id, name, department }]
+let payslipSelected = new Set();        // selected trainer ids (survives search filtering)
+
 // Initialize payslips on section load
 async function initializePayslips() {
     await loadPayslips();
     setupPayslipPeriod();
+    loadTrainersForSelection();
 
     // Add form submit listener
     const form = document.getElementById('generate-payslip-form');
     if (form) {
         form.addEventListener('submit', handleGeneratePayslips);
     }
+    // Live trainer search
+    const search = document.getElementById('payslip-trainer-search');
+    if (search) search.addEventListener('input', () => renderPayslipTrainers(search.value));
+}
+
+// Department display via the shared catalog (falls back to the raw key).
+function payslipDept(key) {
+    if (window.Catalog && typeof Catalog.departmentName === 'function') return Catalog.departmentName(key);
+    return String(key || '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+}
+
+// Load active trainers into the selectable checkbox list.
+async function loadTrainersForSelection() {
+    const list = document.getElementById('payslip-trainers-list');
+    if (!list) return;
+    try {
+        const res = await authFetch(`${API_BASE_URL}/trainers/all-departments`);
+        if (!res.ok) throw new Error('Failed to load trainers');
+        const data = await res.json();
+        payslipTrainers = (data.trainers || []).filter(t => t && t.id);
+        renderPayslipTrainers('');
+    } catch (err) {
+        console.error('Error loading trainers for selection:', err);
+        list.innerHTML = '<p class="text-sm text-red-500 p-2">Failed to load trainers. Refresh and try again.</p>';
+    }
+}
+
+// Render the trainer checkbox list, optionally filtered by a search term.
+// Selection state is held in payslipSelected so it persists across searches.
+function renderPayslipTrainers(filter) {
+    const list = document.getElementById('payslip-trainers-list');
+    if (!list) return;
+    const q = (filter || '').trim().toLowerCase();
+    const rows = payslipTrainers.filter(t => {
+        if (!q) return true;
+        return (t.name || '').toLowerCase().includes(q) || payslipDept(t.department).toLowerCase().includes(q);
+    });
+
+    if (!payslipTrainers.length) {
+        list.innerHTML = '<p class="text-sm text-slate-500 dark:text-slate-400 p-2">No active trainers found.</p>';
+        updatePayslipSelectedCount();
+        return;
+    }
+    if (!rows.length) {
+        list.innerHTML = '<p class="text-sm text-slate-500 dark:text-slate-400 p-2">No trainers match your search.</p>';
+        updatePayslipSelectedCount();
+        return;
+    }
+
+    list.innerHTML = rows.map(t => `
+        <label class="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer">
+            <input type="checkbox" class="payslip-trainer-cb rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                value="${escapeAttr(t.id)}" ${payslipSelected.has(t.id) ? 'checked' : ''}>
+            <span class="text-sm text-slate-800 dark:text-slate-100">${escapeHtml(t.name || 'Unnamed')}</span>
+            <span class="ml-auto text-xs text-slate-500 dark:text-slate-400">${escapeHtml(payslipDept(t.department))}</span>
+        </label>
+    `).join('');
+
+    list.querySelectorAll('.payslip-trainer-cb').forEach(cb => {
+        cb.addEventListener('change', () => {
+            if (cb.checked) payslipSelected.add(cb.value);
+            else payslipSelected.delete(cb.value);
+            updatePayslipSelectedCount();
+        });
+    });
+    updatePayslipSelectedCount();
+}
+
+// Select or clear all trainers currently shown by the search filter.
+function selectAllPayslipTrainers(check) {
+    const list = document.getElementById('payslip-trainers-list');
+    if (!list) return;
+    list.querySelectorAll('.payslip-trainer-cb').forEach(cb => {
+        cb.checked = !!check;
+        if (check) payslipSelected.add(cb.value);
+        else payslipSelected.delete(cb.value);
+    });
+    updatePayslipSelectedCount();
+}
+window.selectAllPayslipTrainers = selectAllPayslipTrainers;
+
+function updatePayslipSelectedCount() {
+    const el = document.getElementById('payslip-selected-count');
+    if (el) el.textContent = `(${payslipSelected.size} selected)`;
 }
 
 // Set up the generate form's period to mirror the backend rule: ANY month of the
@@ -67,26 +156,17 @@ async function handleGeneratePayslips(e) {
         showNotification('Amount must be greater than 0', 'error');
         return;
     }
-    
+
+    // Only the trainers the finance officer selected get a payslip + notification.
+    const trainerIds = [...payslipSelected];
+    if (trainerIds.length === 0) {
+        showNotification('Select at least one trainer to generate payslips for', 'error');
+        return;
+    }
+
     try {
-        // First, fetch all trainers to get their IDs
-        showNotification('Fetching trainers...', 'info');
-        const trainersResponse = await authFetch(`${API_BASE_URL}/trainers/all-departments`);
-        if (!trainersResponse.ok) throw new Error('Failed to fetch trainers');
-        
-        const trainersData = await trainersResponse.json();
-        const trainers = trainersData.trainers || [];
-        
-        if (trainers.length === 0) {
-            showNotification('No trainers found to generate payslips for', 'error');
-            return;
-        }
-        
-        // Extract trainer IDs — /api/trainers/all-departments returns each trainer with `id`
-        const trainerIds = trainers.map(trainer => trainer.id).filter(Boolean);
-        
         // SEV-H-008: actor identity is sourced server-side from the JWT.
-        showNotification(`Generating payslips for ${trainerIds.length} trainers...`, 'info');
+        showNotification(`Generating payslips for ${trainerIds.length} trainer${trainerIds.length === 1 ? '' : 's'}...`, 'info');
         
         const response = await authFetch(`${API_BASE_URL}/payslips/generate`, {
             method: 'POST',
@@ -110,7 +190,9 @@ async function handleGeneratePayslips(e) {
         
         // Reset form and reload payslips
         e.target.reset();
-        setupPayslipPeriod(); // form.reset() clears the selects — re-apply year lock + month options
+        setupPayslipPeriod();      // form.reset() clears the selects — re-apply year lock + month options
+        payslipSelected.clear();   // start the next batch (e.g. next pay grade) with a clean selection
+        renderPayslipTrainers('');
         await loadPayslips();
         
     } catch (error) {
