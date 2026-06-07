@@ -603,6 +603,48 @@ app.use('/public', express.static(path.join(__dirname, 'public')));
 // client-side HTML and JS that the browser legitimately needs.
 app.use('/src/components', express.static(path.join(__dirname, 'src', 'components')));
 
+// Branded, self-contained HTML error page for non-API routes. Built inline (no
+// file read) so it still renders even if the filesystem/template is what failed.
+// Never exposes stack traces, internal paths or source — only a friendly message
+// and an optional support reference id.
+const escapeHtmlServer = (s) => String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+function renderErrorPage(res, status, heading, message, requestId) {
+    const h = escapeHtmlServer(heading || 'Something went wrong');
+    const m = escapeHtmlServer(message || 'An unexpected error occurred. Please try again.');
+    const ref = requestId ? `<p style="margin-top:18px;font-size:.8rem;color:#9a9a9a">Reference: ${escapeHtmlServer(requestId)}</p>` : '';
+    const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${status} · Emurua Dikirr TTI</title>
+<link rel="icon" type="image/png" href="/public/img/favicon.png">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Atkinson Hyperlegible',system-ui,-apple-system,sans-serif;background:#F7F5F1;color:#1A1A1A;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;line-height:1.6}
+.card{background:#fff;max-width:480px;width:100%;border-radius:16px;box-shadow:0 20px 50px rgba(0,0,0,.08);padding:40px 32px;text-align:center;border-top:5px solid #7A0C0C}
+img{width:56px;height:56px;object-fit:contain;margin-bottom:14px}
+.code{font-size:3rem;font-weight:800;color:#7A0C0C;font-family:Georgia,serif;line-height:1}
+h1{font-size:1.4rem;margin:10px 0 8px;color:#1A1A1A;font-family:Georgia,serif}
+p{color:#5B5B5B;font-size:1rem}
+.actions{margin-top:24px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+a{display:inline-flex;align-items:center;gap:6px;text-decoration:none;font-weight:700;font-size:.9rem;padding:11px 18px;border-radius:8px}
+.primary{background:#7A0C0C;color:#fff}.primary:hover{background:#5C0808}
+.ghost{background:transparent;color:#7A0C0C;border:1.5px solid #7A0C0C}.ghost:hover{background:#7A0C0C;color:#fff}
+@media (prefers-color-scheme: dark){body{background:#121214;color:#ECE9E4}.card{background:#1A191C}h1{color:#ECE9E4}}
+</style></head><body>
+<div class="card">
+<img src="/public/img/logo.png" alt="EDTTI">
+<div class="code">${status}</div>
+<h1>${h}</h1>
+<p>${m}</p>
+<div class="actions">
+<a class="primary" href="/">Back to Home</a>
+<a class="ghost" href="/student/login">Sign In</a>
+</div>
+${ref}
+</div></body></html>`;
+    if (!res.headersSent) res.status(status).type('html').send(html);
+}
+
 // Helper function to serve HTML files (Vercel-compatible)
 const serveHTML = (res, filePath) => {
     if (process.env.VERCEL) {
@@ -613,10 +655,15 @@ const serveHTML = (res, filePath) => {
             res.send(content);
         } catch (err) {
             console.error('Error reading file:', err.message);
-            res.status(404).send('Page not found');
+            renderErrorPage(res, 404, 'Page not found', "The page you’re looking for doesn’t exist or has moved.");
         }
     } else {
-        res.sendFile(filePath);
+        res.sendFile(filePath, (err) => {
+            if (err && !res.headersSent) {
+                console.error('sendFile error:', err.message);
+                renderErrorPage(res, err.status || 404, 'Page not found', "The page you’re looking for doesn’t exist or has moved.");
+            }
+        });
     }
 };
 
@@ -658,6 +705,15 @@ app.get('/forgot-password', noCacheAuthPages, (req, res) => {
 // Reset password page route
 app.get('/reset-password', noCacheAuthPages, (req, res) => {
     res.sendFile(path.join(__dirname, 'src', 'components', 'auth', 'ResetPassword.html'));
+});
+
+// Legal pages — Privacy Policy & Terms of Service (public, linked from the
+// landing page and every login page).
+app.get(['/privacy', '/privacy-policy'], (req, res) => {
+    serveHTML(res, path.join(__dirname, 'src', 'components', 'legal', 'PrivacyPolicy.html'));
+});
+app.get(['/terms', '/terms-of-service'], (req, res) => {
+    serveHTML(res, path.join(__dirname, 'src', 'components', 'legal', 'TermsOfService.html'));
 });
 
 // Debug page route
@@ -1333,7 +1389,7 @@ app.use('/api', require('./src/routes/dean'));
 // Payslips API — extracted to src/routes/payslips.js
 app.use('/api', require('./src/routes/payslips'));
 
-// Catch-all 404. JSON for /api/*, plain text otherwise.
+// Catch-all 404. JSON for /api/*, branded HTML page otherwise.
 app.use((req, res) => {
     if (req.path.startsWith('/api')) {
         return res.status(404).json({
@@ -1342,7 +1398,7 @@ app.use((req, res) => {
             code: 'NOT_FOUND'
         });
     }
-    res.status(404).type('text/plain').send('Page not found');
+    renderErrorPage(res, 404, 'Page not found', "The page you’re looking for doesn’t exist or has moved.");
 });
 
 // Global error handler. Logs full detail server-side, returns minimal info to client.
@@ -1356,11 +1412,17 @@ app.use((err, req, res, next) => {
     if (err && err.type === 'entity.parse.failed') {
         return res.status(400).json({ success: false, message: 'Malformed JSON', requestId });
     }
-    res.status(500).json({
-        success: false,
-        message: 'Internal server error',
-        requestId
-    });
+    // API callers get sanitized JSON; browsers get a friendly branded page.
+    // Neither ever receives a stack trace or any source/internal detail.
+    if (req.path.startsWith('/api')) {
+        return res.status(500).json({
+            success: false,
+            message: 'Internal server error',
+            requestId
+        });
+    }
+    renderErrorPage(res, 500, 'Something went wrong',
+        'An unexpected error occurred on our end. Please try again in a moment.', requestId);
 });
 
 // Start server only in non-serverless environments
@@ -1421,6 +1483,18 @@ if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
     };
     process.on('SIGTERM', () => shutdown('SIGTERM'));
     process.on('SIGINT', () => shutdown('SIGINT'));
+
+    // Last-resort crash safety. These never reach the client (the Express error
+    // handler already sanitises request errors); they ensure a truly uncaught
+    // failure is logged and the process exits cleanly so pm2 can restart it,
+    // rather than lingering in a corrupt state. Stack traces stay server-side.
+    process.on('unhandledRejection', (reason) => {
+        console.error('UNHANDLED REJECTION:', reason && reason.stack ? reason.stack : reason);
+    });
+    process.on('uncaughtException', (err) => {
+        console.error('UNCAUGHT EXCEPTION:', err && err.stack ? err.stack : err);
+        shutdown('uncaughtException');
+    });
 
     console.log('✅✅✅ SERVER FILE FULLY LOADED - AFTER APP.LISTEN() ✅✅✅');
 } else {
