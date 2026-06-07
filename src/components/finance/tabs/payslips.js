@@ -8,8 +8,8 @@ let filteredPayslips = [];
 // Initialize payslips on section load
 async function initializePayslips() {
     await loadPayslips();
-    lockPayslipPeriodToCurrent();
-    
+    setupPayslipPeriod();
+
     // Add form submit listener
     const form = document.getElementById('generate-payslip-form');
     if (form) {
@@ -17,18 +17,19 @@ async function initializePayslips() {
     }
 }
 
-// Lock the generate form's period to the CURRENT month + year. The backend
-// rejects any other period (no back-dated/future payslips); this mirrors that
-// rule in the UI so the year is read-only at the current year and the month is
-// pinned to the current month.
-function lockPayslipPeriodToCurrent() {
+// Set up the generate form's period to mirror the backend rule: ANY month of the
+// CURRENT YEAR up to the current month. The year is read-only (current year);
+// the month is selectable but future months are disabled (you can't pay ahead),
+// and it defaults to the current month.
+function setupPayslipPeriod() {
     const now = new Date();
     const currentYear = String(now.getFullYear());
-    const currentMonth = String(now.getMonth() + 1).padStart(2, '0'); // "01".."12"
+    const currentMonthNum = now.getMonth() + 1;
+    const currentMonth = String(currentMonthNum).padStart(2, '0'); // "01".."12"
 
     const yearSel = document.getElementById('payslip-year');
     if (yearSel) {
-        // Ensure the current year exists as the only selectable option, selected.
+        // Current year is the only selectable option.
         yearSel.innerHTML = `<option value="${currentYear}">${currentYear}</option>`;
         yearSel.value = currentYear;
         yearSel.setAttribute('disabled', 'disabled');      // read-only
@@ -37,9 +38,14 @@ function lockPayslipPeriodToCurrent() {
 
     const monthSel = document.getElementById('payslip-month');
     if (monthSel) {
-        monthSel.value = currentMonth;
-        monthSel.setAttribute('disabled', 'disabled');      // pinned to current month
-        monthSel.title = 'Payslips can only be generated for the current month';
+        monthSel.removeAttribute('disabled');              // month is now selectable
+        monthSel.title = 'Select any month of the current year up to the current month';
+        // Grey out future months — payroll can't be generated ahead of time.
+        Array.from(monthSel.options).forEach(opt => {
+            if (!opt.value) return; // keep the "Select Month" placeholder enabled
+            opt.disabled = parseInt(opt.value, 10) > currentMonthNum;
+        });
+        monthSel.value = currentMonth;                     // default to current month
     }
 }
 
@@ -104,7 +110,7 @@ async function handleGeneratePayslips(e) {
         
         // Reset form and reload payslips
         e.target.reset();
-        lockPayslipPeriodToCurrent(); // form.reset() clears the locked selects — re-pin them
+        setupPayslipPeriod(); // form.reset() clears the selects — re-apply year lock + month options
         await loadPayslips();
         
     } catch (error) {
