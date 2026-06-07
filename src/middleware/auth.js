@@ -376,10 +376,11 @@ const optionalAuth = (req, res, next) => {
 };
 
 /**
- * SEV-H-014: while a student still has the forced-change flag set, every
- * authenticated request is rejected except the first-login password change.
- * Decodes the bearer token only; never blocks anonymous/non-student traffic.
- * Mounted globally under /api so it covers all student routes.
+ * SEV-H-014: while a student OR trainer still has the forced-change flag set,
+ * every authenticated request is rejected except: the first-login password
+ * change endpoint, /api/me (so the app can identify the user), and logout.
+ * Decodes the bearer token only; never blocks anonymous/other-role traffic.
+ * Mounted globally under /api. (Name kept for back-compat; covers trainers too.)
  */
 const enforceStudentFirstLogin = (req, res, next) => {
     try {
@@ -391,10 +392,15 @@ const enforceStudentFirstLogin = (req, res, next) => {
         } catch (e) {
             return next(); // invalid/expired -> verifyToken will reject properly
         }
-        if (decoded && decoded.role === 'student' && decoded.firstLoginRequired) {
-            const isPasswordChange =
-                req.method === 'POST' && req.path.endsWith('/first-login-password-change');
-            if (!isPasswordChange) {
+        const gated = decoded && decoded.firstLoginRequired &&
+            (decoded.role === 'student' || decoded.role === 'trainer');
+        if (gated) {
+            const p = req.path || '';
+            const allowed =
+                (req.method === 'POST' && p.endsWith('/first-login-password-change')) ||
+                p.endsWith('/me') ||      // identity lookup so the UI can load
+                p.endsWith('/logout');    // allow signing out
+            if (!allowed) {
                 return res.status(403).json({
                     success: false,
                     message: 'You must change your initial password before continuing.',

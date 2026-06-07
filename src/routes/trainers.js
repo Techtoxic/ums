@@ -41,11 +41,17 @@ router.post('/trainers/login', authLimiter, async (req, res) => {
             .where(eq(schema.trainerAssignments.trainer_id, trainer.id))
             .then(rows => rows[0]?.count || 0);
 
+        // First-login: a newly created trainer must change their initial password
+        // before using the portal (password only). Gates all routes except the
+        // change endpoint (see enforceFirstLogin middleware).
+        const firstLoginRequired = !!trainer.must_update_password;
+
         const token = signToken({
             userId: String(trainer.id),
             email: trainer.email,
             role: 'trainer',
-            tokenVersion: trainer.token_version || 0 // SEV-H-013
+            tokenVersion: trainer.token_version || 0, // SEV-H-013
+            firstLoginRequired
         });
 
         setAuthCookie(res, token);
@@ -53,6 +59,7 @@ router.post('/trainers/login', authLimiter, async (req, res) => {
         res.json({
             message: 'Login successful',
             token,
+            firstLoginRequired,
             trainer: {
                 _id: trainer.id,                          // V1-compat alias
                 name: trainer.name,
@@ -64,6 +71,52 @@ router.post('/trainers/login', authLimiter, async (req, res) => {
         });
     } catch (error) {
         console.error('Trainer login error:', error.message);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// First-login password change (trainer). Gated by enforceStudentFirstLogin until
+// done. Sets a new password, clears the first-login flags, and re-issues the auth
+// cookie (token_version is bumped on save, invalidating the old token).
+router.post('/trainers/:trainerId/first-login-password-change', verifyToken, authorize('trainer'), verifyOwnership('trainerId'), async (req, res) => {
+    try {
+        const { oldPassword, newPassword } = req.body;
+        if (!oldPassword || !newPassword) {
+            return res.status(400).json({ message: 'oldPassword and newPassword are required' });
+        }
+        const complexity = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+        if (!complexity.test(newPassword)) {
+            return res.status(400).json({
+                message: 'New password must be at least 8 characters and include an uppercase letter, a lowercase letter, a digit and a special character.'
+            });
+        }
+
+        const trainer = await Trainer.findById(req.user.userId).select('+password');
+        if (!trainer) return res.status(404).json({ message: 'Trainer not found' });
+
+        const ok = await trainer.comparePassword(String(oldPassword));
+        if (!ok) return res.status(401).json({ message: 'Current password is incorrect' });
+        if (String(newPassword) === String(oldPassword)) {
+            return res.status(400).json({ message: 'New password must be different from the current password' });
+        }
+
+        trainer.password = String(newPassword); // save() hashes + bumps tokenVersion
+        trainer.mustUpdatePassword = false;
+        trainer.isFirstLogin = false;
+        await trainer.save();
+
+        const token = signToken({
+            userId: String(trainer._id || trainer.id),
+            email: trainer.email || null,
+            role: 'trainer',
+            tokenVersion: trainer.tokenVersion || 0,
+            firstLoginRequired: false
+        });
+        setAuthCookie(res, token);
+        setCsrfCookie(res, generateCsrfToken());
+        res.json({ success: true, message: 'Password updated successfully', token });
+    } catch (error) {
+        console.error('Trainer first-login password change error:', error.message);
         res.status(500).json({ message: 'Internal server error' });
     }
 });
@@ -513,10 +566,10 @@ router.post('/trainers', verifyToken, authorize('admin'), async (req, res) => {
                 department,
                 phone,
                 is_active: true,
-                // First-login flow removed: trainers log in normally with their
-                // initial password and can change it from their profile.
-                is_first_login: false,
-                must_update_password: false,
+                // First-login: a new trainer must set a new password before using
+                // the portal (password only — no email step). Other staff roles do not.
+                is_first_login: true,
+                must_update_password: true,
                 email_verified: true,
                 created_at: now,
                 updated_at: now,

@@ -311,6 +311,10 @@ router.post('/students/register', verifyToken, authorize('admin', 'registrar'), 
             nextOfKinPhone: formattedKinPhone,
             password: initialPassword,
             role: 'student',
+            // First-login: the initial password is the phone number, so force a
+            // password change before the student can use the portal.
+            isFirstLogin: true,
+            mustUpdatePassword: true,
         });
 
         if (!student) {

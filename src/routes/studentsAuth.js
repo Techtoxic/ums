@@ -181,6 +181,11 @@ router.post('/students/:studentId/first-login-password-change', verifyToken, aut
             firstLoginRequired: false
         });
 
+        // save() bumped tokenVersion, so the old cookie is now invalid — re-set
+        // the auth cookie with the fresh token so the portal loads cleanly.
+        setAuthCookie(res, token);
+        setCsrfCookie(res, generateCsrfToken());
+
         res.json({
             success: true,
             message: 'Password updated successfully',
