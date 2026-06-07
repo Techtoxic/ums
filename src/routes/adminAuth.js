@@ -356,7 +356,7 @@ router.post('/verify-otp', async (req, res) => {
             { expiresIn: JWT_EXPIRES_IN }
         );
 
-        setAuthCookie(res, token);
+        setAuthCookie(res, token, staff.role);
         setCsrfCookie(res, generateCsrfToken());
         res.json({
             success: true,

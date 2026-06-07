@@ -67,27 +67,38 @@ function signToken(payload, overrides = {}) {
  * Centralised so the cookie policy lives in exactly one place. Every login
  * endpoint must call this helper rather than calling res.cookie directly.
  */
-function setAuthCookie(res, token) {
-    res.cookie('authToken', token, {
+// Per-portal cookie names so multiple portals can be open in the same browser
+// without their sessions overwriting each other. `scope` is the portal/role key
+// (e.g. 'trainer', 'admin', 'dean'); when omitted falls back to the legacy
+// single 'authToken' name. The frontend sends an X-Portal header so the server
+// reads the right one (see extractToken).
+function authCookieName(scope) {
+    return scope ? `authToken_${scope}` : 'authToken';
+}
+
+function setAuthCookie(res, token, scope) {
+    res.cookie(authCookieName(scope), token, {
         httpOnly: true,
         sameSite: 'lax',
         secure: COOKIE_SECURE,
         maxAge: 2 * 60 * 60 * 1000, // 2h in ms, matches JWT_EXPIRES_IN=2h
         path: '/',
     });
+    // Drop any legacy unscoped cookie so it can't shadow a scoped session.
+    if (scope) {
+        res.clearCookie('authToken', { httpOnly: true, sameSite: 'lax', secure: COOKIE_SECURE, path: '/' });
+    }
 }
 
 /**
- * Clear the authentication cookie. Used by the logout endpoint and any place
- * the session must be invalidated server-side.
+ * Clear the authentication cookie for a portal. Used by the logout endpoint and
+ * any place the session must be invalidated server-side. Clears the scoped
+ * cookie (if a scope is given) plus the legacy unscoped one.
  */
-function clearAuthCookie(res) {
-    res.clearCookie('authToken', {
-        httpOnly: true,
-        sameSite: 'lax',
-        secure: COOKIE_SECURE,
-        path: '/',
-    });
+function clearAuthCookie(res, scope) {
+    const opts = { httpOnly: true, sameSite: 'lax', secure: COOKIE_SECURE, path: '/' };
+    if (scope) res.clearCookie(authCookieName(scope), opts);
+    res.clearCookie('authToken', opts);
 }
 
 /**
@@ -167,9 +178,18 @@ function requireCsrfToken(req, res, next) {
  * accepted — the frontend uses cookies exclusively via credentials: 'include'.
  */
 function extractToken(req) {
-    if (req.cookies && req.cookies.authToken) {
-        return req.cookies.authToken;
+    const c = req.cookies || {};
+    const scope = req.headers['x-portal'];
+    if (scope) {
+        // Explicit portal: use that portal's cookie, or a legacy session cookie.
+        if (c[`authToken_${scope}`]) return c[`authToken_${scope}`];
+        if (c.authToken) return c.authToken;
+        return null;
     }
+    // No portal hint: a single active scoped session is unambiguous; else legacy.
+    const scopedKeys = Object.keys(c).filter(k => k.startsWith('authToken_'));
+    if (scopedKeys.length === 1) return c[scopedKeys[0]];
+    if (c.authToken) return c.authToken;
     return null;
 }
 

@@ -44,6 +44,43 @@
     }
 
     /**
+     * The portal/role this page belongs to, inferred from the URL's first path
+     * segment (/trainer/... -> 'trainer', /dean/... -> 'dean'). Sent as the
+     * X-Portal request tag so the server reads THIS portal's own auth cookie —
+     * letting several portals stay logged in side-by-side in one browser.
+     */
+    const PORTAL_SCOPES = ['student', 'trainer', 'admin', 'hod', 'dean', 'finance', 'deputy', 'ilo', 'registrar', 'cibec'];
+    function portalScope() {
+        try {
+            const seg = (location.pathname.split('/').filter(Boolean)[0] || '').toLowerCase();
+            return PORTAL_SCOPES.indexOf(seg) !== -1 ? seg : null;
+        } catch (e) { return null; }
+    }
+
+    // Global fetch interceptor: tag same-origin /api/* requests with X-Portal.
+    // Installed once; chains over any existing wrapper; never throws.
+    if (typeof window.fetch === 'function' && !window.__portalFetchPatched) {
+        window.__portalFetchPatched = true;
+        const _nativeFetch = window.fetch.bind(window);
+        window.fetch = function (input, init) {
+            try {
+                const url = typeof input === 'string' ? input : (input && input.url) || '';
+                const scope = portalScope();
+                if (scope && url.indexOf('/api/') !== -1) {
+                    init = init || {};
+                    if (init.headers instanceof Headers) {
+                        if (!init.headers.has('X-Portal')) init.headers.set('X-Portal', scope);
+                    } else {
+                        init.headers = Object.assign({}, init.headers, { 'X-Portal': scope });
+                    }
+                    if (!init.credentials) init.credentials = 'include';
+                }
+            } catch (e) { /* fall through to native */ }
+            return _nativeFetch(input, init);
+        };
+    }
+
+    /**
      * Pick the login page for the portal the user is currently in, by URL prefix.
      * Used for auto-logout/session-expiry redirects so a student bounces to
      * /student/login (not /admin/login), a trainer to /trainer/login, etc.

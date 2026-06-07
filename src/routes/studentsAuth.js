@@ -114,7 +114,7 @@ router.post('/students/login', authLimiter, async (req, res) => {
             firstLoginRequired // SEV-H-014: gates all routes except the password-change endpoint
         });
 
-        setAuthCookie(res, token);
+        setAuthCookie(res, token, 'student');
         setCsrfCookie(res, generateCsrfToken());
         res.status(200).json({
             message: 'Login successful',
@@ -183,7 +183,7 @@ router.post('/students/:studentId/first-login-password-change', verifyToken, aut
 
         // save() bumped tokenVersion, so the old cookie is now invalid — re-set
         // the auth cookie with the fresh token so the portal loads cleanly.
-        setAuthCookie(res, token);
+        setAuthCookie(res, token, 'student');
         setCsrfCookie(res, generateCsrfToken());
 
         res.json({

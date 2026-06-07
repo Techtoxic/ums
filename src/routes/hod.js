@@ -126,7 +126,7 @@ router.post('/hod/login', authLimiter, async (req, res) => {
             tokenVersion: hod.token_version || 0 // SEV-H-013
         });
 
-        setAuthCookie(res, token);
+        setAuthCookie(res, token, 'hod');
         setCsrfCookie(res, generateCsrfToken());
         res.json({
             message: 'Login successful',

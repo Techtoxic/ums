@@ -280,8 +280,12 @@ app.post('/api/auth/logout', async (req, res) => {
         // Catch-all so logout never 500s.
         console.error('Logout handler unexpected error:', err.message);
     } finally {
-        clearAuthCookie(res);
-        clearCsrfCookie(res);
+        // Clear only THIS portal's cookie (from the X-Portal tag) so other
+        // portals open in the same browser stay logged in. The csrfToken cookie
+        // is shared and non-secret (double-submit, refreshed on each login), so
+        // we intentionally do NOT clear it here — clearing it would break CSRF
+        // for any sibling portal still open in the same browser.
+        clearAuthCookie(res, req.headers['x-portal']);
         res.json({ success: true, message: 'Logged out' });
     }
 });

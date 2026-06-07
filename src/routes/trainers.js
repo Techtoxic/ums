@@ -54,7 +54,7 @@ router.post('/trainers/login', authLimiter, async (req, res) => {
             firstLoginRequired
         });
 
-        setAuthCookie(res, token);
+        setAuthCookie(res, token, 'trainer');
         setCsrfCookie(res, generateCsrfToken());
         res.json({
             message: 'Login successful',
@@ -112,7 +112,7 @@ router.post('/trainers/:trainerId/first-login-password-change', verifyToken, aut
             tokenVersion: trainer.tokenVersion || 0,
             firstLoginRequired: false
         });
-        setAuthCookie(res, token);
+        setAuthCookie(res, token, 'trainer');
         setCsrfCookie(res, generateCsrfToken());
         res.json({ success: true, message: 'Password updated successfully', token });
     } catch (error) {
