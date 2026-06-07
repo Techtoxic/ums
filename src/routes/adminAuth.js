@@ -159,21 +159,9 @@ router.post('/login', async (req, res) => {
         // Reset login attempts on successful password verification
         await userService.resetLoginAttempts(staff.id);
 
-        // If first login and must update email, don't send OTP yet
-        if (staff.is_first_login && staff.must_update_email) {
-            return res.json({
-                success: true,
-                message: 'Credentials verified. Please update your email to continue.',
-                requiresEmailUpdate: true,
-                data: {
-                    userId: staff.id,
-                    email: staff.email,
-                    isFirstLogin: staff.is_first_login,
-                    mustUpdateEmail: staff.must_update_email,
-                    mustUpdatePassword: staff.must_update_password
-                }
-            });
-        }
+        // First-login flow removed: login always proceeds to normal OTP
+        // verification with the existing credentials (no forced email/password
+        // change step).
 
         // Invalidate any previous OTPs for this user, then issue a fresh one.
         await otpService.invalidateUserOtps(staff.id, staff.role);

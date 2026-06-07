@@ -392,11 +392,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     const admin = await window.AUTH.requireAuth('/admin/login');
     if (!admin) return;
 
-    // First login → setup flow (unchanged).
-    if (admin.isFirstLogin === true) {
-        window.location.href = '/admin/first-login';
-        return;
-    }
+    // First-login flow removed — accounts go straight to the portal.
 
     // Load the shared course/department catalog before any tab renders (Rule 7).
     if (window.Catalog) { await window.Catalog.ready(); }

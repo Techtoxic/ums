@@ -670,13 +670,13 @@ app.get('/design-system', (req, res) => {
 // Admin staff authentication routes
 app.use('/api/admin/auth', adminAuthRoutes);
 
-// Admin portal pages (login, first-login, SPA tabs). MUST precede generic routes.
+// Admin portal pages (login, SPA tabs). MUST precede generic routes.
+// First-login flow removed — accounts log in normally with their credentials.
 registerPortal(app, portalDeps, {
     role: 'admin',
     tabs: ['dashboard', 'students', 'trainers', 'financial', 'programs', 'reports', 'settings'],
     defaultTab: 'dashboard',
     login: { file: 'AdminLogin.html' },
-    extraPages: [{ path: '/admin/first-login', file: 'FirstLogin.html' }],
 });
 
 // Serve main login page (Student/Trainer combined)
@@ -1056,9 +1056,12 @@ async function initializeAdminStaff() {
                 ...data,
                 password: initialPassword,
                 isActive: true,
-                isFirstLogin: true,
-                mustUpdateEmail: true,
-                mustUpdatePassword: true
+                // First-login flow removed: accounts are ready to use with their
+                // initial credentials (operator should still change the password).
+                isFirstLogin: false,
+                mustUpdateEmail: false,
+                mustUpdatePassword: false,
+                emailVerified: true
             });
         }
 

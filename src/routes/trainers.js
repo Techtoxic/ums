@@ -513,8 +513,11 @@ router.post('/trainers', verifyToken, authorize('admin'), async (req, res) => {
                 department,
                 phone,
                 is_active: true,
-                is_first_login: true,
-                must_update_password: true,
+                // First-login flow removed: trainers log in normally with their
+                // initial password and can change it from their profile.
+                is_first_login: false,
+                must_update_password: false,
+                email_verified: true,
                 created_at: now,
                 updated_at: now,
             })

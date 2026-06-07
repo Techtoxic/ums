@@ -282,16 +282,8 @@
                 if (data.success) {
                     userEmail = email;
                     
-                    // Check if email update is required for first-time login
-                    if (data.requiresEmailUpdate) {
-                        // Show email update form
-                        document.getElementById('loginForm').classList.add('hidden');
-                        document.getElementById('emailUpdateForm').classList.remove('hidden');
-                        document.getElementById('newEmail').focus();
-                        // Store old credentials for later use
-                        window.oldEmail = email;
-                        window.oldPassword = password;
-                    } else {
+                    // First-login flow removed: always proceed to OTP verification.
+                    {
                         // Show OTP form
                         document.getElementById('loginForm').classList.add('hidden');
                         document.getElementById('otpForm').classList.remove('hidden');
@@ -358,14 +350,9 @@
                     if (countdownTimer) clearInterval(countdownTimer);
                     if (resendTimer) clearInterval(resendTimer);
 
-                    // Redirect based on first login status
-                    if (data.data.user.isFirstLogin) {
-                        console.log('Redirecting to first-login setup...');
-                        window.location.href = '/admin/first-login';
-                    } else {
-                        console.log('Redirecting to dashboard...');
-                        window.location.href = dashboardUrlForRole(data.data.user.role);
-                    }
+                    // First-login flow removed: go straight to the role dashboard.
+                    console.log('Redirecting to dashboard...');
+                    window.location.href = dashboardUrlForRole(data.data.user.role);
                 } else {
                     showOTPError(data.message || 'Invalid OTP. Please try again.');
                     // Clear OTP inputs
