@@ -21,6 +21,12 @@ const { client } = require('../src/db');
 // shot; RESTART IDENTITY resets any serial counters. Listed dependents are named
 // explicitly so the intent is auditable even though CASCADE would reach them.
 async function resetCatalog() {
+    // SAFETY: this TRUNCATEs students + catalog + dependents. Never let it run
+    // against a production database by accident.
+    if (String(process.env.NODE_ENV).toLowerCase() === 'production' && process.env.ALLOW_DESTRUCTIVE_RESET !== 'true') {
+        throw new Error('Refusing to run destructive catalog/student reset in production. Set ALLOW_DESTRUCTIVE_RESET=true to override intentionally.');
+    }
+
     // Ensure the units.module column exists (Rule 6: units carry a module number).
     // Done here idempotently so a fresh checkout can seed without a separate
     // drizzle-kit migration step.

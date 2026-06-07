@@ -132,8 +132,9 @@ router.get('/tools/trainer/:trainerId', verifyToken, authorize('admin', 'trainer
     }
 });
 
-// Get all Tools of Trade (for HOD/Deputy)
-router.get('/tools', verifyToken, authorize('admin', 'trainer', 'hod', 'registrar', 'deputy'), async (req, res) => {
+// Get all Tools of Trade (for HOD/Deputy/admin). Trainers must NOT enumerate
+// every trainer's submissions — they use /tools/trainer/:trainerId (ownership-scoped).
+router.get('/tools', verifyToken, authorize('admin', 'hod', 'registrar', 'deputy'), async (req, res) => {
     try {
         const { status, toolType, department } = req.query;
 

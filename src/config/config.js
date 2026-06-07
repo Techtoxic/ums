@@ -45,9 +45,12 @@ const config = {
         expiresIn: process.env.JWT_EXPIRES_IN || '2h' // SEV-H-013: short window; refresh tokens are a Stage 3 item
     },
 
-    // Session Configuration
+    // Session Configuration. NOTE: the app is JWT/cookie based and uses NO
+    // express-session — config.session.secret is not referenced anywhere. It is
+    // kept only for backward compat and intentionally does NOT use readSecret(),
+    // which would hard-exit production boot for a secret that is never used.
     session: {
-        secret: readSecret('SESSION_SECRET', 'dev-only-session-' + Date.now())
+        secret: process.env.SESSION_SECRET || null
     },
 
     // CORS - explicit allowed origins (comma separated in env)

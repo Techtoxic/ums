@@ -4,7 +4,7 @@ const { verifyToken, authorize, verifyOwnership } = require('../middleware/auth'
 const { toDecimal128 } = require('../utils/formatters');
 const { Payment, Student } = require('../db/models');
 const { db, schema } = require('../db');
-const { eq, desc } = require('drizzle-orm');
+const { eq, and, desc } = require('drizzle-orm');
 const { getCourseDisplayName, getDepartmentDisplayName } = require('../utils/courseCodes');
 const { getCurrentAcademicYearLabel } = require('../utils/academicPeriod');
 
@@ -82,6 +82,13 @@ router.post('/payments', verifyToken, authorize('admin', 'finance'), async (req,
             return res.status(400).json({ message: 'Please provide all required payment details' });
         }
 
+        // Validate amount: must be a positive, finite, sane number (guards against
+        // negative/NaN/overflow values corrupting balances).
+        const amt = parseFloat(amount);
+        if (!Number.isFinite(amt) || amt <= 0 || amt > 100000000) {
+            return res.status(400).json({ message: 'Amount must be a positive number' });
+        }
+
         // Validate payment mode specific details
         if (paymentMode === 'bank' && (!bankName || !receiptNumber)) {
             return res.status(400).json({ message: 'Bank name and receipt number are required for bank transfers' });
@@ -105,6 +112,21 @@ router.post('/payments', verifyToken, authorize('admin', 'finance'), async (req,
         // The payments table has a single reference_number column (no per-mode
         // columns), so fold the mode-specific reference into it.
         const referenceNumber = receiptNumber || mpesaTransactionId || bursaryReference || reference;
+
+        // Double-submission / replay guard: reject a payment that re-uses the same
+        // reference for the same student + mode (double-click, retry, replay).
+        const dup = await db
+            .select({ id: schema.payments.id })
+            .from(schema.payments)
+            .where(and(
+                eq(schema.payments.student_id, student.id),
+                eq(schema.payments.reference_number, referenceNumber),
+                eq(schema.payments.payment_mode, paymentMode),
+            ))
+            .limit(1);
+        if (dup.length) {
+            return res.status(409).json({ message: 'A payment with this reference has already been recorded for this student.' });
+        }
 
         const payment = await Payment.create({
             studentId: student.id,

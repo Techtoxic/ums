@@ -28,7 +28,16 @@ const crypto = require('crypto');
 const path = require('path');
 const fs = require('fs');
 const config = require('./src/config/config');
-const csp = require('./src/config/csp'); // SEV-M-025: CSP (Report-Only by default)
+const csp = require('./src/config/csp'); // CSP middleware
+
+// Production safety: auth/CSRF cookies MUST carry the Secure flag over HTTPS.
+// COOKIE_SECURE is decoupled from NODE_ENV to allow plain-HTTP staging, but a
+// production deploy that forgets to set it ships cookies without Secure.
+if (config.isProduction && String(process.env.COOKIE_SECURE).toLowerCase() !== 'true') {
+    console.error('⚠️  CRITICAL: NODE_ENV=production but COOKIE_SECURE is not "true". ' +
+        'Auth cookies will be sent WITHOUT the Secure flag (vulnerable over plain HTTP). ' +
+        'Set COOKIE_SECURE=true once the app is served over HTTPS.');
+}
 
 // V2 Phase 1b: Drizzle/Postgres data layer + a thin model facade shim.
 // The shim exposes the legacy V1 model APIs backed by Drizzle/Postgres, so the
@@ -90,14 +99,16 @@ app.get('/api/health', async (_req, res) => {
     try {
         const start = Date.now();
         await client`SELECT 1 as ok`;
+        // Public liveness probe — no internal build labels / versions / paths.
         res.json({
             status: 'ok',
-            db: 'postgres',
+            db: 'connected',
             latency_ms: Date.now() - start,
-            commit: 'v2-postgres Phase 1b',
         });
     } catch (err) {
-        res.status(503).json({ status: 'down', error: err.message });
+        // Log the detail server-side; never leak DB/connection internals.
+        console.error('Health check DB failure:', err && err.message ? err.message : err);
+        res.status(503).json({ status: 'down' });
     }
 });
 
@@ -169,9 +180,21 @@ app.set('trust proxy', 1);
 // Stage 2B-2B; CSP is emitted by the dedicated middleware below (full control
 // of report-uri/report-to and the Report-Only vs enforce toggle). See src/config/csp.js.
 app.use(helmet({
-    contentSecurityPolicy: false,        // CSP emitted separately (Report-Only) — see csp middleware below
-    crossOriginEmbedderPolicy: false      // PDFs and external assets need this off for now
+    contentSecurityPolicy: false,        // CSP emitted separately — see csp middleware below
+    crossOriginEmbedderPolicy: false,     // PDFs and external assets need this off for now
+    hsts: {                               // 1 year HSTS (only takes effect over HTTPS)
+        maxAge: 31536000,
+        includeSubDomains: true,
+        preload: false
+    }
 }));
+
+// Permissions-Policy: deny powerful features the app never uses (helmet 7 does
+// not set this by default).
+app.use((req, res, next) => {
+    res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), accelerometer=()');
+    next();
+});
 
 // Parse Cookie headers into req.cookies. No signed-cookie secret here — we
 // only read the JWT cookie (which is itself signed via JWT_SECRET); we don't
@@ -716,15 +739,16 @@ app.get(['/terms', '/terms-of-service'], (req, res) => {
     serveHTML(res, path.join(__dirname, 'src', 'components', 'legal', 'TermsOfService.html'));
 });
 
-// Debug page route
-app.get('/debug', (req, res) => {
-    res.sendFile(path.join(__dirname, 'debug.html'));
-});
-
-// Design system demo (dev only — for visual verification)
-app.get('/design-system', (req, res) => {
-    res.sendFile(path.join(__dirname, 'src', 'components', 'dev', 'design-system-demo.html'));
-});
+// Debug + design-system demo pages — DEV ONLY. Not registered in production, so
+// they fall through to the branded 404 and never serve internal/dev content.
+if (!config.isProduction) {
+    app.get('/debug', (req, res) => {
+        res.sendFile(path.join(__dirname, 'debug.html'));
+    });
+    app.get('/design-system', (req, res) => {
+        res.sendFile(path.join(__dirname, 'src', 'components', 'dev', 'design-system-demo.html'));
+    });
+}
 
 
 // Admin staff authentication routes
@@ -1483,18 +1507,9 @@ if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
     };
     process.on('SIGTERM', () => shutdown('SIGTERM'));
     process.on('SIGINT', () => shutdown('SIGINT'));
-
-    // Last-resort crash safety. These never reach the client (the Express error
-    // handler already sanitises request errors); they ensure a truly uncaught
-    // failure is logged and the process exits cleanly so pm2 can restart it,
-    // rather than lingering in a corrupt state. Stack traces stay server-side.
-    process.on('unhandledRejection', (reason) => {
-        console.error('UNHANDLED REJECTION:', reason && reason.stack ? reason.stack : reason);
-    });
-    process.on('uncaughtException', (err) => {
-        console.error('UNCAUGHT EXCEPTION:', err && err.stack ? err.stack : err);
-        shutdown('uncaughtException');
-    });
+    // NOTE: unhandledRejection / uncaughtException handlers are registered once
+    // at the very top of this file (they must exist before any other code runs).
+    // They are intentionally NOT duplicated here.
 
     console.log('✅✅✅ SERVER FILE FULLY LOADED - AFTER APP.LISTEN() ✅✅✅');
 } else {

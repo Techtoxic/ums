@@ -3,8 +3,10 @@ const router = express.Router();
 const { verifyToken, authorize, verifyOwnership } = require('../middleware/auth');
 const { Notification, Student, User } = require('../db/models');
 
-// Get all notifications (for admin/deputy)
-router.get('/', verifyToken, authorize('admin', 'registrar', 'finance', 'dean', 'cibec', 'ilo', 'deputy', 'hod'), async (req, res) => {
+// Get ALL notifications across every user — admin only (bodies contain other
+// users' names/admission numbers/review notes). Other roles read their own via
+// GET /:userId (ownership-scoped) below.
+router.get('/', verifyToken, authorize('admin'), async (req, res) => {
     try {
         const notifications = await Notification.find().sort({ createdAt: -1 });
         res.json(notifications);

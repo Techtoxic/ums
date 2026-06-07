@@ -11,7 +11,7 @@ const otpService = require('../services/otpService');
 const { db, schema } = require('../db');
 const EmailService = require('../utils/emailService');
 const config = require('../config/config');
-const { setAuthCookie, setCsrfCookie, generateCsrfToken } = require('../middleware/auth');
+const { setAuthCookie, setCsrfCookie, generateCsrfToken, verifyToken } = require('../middleware/auth');
 
 const emailService = new EmailService();
 const { users } = schema;
@@ -76,28 +76,11 @@ function publicUser(row) {
     };
 }
 
-// Middleware to verify JWT token
-const verifyToken = (req, res, next) => {
-    const token = req.headers['authorization']?.split(' ')[1]; // Bearer TOKEN
-
-    if (!token) {
-        return res.status(401).json({
-            success: false,
-            message: 'No token provided'
-        });
-    }
-
-    try {
-        const decoded = jwt.verify(token, JWT_SECRET);
-        req.user = decoded;
-        next();
-    } catch (error) {
-        return res.status(401).json({
-            success: false,
-            message: 'Invalid or expired token'
-        });
-    }
-};
+// NOTE: this router uses the SHARED verifyToken from middleware/auth.js (imported
+// above). The previous local Bearer-only verifyToken skipped token_version and
+// is_active checks, so a revoked/disabled staff token still worked on
+// /update-email, /update-password, /profile and /refresh-token. The shared
+// middleware reads the httpOnly cookie and enforces revocation + account status.
 
 // ===============================
 // STEP 1: LOGIN - Send OTP
@@ -172,10 +155,23 @@ router.post('/login', async (req, res) => {
         });
 
         // Send the raw code via email. Do NOT log OTPs, email addresses, or names.
+        let emailResult;
         try {
-            await emailService.sendLoginOTP(staff.email, rawCode, staff.name, staff.role);
+            emailResult = await emailService.sendLoginOTP(staff.email, rawCode, staff.name, staff.role);
         } catch (emailError) {
             console.error('Login OTP email failed to send:', emailError.message);
+            emailResult = { success: false };
+        }
+        // If the email genuinely failed to send (Brevo down / over quota), do NOT
+        // claim "OTP sent" — invalidate the just-created OTP and surface a clear
+        // error so the user isn't stuck waiting for a code that never arrives.
+        // (skipped:true means BREVO_API_KEY is unset — dev/degraded mode — allow.)
+        if (emailResult && emailResult.success === false) {
+            await otpService.invalidateUserOtps(staff.id, staff.role);
+            return res.status(502).json({
+                success: false,
+                message: 'We could not send your verification code right now. Please try again in a moment.'
+            });
         }
 
         res.json({

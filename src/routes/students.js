@@ -592,8 +592,10 @@ router.get('/students', verifyToken, authorize('admin', 'registrar', 'dean', 'fi
     }
 });
 
-// Get a single student by UUID.
-router.get('/students/:id', verifyToken, authorize('admin', 'registrar', 'dean', 'finance', 'deputy', 'hod', 'trainer'), async (req, res) => {
+// Get a single student by UUID. Back-office staff only — trainers see their own
+// students via /trainers/:id/students (scoped), so trainer is intentionally NOT
+// allowed here (prevented reading arbitrary student PII by id).
+router.get('/students/:id', verifyToken, authorize('admin', 'registrar', 'dean', 'finance', 'deputy', 'hod'), async (req, res) => {
     try {
         const student = await Student.findById(req.params.id);
         if (!student) return res.status(404).json({ message: 'Student not found' });

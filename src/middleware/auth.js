@@ -46,7 +46,7 @@ function signToken(payload, overrides = {}) {
     if (!payload || !payload.userId || !payload.role) {
         throw new Error('signToken requires userId and role in payload');
     }
-    return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN, ...overrides });
+    return jwt.sign(payload, JWT_SECRET, { algorithm: 'HS256', expiresIn: JWT_EXPIRES_IN, ...overrides });
 }
 
 /**
@@ -208,7 +208,7 @@ const verifyToken = async (req, res, next) => {
             });
         }
 
-        const decoded = jwt.verify(token, JWT_SECRET);
+        const decoded = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
 
         // SEV-H-006: carry identifier claims (admissionNumber etc.) and the
         // tokenVersion through to req.user so ownership checks and revocation work.
@@ -378,7 +378,7 @@ const optionalAuth = (req, res, next) => {
         const token = extractToken(req);
         if (token) {
             try {
-                const decoded = jwt.verify(token, JWT_SECRET);
+                const decoded = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
                 req.user = {
                     userId: decoded.userId,
                     email: decoded.email,
@@ -408,7 +408,7 @@ const enforceStudentFirstLogin = (req, res, next) => {
         if (!token) return next(); // no token -> let the route's verifyToken decide
         let decoded;
         try {
-            decoded = jwt.verify(token, JWT_SECRET);
+            decoded = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
         } catch (e) {
             return next(); // invalid/expired -> verifyToken will reject properly
         }

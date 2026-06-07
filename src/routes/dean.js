@@ -192,6 +192,13 @@ router.put('/students/:studentId/notes/:noteId/read', verifyToken, authorize('ad
             return res.status(404).json({ message: 'Note not found' });
         }
 
+        // IDOR fix: the note must belong to the student in the path (which
+        // verifyOwnership already tied to the caller for non-admins). Without
+        // this, a student could mark ANY note read by guessing noteId.
+        if (req.user.role !== 'admin' && String(note.studentId) !== String(req.user.userId)) {
+            return res.status(403).json({ message: 'Not permitted.' });
+        }
+
         note.isRead = true;
         note.readAt = new Date();
         await note.save();

@@ -30,7 +30,7 @@ const crypto = require('crypto');
 const { eq, and, or, ne, gt, gte, lt, lte, inArray, isNull, isNotNull, ilike, sql, desc, asc } = require('drizzle-orm');
 const { db, schema } = require('./index');
 
-const BCRYPT_COST = 10; // V1 used cost 10; preserve for new writes
+const BCRYPT_COST = 12; // matches userService (staff); students need the stronger cost most (initial password = phone number). Existing cost-10 hashes still verify (cost is embedded in the hash).
 
 // ---------- name conversion ----------
 function camelToSnake(s) {

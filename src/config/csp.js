@@ -58,10 +58,16 @@ const BASE_DIRECTIVES = {
     // Frontend only calls its own origin for API requests.
     'connect-src': ["'self'"],
 
-    'frame-src': ["'none'"],
-    // No internal page embeds another internal page (verified: no <iframe>
-    // embedding internal docs). 'none' = clickjacking protection, matches
-    // helmet's X-Frame-Options: DENY.
+    // The in-app book reader embeds the Internet Archive BookReader and external
+    // textbook PDFs (OpenStax) in an iframe; blob: covers client-generated PDF
+    // previews. Everything else is blocked.
+    'frame-src': [
+        "'self'", 'blob:',
+        'https://archive.org', 'https://*.archive.org',
+        'https://openstax.org', 'https://assets.openstax.org'
+    ],
+    // No external site may frame US (clickjacking protection), matches helmet's
+    // X-Frame-Options.
     'frame-ancestors': ["'none'"],
     'object-src': ["'none'"],
     'base-uri': ["'self'"],
@@ -77,7 +83,12 @@ function envExtra(directive) {
 }
 
 function isEnforce() {
-    return String(process.env.CSP_ENFORCE).toLowerCase() === 'true';
+    const flag = String(process.env.CSP_ENFORCE).toLowerCase();
+    if (flag === 'true') return true;
+    if (flag === 'false') return false;            // explicit opt-out (e.g. to debug)
+    // Default: ENFORCE in production, Report-Only elsewhere. Any host missed by
+    // the policy can be allowed without a redeploy via CSP_<DIRECTIVE>_EXTRA.
+    return String(process.env.NODE_ENV).toLowerCase() === 'production';
 }
 
 function headerName() {

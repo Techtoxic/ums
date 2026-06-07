@@ -29,7 +29,6 @@ router.post('/student-uploads', verifyToken, authorize('admin', 'registrar', 'st
         }
 
         const {
-            studentId,
             uploadType,
             unitId,
             unitCode,
@@ -39,6 +38,17 @@ router.post('/student-uploads', verifyToken, authorize('admin', 'registrar', 'st
             academicYear,
             semester
         } = req.body;
+
+        // IDOR fix: a student may ONLY upload to their own record — derive the
+        // owner from the verified token, never trust req.body.studentId. Staff
+        // (admin/registrar) may still upload on behalf of a student via the body.
+        let studentId = req.body.studentId;
+        if (req.user.role === 'student') {
+            if (studentId && String(studentId) !== String(req.user.admissionNumber)) {
+                return res.status(403).json({ message: 'You can only upload to your own record.' });
+            }
+            studentId = req.user.admissionNumber;
+        }
 
         // Validate required fields
         if (!studentId || !uploadType || !academicYear || !semester) {
