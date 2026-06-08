@@ -217,9 +217,13 @@
                 if (np === oldPassword) return showErr('New password must differ from your current one.');
                 btn.disabled = true; btn.textContent = 'Saving…';
                 try {
+                    const csrfToken = document.cookie.split(';').reduce((val, c) => {
+                        const [k, v] = c.trim().split('=');
+                        return k === 'csrfToken' ? decodeURIComponent(v) : val;
+                    }, '');
                     const res = await fetch(changeUrl, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'X-Portal': 'student' },
+                        headers: { 'Content-Type': 'application/json', 'X-Portal': 'student', 'X-CSRF-Token': csrfToken },
                         credentials: 'include',
                         body: JSON.stringify({ oldPassword, newPassword: np })
                     });
