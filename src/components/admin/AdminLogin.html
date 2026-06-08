@@ -17,7 +17,8 @@
     <link rel="stylesheet" href="/public/css/auth-styles.css">
 </head>
 <body class="auth-page">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8">
+    <div style="display:flex;flex-direction:column;align-items:center;width:100%;max-width:448px;">
+    <div class="bg-white rounded-2xl shadow-2xl w-full p-8">
         <!-- EDTTI Brand -->
         <div class="auth-brand">
             <i class="ri-graduation-cap-line"></i>
@@ -190,8 +191,15 @@
             </div>
         </div>
     </div>
-
-    <script>
+    <div style="text-align:center;margin:18px auto 22px;padding:0 16px;">
+        <span style="display:inline-block;background:rgba(0,0,0,.30);color:#fff;padding:6px 14px;border-radius:999px;font-size:12px;line-height:1.5;">
+            By continuing you agree to our
+            <a href="/terms" style="color:#F4D58D;font-weight:700;text-decoration:none;">Terms of Service</a> &amp;
+            <a href="/privacy" style="color:#F4D58D;font-weight:700;text-decoration:none;">Privacy Policy</a>
+        </span>
+    </div>
+    </div>
+</body>
         // Version check - NEW OTP LOGIN SYSTEM
         console.log('Admin Login System v2.0 - OTP Enabled');
         console.log('Loaded:', new Date().toISOString());
@@ -543,12 +551,5 @@
             if (e.key === 'Enter') login();
         });
     </script>
-    <div style="text-align:center;margin:18px auto 22px;padding:0 16px;">
-        <span style="display:inline-block;background:rgba(0,0,0,.30);color:#fff;padding:6px 14px;border-radius:999px;font-size:12px;line-height:1.5;">
-            By continuing you agree to our
-            <a href="/terms" style="color:#F4D58D;font-weight:700;text-decoration:none;">Terms of Service</a> &amp;
-            <a href="/privacy" style="color:#F4D58D;font-weight:700;text-decoration:none;">Privacy Policy</a>
-        </span>
-    </div>
 </body>
 </html>
