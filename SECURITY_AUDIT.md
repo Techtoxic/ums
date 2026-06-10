@@ -166,3 +166,40 @@ Recommended next (post-launch hardening): enable `CSP_ENFORCE=true` after review
 * `src/components/finance/tabs/payslips.js` — lock year/month to current.
 * `src/components/finance/tabs/revenue.js` + `partials/revenue.html` — Export PDF/Excel + per-entry revenue receipt.
 * `src/components/student/tabs/payments.js` — student receipt: course, department, academic year.
+
+---
+
+## Re-audit addendum (10 June 2026)
+
+A second, independent source review of the `v2-test` branch was performed ahead of the student rollout. The objectives were to confirm the controls from the previous pass still hold, to look for anything the first pass missed, and to produce a clear go-live security checklist.
+
+### Verdict
+
+The branch is in a strong security position. The controls below were re-verified by source review and were found correct and consistent:
+
+* JWT in an httpOnly, SameSite=Lax, per-portal cookie; 2 hour expiry; header/bearer auth removed.
+* Server side token revocation through `tokenVersion`, plus an `isActive` check on every authenticated request.
+* Role based access control with `authorize(...)` and per-record `verifyOwnership(...)`, with an explicit, narrow bypass list rather than silent skips.
+* CSRF double-submit token enforced on all state-changing `/api` requests with a constant-time compare and a tight allow-list.
+* Brute-force limiters on every login surface: student, trainer, HOD, and password reset use `authLimiter` (counts only failed attempts), and the entire admin auth router is throttled by a dedicated router-level limiter. Per-account lockout is enforced on staff login.
+* Password reset uses a hashed one time code, counts wrong guesses against an attempt cap, returns a uniform response that does not reveal whether the account exists, and limits reset requests per window.
+* Uploads are validated by authoritative magic-byte inspection, not the client supplied content type, and are served through short-lived presigned URLs with ownership checks rather than anonymous static mounts.
+* Data access is parameterized through Drizzle, with a query-operator scrubber as an extra layer. No string-concatenated SQL was found.
+* Environment is validated at boot with Zod, and the server refuses to start in production without a valid `DATABASE_URL` and a `JWT_SECRET` of at least 32 characters. Passwords, codes, and tokens are not logged.
+* Helmet baseline headers, a 1 MB body limit, a 64 KB CSP-report limit, and `trust proxy` set so the rate limiter keys on the real client address rather than a spoofable header.
+
+No new Critical or High code issues were found in this pass.
+
+### Go-live security checklist (action required before serving students)
+
+These are production configuration and operational steps, not application bugs. They must be completed at deployment.
+
+1. **Set `COOKIE_SECURE=true` in the production environment.** The auth and CSRF cookies only carry the `Secure` flag when this is set. On the HTTPS deployment this must be on, or the cookies can ride plain HTTP.
+2. **Move the Content Security Policy from report-only to enforcing** by setting `CSP_ENFORCE=true`, after watching `/api/csp-report` for a short window to clear false positives.
+3. **Tighten the Content Security Policy (Medium).** The current `script-src` allows `'unsafe-inline'` and `'unsafe-eval'`, mainly because of the Tailwind Play CDN and inline scripts and handlers. These weaken the XSS protection that the rest of the policy provides. Before or shortly after go-live, compile Tailwind into a static stylesheet, move inline scripts into served files, and remove `'unsafe-inline'` and `'unsafe-eval'` from `script-src`. This is a front-end build change and should be tested against every portal to avoid breaking the UI.
+4. **Confirm the production CORS allow-list** contains only the real institute origins.
+5. **Confirm `ALLOWED_ORIGINS`, `BREVO_*`, and `AWS_*`** are set in production so email and uploads work and CORS is correct.
+6. **Remove the dead `src/config/endpointSecurity.js`** map, which is not imported anywhere, so future maintainers are not misled about where enforcement lives. Cosmetic, no runtime effect.
+7. **Confirm database backups and a tested restore** with the managed Postgres provider, and keep a short written incident response procedure.
+
+No code changes were pushed in this re-audit pass, to avoid altering behaviour on a branch that is about to ship. The items above are configuration and operational actions owned by the deployment, plus one optional front-end hardening change (item 3) that should be made behind a UI regression test.
