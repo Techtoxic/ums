@@ -1,0 +1,1440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>EDTTI Institute Management System - User Manual v2.0</title>
+<style>
+  :root { --maroon:#7f1d1d; --maroon-dark:#5b1414; --green:#15803d; --amber:#b45309; }
+  * { box-sizing: border-box; }
+  body { font-family: Arial, Helvetica, sans-serif; color:#1f2937; margin:0; font-size:11.5px; line-height:1.55; }
+  @page { size: A4; margin: 18mm 16mm 18mm 16mm; }
+  .page-break { page-break-before: always; }
+  h1, h2, h3, h4 { color: var(--maroon); page-break-after: avoid; }
+  h1.part { background: var(--maroon); color:#fff; padding:14px 18px; font-size:20px; border-radius:4px; margin-top:0; }
+  h2 { font-size:15px; border-bottom:2px solid var(--maroon); padding-bottom:4px; margin-top:26px; }
+  h3 { font-size:13px; margin-top:18px; }
+  p { margin: 7px 0; }
+  ul, ol { margin: 6px 0 10px 0; padding-left: 22px; }
+  li { margin: 3px 0; }
+  code { font-family: Consolas, monospace; background:#f3f4f6; padding:1px 4px; border-radius:3px; font-size:10.5px; }
+  b, strong { color:#111827; }
+  table { border-collapse: collapse; width:100%; margin:10px 0; page-break-inside:auto; }
+  th { background: var(--maroon); color:#fff; text-align:left; padding:6px 8px; font-size:11px; }
+  td { border:1px solid #e5e7eb; padding:6px 8px; vertical-align:top; font-size:11px; }
+  tr:nth-child(even) td { background:#faf7f7; }
+  .note, .tip, .warning { border-left:4px solid; padding:8px 12px; margin:10px 0; border-radius:3px; page-break-inside:avoid; }
+  .note { background:#fffbeb; border-color:#d97706; color:#78350f; }
+  .tip { background:#f0fdf4; border-color:#16a34a; color:#14532d; }
+  .warning { background:#fef2f2; border-color:#dc2626; color:#7f1d1d; }
+  .note b, .tip b, .warning b { color:inherit; }
+  /* Cover */
+  .cover { text-align:center; padding-top:60px; }
+  .cover .band { background:var(--maroon); height:90px; margin:-0px -16mm 50px -16mm; }
+  .cover img { width:150px; height:150px; object-fit:contain; }
+  .cover h1 { color:var(--maroon); font-size:30px; margin:24px 0 4px 0; background:none; padding:0; }
+  .cover h2 { color:#374151; font-size:17px; border:none; font-weight:normal; }
+  .cover .inst { color:var(--maroon); font-size:18px; font-weight:bold; margin-top:30px; }
+  .cover .motto { color:var(--green); font-size:13px; }
+  .cover table { width:70%; margin:40px auto; }
+  .cover td.k { background:#f9eaea; font-weight:bold; width:35%; }
+  .cover .disclaimer { font-style:italic; color:#6b7280; font-size:10.5px; margin-top:40px; }
+  .toc h1 { background:none; color:var(--maroon); padding:0; font-size:20px; }
+  .toc ul { list-style:none; padding-left:0; }
+  .toc > ul > li { font-weight:bold; color:var(--maroon); margin-top:8px; }
+  .toc ul ul { padding-left:18px; font-weight:normal; }
+  .toc ul ul li { color:#374151; margin:1px 0; }
+</style>
+</head>
+<body>
+
+<!-- ============================ COVER ============================ -->
+<div class="cover">
+  <div class="band"></div>
+  <img src="../public/img/logo.png" alt="EDTTI Crest">
+  <div class="inst">Emurua Dikirr Technical Training Institute</div>
+  <div class="motto">EDTTI &middot; Skills for Life</div>
+  <h1>Institute Management System</h1>
+  <h2>Complete User Manual</h2>
+  <table>
+    <tr><td class="k">Version</td><td>2.0</td></tr>
+    <tr><td class="k">Date</td><td>June 2026</td></tr>
+    <tr><td class="k">Classification</td><td>Internal Use</td></tr>
+    <tr><td class="k">Prepared for</td><td>EDTTI Staff &amp; Students</td></tr>
+  </table>
+  <p class="disclaimer">This document contains information intended for authorised EDTTI personnel only.<br>Do not distribute outside the Institute without prior approval.</p>
+</div>
+
+<!-- ============================ TOC ============================ -->
+<div class="page-break toc">
+<h1>Table of Contents</h1>
+<ul>
+  <li>Part 1: Introduction
+    <ul><li>1.1 About This Manual</li><li>1.2 About the EDTTI Institute Management System</li><li>1.3 System Requirements</li><li>1.4 Getting Help</li></ul></li>
+  <li>Part 2: Getting Started (All Users)
+    <ul><li>2.1 Accessing the System</li><li>2.2 Understanding the Login Process</li><li>2.3 Student &amp; Trainer Login</li><li>2.4 Staff Login (Two-Step with OTP)</li><li>2.5 First-Time Login</li><li>2.6 Password Requirements</li><li>2.7 Forgotten Password / Password Reset</li><li>2.8 Logging Out</li><li>2.9 Navigating the System</li></ul></li>
+  <li>Part 3: Student Portal
+    <ul><li>3.1 Accessing the Student Portal</li><li>3.2 Dashboard</li><li>3.3 My Profile</li><li>3.4 Fee Statement &amp; Payments</li><li>3.5 Course / Unit Registration</li><li>3.6 Examination Results</li><li>3.7 Transcript</li><li>3.8 Timetable / Class Schedule</li><li>3.9 Notes &amp; Messages</li><li>3.10 Uploaded Documents</li><li>3.11 Applying for Graduation</li><li>3.12 Industrial Attachment</li><li>3.13 Book Resources</li></ul></li>
+  <li>Part 4: Trainer Portal
+    <ul><li>4.1 Accessing the Trainer Portal</li><li>4.2 Dashboard</li><li>4.3 My Profile</li><li>4.4 My Units / Assigned Units</li><li>4.5 Student Lists &amp; Attendance</li><li>4.6 Entering Results</li><li>4.7 Tools of Trade</li><li>4.8 My Payslips</li><li>4.9 Timetable</li><li>4.10 Notifications</li><li>4.11 Book Resources</li></ul></li>
+  <li>Part 5: Head of Department (HOD) Portal
+    <ul><li>5.1 Dashboard &amp; Overview</li><li>5.2 Managing Trainers</li><li>5.3 Managing Units</li><li>5.4 Results Management</li><li>5.5 Student Overview</li><li>5.6 Reports</li><li>5.7 Timetable Management</li><li>5.8 Notifications</li><li>5.9 Analytics</li><li>5.10 My Profile</li></ul></li>
+  <li>Part 6: Dean Portal
+    <ul><li>6.1 Dashboard &amp; Overview</li><li>6.2 Reviewing &amp; Publishing Results</li><li>6.3 Department Overview</li><li>6.4 Trainer Overview</li><li>6.5 Student Welfare &amp; Notes</li><li>6.6 Notifications</li></ul></li>
+  <li>Part 7: Deputy Principal Portal
+    <ul><li>7.1 Dashboard &amp; Overview</li><li>7.2 Institution-Wide Overview</li><li>7.3 Tools of Trade (Reports &amp; Requests)</li><li>7.4 Staff Overview</li><li>7.5 Notifications</li></ul></li>
+  <li>Part 8: Finance Portal
+    <ul><li>8.1 Dashboard &amp; Overview</li><li>8.2 Recording a Payment</li><li>8.3 Viewing Payment History</li><li>8.4 Fee Structures (Program Costs)</li><li>8.5 Outstanding Balances</li><li>8.6 Payslips (Staff)</li><li>8.7 Revenue &amp; Reports</li><li>8.8 Settings</li></ul></li>
+  <li>Part 9: Registrar Portal
+    <ul><li>9.1 Dashboard &amp; Overview</li><li>9.2 Student Admissions</li><li>9.3 Managing Students</li><li>9.4 Managing Programs</li><li>9.5 Managing Units / Courses</li><li>9.6 Academic Period Management</li><li>9.7 Timetable Management</li><li>9.8 Results &amp; Transcript Management</li><li>9.9 Student Promotion</li><li>9.10 Password Reset for Students</li><li>9.11 Reports &amp; Exports</li></ul></li>
+  <li>Part 10: Admin Portal
+    <ul><li>10.1 Dashboard &amp; Overview</li><li>10.2 User Management: Staff</li><li>10.3 User Management: Students</li><li>10.4 User Management: Trainers</li><li>10.5 Role Assignment</li><li>10.6 System Settings</li><li>10.7 Programs &amp; Units</li><li>10.8 Financial Management (Admin View)</li><li>10.9 Reports</li><li>10.10 Audit / Activity Log</li><li>10.11 Notifications</li></ul></li>
+  <li>Part 11: Industrial Liaison Office (ILO) Portal
+    <ul><li>11.1 Dashboard &amp; Overview</li><li>11.2 Managing Industrial Attachments</li><li>11.3 Managing Graduation Applications</li><li>11.4 Student Overview &amp; Reports</li><li>11.5 Notifications</li><li>11.6 CBET (CIBEC) Assessment Review</li></ul></li>
+  <li>Part 12: Notifications System</li>
+  <li>Part 13: Book Resources Module</li>
+  <li>Part 14: Common Tasks &amp; Workflows</li>
+  <li>Part 15: Troubleshooting</li>
+  <li>Part 16: Security &amp; Privacy</li>
+  <li>Part 17: Glossary</li>
+  <li>Appendix A: Quick Reference: Login Details by Role</li>
+  <li>Appendix B: Quick Reference: Who to Contact for What</li>
+  <li>Appendix C: System Notification Reference</li>
+</ul>
+</div>
+
+<!-- ============================ PART 1 ============================ -->
+<div class="page-break">
+<h1 class="part">Part 1: Introduction</h1>
+
+<h2>1.1 About This Manual</h2>
+<p>Welcome to the official user manual for the EDTTI <b>Institute Management System (IMS)</b>. This guide is written for <b>everyone who uses the system</b>: students, trainers (lecturers), Heads of Department, the Dean, the Deputy Principal, Finance officers, the Registrar, the Industrial Liaison Office, the CBET (assessment) office, and System Administrators.</p>
+<p>The manual is organised so you can read only the parts that matter to you. <b>Part 1</b> and <b>Part 2</b> apply to everyone; they cover what the system is and how to log in. After that, each role has its own dedicated part (for example, students should read <b>Part 3</b>, trainers <b>Part 4</b>, and so on). The later parts (<b>12-17</b>) cover features and topics that cut across all roles, such as notifications, book resources, troubleshooting, security, and a glossary of terms.</p>
+<p>Throughout the manual you will see three kinds of highlighted boxes:</p>
+<div class="note"><b>Note:</b> Useful background information that helps you understand a feature.</div>
+<div class="tip"><b>Tip:</b> A shortcut or piece of advice that makes a task easier.</div>
+<div class="warning"><b>Warning:</b> Something that could cause data loss or cannot be undone. Read these carefully.</div>
+<p>UI elements you click or type into are written in <b>bold</b> (for example, the <b>Save</b> button or the <b>Email Address</b> field). Web addresses, file names, and system values are written in <code>code</code> style.</p>
+<div class="note"><b>Note:</b> This manual describes the system exactly as it is built today. Some features that are common in other institute systems (online examination <b>results/grades</b>, <b>transcripts</b>, and class <b>timetables</b>) are <b>not part of this version</b>. Where you might expect those, the manual explains what the system uses instead (for example, competency-based assessment document uploads, and fees calculated from the program cost). Nothing in this manual is a placeholder; every instruction reflects a feature that actually exists.</div>
+
+<h2>1.2 About the EDTTI Institute Management System</h2>
+<p>The EDTTI Institute Management System (IMS) is a secure, web-based platform that runs entirely in your internet browser; there is nothing to install. It brings the day-to-day administration of the Institute into one place, replacing scattered paper records, spreadsheets, and manual processes.</p>
+<p>The system is organised into <b>portals</b>. A portal is a private workspace tailored to one role: it shows only the tools and information that role needs. When you log in, the system automatically takes you to the correct portal for your account.</p>
+<p>The system handles the following core areas of Institute life:</p>
+<ul>
+  <li><b>Admissions:</b> registering new students and issuing admission numbers and login credentials.</li>
+  <li><b>Student records:</b> personal details, course, department, module, and intake.</li>
+  <li><b>Fees and payments:</b> recording payments, generating receipts, and showing each student their balance.</li>
+  <li><b>Unit (course) registration:</b> students enrol in the units for their current module.</li>
+  <li><b>Competency-Based Education and Training (CBET) evidence:</b> students upload assessment and practical work, which the CBET office reviews.</li>
+  <li><b>Teaching materials ("Tools of Trade"):</b> trainers submit course outlines, session plans, records of work, and similar documents for review.</li>
+  <li><b>Book resources:</b> trainers curate free online textbooks for each unit, and students read or download them.</li>
+  <li><b>Applications:</b> students apply for <b>graduation</b> and <b>industrial attachment</b>, which the Industrial Liaison Office reviews.</li>
+  <li><b>Payroll:</b> Finance generates payslips for trainers.</li>
+  <li><b>Notifications:</b> the system keeps everyone informed of important events.</li>
+</ul>
+<p>Here are all the portals and who uses each one:</p>
+<table>
+  <tr><th>Portal</th><th>Who uses it</th><th>Main purpose</th></tr>
+  <tr><td><b>Student Portal</b></td><td>Students</td><td>Fees, unit registration, uploads, applications, books</td></tr>
+  <tr><td><b>Trainer Portal</b></td><td>Trainers (lecturers)</td><td>Assigned units, student rosters, attendance, books, teaching tools, payslips</td></tr>
+  <tr><td><b>HOD Portal</b></td><td>Heads of Department</td><td>Assigning units to trainers, common units, department analytics</td></tr>
+  <tr><td><b>Dean Portal</b></td><td>Dean of Students</td><td>Student welfare records and notes</td></tr>
+  <tr><td><b>Deputy Principal Portal</b></td><td>Deputy Principal</td><td>Institution-wide oversight and Tools of Trade requests</td></tr>
+  <tr><td><b>Finance Portal</b></td><td>Finance officers</td><td>Recording payments, fees, payslips, revenue, reports</td></tr>
+  <tr><td><b>Registrar Portal</b></td><td>Registrar</td><td>Admissions, student records, promotion</td></tr>
+  <tr><td><b>Admin Portal</b></td><td>System Administrators</td><td>User accounts, programs, settings, reports</td></tr>
+  <tr><td><b>ILO Portal</b></td><td>Industrial Liaison Office</td><td>Graduation and attachment applications</td></tr>
+  <tr><td><b>CBET (CIBEC) Portal</b></td><td>CBET / assessment officers</td><td>Reviewing student assessment evidence</td></tr>
+</table>
+
+<h2>1.3 System Requirements</h2>
+<p>The system is designed to work on any modern device with an internet connection. You do <b>not</b> need to install any software.</p>
+<ul>
+  <li><b>Supported browsers:</b> Use a current version of <b>Google Chrome</b>, <b>Microsoft Edge</b>, <b>Mozilla Firefox</b>, or <b>Safari</b>. For the best experience, keep your browser updated to the latest version. Internet Explorer is <b>not</b> supported.</li>
+  <li><b>Internet connection:</b> A stable internet connection is required at all times while using the system. A basic broadband or mobile data connection is sufficient. Uploading documents (such as assessment PDFs) will be faster on a stronger connection.</li>
+  <li><b>Device compatibility:</b> The system works on <b>desktop and laptop computers, tablets, and smartphones</b>. The layout adapts to the size of your screen. For tasks that involve a lot of typing or reviewing large tables (such as recording payments or reviewing applications), a laptop or desktop is more comfortable.</li>
+  <li><b>Other software:</b> None. Everything runs in the browser. To open downloaded receipts and reports you will need a PDF viewer, which is built into all modern browsers and devices.</li>
+</ul>
+<div class="tip"><b>Tip:</b> Allow your browser to keep you signed in for the duration of your session, but always log out on shared or public computers (see Section 2.8).</div>
+
+<h2>1.4 Getting Help</h2>
+<p>If you run into a problem, first check <b>Part 15: Troubleshooting</b>, which covers the most common issues and how to solve them.</p>
+<p>If you still need help, contact the right office for your issue (see <b>Appendix B</b> for a full list). The Institute's general contact details are:</p>
+<ul>
+  <li><b>Emurua Dikirr Technical Training Institute</b></li>
+  <li>Mogondo Centre, Dikirr-Olchobose Road, Narok County, Kenya</li>
+  <li>P.O. Box 180-20401, Chebunyo</li>
+  <li>Phone: 0740 555 123 / 0728 733 148</li>
+  <li>Email: <code>emuruadikirrtti2019@gmail.com</code></li>
+  <li>Website: <code>edtti.ac.ke</code></li>
+</ul>
+<p>When reporting an issue, please have the following ready so the support team can help you quickly:</p>
+<ol>
+  <li><b>Who you are:</b> your name, role, and (for students) your admission number.</li>
+  <li><b>Which portal and tab</b> you were using (for example, "Student Portal, Payment History tab").</li>
+  <li><b>What you were trying to do</b>, step by step.</li>
+  <li><b>What happened:</b> the exact error message, if any.</li>
+  <li><b>A screenshot</b>, if possible, showing the screen and any error.</li>
+</ol>
+<div class="warning"><b>Warning:</b> Never share your password with anyone, including support staff. No legitimate member of staff will ever ask for your password.</div>
+</div>
+
+<!-- ============================ PART 2 ============================ -->
+<div class="page-break">
+<h1 class="part">Part 2: Getting Started (All Users)</h1>
+
+<h2>2.1 Accessing the System</h2>
+<p>The system is reached through a web address (URL) provided by your Institute, for example <code>edtti.ac.ke</code>. Open your browser, type the address into the address bar at the top, and press <b>Enter</b>.</p>
+<p>You will arrive at the <b>landing page</b> (the public home page). This page introduces the Institute and provides the doorways into each portal. On the landing page you will find login buttons in the top navigation bar and in the page footer:</p>
+<ul>
+  <li><b>Student:</b> for students</li>
+  <li><b>Trainer:</b> for trainers (lecturers)</li>
+  <li><b>HOD:</b> for Heads of Department</li>
+  <li><b>Staff Portal:</b> for all other staff (Admin, Registrar, Finance, Dean, Deputy, ILO, CBET)</li>
+</ul>
+<div class="tip"><b>Tip:</b> The landing page has a <b>dark mode</b> toggle (a moon/sun icon). Click it to switch between light and dark appearance; the system remembers your choice on that device.</div>
+
+<h2>2.2 Understanding the Login Process</h2>
+<p>The system uses <b>two different login methods</b>, depending on who you are. This is a deliberate security design.</p>
+<ol>
+  <li><b>Single-step login:</b> used by <b>students, trainers, and Heads of Department</b>. You enter your identifier and password, and you are signed in immediately.</li>
+  <li><b>Two-step login with a One-Time Passcode (OTP):</b> used by <b>all other staff</b> (Admin, Registrar, Finance, Dean, Deputy, ILO, CBET). After entering your email and password, the system emails you a six-digit code that you must enter to complete the login.</li>
+</ol>
+<div class="note"><b>Note:</b> A One-Time Passcode (OTP) is a short numeric code that is valid only once and only for a few minutes. The two-step method protects sensitive administrative accounts: even if someone learns a staff member's password, they cannot log in without also having access to that staff member's email inbox.</div>
+<p>The system also lets you keep <b>more than one portal open at the same time</b> in the same browser (for example, a Finance tab and an Admin tab), and they will not interfere with each other.</p>
+
+<h2>2.3 Student &amp; Trainer Login</h2>
+<div class="note"><b>Note:</b> This section is for students and trainers.</div>
+<p><b>For students:</b></p>
+<ol>
+  <li>From the landing page, click <b>Student</b> (or go to the address <code>/student/login</code>).</li>
+  <li>In the <b>Admission Number</b> field, type your admission number exactly as it appears on your admission letter (for example, <code>BM5/2503/J26</code>).</li>
+  <li>In the <b>Password</b> field, type your password. For a brand-new student, your initial password is your <b>phone number</b> (the one recorded during admission). The system accepts common Kenyan formats, so <code>0712...</code>, <code>712...</code>, or <code>254712...</code> will all work.</li>
+  <li>Click <b>Sign In</b>.</li>
+</ol>
+<p>On success, you are taken to your Student Portal dashboard. On your <b>first login</b>, the system will immediately ask you to set a new password before you can continue (see Section 2.5).</p>
+<p><b>For trainers:</b></p>
+<ol>
+  <li>From the landing page, click <b>Trainer</b> (or go to <code>/trainer/login</code>).</li>
+  <li>In the <b>Email Address</b> field, type your work email.</li>
+  <li>In the <b>Password</b> field, type your password. A newly created trainer account uses the temporary password <code>trainer123</code>.</li>
+  <li>Click <b>Sign In</b>.</li>
+</ol>
+<p>On your first login you will be required to set a new password (see Section 2.5).</p>
+<p>If login fails, the system shows a message such as "Invalid email or password" (or "Invalid admission number or password" for students). Check for typos, make sure Caps Lock is off, and confirm you are on the correct login page for your role.</p>
+<div class="note"><b>Note:</b> Heads of Department log in slightly differently: they select their <b>Department</b> and enter a password rather than an email. Use the <b>HOD</b> button on the landing page (<code>/hod/login</code>).</div>
+
+<h2>2.4 Staff Login (Two-Step with OTP)</h2>
+<div class="note"><b>Note:</b> This section is for Admin, Registrar, Finance, Dean, Deputy, ILO, and CBET staff.</div>
+<p>All of these staff roles use the same <b>Staff Portal</b> login page and the same two-step process.</p>
+<ol>
+  <li>From the landing page, click <b>Staff Portal</b> (or go to <code>/admin/login</code>).</li>
+  <li>In the <b>Email Address</b> field, type your work email.</li>
+  <li>In the <b>Password</b> field, type your password.</li>
+  <li>Click <b>Sign In</b>. The system checks your credentials and, if they are correct, emails a <b>six-digit verification code</b> to your inbox.</li>
+  <li>Switch to your email. Find the message titled <b>"EDTTI Login Verification Code"</b>. The code is shown in the body of the email.</li>
+  <li>Return to the login page. The screen now shows six boxes for the code. Type the six digits.</li>
+  <li>Click to verify. You are signed in and taken to your portal.</li>
+</ol>
+<p><b>Important details about the OTP:</b></p>
+<ul>
+  <li>The code is <b>valid for 10 minutes</b>. If it expires, start the login again to receive a fresh code.</li>
+  <li>You have a maximum of <b>5 attempts</b> to enter a code correctly. After that, the code is cancelled and you must request a new one by logging in again.</li>
+  <li>The code is <b>single-use</b>; once it works, it cannot be used again.</li>
+</ul>
+<p><b>If the OTP email does not arrive:</b></p>
+<ol>
+  <li>Wait up to a minute or two; email can be slightly delayed.</li>
+  <li>Check your <b>Spam/Junk</b> folder.</li>
+  <li>Confirm you typed your email correctly.</li>
+  <li>If the system could not send the email at all, it will tell you with a message like "We could not send your verification code right now. Please try again in a moment." In that case, wait and try logging in again.</li>
+  <li>If the problem persists, contact the System Administrator (see Appendix B).</li>
+</ol>
+<div class="warning"><b>Warning:</b> Never forward your OTP email or read your code aloud to anyone. The code grants access to your account.</div>
+
+<h2>2.5 First-Time Login</h2>
+<div class="note"><b>Note:</b> This section applies to new <b>students</b> and new <b>trainers</b>.</div>
+<p>When your account is brand-new, the system forces you to replace your initial password with one only you know. This happens <b>automatically</b> the first time you log in and <b>before</b> you can use any other feature.</p>
+<ol>
+  <li>Log in with your initial credentials as described in Section 2.3.</li>
+  <li>A window titled <b>"Set a new password"</b> appears over the login page.</li>
+  <li>In the <b>New password</b> field, type a strong new password (see Section 2.6 for the rules).</li>
+  <li>In the <b>Confirm new password</b> field, type the same password again.</li>
+  <li>Click <b>Save &amp; Continue</b>.</li>
+</ol>
+<p>Once your new password is accepted, you are taken straight into your portal. From then on you log in with your new password.</p>
+<div class="note"><b>Note:</b> Staff accounts (Admin, Registrar, Finance, Dean, Deputy, ILO, CBET) do <b>not</b> use this first-login screen. Their accounts are set up ready to use, and they sign in with the two-step OTP process described in Section 2.4.</div>
+<div class="tip"><b>Tip:</b> Choose a password you can remember but others cannot guess. Do not reuse your phone number or admission number.</div>
+
+<h2>2.6 Password Requirements</h2>
+<p>To keep accounts secure, every new password (whether set at first login or changed later) must meet these rules:</p>
+<ul>
+  <li><b>At least 8 characters</b> long.</li>
+  <li><b>At least one lowercase letter</b> (a-z).</li>
+  <li><b>At least one uppercase letter</b> (A-Z).</li>
+  <li><b>At least one number</b> (0-9).</li>
+  <li><b>At least one special character</b> (for example <code>!</code>, <code>@</code>, <code>#</code>, <code>$</code>, <code>%</code>, <code>*</code>, <code>?</code>, <code>&amp;</code>).</li>
+  <li>It must be <b>different</b> from your current/old password.</li>
+</ul>
+<p>An example of a password that meets all the rules is <code>Edtti2026!</code> (do not use this exact example; choose your own).</p>
+<div class="warning"><b>Warning:</b> If your new password does not meet every rule, the system will reject it and explain what is missing. Adjust it and try again.</div>
+
+<h2>2.7 Forgotten Password / Password Reset</h2>
+<p>If you forget your password, you can reset it yourself using the <b>Forgot Password</b> flow. This is available from the login pages.</p>
+<ol>
+  <li>On your login page, click the <b>Forgot Password?</b> link.</li>
+  <li>Enter the <b>email address</b> associated with your account.</li>
+  <li>Choose how you want to receive your reset: a <b>one-time code (OTP)</b> or a <b>reset link</b>.</li>
+  <li>Click to send. The system emails you either a six-digit code ("EDTTI Password Reset - One-Time Password") or a reset link ("EDTTI Password Reset - Reset Link").</li>
+  <li><b>If you chose the code:</b> enter the six-digit code on the next screen, then set your new password (following the rules in Section 2.6).</li>
+  <li><b>If you chose the link:</b> open the link in the email and set your new password on the page it opens.</li>
+</ol>
+<p><b>Time limits:</b></p>
+<ul>
+  <li>The reset <b>code (OTP)</b> is valid for <b>10 minutes</b>.</li>
+  <li>The reset <b>link</b> is valid for <b>60 minutes</b> and can be used only once.</li>
+</ul>
+<div class="note"><b>Note:</b> For security, the system always responds with the same "If an account exists, instructions have been sent" message; it will not reveal whether a particular email is registered. To prevent abuse, you can request at most <b>3 password resets every 15 minutes</b>.</div>
+<p><b>Who can reset a password:</b></p>
+<ul>
+  <li><b>Every user</b> (student, trainer, and all staff) resets their <b>own</b> password using the Forgot Password flow above. This requires access to the email address on the account.</li>
+  <li>Students whose accounts have <b>no email on file</b> should contact the <b>Registrar</b> for help. Staff should contact the <b>System Administrator</b>.</li>
+</ul>
+<div class="note"><b>Note:</b> The system does not provide a "reset someone else's password" button. Password resets are self-service through email. If a student cannot receive the reset email, the correct path is to have the Registrar confirm and update the student's email address on record.</div>
+
+<h2>2.8 Logging Out</h2>
+<p>When you finish working, log out to protect your account.</p>
+<ol>
+  <li>Find the <b>Logout</b> button. In every portal it is in the sidebar (often at the bottom) or the top-right corner.</li>
+  <li>Click <b>Logout</b>. You may be asked to confirm.</li>
+  <li>You are returned to the login page, and your session ends on that device.</li>
+</ol>
+<div class="warning"><b>Warning:</b> Always log out when using a <b>shared or public computer</b> (such as a library or cyber caf&eacute;). If you simply close the browser without logging out, the next person may be able to reopen your session.</div>
+<div class="note"><b>Note:</b> Logging out of one portal does <b>not</b> log you out of any other portal you have open in the same browser. Each portal has its own independent session.</div>
+
+<h2>2.9 Navigating the System</h2>
+<p>Each role has its <b>own portal</b>, and you are taken to yours automatically after login. Within a portal, the main areas are arranged as <b>tabs</b> (sometimes shown as a sidebar menu). Clicking a tab switches the main area to that feature without reloading the whole page, so navigation is fast.</p>
+<p>Common elements you will see in every portal:</p>
+<ul>
+  <li>A <b>sidebar or top navigation</b> listing the tabs available to your role.</li>
+  <li>A <b>page title</b> showing which tab you are on.</li>
+  <li>An <b>academic year chip</b> (for example, "AY 2025/2026") indicating the current academic year.</li>
+  <li>For most portals, a live <b>clock</b> and a <b>dark-mode</b> toggle.</li>
+</ul>
+<p><b>Session expiry:</b> For security, your session lasts about <b>2 hours</b>. If you stay signed in but inactive for a long time, or if your session expires, the system will return you to the login page the next time you try to do something. Simply log in again to continue.</p>
+<div class="tip"><b>Tip:</b> You can <b>bookmark</b> your portal's address (for example, <code>/finance/dashboard</code>). When you open the bookmark, if your session has expired you will be asked to log in first, then taken to that page.</div>
+<div class="warning"><b>Warning:</b> If you are filling in a form (such as recording a payment or admitting a student) and your session expires before you click <b>Save/Submit</b>, your unsaved entries may be lost. Save your work regularly.</div>
+</div>
+
+<!-- ============================ PART 3 ============================ -->
+<div class="page-break">
+<h1 class="part">Part 3: Student Portal</h1>
+<div class="note"><b>Note:</b> Every section in Part 3 is for <b>students only</b>.</div>
+
+<h2>3.1 Accessing the Student Portal</h2>
+<p>Open the student login page (<code>/student/login</code>), sign in with your <b>admission number</b> and <b>password</b> (see Section 2.3), and complete the first-login password change if prompted (see Section 2.5). After signing in, you arrive at your <b>Dashboard</b>.</p>
+<p>Your Student Portal has ten areas, shown in the sidebar in this order: <b>Dashboard, Profile, Financial Info, Payment History, Uploads, Notes &amp; Messages, Units &amp; Courses, My Books, Apply for Graduation, Apply for Attachment</b>. The footer of the sidebar has a <b>Dark Mode</b> toggle and a <b>Logout</b> button.</p>
+
+<h2>3.2 Dashboard</h2>
+<p>The <b>Dashboard</b> is your home screen and gives you a quick summary of your fees and recent activity. It is for viewing only; there are no buttons to click here.</p>
+<p>You will see:</p>
+<ul>
+  <li>A <b>welcome card</b> with your name and your current <b>module</b> number.</li>
+  <li>Three summary cards: <b>Total Program Cost</b> (the fee for your current module), <b>Total Paid</b> (the total of all payments recorded for you, in Kenya Shillings), and <b>Outstanding Balance</b> (what remains to be paid).</li>
+  <li>A <b>Payment Progress</b> bar showing how much of your current module's fee you have paid, as a percentage.</li>
+  <li>A <b>Recent Activity</b> list showing your last few payments.</li>
+</ul>
+<div class="note"><b>Note:</b> The fee shown is for <b>one module at a time</b>, not the full year. EDTTI bills fees per module, with three modules per year. See Section 3.4 for how the balance is calculated.</div>
+
+<h2>3.3 My Profile</h2>
+<p>The <b>Profile</b> tab shows your personal and academic information.</p>
+<p>You will see:</p>
+<ul>
+  <li>Your name, admission number, and avatar.</li>
+  <li>Personal details: <b>ID Number</b>, <b>Phone Number</b>, <b>Email Address</b>, <b>KCSE Grade</b>.</li>
+  <li>Academic details: <b>Course</b>, <b>Department</b>, <b>Module</b>, <b>Intake</b>, and <b>Admission Type</b> (shown as "Walk-in" or "KUCCPS").</li>
+</ul>
+<p><b>What you can change:</b> You can update only your <b>Email Address</b>.</p>
+<ol>
+  <li>Next to <b>Email Address</b>, click <b>Update</b>.</li>
+  <li>In the window that opens, type your <b>New Email Address</b>.</li>
+  <li>Click <b>Update Email</b>. A confirmation message appears and your profile refreshes.</li>
+</ol>
+<div class="note"><b>Note:</b> All other fields (your name, ID number, phone number, KCSE grade, course, department, module, and intake) are <b>read-only</b>. If any of these is wrong, contact the <b>Registrar</b> to have it corrected (see Appendix B). The student cannot change these directly.</div>
+
+<h2>3.4 Fee Statement &amp; Payments</h2>
+<div class="note"><b>Note:</b> EDTTI does not use a separate "fee structure" screen. Your fee is derived from your <b>program's cost</b>. The program cost stored in the system is the <b>annual</b> fee; because there are <b>three modules per year</b>, the fee for <b>one module</b> is the annual cost divided by three (rounded up). You are billed one module at a time.</div>
+<p>The <b>Financial Info</b> tab gives you the detailed breakdown:</p>
+<ul>
+  <li>Three cards: <b>Program Cost</b> (your per-module fee), <b>Total Paid</b>, and <b>Balance</b>.</li>
+  <li>A <b>Payment Progress</b> bar with a percentage.</li>
+  <li>A <b>Program Details</b> panel: <b>Program Name</b>, <b>Department</b>, <b>Module</b>, <b>Program Cost</b>, <b>Amount Paid</b>, and <b>Outstanding</b>.</li>
+</ul>
+<p><b>How your balance is calculated:</b></p>
+<ul>
+  <li><b>Program Cost (per module)</b> = annual program cost &divide; 3 (rounded up).</li>
+  <li><b>Total Paid</b> = the sum of every payment recorded against your account.</li>
+  <li><b>Balance</b> = Program Cost (per module) minus Total Paid. If you have overpaid, the balance can show as a negative (credit) amount.</li>
+</ul>
+<p><b>Viewing your payment history and receipts</b> is done on the <b>Payment History</b> tab:</p>
+<ol>
+  <li>Open <b>Payment History</b>. Each payment is listed with its amount, date, and a small tag showing the method (<b>M-Pesa</b>, <b>Bank</b>, or <b>Payment</b>).</li>
+  <li>Click any payment to open its <b>receipt</b>.</li>
+  <li>The receipt window shows your name, admission number, course, department, academic year, amount paid, payment method, reference number, and date.</li>
+  <li>Use <b>Export Receipt</b> to save the receipt as a PDF, or <b>Print</b> to print it on the official letterhead.</li>
+</ol>
+<p><b>Understanding payment statuses:</b> Every payment shown has already been <b>recorded and confirmed</b> by the Finance office; there are no "pending" payments visible to you. A payment appears here only after a Finance officer enters it.</p>
+<p><b>If a payment is missing:</b> Payments are entered by the Finance office, not by students. If a payment you made does not appear within a reasonable time, contact <b>Finance</b> and provide your <b>payment reference number</b> (the M-Pesa transaction ID, bank slip number, or bursary reference). See Section 15.5.</p>
+
+<h2>3.5 Course / Unit Registration</h2>
+<p>The <b>Units &amp; Courses</b> tab is where you see your course units and register for the ones in your current module.</p>
+<p>You will see:</p>
+<ul>
+  <li>A header with counts: <b>Total Units</b>, <b>Department</b> units, <b>Common</b> units, <b>Registered</b>, <b>Unregistered</b>, and <b>History</b>.</li>
+  <li>A banner showing whether registration is <b>available</b> or <b>blocked</b>, based on your outstanding balance.</li>
+  <li>Unit cards for your current module, each tagged as a regular or <b>Common</b> unit, with a status of <b>Registered</b>, <b>Not Registered</b>, or <b>Blocked</b>.</li>
+  <li>A collapsible <b>History: Past Module Units</b> section listing units from earlier modules (these are shown for reference and cannot be registered again).</li>
+</ul>
+<p><b>When registration is open:</b> Registration depends on your fee balance. The Finance office sets a <b>fee threshold</b> (a minimum payment level). If your outstanding balance is <b>below</b> that threshold, registration is available; if it is at or above the threshold, registration is <b>blocked</b> until you pay enough to come under it.</p>
+<p><b>How to register for units:</b></p>
+<ol>
+  <li>Open <b>Units &amp; Courses</b>.</li>
+  <li>Check the banner at the top. If it reads <b>Registration Available</b>, you may proceed. If it reads <b>Registration Blocked</b>, pay enough fees to come under the threshold first.</li>
+  <li>To register a single unit, click <b>Register</b> on that unit's card.</li>
+  <li>To register several units at once, click <b>Register Unregistered Units</b> in the banner, tick the units you want in the list that appears, and click <b>Register Selected Units</b>.</li>
+</ol>
+<p><b>Dropping a unit:</b> The system does not provide a self-service "drop unit" button. If you registered for a unit in error, contact the <b>Registrar</b>.</p>
+<p><b>Viewing registered units:</b> Registered units show a <b>Registered</b> status pill on their card, and the count of registered units appears in the header.</p>
+<div class="note"><b>Note: Common units</b> are shared across several programs (for example, communication or numeracy skills). They appear alongside your department units. You cannot upload assessment evidence for common units (see Section 3.10).</div>
+
+<h2>3.6 Examination Results</h2>
+<div class="note"><b>Note:</b> This version of the EDTTI system does <b>not</b> include an online examination results or grades module. There is no place in the Student Portal to view marks, grades, GPA, or pass/fail outcomes, because the system does not store them.</div>
+<p>EDTTI follows a <b>Competency-Based Education and Training (CBET)</b> model. Instead of viewing graded exam results online, you demonstrate competency by <b>uploading assessment and practical evidence</b> for each unit, which the CBET office reviews (see Section 3.10). Formal results and competency outcomes are communicated to you through the Institute's normal academic channels (your trainer, department, or the Registrar), not through this portal.</p>
+<p>If you have a question about your results or competency status, contact your <b>trainer</b> or the <b>Registrar</b> (see Section 15.6).</p>
+
+<h2>3.7 Transcript</h2>
+<div class="note"><b>Note:</b> This version of the system does <b>not</b> generate transcripts. There is no transcript tab in the Student Portal.</div>
+<p>To request an <b>official academic record or transcript</b>, contact the <b>Registrar's office</b> directly (see Appendix B). The Registrar maintains the authoritative academic records for all students.</p>
+
+<h2>3.8 Timetable / Class Schedule</h2>
+<div class="note"><b>Note:</b> This version of the system does <b>not</b> include an online class timetable. There is no timetable tab in the Student Portal, and the system does not store scheduling data.</div>
+<p>Class schedules are distributed through your department and trainers. Contact your <b>Head of Department</b> or <b>trainer</b> for your current class schedule.</p>
+
+<h2>3.9 Notes &amp; Messages</h2>
+<p>The <b>Notes &amp; Messages</b> tab is where you read official notices addressed to students from the Dean's office.</p>
+<p>You will see:</p>
+<ul>
+  <li>Filter tabs: <b>All</b>, <b>Unread</b> (with a count badge), and <b>Read</b>.</li>
+  <li>Each note shown as a card with a category icon, a title, a priority tag (for example, <i>urgent</i>, <i>high</i>, <i>normal</i>, <i>low</i>), a short preview, and the date. New (unread) notes are marked.</li>
+</ul>
+<p><b>To read and manage notes:</b></p>
+<ol>
+  <li>Open <b>Notes &amp; Messages</b>.</li>
+  <li>Click a note card to open it in full. Opening a note automatically marks it as <b>read</b>.</li>
+  <li>Use the <b>All / Unread / Read</b> filters to focus on what you need.</li>
+  <li>Click <b>Refresh</b> to check for new notes. The system also checks automatically every few minutes.</li>
+</ol>
+<div class="note"><b>Note:</b> Notes shown here are <b>public notices from the Dean</b> (for example, welfare announcements). They are read-only; students cannot reply or post notes. Private staff notes about a student are <b>not</b> visible to the student. The system also sends you in-app notifications about other events (such as your graduation or attachment application status); see Part 12.</div>
+
+<h2>3.10 Uploaded Documents</h2>
+<p>The <b>Uploads</b> tab is where you submit required documents and your competency-based assessment and practical evidence.</p>
+<p>At the top you will find three personal document slots:</p>
+<ul>
+  <li><b>Profile Photo:</b> accepted as JPG or PNG, up to about 2 MB.</li>
+  <li><b>KCSE Results:</b> accepted as PDF or image, up to about 5 MB.</li>
+  <li><b>KCPE Results:</b> accepted as PDF or image, up to about 5 MB.</li>
+</ul>
+<p>Below these, for each unit you are <b>registered</b> in, you will find assessment slots:</p>
+<ul>
+  <li><b>Assessment 1, 2, and 3:</b> for all units.</li>
+  <li><b>Practical 1, 2, and 3</b> and a <b>Combined Video:</b> for department (non-common) units only.</li>
+</ul>
+<p><b>How to upload a document:</b></p>
+<ol>
+  <li>Open <b>Uploads</b>.</li>
+  <li>Find the slot you need (for example, <b>Assessment 1</b> under a particular unit).</li>
+  <li>Click <b>Upload</b> and choose the file from your device.</li>
+  <li>Wait for the confirmation. The slot's status changes to <b>Uploaded</b> and shows the file name, date, and version.</li>
+</ol>
+<p><b>File rules to remember:</b></p>
+<ul>
+  <li><b>Assessment files</b> are accepted as PDF or Word (DOCX).</li>
+  <li><b>Practical files</b> must be <b>PDF</b>.</li>
+  <li>The system checks the <b>actual content</b> of each file (not just its name), so renaming a file will not bypass the type check.</li>
+  <li>The overall maximum file size is <b>10 MB</b> (images are limited to 5 MB).</li>
+  <li>You can only upload assessments for units you are <b>registered</b> in, and <b>not</b> for common units.</li>
+</ul>
+<p><b>Replacing and viewing:</b> You can <b>replace</b> a previously uploaded file (the old version is kept as a record and marked "replaced"; uploads are never permanently deleted) and <b>view</b> any file you have uploaded.</p>
+<p><b>What happens next:</b> Your uploaded assessment evidence becomes available to the <b>CBET (CIBEC) office</b>, which reviews students' assessment and practical work for completeness (see Section 11.6 for the CBET review process, handled by the assessment office).</p>
+
+<h2>3.11 Applying for Graduation</h2>
+<p>The <b>Apply for Graduation</b> tab lets you submit a graduation application when you are eligible.</p>
+<p>You will see one of three states:</p>
+<ul>
+  <li>An <b>application form</b> if you are eligible and have not yet applied.</li>
+  <li>A confirmation (<b>"Application Submitted"</b>) with the date, status, and any comments, if you have already applied.</li>
+  <li>A <b>"Not Eligible"</b> message with the reason, if you cannot apply yet.</li>
+</ul>
+<p><b>How to apply:</b></p>
+<ol>
+  <li>Open <b>Apply for Graduation</b>.</li>
+  <li>Confirm your details (these are read-only and come from your record).</li>
+  <li>Click to submit the application. No additional information is required.</li>
+</ol>
+<p>After you submit, the <b>Industrial Liaison Office (ILO)</b> is notified and reviews your application. You can return to this tab to see your application's <b>status</b> (pending, approved, or rejected) and any comments. If your application is rejected, you may apply again.</p>
+
+<h2>3.12 Industrial Attachment</h2>
+<p>The <b>Apply for Attachment</b> tab lets you submit an application for industrial attachment when you are eligible.</p>
+<p>You will see one of three states:</p>
+<ul>
+  <li>An <b>application form</b> if you are eligible and have not yet applied.</li>
+  <li>A confirmation (<b>"Application Submitted"</b>) with the date, status, and any comments, if you have already applied.</li>
+  <li>A <b>"Not Eligible"</b> message with the reason, if you cannot apply yet.</li>
+</ul>
+<p><b>Eligibility:</b> You can apply once you reach the final module for your level (for example, Level 6 students at Module 6). If you are not yet at that point, the system explains why.</p>
+<p><b>How to apply:</b></p>
+<ol>
+  <li>Open <b>Apply for Attachment</b>.</li>
+  <li>Confirm your details on the left (these are read-only and come from your record).</li>
+  <li>In <b>Preferred County</b>, choose your county from the list of all 47 Kenyan counties.</li>
+  <li>In <b>Nearest Town</b>, type the nearest town to your attachment location.</li>
+  <li>Click <b>Submit Attachment Application</b>.</li>
+</ol>
+<p>After you submit, the <b>Industrial Liaison Office (ILO)</b> is notified and reviews your application. You can return to this tab to see your application's <b>status</b> (pending, approved, or rejected) and any comments. If your application is rejected, you may apply again.</p>
+<div class="note"><b>Note:</b> The system records attachment <b>applications</b>; the recording of an actual confirmed placement is handled by the ILO outside the portal.</div>
+
+<h2>3.13 Book Resources</h2>
+<p>The <b>My Books</b> tab is your reading library. It shows the books your trainers have approved for the units you are registered in.</p>
+<p>You will see:</p>
+<ul>
+  <li>Books grouped by <b>unit</b> (each group labelled with the unit name and code).</li>
+  <li>Each book shown as a card with its cover image (or a placeholder), title, and authors.</li>
+</ul>
+<p><b>How to read or download a book:</b></p>
+<ol>
+  <li>Open <b>My Books</b>.</li>
+  <li>Find the book you want under its unit.</li>
+  <li>Click <b>Read</b> to open the book in the built-in reader <b>inside the portal</b>; you do not leave the system or visit another website.</li>
+  <li>If a downloadable PDF is available, click the <b>download</b> icon to save it. (If no PDF is available, the download icon is disabled, but you can still read the book in the reader.)</li>
+</ol>
+<p><b>Which books you see:</b> You only see books for units you are <b>registered</b> in, and only those a trainer has actively approved for that unit. If a unit has no approved books, it will not appear here.</p>
+<p>For more on book sources and how the reader works, see Part 13.</p>
+<div class="note"><b>Note:</b> If the page reads "Your lecturers haven't added any reading materials yet," it simply means no books have been approved for your registered units. Check back later.</div>
+</div>
+
+<!-- ============================ PART 4 ============================ -->
+<div class="page-break">
+<h1 class="part">Part 4: Trainer Portal</h1>
+<div class="note"><b>Note:</b> Every section in Part 4 is for <b>trainers (lecturers) only</b>.</div>
+
+<h2>4.1 Accessing the Trainer Portal</h2>
+<p>Open the trainer login page (<code>/trainer/login</code>), sign in with your <b>email</b> and <b>password</b> (see Section 2.3), and set a new password if it is your first login (see Section 2.5).</p>
+<p>The Trainer Portal has these tabs: <b>Dashboard, My Assignments, My Students, Unit Books, Tools of Trade, My Payslips, Notifications,</b> and <b>Profile</b>. Badges appear on <b>My Payslips</b> (unread payslips) and <b>Notifications</b> (unread notifications).</p>
+
+<h2>4.2 Dashboard</h2>
+<p>The <b>Dashboard</b> gives you an at-a-glance summary of your teaching load.</p>
+<p>You will see:</p>
+<ul>
+  <li>A maroon welcome card with your name, department, and the number of <b>Units Assigned</b>.</li>
+  <li>Four summary cards: <b>Active Assignments</b>, <b>My Students</b>, <b>Courses</b>, and <b>Department</b>.</li>
+  <li>A <b>Quick Actions</b> panel with shortcuts to <b>View My Assignments</b>, <b>View My Students</b>, and <b>Update Profile</b>.</li>
+</ul>
+<div class="note"><b>Note:</b> The "Recent Activity" and "System Status" panels on the dashboard show general status information and are informational only.</div>
+
+<h2>4.3 My Profile</h2>
+<p>The <b>Profile</b> tab lets you keep your contact details up to date.</p>
+<p>You will see your <b>Full Name</b> and <b>Department</b> (read-only) and your <b>Email Address</b> and <b>Phone Number</b> (editable).</p>
+<ol>
+  <li>Open <b>Profile</b>.</li>
+  <li>Edit your <b>Email Address</b> and/or <b>Phone Number</b>.</li>
+  <li>Click <b>Update Profile</b>. (Use <b>Reset</b> to discard changes before saving.)</li>
+</ol>
+<div class="note"><b>Note:</b> Your password is <b>not</b> changed from this tab. Change your password through the first-login screen (for new accounts) or the <b>Forgot Password?</b> link on the login page (see Section 2.7).</div>
+
+<h2>4.4 My Units / Assigned Units</h2>
+<p>The <b>My Assignments</b> tab lists the units you have been assigned to teach.</p>
+<p>You will see a table with these columns: <b>Program Code</b> (a "Common" tag appears for common units), <b>Unit Name</b>, <b>Course</b>, <b>Module</b>, <b>Status</b>, and a per-row <b>View</b> action. A filter lets you narrow by <b>All Units</b>, <b>Current Intake</b>, or <b>Upcoming Semester</b>, and a <b>Refresh</b> button reloads the list. The list is paginated (10 per page).</p>
+<div class="note"><b>Note:</b> Your assignments are created by your <b>Head of Department</b>. If a unit you expect is missing, contact your HOD.</div>
+
+<h2>4.5 Student Lists &amp; Attendance</h2>
+<p>The <b>My Students</b> tab shows the students in your units and lets you export an attendance register.</p>
+<p>You will see:</p>
+<ul>
+  <li>Two filters: a <b>Unit</b> dropdown (listing your assigned units) and a <b>Module</b> dropdown (All Modules, or Module 1-6).</li>
+  <li>An <b>Export Attendance</b> button and a <b>Refresh</b> button.</li>
+  <li>A table with columns: <b>Name</b>, <b>Admission No.</b>, <b>Course</b>, <b>Module</b>, and <b>Phone Number</b>, paginated 10 per page.</li>
+</ul>
+<p><b>To filter the list:</b> choose a <b>Unit</b> to see only that unit's students, and/or a <b>Module</b> to narrow further. Choosing neither shows all your students.</p>
+<p><b>To export an attendance register:</b></p>
+<ol>
+  <li>Set the <b>Unit</b> and/or <b>Module</b> filters to the class you want.</li>
+  <li>Click <b>Export Attendance</b>.</li>
+  <li>The system generates a branded PDF attendance register on official letterhead, listing the selected students with five blank columns (<b>L1-L5</b>) for marking attendance by hand.</li>
+</ol>
+<div class="tip"><b>Tip:</b> Print the exported register and mark <b>P</b> (Present) or <b>A</b> (Absent) in the lesson columns during class. The footer of the sheet explains this notation. The register supports up to five lessons (L1-L5) per sheet.</div>
+
+<h2>4.6 Entering Results</h2>
+<div class="note"><b>Note:</b> This version of the system does <b>not</b> include a results or grades-entry feature. Trainers do <b>not</b> enter exam marks, CAT scores, or grades anywhere in the portal; there is no such screen or function.</div>
+<p>Under EDTTI's competency-based model, evidence of student competency is collected through <b>student assessment uploads</b> (students upload their assessment and practical work in their portal; see Section 3.10), which are reviewed by the CBET office. As a trainer, your assessment-related tools are:</p>
+<ul>
+  <li><b>My Students:</b> view your rosters and export attendance registers (see Section 4.5).</li>
+  <li><b>Unit Books:</b> curate reading materials for your units (see Section 4.11).</li>
+  <li><b>Tools of Trade:</b> submit your teaching documents (see Section 4.7).</li>
+</ul>
+
+<h2>4.7 Tools of Trade</h2>
+<p>The <b>Tools of Trade</b> tab is where you submit teaching materials and respond to requests from the Deputy Principal's office.</p>
+<p>You will see:</p>
+<ul>
+  <li>A <b>Tool Requests for You</b> section listing any documents you have been asked to submit, each with the type, due date, and instructions, and a <b>Fulfill this</b> button.</li>
+  <li>An <b>Upload Tools of Trade</b> section with buttons for each document type (Course Outline, Learning Plan, Record of Work, Session Plan, Exam, TVET License), a drag-and-drop area, and <b>Upload Tool</b> / <b>Bulk Upload</b> buttons.</li>
+  <li>A <b>Submitted Tools</b> section listing what you have submitted, each with its status (Submitted, Under Review, Approved, Rejected, or Needs Revision), file details, any reviewer feedback, and <b>Download</b> / <b>Delete</b> options.</li>
+</ul>
+<p><b>To upload a teaching document:</b></p>
+<ol>
+  <li>Open <b>Tools of Trade</b>.</li>
+  <li>Choose the <b>document type</b>.</li>
+  <li>Drag your file into the upload area (or click to browse); accepted formats are PDF or Word (DOCX), up to <b>1 MB</b> each.</li>
+  <li>Click <b>Upload Tool</b>. The document appears in <b>Submitted Tools</b> with the status <b>Submitted</b>.</li>
+</ol>
+<div class="note"><b>Note:</b> You can <b>delete</b> a submitted tool only while its status is still <b>Submitted</b> (before review). Once reviewed, it cannot be deleted. Reviewer feedback (from the Deputy's office) appears on the document's card.</div>
+
+<h2>4.8 My Payslips</h2>
+<p>The <b>My Payslips</b> tab is where you view and download the payslips that Finance has generated for you.</p>
+<ol>
+  <li>Open <b>My Payslips</b>. Each payslip is listed with its period (month and year), amount, and description.</li>
+  <li>Click a payslip to view its details: your name, department, period, amount, and description.</li>
+  <li>Use the download option to save a copy for your records.</li>
+</ol>
+<div class="note"><b>Note:</b> Payslips are generated by the Finance office, at most one per trainer per month (see Section 8.6). When a new payslip is generated you receive an in-app notification, and an unread badge appears on the tab. If a payslip is missing or the amount looks wrong, contact the Finance office.</div>
+
+<h2>4.9 Timetable</h2>
+<div class="note"><b>Note:</b> This version of the system does <b>not</b> include a personal timetable for trainers. There is no timetable tab. Class schedules are arranged through your department.</div>
+
+<h2>4.10 Notifications</h2>
+<p>The <b>Notifications</b> tab lists system messages addressed to you (for example, when a new payslip is generated or you receive a Tools of Trade request).</p>
+<ol>
+  <li>Open <b>Notifications</b>.</li>
+  <li>Read each message in the list.</li>
+  <li>Click <b>Mark All as Read</b> to clear the unread badge, or <b>Refresh</b> to check for new messages.</li>
+</ol>
+<p>See Part 12 for the full list of notification types.</p>
+
+<h2>4.11 Book Resources</h2>
+<p>The <b>Unit Books</b> tab lets you curate free online textbooks for your units so your students can read them.</p>
+<p>You will see:</p>
+<ul>
+  <li>A <b>Unit</b> picker (listing your assigned units).</li>
+  <li>An <b>Approved books</b> panel on the left, listing the books you have already approved for the selected unit, each with a <b>Remove</b> option.</li>
+  <li>A <b>search</b> box on the right, a <b>Search</b> button, and a <b>Deep search filters</b> toggle (Subject, Language, Source, Year range).</li>
+  <li>A results list of books, each with a cover, title, authors, subject tag, year, description, a <b>Preview</b> button, and an <b>Add to Unit</b> button (or an "Added" badge if already approved).</li>
+</ul>
+<p><b>To approve a book for a unit:</b></p>
+<ol>
+  <li>Open <b>Unit Books</b> and choose the <b>Unit</b> from the picker.</li>
+  <li>Type a topic, title, or author in the search box and click <b>Search</b>.</li>
+  <li>(Optional) Open <b>Deep search filters</b> to narrow by subject, language, source (Academic Textbooks or Library Books), or year.</li>
+  <li>Click <b>Preview</b> on a result to read it in the built-in reader and check it is suitable.</li>
+  <li>Click <b>Add to Unit</b> to approve it. The book moves into the <b>Approved books</b> panel and immediately becomes visible to students registered in that unit.</li>
+</ol>
+<p><b>To remove a book:</b> In the <b>Approved books</b> panel, click <b>Remove</b> on the book. It will no longer appear to students for that unit.</p>
+<p><b>What students see:</b> Once you approve a book, every student registered in that unit sees it under their <b>My Books</b> tab and can read or download it (see Section 3.13).</p>
+</div>
+
+<!-- ============================ PART 5 ============================ -->
+<div class="page-break">
+<h1 class="part">Part 5: Head of Department (HOD) Portal</h1>
+<div class="note"><b>Note:</b> Every section in Part 5 is for <b>Heads of Department</b>.</div>
+<p>Heads of Department log in by selecting their <b>Department</b> and entering a password on the HOD login page (<code>/hod/login</code>). The HOD Portal focuses on <b>assigning units to trainers</b> and overseeing the department. Its tabs are: <b>Dashboard (Overview), Courses &amp; Units, Trainers, Common Units, Unit Assignments, Analytics,</b> and <b>My Profile</b>.</p>
+<div class="note"><b>Note:</b> The HOD Portal does <b>not</b> include results review or publication, a student-management tab, or a timetable. (Those features are described where they exist, and the absent ones are noted below.) The HOD's core job in this system is matching trainers to units.</div>
+
+<h2>5.1 Dashboard &amp; Overview</h2>
+<p>The <b>Dashboard</b> summarises your department.</p>
+<p>You will see a welcome card with your name, department, and the number of <b>Trainers Managed</b>, plus five metric cards: <b>Total Courses, Total Units, Total Trainers, Assigned Units,</b> and <b>Total Students</b>. A <b>Quick Actions</b> panel offers <b>Assign Units to Trainer</b>, <b>View Courses &amp; Units</b>, and <b>View Analytics</b>. A <b>Department Summary</b> shows an assignment-rate progress bar and the number of active trainers.</p>
+
+<h2>5.2 Managing Trainers</h2>
+<p>The <b>Trainers</b> tab lists the trainers in your department.</p>
+<p>Each trainer is shown as a card with their initial/avatar, name, email, the number of <b>Assigned Units</b>, a preview of their first few assigned units, and an <b>Assign Units</b> button. There is also an <b>Assign Units to Trainer</b> button at the top.</p>
+<p>This tab is where you see each trainer's workload and start an assignment. To assign units, use the <b>Assign Units</b> flow described in Section 5.3a.</p>
+
+<h2>5.3 Managing Units</h2>
+<p>The <b>Courses &amp; Units</b> tab lets you browse your department's courses and their units. You will see a course filter and a list of course cards, with pagination at the bottom.</p>
+<div class="note"><b>Note:</b> Creating and editing the academic structure (programs and units themselves) is handled by the <b>Registrar/Admin</b>, not the HOD. The HOD's role is to <b>assign</b> existing units to trainers.</div>
+
+<h3>5.3a Assigning Units to a Trainer</h3>
+<p>This is the central HOD task. It is available from the <b>Trainers</b> tab, the <b>Unit Assignments</b> tab, or the Dashboard's Quick Actions.</p>
+<ol>
+  <li>Click <b>Assign Units to Trainer</b> (or <b>Assign Units</b> on a specific trainer's card).</li>
+  <li>In the window that opens, choose the <b>Select Trainer</b> (only trainers in your department appear).</li>
+  <li>In <b>Select Units</b>, tick the units to assign. Only your department's <b>unassigned, non-common</b> units are listed. For each unit, set the <b>Hrs/wk</b> (hours per week, minimum 1).</li>
+  <li>Click <b>Assign Units</b>.</li>
+</ol>
+<div class="note"><b>Note:</b> The system enforces that an HOD can only assign units <b>within their own department</b> to trainers <b>in their own department</b>. Common units are assigned separately (see Section 5.3b).</div>
+
+<h3>5.3b Common Units</h3>
+<p>The <b>Common Units</b> tab manages units shared across departments (for example, communication skills).</p>
+<p>You will see available common units, an assignment summary, and a table of current common-unit assignments. To assign a common unit:</p>
+<ol>
+  <li>Open <b>Common Units</b> and click <b>Assign Common Unit</b>.</li>
+  <li>Choose the <b>Common Unit</b>.</li>
+  <li>Optionally filter trainers by department (common units may be given to a trainer in <b>any</b> department), then tick the <b>trainer(s)</b>.</li>
+  <li>Add <b>Notes</b> if needed and confirm.</li>
+</ol>
+<div class="note"><b>Note:</b> Common units are deliberately handled separately from department units because they cross department boundaries.</div>
+
+<h2>5.4 Results Management</h2>
+<div class="note"><b>Note:</b> This version of the system does <b>not</b> include results review, approval, or publication. There is no Trainer to HOD to Dean to Published results workflow, because the system does not store exam results or grades.</div>
+<p>Competency evidence is collected through <b>student assessment uploads</b> and reviewed by the <b>CBET (CIBEC) office</b> (see Part 11). As HOD, your oversight tools are the <b>Analytics</b> tab and the <b>Unit Assignments</b> records described in this part.</p>
+
+<h2>5.5 Student Overview</h2>
+<div class="note"><b>Note:</b> The HOD Portal does <b>not</b> have a dedicated student-management tab. Department student <b>counts</b> appear on the Dashboard and Analytics. For detailed student records, the <b>Registrar</b> and <b>Dean</b> portals are used.</div>
+
+<h2>5.6 Reports</h2>
+<p>The <b>Unit Assignments</b> tab includes an <b>Export PDF</b> button that produces a branded <b>Unit Assignments Report</b>.</p>
+<ol>
+  <li>Open <b>Unit Assignments</b>.</li>
+  <li>Set the filter to <b>All Assignments</b>, <b>Assigned Units</b>, or <b>Unassigned Units</b>.</li>
+  <li>Click <b>Export PDF</b>.</li>
+</ol>
+<p>The PDF is generated on official letterhead and includes a summary band (Department, Head of Department, the chosen scope, total records, and the generation date) followed by a table of <b>Unit, Course, Trainer, Assigned Date,</b> and <b>Hrs/week</b>.</p>
+
+<h2>5.7 Timetable Management</h2>
+<div class="note"><b>Note:</b> This version of the system does <b>not</b> include timetable management. There is no timetable tab in the HOD Portal.</div>
+
+<h2>5.8 Notifications</h2>
+<p>The HOD Portal does not have a separate notifications tab. Important department actions (such as assigning units) show on-screen confirmations as you perform them. System-wide notifications appear in the portals that have a Notifications tab (Trainer, Deputy).</p>
+
+<h2>5.9 Analytics</h2>
+<p>The <b>Analytics</b> tab visualises your department. You will see four KPI cards (<b>Total Units, Assigned, Unassigned, Trainers</b>), a <b>Unit Assignment Coverage</b> progress bar, and two charts: <b>Unit Assignment Status</b> and <b>Trainer Workload Distribution</b>.</p>
+
+<h2>5.10 My Profile</h2>
+<p>The <b>My Profile</b> tab shows your details and account information, and lets you update your <b>Email Address</b> and <b>Phone Number</b> (via <b>Edit Profile</b> or the Quick Actions). As with trainers, your password is changed through the login page's Forgot Password flow, not here.</p>
+</div>
+
+<!-- ============================ PART 6 ============================ -->
+<div class="page-break">
+<h1 class="part">Part 6: Dean Portal</h1>
+<div class="note"><b>Note:</b> Every section in Part 6 is for the <b>Dean of Students</b>.</div>
+<p>The Dean signs in through the <b>Staff Portal</b> (two-step OTP login, see Section 2.4). The Dean Portal is focused on <b>student welfare</b>. It has two areas: <b>Students</b> and <b>All Notes</b>.</p>
+<div class="note"><b>Note:</b> For privacy and consistency, the Dean Portal's top bar always shows the office title <b>"Dean"</b> rather than the personal name of the signed-in officer.</div>
+<div class="note"><b>Note:</b> The Dean Portal does <b>not</b> include results review or publication, department/trainer overviews, or report generation. (The system has no results module, so there is nothing to publish.) The Dean's tools are the student welfare list and welfare notes.</div>
+
+<h2>6.1 Dashboard &amp; Overview</h2>
+<p>The Dean Portal opens directly on the <b>Students</b> tab; there is no separate dashboard. This tab is the Dean's main workspace.</p>
+
+<h2>6.2 Reviewing &amp; Publishing Results</h2>
+<div class="note"><b>Note:</b> This version of the system does <b>not</b> support results review or publication. There is no facility to publish results to students. Competency outcomes are handled outside this system (see Section 3.6).</div>
+
+<h2>6.3 Department Overview</h2>
+<div class="note"><b>Note:</b> The Dean Portal does not provide a department or program overview. For institution-wide academic overviews, see the <b>Deputy Principal Portal</b> (Part 7).</div>
+
+<h2>6.4 Trainer Overview</h2>
+<div class="note"><b>Note:</b> The Dean Portal does not list trainers. Trainer information is available to the <b>Deputy Principal</b> and <b>HOD</b> portals.</div>
+
+<h2>6.5 Student Welfare &amp; Notes</h2>
+<p>The <b>Students</b> tab lets the Dean search all students and record welfare notes about them.</p>
+<p>You will see search and filter controls (search box, <b>All Departments</b>, <b>All Modules</b>, <b>All Intakes</b>) and a table with columns: <b>Student</b> (name and ID number), <b>Admission No.</b>, <b>Course</b>, <b>Module</b>, <b>Contact</b>, and <b>Actions</b> (<b>Add Note</b>, <b>View Notes</b>). The list is paginated 20 per page.</p>
+<p><b>To add a welfare note about a student:</b></p>
+<ol>
+  <li>On the <b>Students</b> tab, find the student (use the search box and filters).</li>
+  <li>Click <b>Add Note</b> on their row.</li>
+  <li>Choose the <b>Note Type</b>: <b>Private</b> (only staff can see it) or <b>Public</b> (visible to the student).</li>
+  <li>Choose a <b>Category</b> (welfare, academic, disciplinary, health, financial, general) and a <b>Priority</b> (low, medium, high, urgent).</li>
+  <li>Enter a <b>Title</b> and the <b>Note Content</b> (both required).</li>
+  <li>Click <b>Save Note</b>.</li>
+</ol>
+<div class="note"><b>Note:</b> If you mark a note as <b>Public</b>, the student is notified and can read it in their <b>Notes &amp; Messages</b> tab. <b>Private</b> notes are visible only to staff. Use Private notes for confidential welfare matters.</div>
+<p><b>To view a student's notes:</b> Click <b>View Notes</b> on their row. A window opens showing all notes for that student, with filter buttons for <b>All Notes</b>, <b>Private</b>, and <b>Public</b>.</p>
+
+<h2>6.6 Notifications</h2>
+<p>The Dean Portal does not have a separate notifications tab; relevant actions show confirmations as you perform them, and public notes you create generate notifications <b>to students</b>.</p>
+</div>
+
+<!-- ============================ PART 7 ============================ -->
+<div class="page-break">
+<h1 class="part">Part 7: Deputy Principal Portal</h1>
+<div class="note"><b>Note:</b> Every section in Part 7 is for the <b>Deputy Principal</b>.</div>
+<p>The Deputy Principal signs in through the <b>Staff Portal</b> (two-step OTP). This portal provides <b>institution-wide oversight</b> plus management of <b>Tools of Trade</b> requests. Its tabs are: <b>Dashboard, Students, Trainers, Courses, Units, Tools of Trade,</b> and <b>Notifications</b>.</p>
+
+<h2>7.1 Dashboard &amp; Overview</h2>
+<p>The <b>Dashboard</b> gives an academics-wide snapshot. You will see eight metric cards: <b>Active Students, Active Trainers, Total Courses, Total Units, Pending Tools, Total Tools, Departments,</b> and <b>Notifications</b>, plus two charts: <b>Students by Department</b> and <b>Tools Status Overview</b>.</p>
+
+<h2>7.2 Institution-Wide Overview</h2>
+<p>The Deputy can browse the whole Institute through several read-only tabs:</p>
+<ul>
+  <li><b>Students:</b> every student, with search and filters (department, module, intake). Columns include Student, Course, Admission Type, Module, and Status. The list is paginated.</li>
+  <li><b>Trainers:</b> every trainer, with search and a department filter; columns show the trainer, department, units assigned, students assigned, and status.</li>
+  <li><b>Courses:</b> all courses, grouped by department, each showing its code and level.</li>
+  <li><b>Units:</b> all units, grouped by course, each showing its module and code.</li>
+</ul>
+<p>These tabs are for viewing only; the Deputy oversees but does not edit student or academic records here.</p>
+
+<h2>7.3 Tools of Trade (Reports &amp; Requests)</h2>
+<p>The <b>Tools of Trade</b> tab is the Deputy's main action area. Here you request teaching documents from trainers and review what they submit.</p>
+<p><b>To request a teaching document:</b></p>
+<ol>
+  <li>Open <b>Tools of Trade</b> and click <b>Request Tools of Trade</b>.</li>
+  <li>Choose the <b>Tool Type</b> (Course Outline, Learning Plan, Record of Work, Session Plan, Exam, or TVET License).</li>
+  <li>Choose <b>Send To</b>: <b>All Trainers</b>, <b>By Department</b> (then pick a department), or a <b>Specific Trainer</b> (then pick the trainer).</li>
+  <li>Set a <b>Due Date</b> (no past dates) and add any <b>Special Instructions</b>.</li>
+  <li>Confirm. The targeted trainers are notified.</li>
+</ol>
+<p><b>To review a submitted document:</b></p>
+<ol>
+  <li>On the <b>Tools of Trade</b> tab, find the submission in the table (filter by tool type, department, or status).</li>
+  <li>Click <b>Review</b>.</li>
+  <li>Set the <b>Review Status</b> to <b>Reviewed</b> or <b>Rejected</b>, add <b>Feedback</b>, and click <b>Update Status</b>.</li>
+  <li>Use <b>Download</b> to open the file, or <b>Delete</b> to remove a submission.</li>
+</ol>
+
+<h2>7.4 Staff Overview</h2>
+<p>The Deputy's staff visibility is through the <b>Trainers</b> tab (see Section 7.2). Management of all staff accounts is an <b>Admin</b> function (Part 10).</p>
+
+<h2>7.5 Notifications</h2>
+<p>The <b>Notifications</b> tab lists system messages. Open it to read messages; it is read-only.</p>
+</div>
+
+<!-- ============================ PART 8 ============================ -->
+<div class="page-break">
+<h1 class="part">Part 8: Finance Portal</h1>
+<div class="note"><b>Note:</b> Every section in Part 8 is for <b>Finance officers</b>.</div>
+<p>Finance officers sign in through the <b>Staff Portal</b> (two-step OTP). The Finance Portal has these tabs: <b>Dashboard, Analytics, Reports, Revenue, Trainer Payslips,</b> and <b>Settings</b>.</p>
+
+<h2>8.1 Dashboard &amp; Overview</h2>
+<p>The <b>Dashboard</b> is the per-student fee ledger and the place where you record payments.</p>
+<p>You will see:</p>
+<ul>
+  <li>An <b>Update Program Costs</b> card (to set a program's fee) and a <b>Program Costs</b> table.</li>
+  <li>A student <b>search</b> box and <b>department/module</b> filters.</li>
+  <li>A <b>students table</b> with columns: <b>Student ID, Name, Course, Department, Module, Intake, Total Billed, Total Paid, Balance,</b> and <b>Action</b>. Balances owing show in red; cleared balances in green.</li>
+</ul>
+<p><b>How billing is shown:</b> For each student, the fee per module is the program's annual cost &divide; 3 (rounded up); <b>Total Billed</b> is that per-module fee multiplied by the student's current module; <b>Total Paid</b> is the sum of their payments; <b>Balance</b> is billed minus paid.</p>
+
+<h2>8.2 Recording a Payment</h2>
+<p>This is the core Finance task.</p>
+<ol>
+  <li>On the <b>Dashboard</b>, find the student using the search box and filters.</li>
+  <li>Click <b>Add Payment</b> on their row. A payment window opens with the <b>Student ID</b> and <b>Student Name</b> already filled in (read-only).</li>
+  <li>Choose the <b>Payment Mode</b>: <b>M-Pesa</b>, <b>Bank Transfer</b>, or <b>CDF Bursary</b>. The form then shows the field appropriate to that mode:
+    <ul>
+      <li><b>M-Pesa:</b> enter the <b>M-Pesa Transaction ID</b> (for example, <code>QJI8XS8L9D</code>).</li>
+      <li><b>Bank Transfer:</b> choose the <b>Bank</b> (KCB, Equity, Cooperative, Stanbic, or ABSA) and enter the <b>Receipt/Slip Number</b>.</li>
+      <li><b>CDF Bursary:</b> enter the <b>CDF Bursary Reference</b> (the system prefixes it with <code>CDF-</code>).</li>
+    </ul>
+  </li>
+  <li>Enter the <b>Amount (KES)</b> (must be a positive number).</li>
+  <li>Set the <b>Payment Date</b> (defaults to today).</li>
+  <li>Click to submit. A confirmation appears and the student's balance updates immediately.</li>
+</ol>
+<div class="warning"><b>Warning:</b> The system rejects a payment whose <b>reference is already recorded</b> for the same student and mode, to prevent accidental duplicate entries (for example, from a double-click or a retry). If you see a message that the payment already exists, check the student's <b>Receipts</b> before re-entering it.</div>
+<p><b>Confirmation and receipts:</b> After recording, the student immediately sees the new payment and updated balance in their own portal. To produce a receipt, click the <b>Receipts</b> button on the student's row, which lists their payments and lets you generate a branded receipt PDF.</p>
+<div class="note"><b>Note:</b> Required fields are the student, the amount, the payment mode, and a reference (the M-Pesa ID, bank slip number, or bursary reference). The system records <b>who</b> entered each payment automatically.</div>
+
+<h2>8.3 Viewing Payment History</h2>
+<p>There is no separate "payment history" tab; payment history is viewed <b>per student</b>:</p>
+<ol>
+  <li>On the <b>Dashboard</b>, find the student.</li>
+  <li>Click <b>Receipts</b> on their row.</li>
+  <li>The window lists each of that student's payments with its number, date, mode, reference, and amount, plus their total paid.</li>
+</ol>
+<p>To find a student quickly, use the dashboard <b>search</b> box (by name or admission number) and the <b>department/module</b> filters. Every payment shown has been confirmed; there are no pending payment states in this system.</p>
+
+<h2>8.4 Fee Structures (Program Costs)</h2>
+<div class="note"><b>Note:</b> This system does not have a separate, multi-line "fee structure" editor. A program's fee is a single <b>program cost</b> value. The per-module fee is automatically the annual cost &divide; 3.</div>
+<p>To set or change a program's cost (on the <b>Dashboard</b>):</p>
+<ol>
+  <li>In the <b>Update Program Costs</b> card, choose the <b>program</b> from the dropdown. Its department fills in automatically.</li>
+  <li>Enter the new <b>Update Program Cost (KES)</b>.</li>
+  <li>Click to update. The <b>Program Costs</b> table refreshes.</li>
+</ol>
+<div class="note"><b>Note:</b> Program costs can be edited by <b>Finance</b> (here) and by <b>Admin</b>. Because every student's bill is derived from the program cost, change it carefully.</div>
+
+<h2>8.5 Outstanding Balances</h2>
+<p>To see who owes fees, use the <b>Reports</b> tab, which includes an <b>Outstanding Balances</b> report (students with a balance greater than zero) available as a branded PDF or Excel file. You can also scan the <b>Dashboard</b> students table, where balances owing are shown in red.</p>
+<ol>
+  <li>Open <b>Reports</b>.</li>
+  <li>On the <b>Outstanding Balances</b> card, click <b>PDF</b> (or <b>Excel</b>).</li>
+  <li>The file downloads, listing students with outstanding fees.</li>
+</ol>
+
+<h2>8.6 Payslips (Staff)</h2>
+<p>The <b>Trainer Payslips</b> tab is where Finance generates payslips for trainers.</p>
+<p>You will see a <b>Generate New Payslip</b> form and a <b>Payslips History</b> table.</p>
+<p><b>To generate payslips:</b></p>
+<ol>
+  <li>Open <b>Trainer Payslips</b>.</li>
+  <li>Choose the <b>Month</b> (future months are disabled; the current year is fixed).</li>
+  <li>Enter the <b>Amount (KES)</b> and an optional <b>Description</b>.</li>
+  <li>In <b>Select Trainers</b>, tick the trainers who should receive this payslip. Use the search box, <b>Select all</b>, or <b>Clear</b> to manage the list, and watch the "(N selected)" counter.</li>
+  <li>Click <b>Generate Payslips</b>. Each selected trainer receives a payslip and an in-app notification.</li>
+</ol>
+<div class="tip"><b>Tip:</b> If trainers are on different pay grades, select one group, set their amount, and generate; then repeat for the next group. The form clears the selection after each run so you can start the next batch cleanly.</div>
+<div class="note"><b>Note:</b> The system allows <b>one payslip per trainer per month</b>, and only for the <b>current year up to the current month</b> (you cannot generate payslips for future months). A payslip shows the trainer's name, department, period, amount, and description; trainers view and download their own payslips from their portal (see Section 4.8).</div>
+
+<h2>8.7 Revenue &amp; Reports</h2>
+<p>Two tabs cover income and reporting:</p>
+<p><b>Revenue tab:</b> record <b>non-tuition</b> income (for example, farm produce sales, bus/transport hire, hall hire, donations):</p>
+<ol>
+  <li>Open <b>Revenue</b>.</li>
+  <li>In the <b>Record Revenue</b> form, enter a <b>Note/Source description</b>, optionally a <b>Category</b>, and the <b>Amount (KES)</b>.</li>
+  <li>Submit. The entry appears in the <b>Recorded Revenue</b> table, where you can download a receipt or delete an entry.</li>
+</ol>
+<p><b>Analytics and Reports tabs:</b> the <b>Analytics</b> tab shows live KPIs (Total Revenue, Expected Tuition, Collection Rate, Outstanding Balance) and charts, with <b>Export PDF</b> and <b>Export Excel</b> buttons. The <b>Reports</b> tab offers four ready-made exports: <b>Revenue Report</b>, <b>Outstanding Balances</b>, <b>Department Summary</b>, and <b>Student Financials</b>, each available as PDF or Excel.</p>
+
+<h2>8.8 Settings</h2>
+<p>The <b>Settings</b> tab controls finance-related system parameters.</p>
+<ul>
+  <li><b>Unit Registration Fee Threshold:</b> the minimum a student must have paid (i.e. their balance must be below this) before they can register for units. Enter a value and click <b>Update Threshold</b>.</li>
+  <li><b>Current Intake:</b> set the active intake (January, May, or September) and click <b>Update Intake</b>.</li>
+</ul>
+<p>A <b>Current System Settings</b> panel shows the fee threshold, the (automatically calculated) academic year, the current intake, and whether registration is enabled.</p>
+<div class="note"><b>Note:</b> The academic year is calculated automatically (it runs September-August) and cannot be set by hand.</div>
+</div>
+
+<!-- ============================ PART 9 ============================ -->
+<div class="page-break">
+<h1 class="part">Part 9: Registrar Portal</h1>
+<div class="note"><b>Note:</b> Every section in Part 9 is for the <b>Registrar</b>.</div>
+<p>The Registrar signs in through the <b>Staff Portal</b> (two-step OTP). The Registrar Portal manages admissions and student records. Its tabs are: <b>Dashboard, Student Admission, Student Management,</b> and <b>Student Promotion</b>.</p>
+<div class="note"><b>Note:</b> The Registrar Portal does <b>not</b> include timetable management or exam-results/transcript functions (the system has no such modules). It manages admissions, student records, and module promotion.</div>
+
+<h2>9.1 Dashboard &amp; Overview</h2>
+<p>The <b>Dashboard</b> shows aggregate statistics: <b>Total Students</b>, <b>New Admissions (this month)</b>, <b>Active Courses</b>, and <b>Departments</b>, plus a department overview.</p>
+
+<h2>9.2 Student Admissions</h2>
+<p>Registering a new student is the Registrar's central task. It is started with the <b>Add Student</b> button (or the <b>New Student Admission</b> button on the <b>Student Admission</b> tab).</p>
+<ol>
+  <li>Click <b>Add Student</b>. The admission form opens.</li>
+  <li>Fill in the required fields (marked with *):
+    <ul>
+      <li><b>Full Name</b> *</li>
+      <li><b>ID/Birth Certificate Number</b> *</li>
+      <li><b>Phone Number</b> * (10 digits, for example <code>0712345678</code>)</li>
+      <li><b>Email</b> (optional, but recommended so the student receives their credentials by email)</li>
+      <li><b>Admission Type</b> * (Walk-in or KUCCPS)</li>
+      <li><b>Module</b> * (1-6; the default is 1)</li>
+      <li><b>Intake</b> * (January, May, or September); this sets the <b>Intake Year</b> automatically</li>
+      <li><b>Course</b> * (choose from the list; the <b>Department</b> fills in automatically)</li>
+      <li><b>KCSE Grade</b> * (the allowed grades are filtered to the course's level)</li>
+      <li><b>Next of Kin Name</b> and <b>Next of Kin Phone</b> (optional)</li>
+    </ul>
+  </li>
+  <li>Note the <b>Admission Number (auto-assigned)</b> preview. The final number is allocated when you submit.</li>
+  <li>Click to submit.</li>
+</ol>
+<p><b>Admission number format:</b> Admission numbers look like <code>BM5/2503/J26</code>, made of three parts:</p>
+<ul>
+  <li><code>BM5</code>: the course code.</li>
+  <li><code>2503</code>: a unique sequence number (the global counter starts at 2500 and increases by one for every student, so numbers never clash).</li>
+  <li><code>J26</code>: the intake code: a letter for the month (<b>J</b> = January, <b>M</b> = May, <b>S</b> = September) followed by the two-digit intake year (so <code>J26</code> means January 2026).</li>
+</ul>
+<p><b>What the student receives:</b> The student's <b>initial password is their phone number</b>, and the account is flagged so they must change it on first login. If an email address was provided, the system emails the student their admission number and initial password ("EDTTI Student Portal - Your Initial Password"). If no email was provided, the system shows you the initial password so you can give it to the student. An on-screen <b>admission letter</b> can also be printed or saved as a PDF.</p>
+<div class="note"><b>Note:</b> Grade rules by level are enforced: Level 3 accepts KCPE; Level 4 accepts E or D-; Level 5 accepts D or D+; Level 6 accepts C- up to B+. Module caps by level are also enforced (Level 3: up to Module 1; Level 4: 2; Level 5: 4; Level 6: 6).</div>
+
+<h2>9.3 Managing Students</h2>
+<p>The <b>Student Management</b> tab is where you find, view, and edit student records.</p>
+<p>You will see search and filter controls (search box, <b>All Departments</b>, <b>All Modules</b>, <b>All Intakes</b>) and a table with columns: <b>Admission #, Name, Department, Module, Intake, Status,</b> and <b>Actions</b> (<b>View</b>, <b>Edit</b>). The list is paginated 20 per page.</p>
+<p><b>To find a student:</b> type a name or admission number in the search box, or use the filters.</p>
+<p><b>To view a student:</b> click <b>View</b>. A window shows their personal information, next-of-kin details, and academic information.</p>
+<p><b>To edit a student:</b> click <b>Edit</b>. You can change the <b>Name</b>, <b>ID Number</b>, <b>Phone</b>, <b>Next of Kin</b> details, and <b>Current Module</b> (limited to the level's cap). The course is read-only. Click to save.</p>
+<div class="note"><b>Note:</b> Admission number, role, and password cannot be changed through the edit form; these are protected.</div>
+
+<h2>9.4 Managing Programs</h2>
+<p>Programs (the academic offerings) are part of the catalog. The Registrar has program access through the shared catalog used across the system. Program <b>cost</b> is typically set in the <b>Finance</b> portal (Section 8.4). Creating or editing programs is an academic-structure task shared with <b>Admin</b>.</p>
+
+<h2>9.5 Managing Units / Courses</h2>
+<p>Units (the subjects within programs) are likewise part of the shared catalog. The Registrar can view units across courses and departments. <b>Common units</b> (units shared across several programs) are managed through the common-units feature used by HODs and the catalog.</p>
+
+<h2>9.6 Academic Period Management</h2>
+<p>The academic period is controlled through <b>system settings</b> rather than a dedicated semester screen:</p>
+<ul>
+  <li>The <b>academic year</b> is calculated automatically (September-August) and cannot be set manually.</li>
+  <li>The <b>current intake</b> (January, May, or September) is set in the <b>Finance</b> or <b>Admin Settings</b> tab.</li>
+</ul>
+<p>Changing the current intake affects new admission numbering and the labelling of the active period.</p>
+
+<h2>9.7 Timetable Management</h2>
+<div class="note"><b>Note:</b> This version of the system does <b>not</b> include timetable management. There is no timetable tab in the Registrar Portal.</div>
+
+<h2>9.8 Results &amp; Transcript Management</h2>
+<div class="note"><b>Note:</b> This version of the system does <b>not</b> store exam results or generate transcripts. The Registrar maintains authoritative academic records outside this system. Student competency evidence is collected through assessment uploads and reviewed by the CBET office.</div>
+
+<h2>9.9 Student Promotion</h2>
+<p>The <b>Student Promotion</b> tab advances students one module within their level's cap.</p>
+<ol>
+  <li>Open <b>Student Promotion</b>.</li>
+  <li>Use the <b>Level</b>, <b>Module</b>, and <b>Department</b> filters and click <b>Load Students</b>.</li>
+  <li>Review the list; each row shows the student's current module, level, the maximum module for their level, and whether they are eligible.</li>
+  <li>Tick the students to promote (or use the select-all checkbox), then click <b>Promote Selected</b>. You can also promote a single student from their row.</li>
+</ol>
+<div class="note"><b>Note:</b> A student cannot be promoted beyond their level's maximum module (Level 3 caps at Module 1, Level 4 at 2, Level 5 at 4, Level 6 at 6). The system blocks promotion past the cap.</div>
+
+<h2>9.10 Password Reset for Students</h2>
+<p>The system does not provide a button for the Registrar to directly reset a student's password. Password resets are <b>self-service</b> via the <b>Forgot Password?</b> link on the login page (see Section 2.7), which requires the student's email.</p>
+<p>If a student cannot receive the reset email because no (or an incorrect) email is on file, the Registrar's role is to <b>update the student's email address</b> in <b>Student Management</b> (via <b>Edit</b>) so the student can then use Forgot Password.</p>
+
+<h2>9.11 Reports &amp; Exports</h2>
+<p>The Registrar can <b>export student data</b> using the <b>Export</b> button (in the top bar and on the <b>Student Admission</b> tab). The export window lets you choose what to export (all students, by department/module/intake, by admission type, or custom filters) and the format (<b>CSV</b>, <b>JSON</b>, or <b>PDF</b>).</p>
+<p>There is no separate notifications tab in the Registrar Portal; actions you take show on-screen confirmations. New admissions trigger a credentials email to the student (where an email is on file).</p>
+</div>
+
+<!-- ============================ PART 10 ============================ -->
+<div class="page-break">
+<h1 class="part">Part 10: Admin Portal</h1>
+<div class="note"><b>Note:</b> Every section in Part 10 is for <b>System Administrators</b>.</div>
+<p>Administrators sign in through the <b>Staff Portal</b> (two-step OTP). The Admin Portal provides institution-wide oversight and account management. Its tabs are: <b>Dashboard, Students, Trainers, Financial, Programs, Reports,</b> and <b>Settings</b>.</p>
+
+<h2>10.1 Dashboard &amp; Overview</h2>
+<p>The <b>Dashboard</b> is the institution snapshot. You will see four KPI cards (<b>Total Students</b>, <b>Active Trainers</b>, <b>Fee Collections</b> with a collection-rate percentage, and <b>Outstanding Balance</b>), an <b>Enrollment Trend</b> chart (switchable between 3 months, 6 months, and 1 year), a <b>Students by Department</b> chart, a <b>Recent Payments</b> table, a <b>Fee Collection Rate</b> bar, an <b>Alerts</b> panel, and a <b>Recent Activity</b> list.</p>
+<div class="note"><b>Note:</b> The "system health" shown here is a high-level operational summary (alerts about high balances, payments received today, and an "all systems operational" indicator). It is not a live server diagnostics screen.</div>
+
+<h2>10.2 User Management: Staff</h2>
+<div class="note"><b>Note:</b> Staff accounts other than trainers (Registrar, Finance, Dean, Deputy, ILO, CBET, and the Admin account itself) are <b>provisioned during system setup</b>, not created through a form in the Admin Portal. The Admin Portal's account-creation form covers <b>trainers</b> (see Section 10.4). To add a new non-trainer staff member, the account is set up at the server level by the technical team.</div>
+<p>For all staff, the Admin can oversee accounts through the data the portal loads, and password changes for staff are self-service via the login page's Forgot Password flow.</p>
+
+<h2>10.3 User Management: Students</h2>
+<p>The <b>Students</b> tab gives the Admin an oversight and admission view of all students.</p>
+<p>You will see <b>Add</b> and <b>Export</b> buttons, a search box, and <b>Module</b> and <b>Program</b> filters. The table shows <b>Admission, Name, Course, Module, Balance,</b> and an <b>Action</b> (<b>View</b>). Click <b>View</b> for a student's course, department, module, contact details, and fee summary. <b>Export</b> downloads the filtered list as an Excel file.</p>
+<p>The Admin can also <b>Add</b> a new student using the same admission form as the Registrar (see Section 9.2).</p>
+<div class="note"><b>Note:</b> The difference from the Registrar view is emphasis: the Registrar view is built around the full admissions and records workflow (admission, management, promotion), while the Admin view is a lighter oversight-plus-add view alongside the rest of the Admin tools.</div>
+
+<h2>10.4 User Management: Trainers</h2>
+<p>The <b>Trainers</b> tab lists all trainers and lets the Admin create trainer accounts.</p>
+<p>You will see an <b>Add Trainer</b> button, a search box, and a department filter. The table shows the trainer, department, phone, units assigned, students assigned, and status.</p>
+<p><b>To create a trainer account:</b></p>
+<ol>
+  <li>Open <b>Trainers</b> and click <b>Add Trainer</b>.</li>
+  <li>Enter the <b>Full Name</b>, <b>Email</b> (must be unique), optional <b>Phone</b>, and <b>Department</b>.</li>
+  <li>Confirm.</li>
+</ol>
+<p>The new account is created with the role <b>trainer</b> and a temporary password (<code>trainer123</code>), and is flagged so the trainer must set a new password on first login.</p>
+<div class="note"><b>Note:</b> Through this form, the Admin can create only the <b>trainer</b> role. The temporary password is shown so it can be communicated to the trainer, who must change it at first login.</div>
+
+<h2>10.5 Role Assignment</h2>
+<p>The system uses these roles: <b>admin, registrar, finance, dean, deputy, ilo, cibec (CBET officer), hod,</b> and <b>trainer</b>. Each role determines which portal a user reaches and what they can do (the portals are described throughout this manual).</p>
+<div class="note"><b>Note:</b> Changing an existing user's role is not exposed as a button in the Admin Portal; role assignment is handled when the account is created/provisioned. To change a role, contact the technical team.</div>
+
+<h2>10.6 System Settings</h2>
+<p>The <b>Settings</b> tab controls academic-period and registration parameters:</p>
+<ul>
+  <li><b>Academic Year:</b> read-only, calculated automatically (September-August).</li>
+  <li><b>Current Intake:</b> January, May, or September (click <b>Update</b>).</li>
+  <li><b>Fee Threshold (KES):</b> the minimum payment level before a student can register for units (click <b>Update</b>).</li>
+  <li><b>Unit Registration:</b> Enabled or Disabled (click <b>Update</b>).</li>
+</ul>
+<div class="note"><b>Note:</b> Admins can change any system setting key. Some deeper configuration (such as email service keys, file-storage settings, and database connection) is set at the server level by the technical team and is not editable from the portal.</div>
+
+<h2>10.7 Programs &amp; Units</h2>
+<p>The <b>Programs</b> tab lets the Admin browse all programs with their codes, departments, <b>program cost</b> (per module), and unit lists (each program can be expanded to view its units). Use the search box to find a program by name, code, or department. The academic structure (creating programs and units) is shared with the Registrar.</p>
+
+<h2>10.8 Financial Management (Admin View)</h2>
+<p>The <b>Financial</b> tab gives the Admin a read-only financial overview: <b>Total Revenue</b> (with the tuition/other split), <b>Tuition Collected</b>, <b>Outstanding</b>, and <b>Expected Tuition</b>, plus a collection-rate bar and a recent-payments list. Recording payments and generating payslips remain <b>Finance</b> functions (Part 8).</p>
+
+<h2>10.9 Reports</h2>
+<p>The <b>Reports</b> tab offers branded exports: <b>Enrollment Report</b>, <b>Financial Report</b>, <b>Department Report</b>, and <b>Student Financials</b>, each available as <b>PDF</b> or <b>Excel</b>. Click the format you want on the report's card to generate and download it.</p>
+
+<h2>10.10 Audit / Activity Log</h2>
+<p>A document-access <b>audit log</b> exists for the CBET (assessment) review area: every time a reviewer browses, searches, or downloads a student's uploaded evidence, the action is recorded. This audit log is available to Admin and CBET officers through the CBET portal's tools. There is no general system-wide activity log screen beyond this.</p>
+
+<h2>10.11 Notifications</h2>
+<p>The Admin can read all system notifications. Notifications are described in full in Part 12.</p>
+</div>
+
+<!-- ============================ PART 11 ============================ -->
+<div class="page-break">
+<h1 class="part">Part 11: Industrial Liaison Office (ILO) Portal</h1>
+<div class="note"><b>Note:</b> Every section in Part 11 is for the <b>Industrial Liaison Office</b> (and the closely related <b>CBET/CIBEC</b> assessment review, described at the end).</div>
+<p>The ILO signs in through the <b>Staff Portal</b> (two-step OTP). The ILO Portal reviews student <b>applications</b>. It has two tabs: <b>Graduation Applications</b> and <b>Attachment Applications</b>.</p>
+
+<h2>11.1 Dashboard &amp; Overview</h2>
+<p>The ILO Portal opens on <b>Graduation Applications</b>. Each tab lists the relevant applications as cards with the student's details and a review action.</p>
+
+<h2>11.2 Managing Industrial Attachments</h2>
+<p>The <b>Attachment Applications</b> tab is where the ILO reviews students' attachment applications.</p>
+<p>You will see status and <b>County</b> filters, <b>Export PDF</b> and <b>Print</b> buttons, and a card for each application showing the student's name, status, <b>Admission</b> number, <b>Course</b>, <b>Location</b> (county and nearest town), <b>Applied</b> date, and a <b>Review</b> button.</p>
+<p><b>To review and update an application:</b></p>
+<ol>
+  <li>Open <b>Attachment Applications</b>.</li>
+  <li>(Optional) filter by status or county.</li>
+  <li>Click <b>Review</b> on an application. The review window shows the student's details, the requested <b>County</b> and <b>Nearest Town</b>, the current status, and existing comments.</li>
+  <li>Add comments if needed, then choose an action: <b>Approve</b>, <b>Under Review</b>, or <b>Reject</b>.</li>
+  <li>The student is notified of the decision.</li>
+</ol>
+<div class="note"><b>Note:</b> The system records attachment <b>applications</b> with the student's preferred location (county and nearest town). The student supplies only the location; the status, comments, and reviewer are set by the ILO and recorded automatically from the signed-in officer's account.</div>
+
+<h2>11.3 Managing Graduation Applications</h2>
+<p>The <b>Graduation Applications</b> tab works the same way for graduation requests. Filter by status, click <b>Review</b> on an application, add comments, and set the status. Use <b>Export PDF</b> or <b>Print</b> to produce a branded list of applications.</p>
+
+<h2>11.4 Student Overview &amp; Reports</h2>
+<p>The application lists themselves are the ILO's overview of which students have applied for graduation or attachment and their statuses. The <b>Export PDF</b> and <b>Print</b> buttons on each tab produce branded reports of the current (filtered) list.</p>
+
+<h2>11.5 Notifications</h2>
+<p>When a student submits a graduation or attachment application, all ILO officers receive an in-app notification. When the ILO updates an application's status, the student is notified.</p>
+
+<h2>11.6 CBET (CIBEC) Assessment Review</h2>
+<div class="note"><b>Note:</b> This subsection is for <b>CBET / assessment officers</b> (the CIBEC role).</div>
+<p>CBET officers sign in through the <b>Staff Portal</b> (two-step OTP) and use the <b>CBET Portal: Student Uploads</b> dashboard (reached at <code>/cibec/dashboard</code>). This is where student competency evidence is reviewed.</p>
+<p>You will see summary cards (<b>Total Uploads, Assessments, Practicals, Profile Docs</b>) and two ways to work:</p>
+<ul>
+  <li><b>Browse:</b> drill down level by level: <b>Academic Year &rsaquo; Course &rsaquo; Intake &rsaquo; Module &rsaquo; Unit &rsaquo; Student &rsaquo; Document</b>. At each step you click into the next level. A completeness view shows, for a unit, which students have submitted which assessment/practical slots and which are missing.</li>
+  <li><b>Search:</b> a flat search with filters (department, course level, upload type, module, assessment/practical number, and a student search box). Results are shown as cards with <b>View File</b>, <b>Download</b>, and <b>Student Details</b> actions.</li>
+</ul>
+<p><b>To open a student's uploaded file:</b></p>
+<ol>
+  <li>From <b>Browse</b> or <b>Search</b>, find the upload.</li>
+  <li>Click <b>View File</b> (opens it in a new tab) or <b>Download</b> (saves it).</li>
+  <li>The file opens through a secure, time-limited link (valid for 15 minutes).</li>
+</ol>
+<div class="note"><b>Note:</b> Every time a CBET officer browses, searches, or downloads student evidence, the action is recorded in an audit log for accountability.</div>
+</div>
+
+<!-- ============================ PART 12 ============================ -->
+<div class="page-break">
+<h1 class="part">Part 12: Notifications System</h1>
+
+<h2>12.1 How Notifications Work</h2>
+<p>The system keeps users informed in two ways: <b>in-app notifications</b> that appear inside the portals, and <b>emails</b> sent to your inbox for specific events. In-app notifications are generated automatically when key events happen (for example, a payslip is generated or an application is submitted). They are addressed to the right person or group based on the event.</p>
+<p>Notifications are created by the system in response to actions; there is no general "compose a message" feature for ordinary users, although certain administrative roles can broadcast a notice.</p>
+
+<h2>12.2 Types of Notifications</h2>
+<p>The system sends the following automated <b>in-app</b> notifications:</p>
+<table>
+  <tr><th>Event</th><th>Who is notified</th><th>Message</th></tr>
+  <tr><td>A trainer submits a Tool of Trade</td><td>The Dean(s)</td><td>"New Tools of Trade Submission"</td></tr>
+  <tr><td>The Deputy reviews a Tool (approved/rejected)</td><td>The trainer who submitted it</td><td>"Tools of Trade [status]"</td></tr>
+  <tr><td>The Deputy requests a Tool of Trade</td><td>The targeted trainer(s)</td><td>"New Tools of Trade Request"</td></tr>
+  <tr><td>A student uploads CBET evidence</td><td>CBET (CIBEC) officers</td><td>"New [type] Upload"</td></tr>
+  <tr><td>Finance generates a payslip</td><td>The trainer</td><td>"New Payslip Generated" (with the amount)</td></tr>
+  <tr><td>A student applies for graduation</td><td>ILO officers</td><td>"New Graduation Application"</td></tr>
+  <tr><td>A student applies for attachment</td><td>ILO officers</td><td>"New Attachment Application"</td></tr>
+  <tr><td>ILO updates an application's status</td><td>The student</td><td>"[Graduation/Attachment] Application [status]"</td></tr>
+  <tr><td>The Dean posts a <b>public</b> note about a student</td><td>The student</td><td>"New Note: [title]"</td></tr>
+</table>
+<p>The system sends the following <b>emails</b>:</p>
+<table>
+  <tr><th>Email</th><th>When it is sent</th><th>To whom</th></tr>
+  <tr><td><b>EDTTI Login Verification Code</b></td><td>A staff member completes step 1 of login</td><td>The staff member</td></tr>
+  <tr><td><b>EDTTI Password Reset - One-Time Password</b></td><td>A user requests a password reset by code</td><td>The user resetting</td></tr>
+  <tr><td><b>EDTTI Password Reset - Reset Link</b></td><td>A user requests a password reset by link</td><td>The user resetting</td></tr>
+  <tr><td><b>EDTTI Student Portal - Your Initial Password</b></td><td>A new student is admitted (if an email is on file)</td><td>The student</td></tr>
+  <tr><td><b>EDTTI Tool Request: [type]</b></td><td>The Deputy requests a Tool of Trade</td><td>The targeted trainer(s)</td></tr>
+</table>
+<div class="note"><b>Note:</b> For security, one-time codes always appear in the <b>body</b> of the email, never in the subject line. There is no email for payslips; trainers are notified of payslips inside the portal.</div>
+
+<h2>12.3 Reading &amp; Managing Notifications</h2>
+<p>The portals that have a <b>Notifications</b> tab (Trainer and Deputy) show your in-app notifications as a list. To manage them:</p>
+<ol>
+  <li>Open the <b>Notifications</b> tab.</li>
+  <li>Read each message.</li>
+  <li>Use <b>Mark All as Read</b> (Trainer) to clear the unread badge, or <b>Refresh</b> to check for new messages.</li>
+</ol>
+<p>Students see their notifications and public notes in the <b>Notes &amp; Messages</b> tab (see Section 3.9).</p>
+</div>
+
+<!-- ============================ PART 13 ============================ -->
+<div class="page-break">
+<h1 class="part">Part 13: Book Resources Module</h1>
+
+<h2>13.1 Overview</h2>
+<p>The Book Resources module gives students free, curated reading material for their units. Trainers choose suitable books from large open libraries and approve them to specific units; students then read those books inside the portal or download them. This means students always have relevant, vetted reading without searching the open internet.</p>
+
+<h2>13.2 For Trainers: Approving Books</h2>
+<div class="note"><b>Note:</b> This subsection is for trainers.</div>
+<p>Trainers approve books on the <b>Unit Books</b> tab (see Section 4.11 for the full steps). In summary:</p>
+<ol>
+  <li>Open <b>Unit Books</b> and pick the <b>Unit</b>.</li>
+  <li><b>Search</b> for a topic, title, or author (optionally use the deep filters).</li>
+  <li><b>Preview</b> a book in the built-in reader to confirm it is suitable.</li>
+  <li>Click <b>Add to Unit</b> to approve it (or <b>Remove</b> to withdraw a previously approved book).</li>
+</ol>
+<p>The moment you approve a book, students registered in that unit can see it.</p>
+
+<h2>13.3 For Students: Accessing Books</h2>
+<div class="note"><b>Note:</b> This subsection is for students.</div>
+<p>Students read books on the <b>My Books</b> tab (see Section 3.13):</p>
+<ol>
+  <li>Open <b>My Books</b>.</li>
+  <li>Find a book under one of your units.</li>
+  <li>Click <b>Read</b> to open it in the in-portal reader, or use the <b>download</b> icon to save the PDF (when available).</li>
+</ol>
+
+<h2>13.4 Supported Sources</h2>
+<p>The module draws on two free, reputable open libraries:</p>
+<ul>
+  <li><b>OpenStax:</b> peer-reviewed, openly licensed academic <b>textbooks</b> (for example, physics, biology, business). These typically include full downloadable PDFs.</li>
+  <li><b>Open Library:</b> a very large catalogue of books, including many technical and vocational titles, with readable copies hosted on the Internet Archive.</li>
+</ul>
+<p>When searching, trainers can filter the source to <b>Academic Textbooks</b> (OpenStax) or <b>Library Books</b> (Open Library).</p>
+
+<h2>13.5 Limitations</h2>
+<p>A few things are worth knowing about how books behave:</p>
+<ul>
+  <li>The module depends on these <b>external libraries</b>. If one is temporarily unavailable, search may return fewer results and show a notice that some sources could not be reached; the other source still works.</li>
+  <li><b>Not every book can be downloaded.</b> Some titles can be read in the in-portal reader but do not offer a downloadable PDF (in that case the download icon is disabled). OpenStax textbooks generally do offer full PDFs.</li>
+  <li>Students only ever see books for the units they are <b>registered</b> in and that a trainer has <b>approved</b> for that unit.</li>
+</ul>
+<div class="tip"><b>Tip:</b> If you (a trainer) cannot find a suitable book, try broader search terms or switch the <b>Source</b> filter. If you (a student) see no books, it means none have been approved yet for your registered units.</div>
+</div>
+
+<!-- ============================ PART 14 ============================ -->
+<div class="page-break">
+<h1 class="part">Part 14: Common Tasks &amp; Workflows</h1>
+<p>These workflows show how the system works end-to-end, across more than one portal.</p>
+
+<h2>14.1 Workflow: New Student Admission to First Login</h2>
+<p>This is the journey from admitting a student to that student using the portal.</p>
+<ol>
+  <li><b>Registrar</b> opens the Registrar Portal and clicks <b>Add Student</b> (see Section 9.2).</li>
+  <li>The Registrar fills in the student's details and submits.</li>
+  <li>The <b>system generates the admission number</b> automatically (for example, <code>BM5/2503/J26</code>) and sets the student's <b>initial password to their phone number</b>.</li>
+  <li>The system <b>emails the student</b> their admission number and initial password (if an email is on file); otherwise the Registrar gives the student the details, and can print the admission letter.</li>
+  <li>The <b>student</b> opens the student login page and signs in with the admission number and phone number.</li>
+  <li>The system <b>forces a password change</b>; the student sets a new, strong password (see Section 2.5).</li>
+  <li>The student lands on their <b>Dashboard</b> and can now register for units (see Section 3.5), upload documents, and apply for graduation/attachment when eligible.</li>
+</ol>
+
+<h2>14.2 Workflow: Fee Payment Recording &amp; Student Confirmation</h2>
+<p>This is how a fee payment moves from the cashier's desk to the student's screen.</p>
+<ol>
+  <li>The <b>student</b> pays fees (for example, by M-Pesa or bank transfer) and keeps the <b>reference number</b> (M-Pesa transaction ID or bank slip number).</li>
+  <li>The <b>Finance officer</b> opens the Finance Portal <b>Dashboard</b>, finds the student, and clicks <b>Add Payment</b> (see Section 8.2).</li>
+  <li>The officer selects the payment mode, enters the reference and amount, and submits.</li>
+  <li>The system <b>records the payment</b> (rejecting it if the same reference was already entered) and updates the student's balance instantly.</li>
+  <li>The <b>student</b> opens their <b>Financial Info</b> and <b>Payment History</b> tabs and sees the updated balance and a receipt they can download or print.</li>
+</ol>
+
+<h2>14.3 Workflow: Competency Assessment Evidence (CBET)</h2>
+<div class="note"><b>Note:</b> This system does not publish exam results. The equivalent end-to-end process is the <b>submission and review of competency evidence</b>, shown here.</div>
+<ol>
+  <li>The <b>trainer</b> delivers the unit and curates reading material via <b>Unit Books</b> (Section 4.11).</li>
+  <li>The <b>student</b> completes assessments and practicals and <b>uploads</b> the evidence in the <b>Uploads</b> tab for each registered unit (Section 3.10).</li>
+  <li>The system <b>notifies the CBET (CIBEC) office</b> of each upload.</li>
+  <li>A <b>CBET officer</b> opens the CBET dashboard and reviews the evidence by unit, checking the <b>completeness</b> view to see which students have submitted all required slots and which are missing (Section 11.6).</li>
+  <li>Competency outcomes are then handled through the Institute's academic processes.</li>
+</ol>
+
+<h2>14.4 Workflow: Industrial Attachment Application</h2>
+<p>This is how a student requests attachment and the ILO records the decision.</p>
+<ol>
+  <li>The <b>student</b>, once eligible (at the final module of their level), opens <b>Apply for Attachment</b>, chooses a <b>county</b> and <b>nearest town</b>, and submits (Section 3.12).</li>
+  <li>The system <b>notifies the ILO</b> of the new application.</li>
+  <li>An <b>ILO officer</b> opens <b>Attachment Applications</b>, reviews the request, adds any comments, and sets the status to <b>Approved</b>, <b>Under Review</b>, or <b>Rejected</b> (Section 11.2).</li>
+  <li>The <b>student</b> is notified and can see the status and comments on their <b>Apply for Attachment</b> tab.</li>
+</ol>
+
+<h2>14.5 Workflow: New Trainer Onboarding</h2>
+<p>This is how a new trainer goes from account creation to teaching.</p>
+<ol>
+  <li>The <b>Admin</b> opens the Admin Portal <b>Trainers</b> tab and clicks <b>Add Trainer</b>, entering the trainer's name, email, and department (Section 10.4).</li>
+  <li>The system creates the account with the temporary password <code>trainer123</code> and flags it for a first-login password change.</li>
+  <li>The <b>trainer</b> opens the trainer login page, signs in with their email and <code>trainer123</code>, and <b>sets a new password</b> (Section 2.5).</li>
+  <li>The <b>HOD</b> assigns units to the trainer (Section 5.3a).</li>
+  <li>The trainer opens <b>My Assignments</b> and <b>My Students</b>, can <b>Export Attendance</b>, curate <b>Unit Books</b>, and submit <b>Tools of Trade</b>.</li>
+</ol>
+</div>
+
+<!-- ============================ PART 15 ============================ -->
+<div class="page-break">
+<h1 class="part">Part 15: Troubleshooting</h1>
+
+<h2>15.1 I Cannot Log In</h2>
+<p>Work through this checklist:</p>
+<ol>
+  <li><b>Caps Lock:</b> make sure it is off; passwords are case-sensitive.</li>
+  <li><b>Correct login page:</b> students use <code>/student/login</code>, trainers <code>/trainer/login</code>, HODs <code>/hod/login</code>, and all other staff the <b>Staff Portal</b> (<code>/admin/login</code>). Logging in on the wrong page will not work.</li>
+  <li><b>Correct identifier:</b> students use their <b>admission number</b>, trainers and staff use their <b>email</b>, HODs select their <b>department</b>.</li>
+  <li><b>New account:</b> if it is your first login, your initial password is your phone number (students) or <code>trainer123</code> (trainers); you will be asked to change it.</li>
+  <li><b>Account status:</b> if your account has been deactivated, contact the Administrator.</li>
+  <li><b>Staff OTP:</b> if you are staff and reach the code step, see Section 15.2.</li>
+</ol>
+
+<h2>15.2 I Did Not Receive the OTP Email</h2>
+<ol>
+  <li>Wait one to two minutes; email can be delayed.</li>
+  <li>Check your <b>Spam/Junk</b> folder.</li>
+  <li>Confirm your email address is correct.</li>
+  <li>If the login screen says the code could not be sent, wait a moment and try logging in again to trigger a fresh code.</li>
+  <li>Remember the code is valid for <b>10 minutes</b> and allows <b>5 attempts</b>; if it expires or is used up, request a new one by logging in again.</li>
+  <li>If it still does not arrive, contact the System Administrator.</li>
+</ol>
+
+<h2>15.3 My Session Expired</h2>
+<p>Sessions last about <b>2 hours</b>. If yours expires, the system returns you to the login page when you next act. Simply log in again to continue.</p>
+<div class="warning"><b>Warning:</b> If you were part-way through a form (admitting a student, recording a payment, etc.) and had not yet saved, those entries may be lost. Re-enter and save them.</div>
+
+<h2>15.4 I Can See a Feature is Missing or Broken</h2>
+<p>First confirm the feature actually exists in this version; this manual notes several features (exam results, transcripts, timetables) that are <b>not</b> part of the system. If a feature that should be there is missing or not working:</p>
+<ol>
+  <li>Refresh the page.</li>
+  <li>Log out and back in.</li>
+  <li>If it persists, report it (see Section 1.4) with: the <b>portal and tab</b>, the <b>steps you took</b>, what you <b>expected</b>, what <b>happened</b>, and a <b>screenshot</b>.</li>
+</ol>
+
+<h2>15.5 A Payment I Made Is Not Showing</h2>
+<p>Payments are entered by the <b>Finance office</b>, not by students, and appear in your portal once recorded. If a payment is missing:</p>
+<ol>
+  <li>Allow time for Finance to process it.</li>
+  <li>Contact the <b>Finance office</b> and provide your <b>payment reference number</b> (M-Pesa transaction ID, bank slip number, or bursary reference) and the date and amount.</li>
+</ol>
+
+<h2>15.6 My Results Are Wrong or Missing</h2>
+<p>This system does not display exam results or grades online (see Section 3.6). For any question about your results or competency status, contact your <b>trainer</b> or the <b>Registrar</b> through the Institute's normal channels.</p>
+
+<h2>15.7 I Cannot Upload a File</h2>
+<ol>
+  <li>Check the <b>file type</b> is accepted (for example, assessments must be PDF or DOCX; practicals must be <b>PDF</b>; photos must be JPG/PNG).</li>
+  <li>Check the <b>file size</b>: the limit is <b>10 MB</b> overall (images 5 MB; teaching "Tools of Trade" 1 MB).</li>
+  <li>Make sure you are uploading to a <b>registered</b> unit (you cannot upload assessments for unregistered or common units).</li>
+  <li>Try a stronger internet connection.</li>
+  <li>If it still fails, note the exact error and contact support.</li>
+</ol>
+
+<h2>15.8 A Page is Showing an Error</h2>
+<p>If a page shows a friendly error screen ("Something went wrong" or "Page not found") with a reference code:</p>
+<ol>
+  <li>Use the <b>Back to Home</b> button on the error page, or refresh.</li>
+  <li>If the error keeps happening, report it with the <b>reference code</b> shown and the steps that led to it (see Section 1.4).</li>
+</ol>
+<div class="note"><b>Note:</b> The system never shows raw technical errors to users; if you see a clean error page with a reference number, simply share that number with support.</div>
+</div>
+
+<!-- ============================ PART 16 ============================ -->
+<div class="page-break">
+<h1 class="part">Part 16: Security &amp; Privacy</h1>
+
+<h2>16.1 Keeping Your Account Secure</h2>
+<p>Your account protects your personal information, so treat it carefully:</p>
+<ul>
+  <li>Choose a <b>strong password</b> (see Section 2.6) and never reuse your phone number or admission number.</li>
+  <li><b>Never share</b> your password or your one-time codes (OTPs) with anyone, not even staff.</li>
+  <li><b>Log out</b> when you finish, especially on shared or public computers (see Section 2.8).</li>
+  <li>Be wary of anyone asking for your login details by phone or email; the Institute will never ask for your password.</li>
+</ul>
+
+<h2>16.2 What Data the System Holds About You</h2>
+<p>For <b>students</b>, the system holds: your name, admission number, ID/birth-certificate number, KCSE grade, phone number, email, course, department, module, intake, next-of-kin details, your fee payments and balance, your unit registrations, your uploaded documents (photo, KCSE/KCPE results, assessment and practical evidence), and your graduation/attachment applications.</p>
+<p>For <b>staff</b>, the system holds: your name, staff ID, role, department, email, phone, and (for trainers) your unit assignments and payslips.</p>
+
+<h2>16.3 Who Can See Your Data</h2>
+<p>Access is strictly limited by role:</p>
+<ul>
+  <li><b>Students</b> can see only their <b>own</b> records.</li>
+  <li><b>Trainers</b> can see the <b>students in their assigned units</b> (names, admission numbers, contact details) for attendance, and their own payslips and assignments.</li>
+  <li><b>HODs</b> see information for <b>their department</b>.</li>
+  <li><b>Finance</b> sees fee and payment information and trainer payslips.</li>
+  <li><b>Registrar/Admin</b> manage student and account records.</li>
+  <li><b>Dean</b> sees student welfare information and notes.</li>
+  <li><b>ILO</b> sees graduation and attachment applications; <b>CBET officers</b> see students' uploaded assessment evidence.</li>
+</ul>
+<p>The system enforces these boundaries on every request, so one student cannot view another student's records, and roles cannot reach data outside their remit.</p>
+
+<h2>16.4 Reporting a Security Concern</h2>
+<p>If you believe your account has been accessed by someone else, or you have shared your password by mistake:</p>
+<ol>
+  <li><b>Change your password immediately</b> (use Forgot Password if you cannot log in).</li>
+  <li><b>Log out</b> of all sessions.</li>
+  <li><b>Report it</b> to the System Administrator straight away (see Appendix B), describing what happened and when.</li>
+</ol>
+</div>
+
+<!-- ============================ PART 17 ============================ -->
+<div class="page-break">
+<h1 class="part">Part 17: Glossary</h1>
+<ul>
+  <li><b>Academic Period / Academic Year:</b> The yearly cycle the Institute operates on. In this system the academic year is calculated automatically and runs September-August.</li>
+  <li><b>Admission Number:</b> Your unique student identifier, for example <code>BM5/2503/J26</code> (course code / sequence number / intake code). Used as your username.</li>
+  <li><b>Attachment (Industrial Attachment):</b> A period of supervised work placement in industry. Students apply through the portal; the ILO reviews applications.</li>
+  <li><b>CAT (Continuous Assessment Test):</b> A common term for in-course assessment. Note: this system records competency evidence through <b>uploads</b>, not CAT marks.</li>
+  <li><b>CBET (Competency-Based Education and Training):</b> An approach where students demonstrate competency through assessments and practicals rather than only written exams.</li>
+  <li><b>CIBEC / CBET Officer:</b> The role and portal responsible for reviewing students' uploaded competency evidence.</li>
+  <li><b>Common Unit:</b> A unit shared across several programs (for example, communication or numeracy skills).</li>
+  <li><b>Dean:</b> The Dean of Students, responsible for student welfare in this system.</li>
+  <li><b>Deputy:</b> The Deputy Principal, who has institution-wide oversight and manages Tools of Trade.</li>
+  <li><b>Fee Threshold:</b> The maximum outstanding balance a student may have and still register for units; set by Finance/Admin.</li>
+  <li><b>HOD (Head of Department):</b> The staff member who assigns units to trainers and oversees a department.</li>
+  <li><b>ILO (Industrial Liaison Office):</b> The office that handles graduation and attachment applications.</li>
+  <li><b>IMS (Institute Management System):</b> This system; the web platform described in this manual.</li>
+  <li><b>Intake:</b> The entry cohort: January, May, or September, encoded in the admission number (J/M/S).</li>
+  <li><b>KCSE / KCPE:</b> Kenyan national examinations; the grade is recorded at admission and uploaded as a document.</li>
+  <li><b>Module:</b> A stage of a program. Students progress through modules; each level has a maximum module.</li>
+  <li><b>OTP (One-Time Passcode):</b> A six-digit code, valid for 10 minutes and one use, emailed to staff to complete login or to anyone resetting a password.</li>
+  <li><b>Portal:</b> A role-specific workspace within the system (Student Portal, Finance Portal, etc.).</li>
+  <li><b>Program / Course:</b> An academic offering (such as Business Management Level 5). The <b>program cost</b> drives student fees.</li>
+  <li><b>Program Cost:</b> The annual fee for a program; the per-module fee is this amount divided by three.</li>
+  <li><b>Session:</b> Your active signed-in period, which lasts about two hours.</li>
+  <li><b>Tools of Trade:</b> Teaching documents (course outline, learning plan, record of work, session plan, exam, TVET license) that trainers submit and the Deputy reviews.</li>
+  <li><b>Transcript:</b> An official academic record; not generated by this system (request from the Registrar).</li>
+  <li><b>Unit / Course / Subject:</b> A single subject within a program that students register for and trainers teach.</li>
+  <li><b>Walk-in / KUCCPS:</b> The two admission types: a direct (walk-in) admission, or one placed through the Kenya Universities and Colleges Central Placement Service.</li>
+</ul>
+</div>
+
+<!-- ============================ APPENDIX A ============================ -->
+<div class="page-break">
+<h1 class="part">Appendix A: Quick Reference: Login Details by Role</h1>
+<table>
+  <tr><th>Role</th><th>Login Page URL</th><th>Username Field</th><th>Password Policy</th><th>OTP Required?</th></tr>
+  <tr><td>Student</td><td><code>/student/login</code></td><td>Admission Number</td><td>Initial = phone number; must change on first login; then 8+ chars with upper/lower/number/symbol</td><td>No</td></tr>
+  <tr><td>Trainer</td><td><code>/trainer/login</code></td><td>Email</td><td>Initial = <code>trainer123</code>; must change on first login; then 8+ chars with upper/lower/number/symbol</td><td>No</td></tr>
+  <tr><td>HOD</td><td><code>/hod/login</code></td><td>Department (selected)</td><td>8+ chars with upper/lower/number/symbol</td><td>No</td></tr>
+  <tr><td>Admin</td><td><code>/admin/login</code></td><td>Email</td><td>8+ chars with upper/lower/number/symbol</td><td><b>Yes</b></td></tr>
+  <tr><td>Registrar</td><td><code>/admin/login</code></td><td>Email</td><td>As above</td><td><b>Yes</b></td></tr>
+  <tr><td>Finance</td><td><code>/admin/login</code></td><td>Email</td><td>As above</td><td><b>Yes</b></td></tr>
+  <tr><td>Dean</td><td><code>/admin/login</code></td><td>Email</td><td>As above</td><td><b>Yes</b></td></tr>
+  <tr><td>Deputy</td><td><code>/admin/login</code></td><td>Email</td><td>As above</td><td><b>Yes</b></td></tr>
+  <tr><td>ILO</td><td><code>/admin/login</code></td><td>Email</td><td>As above</td><td><b>Yes</b></td></tr>
+  <tr><td>CBET (CIBEC)</td><td><code>/admin/login</code></td><td>Email</td><td>As above</td><td><b>Yes</b></td></tr>
+</table>
+<div class="note"><b>Note:</b> All staff roles share the <b>Staff Portal</b> login page (<code>/admin/login</code>) and are routed to their own portal automatically after the OTP step.</div>
+</div>
+
+<!-- ============================ APPENDIX B ============================ -->
+<div class="page-break">
+<h1 class="part">Appendix B: Quick Reference: Who to Contact for What</h1>
+<div class="note"><b>Note:</b> Fill in the specific contact person, phone, or email for each row to suit your Institute's structure. General Institute contacts are in Section 1.4.</div>
+<table>
+  <tr><th>Issue</th><th>Who handles it</th><th>How to contact them</th></tr>
+  <tr><td>Wrong personal details (name, ID, course, module)</td><td>Registrar</td><td>_________________</td></tr>
+  <tr><td>Forgotten password (no email on file)</td><td>Registrar (students) / Administrator (staff)</td><td>_________________</td></tr>
+  <tr><td>A payment not showing / receipt query</td><td>Finance office</td><td>_________________</td></tr>
+  <tr><td>Fee balance or program cost question</td><td>Finance office</td><td>_________________</td></tr>
+  <tr><td>Unit registration blocked or a unit to be dropped</td><td>Registrar (registration) / Finance (fee threshold)</td><td>_________________</td></tr>
+  <tr><td>Assessment upload problems</td><td>CBET (CIBEC) office</td><td>_________________</td></tr>
+  <tr><td>Graduation or attachment application</td><td>Industrial Liaison Office (ILO)</td><td>_________________</td></tr>
+  <tr><td>Trainer unit assignment query</td><td>Head of Department (HOD)</td><td>_________________</td></tr>
+  <tr><td>New staff or trainer account</td><td>System Administrator</td><td>_________________</td></tr>
+  <tr><td>Suspected account compromise / security concern</td><td>System Administrator</td><td>_________________</td></tr>
+  <tr><td>System error with a reference code</td><td>System Administrator / IT support</td><td>_________________</td></tr>
+</table>
+</div>
+
+<!-- ============================ APPENDIX C ============================ -->
+<div class="page-break">
+<h1 class="part">Appendix C: System Notification Reference</h1>
+<p><b>Automated in-app notifications:</b></p>
+<table>
+  <tr><th>Trigger</th><th>Recipient</th><th>Content summary</th></tr>
+  <tr><td>Trainer submits a Tool of Trade</td><td>Dean(s)</td><td>A new teaching document has been submitted for review</td></tr>
+  <tr><td>Deputy reviews a Tool (approved/rejected)</td><td>The submitting trainer</td><td>The review outcome of their document</td></tr>
+  <tr><td>Deputy requests a Tool of Trade</td><td>Targeted trainer(s)</td><td>A request to submit a specific teaching document</td></tr>
+  <tr><td>Student uploads CBET evidence</td><td>CBET (CIBEC) officers</td><td>A new assessment/practical/document upload</td></tr>
+  <tr><td>Finance generates a payslip</td><td>The trainer</td><td>A new payslip is available, with the amount</td></tr>
+  <tr><td>Student applies for graduation</td><td>ILO officers</td><td>A new graduation application to review</td></tr>
+  <tr><td>Student applies for attachment</td><td>ILO officers</td><td>A new attachment application to review</td></tr>
+  <tr><td>ILO updates an application status</td><td>The student</td><td>Their application has been approved/under review/rejected</td></tr>
+  <tr><td>Dean posts a public note</td><td>The student</td><td>A new note titled with the note's title</td></tr>
+</table>
+<p><b>Automated emails:</b></p>
+<table>
+  <tr><th>Trigger</th><th>Recipient</th><th>Content summary</th></tr>
+  <tr><td>Staff login step 1 succeeds</td><td>The staff member</td><td>A six-digit login verification code (in the body), valid 10 minutes</td></tr>
+  <tr><td>Password reset by code requested</td><td>The user</td><td>A six-digit reset code (in the body), valid 10 minutes</td></tr>
+  <tr><td>Password reset by link requested</td><td>The user</td><td>A single-use reset link, valid 60 minutes</td></tr>
+  <tr><td>New student admitted (email on file)</td><td>The student</td><td>Admission number and initial password</td></tr>
+  <tr><td>Deputy requests a Tool of Trade</td><td>Targeted trainer(s)</td><td>Details of the requested document and due date</td></tr>
+</table>
+<p style="margin-top:30px;font-style:italic;color:#6b7280;">End of manual. For the latest version and corrections, contact the System Administrator.</p>
+</div>
+
+</body>
+</html>

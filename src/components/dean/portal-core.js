@@ -110,16 +110,15 @@ async function loadAcademicYearChip() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // sessionStorage name first (legacy), then override with the server identity.
+    // The Dean Portal topbar always shows the office title ("Dean"), never the
+    // signed-in officer's personal name.
     const nameEl = document.getElementById('dean-name');
-    const deanData = JSON.parse(sessionStorage.getItem('deanData')) || {};
-    if (nameEl) nameEl.textContent = deanData.name || 'Dean';
+    if (nameEl) nameEl.textContent = 'Dean';
 
-    // Cookie-based auth: requireAuth bounces to /admin/login on no/expired session
-    // and populates #dean-name from /api/me.
+    // Cookie-based auth: requireAuth bounces to /admin/login on no/expired session.
     if (window.AUTH && typeof window.AUTH.requireAuth === 'function') {
-        const user = await window.AUTH.requireAuth('/admin/login');
-        if (user && user.name && nameEl) nameEl.textContent = user.name;
+        await window.AUTH.requireAuth('/admin/login');
+        if (nameEl) nameEl.textContent = 'Dean';
     }
 
     // Load the shared programs/departments catalog once before tabs render.
