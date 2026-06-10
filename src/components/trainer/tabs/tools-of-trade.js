@@ -126,9 +126,9 @@ function handleFileSelect(event) {
     }
     
     // Validate file type
-    const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    const allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
     if (!allowedTypes.includes(file.type)) {
-        showToast('Please select a PDF, DOC, or DOCX file', 'error');
+        showToast('Please select a PDF or DOCX file', 'error');
         return;
     }
     
@@ -448,7 +448,7 @@ function handleBulkFileSelect(event) {
     }
     
     // Validate files
-    const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    const allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
     const validFiles = [];
     const errors = [];
     
